@@ -1,45 +1,98 @@
-# My App
+# RetroCrawler
 
-This project can be used as a starting point to create your own Vaadin application with Spring Boot.
-It contains all the necessary configuration and some placeholder files to get you started.
+**RetroCrawler** is a Java framework for *structurally crawling* directory-based archives and turning them into typed domain objects so you can manage your stash of retro gear.
 
-## Running the application
+If you are like us then you have your collection organized as files and folders. This is simple, pragmatic and backup-friendly. Because of this, RetroCrawler is designed specifically for collections that were **not originally structured as databases** — such as retro computer hardware documentation (pictures, manuals, drivers), software archives, ROM libraries or document repositories.
 
-The project is a standard Maven project. To run it from the command line,
-type `mvnw` (Windows), or `./mvnw` (Mac & Linux), then open
-http://localhost:8080 in your browser.
+RetroCrawler does not require specific schemas, metadata files, or folder layouts.  
+Instead, you can use your own personal already existing folder structure, provide context via `ClueFinder`s, `FactParser`s and `GearMatcher`s and ReroCrawler **infers structure from context** using a two-phase pipeline.
 
-You can also import the project to your IDE of choice as you would with any
-Maven project. Read more on [how to import Vaadin projects to different IDEs](https://vaadin.com/docs/latest/guide/step-by-step/importing) (Eclipse, IntelliJ IDEA, NetBeans, and VS Code).
+---
 
-## Deploying to Production
+## Core Concepts
 
-To create a production build, call `mvnw clean package -Pproduction` (Windows),
-or `./mvnw clean package -Pproduction` (Mac & Linux).
-This will build a JAR file with all the dependencies and front-end resources,
-ready to be deployed. The file can be found in the `target` folder after the build completes.
+### Archive
+A directory tree on disk that serves as the data source.
 
-Once the JAR file is built, you can run it using
-`java -jar target/retro-crawler-1.0-SNAPSHOT.jar`
+### Artifact
+An optional representation of a single folder in the archive.
+An artifact exists only if meaningful information can be extracted from that folder which we call `Clue`s. This is a raw representation of a single **potential** piece of your collection.
 
-## Project structure
+### Clue
+A raw key–value observation derived from:
+- folder names
+- file names
+- file contents
 
-- `MainLayout.java` in `src/main/java` contains the navigation setup (i.e., the
-  side/top bar and the main menu). This setup uses
-  [App Layout](https://vaadin.com/docs/components/app-layout).
-- `views` package in `src/main/java` contains the server-side Java views of your application.
-- `views` folder in `frontend/` contains the client-side JavaScript views of your application.
-- `themes` folder in `frontend/` contains the custom CSS styles.
+Clues are always **string-based** and may contain multiple values. This is a raw representation of a **potential** property of a piece in your collection.
 
-## Useful links
+### Gear
+A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
+Gear types are **not** required to implement framework interfaces and require only a no-arg constructor. It's "bring your own type".
 
-- Read the documentation at [vaadin.com/docs](https://vaadin.com/docs).
-- Follow the tutorial at [vaadin.com/docs/latest/tutorial/overview](https://vaadin.com/docs/latest/tutorial/overview).
-- Create new projects at [start.vaadin.com](https://start.vaadin.com/).
-- Search UI components and their usage examples at [vaadin.com/docs/latest/components](https://vaadin.com/docs/latest/components).
-- View use case applications that demonstrate Vaadin capabilities at [vaadin.com/examples-and-demos](https://vaadin.com/examples-and-demos).
-- Build any UI without custom CSS by discovering Vaadin's set of [CSS utility classes](https://vaadin.com/docs/styling/lumo/utility-classes). 
-- Find a collection of solutions to common use cases at [cookbook.vaadin.com](https://cookbook.vaadin.com/).
-- Find add-ons at [vaadin.com/directory](https://vaadin.com/directory).
-- Ask questions on [Stack Overflow](https://stackoverflow.com/questions/tagged/vaadin) or join our [Discord channel](https://discord.gg/MYFq5RTbBn).
-- Report issues, create pull requests in [GitHub](https://github.com/vaadin).
+### Fact
+A typed interpretation of a clue.
+Facts are produced by user-defined parsers and may be any Java type.
+
+---
+
+## Processing Pipeline
+
+RetroCrawler operates in two distinct phases:
+
+### 1. Clue Phase
+The archive is traversed recursively.
+For each folder, registered `ClueFinder`s extract clues and produce an `Artifact`.
+
+Artifacts are cached as JSON on the local storage so that expensive rescans can be avoided. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly loaded from the JSON cache.
+
+### 2. Fact Phase
+All known clues are converted into facts using registered parsers.
+Based on these facts, `GearMatcher`s determine which gear type best represents an artifact.
+The corresponding `GearFactory` then creates the final domain object.
+
+Unknown or unparseable clues are preserved and may be accessed explicitly.
+
+---
+
+## Configuration via Annotations
+
+RetroCrawler is configured entirely via annotations:
+
+- `@RetroArchive`  
+  Declares archive locations and clue-finder configuration.
+
+- `@RetroGear`  
+  Declares a gear type and its matcher.
+
+- `@RetroFact`  
+  Declares how a field is populated from a clue.
+
+- `@RetroAnyAttribute`  
+  Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
+
+This allows the framework to remain strongly typed while requiring minimal boilerplate.
+
+---
+
+## Design Goals
+
+- No database
+- No imposed interfaces on user domain models
+- Strong typing without forcing predefined structures
+- Incremental and cacheable processing
+- Minimal core dependencies
+- Suitable for both CLI tools and GUI applications (e.g. Vaadin)
+
+---
+
+## Demo App
+
+Since RetroCrawler is a library, we provide a demo app based on the Vaadin UI framework so you can see how all comes together. You can use this as a starting point for building your own gui. But please note that compared to `retro-crawler-core` keeping `retro-crawler-app` stable is not a priority. Anything might change any time.
+
+---
+
+## Status
+
+RetroCrawler is currently under active development.
+APIs may evolve, but we try to keep core concepts stable.
