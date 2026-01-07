@@ -1,0 +1,60 @@
+vaadin-app-layout.retro-layout {
+	background-color: #fdf4c3;
+}
+
+vaadin-button.retro-button {
+	background-color: #feda37;
+	color: #bd0054;
+}
+
+vaadin-grid.retro-treegrid {
+	--lumo-contrast-10pct: #bd0054;
+	--lumo-contrast-20pct: #bd0054;
+}
+
+vaadin-grid.retro-treegrid {
+	border-radius: 6px;
+	overflow: hidden;
+	/* optional: match your grid line color */
+	border: 1px solid var(--lumo-contrast-20pct);
+}
+
+/* =========================
+   TreeGrid base
+   ========================= */
+vaadin-grid.retro-treegrid::part(cell) {
+	color: #000; /* text */
+	background-color: #feda37; /* row background */
+}
+
+/* =========================
+   Header
+   ========================= */
+vaadin-grid.retro-treegrid::part(header-cell) {
+	background-color: #bd0054;
+	color: #fff;
+	font-size: var(--lumo-font-size-m);
+}
+
+/* =========================
+   Hover
+   ========================= */
+vaadin-grid.retro-treegrid::part(row):hover::part(cell) {
+	background-color: #fdf4c3;
+}
+
+/* =========================
+   Selected row
+   ========================= */
+vaadin-grid.retro-treegrid::part(row)[selected]::part(cell) {
+	background-color: #fdf4c3;
+	color: #000;
+}
+
+/* =========================
+   Focus outline (optional)
+   ========================= */
+vaadin-grid.retro-treegrid::part(row):focus-within::part(cell) {
+	/*	box-shadow: inset 0 0 0 1px #60a5fa;*/
+	
+}

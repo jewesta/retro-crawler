@@ -1,0 +1,37 @@
+# ======================
+# Maven / Java
+# ======================
+**/target/
+*.log
+
+# ======================
+# IDEs
+# ======================
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+*.iml
+
+# ======================
+# OS
+# ======================
+.DS_Store
+
+# ======================
+# Vaadin / Frontend (sample only)
+# ======================
+retro-crawler-app/node_modules/
+retro-crawler-app/frontend/generated/
+retro-crawler-app/pnpmfile.js
+retro-crawler-app/vite.generated.ts
+retro-crawler-app/webpack.generated.js
+retro-crawler-app/cache/
+retro-crawler-app/src/main/bundles
+
+# ======================
+# TestBench / ITs (sample only)
+# ======================
+retro-crawler-app/drivers/
+retro-crawler-app/error-screenshots/
