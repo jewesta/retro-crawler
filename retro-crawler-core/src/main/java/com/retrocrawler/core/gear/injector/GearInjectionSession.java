@@ -1,10 +1,9 @@
 package com.retrocrawler.core.gear.injector;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.gear.RetroAttributes;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -15,49 +14,54 @@ final class GearInjectionSession {
 	private final Object gear;
 	private final RetroAttributes attributes;
 
-	private final Map<String, Fact> allFactsByKey;
-	private final Map<String, Clue> allCluesByKey;
-
 	private final Map<String, RetroAttribute> unassigned;
 
-	GearInjectionSession(final GearDescriptor descriptor, final Object gear, final RetroAttributes attributes,
-			final Map<String, Fact> allFactsByKey, final Map<String, Clue> allCluesByKey,
-			final Map<String, RetroAttribute> unassigned) {
-
+	GearInjectionSession(final GearDescriptor descriptor, final Object gear, final RetroAttributes attributes) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.gear = Objects.requireNonNull(gear, "gear");
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
-		this.allFactsByKey = Objects.requireNonNull(allFactsByKey, "allFactsByKey");
-		this.allCluesByKey = Objects.requireNonNull(allCluesByKey, "allCluesByKey");
-		this.unassigned = Objects.requireNonNull(unassigned, "unassigned");
+
+		/*
+		 * We start with all attributes and remove successfully assigned (injected)
+		 * facts along the way. What remains in the end are all clues (because only
+		 * facts will ever get injected) and facts which the current gear didn't request
+		 * (meaning: No related annotation).
+		 * 
+		 * In the end the AnyAttributeMode will decide what is actually used. We collect
+		 * this information in any case, if not for statistical reasons.
+		 */
+		this.unassigned = attributes.getAll();
 	}
 
-	GearDescriptor descriptor() {
+	GearDescriptor getDescriptor() {
 		return descriptor;
 	}
 
-	Class<?> gearType() {
+	Class<?> getGearType() {
 		return descriptor.getType();
 	}
 
-	Object gear() {
+	Object getGear() {
 		return gear;
 	}
 
-	RetroAttributes attributes() {
+	RetroAttributes getAttributes() {
 		return attributes;
 	}
 
-	Map<String, Fact> allFactsByKey() {
-		return allFactsByKey;
+	/**
+	 * @param attribute
+	 * @return the attribute that got marked. If <code>null</code> is returned then
+	 *         no attribute was marked unassigned. That could mean it was already
+	 *         marked or it doesn't exist.
+	 */
+	RetroAttribute markAssigned(final RetroAttribute attribute) {
+		return unassigned.remove(attribute.getKey());
 	}
 
-	Map<String, Clue> allCluesByKey() {
-		return allCluesByKey;
-	}
-
-	Map<String, RetroAttribute> unassigned() {
-		return unassigned;
+	Map<String, RetroAttribute> getUnassigned() {
+		// Return copy to protect the original map
+		return new LinkedHashMap<>(unassigned);
 	}
 
 }

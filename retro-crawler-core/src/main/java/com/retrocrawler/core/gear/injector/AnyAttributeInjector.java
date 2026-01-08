@@ -11,28 +11,23 @@ final class AnyAttributeInjector implements Injector {
 
 	@Override
 	public void inject(final GearInjectionSession session) {
-		session.descriptor().getAnyAttributeField().ifPresent(field -> inject(field, session));
+		session.getDescriptor().getAnyAttributeField().ifPresent(field -> inject(field, session));
 	}
 
 	private void inject(final Field anyField, final GearInjectionSession session) {
 		final Map<String, RetroAttribute> payload = buildPayload(session);
-		FieldSetter.setAnyAttributeMap(session.gear(), anyField, payload);
+		FieldSetter.setAnyAttributeMap(session.getGear(), anyField, payload);
 	}
 
 	private static Map<String, RetroAttribute> buildPayload(final GearInjectionSession session) {
-		final AnyAttributeMode mode = session.descriptor().getAnyAttributeMode();
+		final AnyAttributeMode mode = session.getDescriptor().getAnyAttributeMode();
 
 		return switch (mode) {
-		case UNASSIGNED_ONLY -> new LinkedHashMap<>(session.unassigned());
-		case ALL_FACTS_AND_CLUES -> {
-			final Map<String, RetroAttribute> out = new LinkedHashMap<>();
-			session.allCluesByKey().values().forEach(clue -> out.put(clue.getKey(), clue));
-			session.allFactsByKey().values().forEach(fact -> out.put(fact.getKey(), fact));
-			yield out;
-		}
-		case CLUES_ONLY -> session.allCluesByKey().values().stream().collect(LinkedHashMap::new,
+		case UNASSIGNED_ONLY -> session.getUnassigned();
+		case ALL_FACTS_AND_CLUES -> session.getAttributes().getAll();
+		case CLUES_ONLY -> session.getAttributes().getClues().stream().collect(LinkedHashMap::new,
 				(map, clue) -> map.put(clue.getKey(), clue), Map::putAll);
-		case FACTS_ONLY -> session.allFactsByKey().values().stream().collect(LinkedHashMap::new,
+		case FACTS_ONLY -> session.getAttributes().getFacts().stream().collect(LinkedHashMap::new,
 				(map, fact) -> map.put(fact.getKey(), fact), Map::putAll);
 		};
 	}

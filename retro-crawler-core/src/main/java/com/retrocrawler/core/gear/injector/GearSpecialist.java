@@ -13,16 +13,14 @@ import com.retrocrawler.core.util.Reflection;
 
 public class GearSpecialist implements GearMatcher, GearFactory {
 
-	private final GearDescriptor definition;
-
-	private final UnassignedPolicy unassignedPolicy = new UnassignedPolicy();
+	private final GearDescriptor descriptor;
 
 	private final RetroAttributeAdapter adapter = new RetroAttributeAdapter();
 
 	private final List<Injector> injectors;
 
 	public GearSpecialist(final GearDescriptor descriptor) {
-		this.definition = Objects.requireNonNull(descriptor, "descriptor");
+		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		/*
 		 * Order is important! The AnyAttributeInjector must come last because it
 		 * (potentially) injects what the other injectors skipped.
@@ -32,23 +30,22 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 	}
 
 	public GearDescriptor getGearDefinition() {
-		return definition;
+		return descriptor;
 	}
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		return definition.getMatcher().matches(context);
+		return descriptor.getMatcher().matches(context);
 	}
 
 	@Override
 	public Object create(final GearContext context) {
 		Objects.requireNonNull(context, "context");
-
-		final Object gear = Reflection.newInstance(definition.getType());
 		final RetroAttributes attributes = Objects.requireNonNull(context.attributes(), "attributes");
 
-		final GearInjectionSession session = unassignedPolicy.createSession(definition, gear, attributes);
-
+		// The birth of a new gear
+		final Object gear = Reflection.newInstance(descriptor.getType());
+		final GearInjectionSession session = new GearInjectionSession(descriptor, gear, attributes);
 		for (final Injector injector : injectors) {
 			injector.inject(session);
 		}
