@@ -115,9 +115,17 @@ public class GearDescriptor implements Descriptor {
 							+ " and " + TypeName.simple(RetroClue.class) + ": " + field + " in " + TypeName.full(type));
 				}
 
-				if (retroId != null && fact != null && fact.optional()) {
-					throw new IllegalArgumentException(TypeName.simple(RetroId.class) + " must not be used on optional "
-							+ TypeName.simple(RetroFact.class) + " field: " + field + " in " + TypeName.full(type));
+				if (retroId != null) {
+					if (fact != null && fact.optional()) {
+						throw new IllegalArgumentException(TypeName.simple(RetroId.class)
+								+ " must not be used on optional " + TypeName.simple(RetroFact.class) + " field: "
+								+ field + " in " + TypeName.full(type));
+					}
+					if (clue != null && clue.optional()) {
+						throw new IllegalArgumentException(TypeName.simple(RetroId.class)
+								+ " must not be used on optional " + TypeName.simple(RetroClue.class) + " field: "
+								+ field + " in " + TypeName.full(type));
+					}
 				}
 
 				final AttributeDescriptor incoming;

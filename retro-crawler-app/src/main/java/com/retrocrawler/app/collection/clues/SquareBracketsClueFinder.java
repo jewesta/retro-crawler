@@ -70,12 +70,6 @@ public class SquareBracketsClueFinder implements PathNameClueFinder {
 
 		final Set<Clue> clues = new HashSet<>();
 
-		/*
-		 * Add the location clue in any case. Untrimmed, as to not invalidate the folder
-		 * name.
-		 */
-		clues.add(Clue.of(AttributeNames.LOCATION, folderName));
-
 		folderName = folderName.trim();
 		if (folderName.isEmpty()) {
 			// Nothing to see here
