@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroClue;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
@@ -24,14 +23,14 @@ public class GearDescriptor implements Descriptor {
 
 	private final GearMatcher matcher;
 
-	private final Map<String, AttributeDescriptor> attributes;
+	private final Map<String, FactDescriptor> attributes;
 
 	private final Field anyAttributeField;
 
 	private final Field idField;
 
-	private GearDescriptor(final Class<?> type, final GearMatcher matcher,
-			final Map<String, AttributeDescriptor> attributes, final Field anyAttributeField, final Field idField) {
+	private GearDescriptor(final Class<?> type, final GearMatcher matcher, final Map<String, FactDescriptor> attributes,
+			final Field anyAttributeField, final Field idField) {
 
 		this.type = Objects.requireNonNull(type, "type");
 		this.matcher = Objects.requireNonNull(matcher, "matcher");
@@ -48,7 +47,7 @@ public class GearDescriptor implements Descriptor {
 		return matcher;
 	}
 
-	Map<String, AttributeDescriptor> getAttributes() {
+	Map<String, FactDescriptor> getAttributes() {
 		return attributes;
 	}
 
@@ -73,7 +72,7 @@ public class GearDescriptor implements Descriptor {
 
 		final GearMatcher matcher = Reflection.newInstance(retroGear.value());
 
-		final Map<String, AttributeDescriptor> attributes = new LinkedHashMap<>();
+		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
 		Field anyAttributeField = null;
 		Field idField = null;
 
@@ -108,40 +107,23 @@ public class GearDescriptor implements Descriptor {
 				}
 
 				final RetroFact fact = field.getAnnotation(RetroFact.class);
-				final RetroClue clue = field.getAnnotation(RetroClue.class);
 
-				if (fact != null && clue != null) {
-					throw new IllegalArgumentException("Field must not have both " + TypeName.simple(RetroFact.class)
-							+ " and " + TypeName.simple(RetroClue.class) + ": " + field + " in " + TypeName.full(type));
+				if (retroId != null && fact != null && fact.optional()) {
+					throw new IllegalArgumentException(TypeName.simple(RetroId.class) + " must not be used on optional "
+							+ TypeName.simple(RetroFact.class) + " field: " + field + " in " + TypeName.full(type));
 				}
 
-				if (retroId != null) {
-					if (fact != null && fact.optional()) {
-						throw new IllegalArgumentException(TypeName.simple(RetroId.class)
-								+ " must not be used on optional " + TypeName.simple(RetroFact.class) + " field: "
-								+ field + " in " + TypeName.full(type));
-					}
-					if (clue != null && clue.optional()) {
-						throw new IllegalArgumentException(TypeName.simple(RetroId.class)
-								+ " must not be used on optional " + TypeName.simple(RetroClue.class) + " field: "
-								+ field + " in " + TypeName.full(type));
-					}
-				}
-
-				final AttributeDescriptor incoming;
-				if (fact != null) {
-					incoming = new FactDescriptor(fact, field);
-				} else if (clue != null) {
-					incoming = new ClueDescriptor(clue, field);
-				} else {
+				if (fact == null) {
 					/*
 					 * Standalone @RetroId is allowed, but it is not an attribute.
 					 */
 					continue;
 				}
 
+				final FactDescriptor incoming = new FactDescriptor(fact, field);
+
 				final String key = incoming.getKey();
-				final AttributeDescriptor existing = attributes.putIfAbsent(key, incoming);
+				final FactDescriptor existing = attributes.putIfAbsent(key, incoming);
 				if (existing != null) {
 					assertNonContradictingAttribute(existing.getField().getDeclaringClass(),
 							incoming.getField().getDeclaringClass(), key, existing, incoming);
@@ -150,10 +132,9 @@ public class GearDescriptor implements Descriptor {
 		}
 
 		if (anyAttributeField == null && attributes.isEmpty()) {
-			throw new IllegalArgumentException(
-					TypeName.simple(RetroGear.class) + " must have at least one field annotated with "
-							+ TypeName.simple(RetroAnyAttribute.class) + ", " + TypeName.simple(RetroFact.class)
-							+ " or " + TypeName.simple(RetroClue.class) + ": " + TypeName.full(type));
+			throw new IllegalArgumentException(TypeName.simple(RetroGear.class)
+					+ " must have at least one field annotated with " + TypeName.simple(RetroAnyAttribute.class)
+					+ " or " + TypeName.simple(RetroFact.class) + ": " + TypeName.full(type));
 		}
 
 		return Optional.of(new GearDescriptor(type, matcher, Map.copyOf(attributes), anyAttributeField, idField));
@@ -173,7 +154,7 @@ public class GearDescriptor implements Descriptor {
 	}
 
 	public static void assertNonContradictingAttribute(final Class<?> typeA, final Class<?> typeB, final String key,
-			final AttributeDescriptor a, final AttributeDescriptor b) {
+			final FactDescriptor a, final FactDescriptor b) {
 
 		Objects.requireNonNull(typeA, "typeA");
 		Objects.requireNonNull(typeB, "typeB");
@@ -181,13 +162,11 @@ public class GearDescriptor implements Descriptor {
 		Objects.requireNonNull(a, "a");
 		Objects.requireNonNull(b, "b");
 
-		/*
-		 * A key must not be defined as both a clue and a fact.
-		 */
-		if (!a.getClass().equals(b.getClass())) {
+		if (!(a instanceof FactDescriptor) || !(b instanceof FactDescriptor)) {
 			final String location = location(typeA, typeB);
-			throw new IllegalArgumentException("Contradicting attribute definitions for key '" + key + "' ("
-					+ a.getClass().getSimpleName() + " vs " + b.getClass().getSimpleName() + ") " + location);
+			throw new IllegalStateException(
+					"Unknown " + TypeName.simple(FactDescriptor.class) + " implementations for key '" + key + "' "
+							+ location + ": " + TypeName.full(a.getClass()) + " and " + TypeName.full(b.getClass()));
 		}
 
 		final boolean sameOptional = a.isOptional() == b.isOptional();
@@ -197,48 +176,27 @@ public class GearDescriptor implements Descriptor {
 		final Class<?> bGeneric = b.getSingleGenericArgument().orElse(null);
 		final boolean sameGenericType = Objects.equals(aGeneric, bGeneric);
 
-		if (a instanceof FactDescriptor && b instanceof FactDescriptor) {
-			final FactDescriptor fa = (FactDescriptor) a;
-			final FactDescriptor fb = (FactDescriptor) b;
+		final FactDescriptor fa = a;
+		final FactDescriptor fb = b;
 
-			final boolean sameStrict = fa.isStrict() == fb.isStrict();
-			final boolean sameParser = fa.getParser().equals(fb.getParser());
+		final boolean sameStrict = fa.isStrict() == fb.isStrict();
+		final boolean sameParser = fa.getParser().equals(fb.getParser());
 
-			if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameParser) {
-				return;
-			}
-
-			final String location = location(typeA, typeB);
-
-			final StringBuilder details = new StringBuilder();
-			details.append("optional=").append(fa.isOptional()).append(" vs ").append(fb.isOptional());
-			details.append(", strict=").append(fa.isStrict()).append(" vs ").append(fb.isStrict());
-			details.append(", parser=").append(fa.getParser().getName()).append(" vs ")
-					.append(fb.getParser().getName());
-			details.append(", fieldType=").append(fa.getField().getType().getName()).append(" vs ")
-					.append(fb.getField().getType().getName());
-			details.append(", genericType=").append(aGeneric == null ? "null" : aGeneric.getName()).append(" vs ")
-					.append(bGeneric == null ? "null" : bGeneric.getName());
-
-			throw new IllegalArgumentException("Contradicting " + TypeName.simple(RetroFact.class) + " for key '" + key
-					+ "' (" + details + ") " + location);
-		}
-
-		/*
-		 * ClueDefinition: optional + field type (+ generic type) must match.
-		 */
-		if (sameOptional && sameFieldType && sameGenericType) {
+		if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameParser) {
 			return;
 		}
 
 		final String location = location(typeA, typeB);
 
 		final StringBuilder details = new StringBuilder();
-		details.append("optional=").append(a.isOptional()).append(" vs ").append(b.isOptional());
-		details.append(", fieldType=").append(a.getField().getType().getName()).append(" vs ")
-				.append(b.getField().getType().getName());
-		details.append(", genericType=").append(aGeneric == null ? "null" : aGeneric.getName()).append(" vs ")
-				.append(bGeneric == null ? "null" : bGeneric.getName());
+		details.append("optional=").append(fa.isOptional()).append(" vs ").append(fb.isOptional());
+		details.append(", strict=").append(fa.isStrict()).append(" vs ").append(fb.isStrict());
+		details.append(", parser=").append(TypeName.full(fa.getParser())).append(" vs ")
+				.append(TypeName.full(fb.getParser()));
+		details.append(", fieldType=").append(TypeName.full(fa.getField().getType())).append(" vs ")
+				.append(TypeName.full(fb.getField().getType()));
+		details.append(", genericType=").append(aGeneric == null ? "null" : TypeName.full(aGeneric)).append(" vs ")
+				.append(bGeneric == null ? "null" : TypeName.full(bGeneric));
 
 		throw new IllegalArgumentException("Contradicting " + TypeName.simple(RetroFact.class) + " for key '" + key
 				+ "' (" + details + ") " + location);
@@ -246,15 +204,15 @@ public class GearDescriptor implements Descriptor {
 
 	private static String location(final Class<?> typeA, final Class<?> typeB) {
 		if (typeA.equals(typeB)) {
-			return "on " + typeA.getName();
+			return "on " + TypeName.full(typeA);
 		}
-		return "between " + typeA.getName() + " and " + typeB.getName();
+		return "between " + TypeName.full(typeA) + " and " + TypeName.full(typeB);
 	}
 
 	private static void assertIsAnyAttributeMap(final Field field, final Class<?> type) {
 		if (!Map.class.isAssignableFrom(field.getType())) {
-			throw new IllegalArgumentException("@" + RetroAnyAttribute.class.getSimpleName()
-					+ " must be used on a Map field but is used on " + field + ": " + type.getName());
+			throw new IllegalArgumentException(TypeName.simple(RetroAnyAttribute.class)
+					+ " must be used on a Map field but is used on " + field + ": " + TypeName.full(type));
 		}
 		/*
 		 * Note: Due to type erasure we cannot reliably enforce Map<String,
@@ -262,5 +220,4 @@ public class GearDescriptor implements Descriptor {
 		 * assignment logic validate key/value types.
 		 */
 	}
-
 }
