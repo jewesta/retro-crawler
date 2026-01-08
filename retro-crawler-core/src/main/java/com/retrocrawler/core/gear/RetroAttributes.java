@@ -22,7 +22,7 @@ public class RetroAttributes {
 		attributes.put(key, attribute);
 		/*
 		 * Clues can be turned from anonymous to known. Make a note of the initial
-		 * anonymous key so we can identify former anonymous clues as aready added as a
+		 * anonymous key so we can identify former anonymous clues as already added as a
 		 * fact.
 		 */
 		if (attribute instanceof final Fact fact) {

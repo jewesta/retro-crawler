@@ -1,9 +1,11 @@
 package com.retrocrawler.core.util;
 
+import java.util.Set;
+
 public interface RetroAttribute {
 
 	String getKey();
 
-	Object getValue();
+	Set<? extends Object> getValue();
 
 }

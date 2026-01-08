@@ -27,35 +27,41 @@ public class GearDescriptor implements Descriptor {
 
 	private final Field anyAttributeField;
 
+	private final AnyAttributeMode anyAttributeMode;
+
 	private final Field idField;
 
 	private GearDescriptor(final Class<?> type, final GearMatcher matcher, final Map<String, FactDescriptor> attributes,
 			final Field anyAttributeField, final Field idField) {
-
 		this.type = Objects.requireNonNull(type, "type");
 		this.matcher = Objects.requireNonNull(matcher, "matcher");
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
 		this.anyAttributeField = anyAttributeField;
+		this.anyAttributeMode = AnyAttributeMode.UNASSIGNED_ONLY;
 		this.idField = idField;
 	}
 
-	Class<?> getType() {
+	public Class<?> getType() {
 		return type;
 	}
 
-	GearMatcher getMatcher() {
+	public GearMatcher getMatcher() {
 		return matcher;
 	}
 
-	Map<String, FactDescriptor> getAttributes() {
+	public Map<String, FactDescriptor> getAttributes() {
 		return attributes;
 	}
 
-	Optional<Field> getAnyAttributeField() {
+	public Optional<Field> getAnyAttributeField() {
 		return Optional.ofNullable(anyAttributeField);
 	}
 
-	Optional<Field> getIdField() {
+	public AnyAttributeMode getAnyAttributeMode() {
+		return anyAttributeMode;
+	}
+
+	public Optional<Field> getIdField() {
 		return Optional.ofNullable(idField);
 	}
 
