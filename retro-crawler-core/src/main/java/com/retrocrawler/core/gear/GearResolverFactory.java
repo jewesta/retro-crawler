@@ -11,6 +11,7 @@ import java.util.Set;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactParser;
@@ -21,7 +22,7 @@ import com.retrocrawler.core.util.TypeName;
 
 public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
-	private record GlobalIdDefinition(boolean standalone, Class<? extends AttributeDescriptor> kind, String key) {
+	private record GlobalIdDefinition(boolean standalone, String key) {
 	}
 
 	@Override
@@ -47,18 +48,18 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		assertConsistentRetroId(specialists);
 
 		// Collect all known attribute definitions and ensure no contradictions.
-		final Map<String, AttributeDescriptor> attributes = new HashMap<>();
+		final Map<String, FactDescriptor> attributes = new HashMap<>();
 		final Map<String, Class<?>> declaringTypes = new HashMap<>();
 
 		for (final GearSpecialist specialist : specialists.values()) {
 			final GearDescriptor definition = specialist.getGearDefinition();
 			final Class<?> type = definition.getType();
 
-			for (final Entry<String, AttributeDescriptor> entry : definition.getAttributes().entrySet()) {
+			for (final Entry<String, FactDescriptor> entry : definition.getAttributes().entrySet()) {
 				final String key = entry.getKey();
-				final AttributeDescriptor incoming = entry.getValue();
+				final FactDescriptor incoming = entry.getValue();
 
-				final AttributeDescriptor existing = attributes.putIfAbsent(key, incoming);
+				final FactDescriptor existing = attributes.putIfAbsent(key, incoming);
 				if (existing == null) {
 					declaringTypes.put(key, type);
 				} else {
@@ -71,15 +72,16 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		// Build FactFinders (one per key) for FactDefinition only.
 		final Map<String, FactFinder> factFinders = new HashMap<>();
 
-		for (final Entry<String, AttributeDescriptor> entry : attributes.entrySet()) {
+		for (final Entry<String, FactDescriptor> entry : attributes.entrySet()) {
 			final String key = entry.getKey();
-			final AttributeDescriptor attrDef = entry.getValue();
+			final FactDescriptor attrDef = entry.getValue();
 
 			if (!(attrDef instanceof FactDescriptor)) {
-				continue;
+				throw new IllegalStateException("Unexpected " + TypeName.simple(FactDescriptor.class)
+						+ " type for key '" + key + "': " + TypeName.full(attrDef.getClass()));
 			}
 
-			final FactDescriptor factDef = (FactDescriptor) attrDef;
+			final FactDescriptor factDef = attrDef;
 
 			final Class<? extends FactParser> parserType = factDef.getParser();
 			final FactParser parser;
@@ -124,31 +126,31 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 		if (java.util.EnumSet.class.isAssignableFrom(fieldType)) {
 			if (genericType.isEmpty()) {
-				throw new UnsupportedOperationException("Auto-detected field type '" + fieldType.getName()
+				throw new UnsupportedOperationException("Auto-detected field type '" + TypeName.full(fieldType)
 						+ "' for key '" + key
-						+ "', but EnumSet element type is missing. Use a parameterized EnumSet<...> or specify a "
-						+ "parser explicitly (not " + AutoDetectParser.class.getSimpleName() + ").");
+						+ "', but EnumSet element type is missing. Use a parameterized EnumSet<...> "
+						+ "or specify a parser explicitly (not " + TypeName.simple(AutoDetectParser.class) + ").");
 			}
 			final Class<?> elementType = genericType.get();
-			throw new UnsupportedOperationException("Auto-detected EnumSet<" + elementType.getName() + "> for key '"
-					+ key + "', but no parser is implemented yet.");
+			throw new UnsupportedOperationException("Auto-detected EnumSet<" + TypeName.full(elementType)
+					+ "> for key '" + key + "', but no parser is implemented yet.");
 		}
 
 		if (java.util.Collection.class.isAssignableFrom(fieldType)) {
 			if (genericType.isEmpty()) {
-				throw new UnsupportedOperationException(
-						"Auto-detected field type '" + fieldType.getName() + "' for key '" + key
-								+ "', but collection element type is missing. Use a parameterized collection type or "
-								+ "specify a parser explicitly (not " + AutoDetectParser.class.getSimpleName() + ").");
+				throw new UnsupportedOperationException("Auto-detected field type '" + TypeName.full(fieldType)
+						+ "' for key '" + key
+						+ "', but collection element type is missing. Use a parameterized collection type "
+						+ "or specify a parser explicitly (not " + TypeName.simple(AutoDetectParser.class) + ").");
 			}
 			final Class<?> elementType = genericType.get();
-			throw new UnsupportedOperationException("Auto-detected " + fieldType.getName() + "<" + elementType.getName()
-					+ "> for key '" + key + "', but no parser is implemented yet.");
+			throw new UnsupportedOperationException("Auto-detected " + TypeName.full(fieldType) + "<"
+					+ TypeName.full(elementType) + "> for key '" + key + "', but no parser is implemented yet.");
 		}
 
 		throw new IllegalArgumentException("Cannot auto-detect parser for key '" + key + "' and field type '"
-				+ fieldType.getName() + "'. Please specify a parser explicitly (not "
-				+ AutoDetectParser.class.getSimpleName() + ").");
+				+ TypeName.full(fieldType) + "'. Please specify a parser explicitly (not "
+				+ TypeName.simple(AutoDetectParser.class) + ").");
 	}
 
 	private static void assertConsistentRetroId(final Map<Class<?>, GearSpecialist> specialists) {
@@ -169,25 +171,22 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final Field idField = idFieldOpt.get();
 
 			boolean standalone = true;
-			Class<? extends AttributeDescriptor> kind = null;
 			String key = null;
 
-			for (final Entry<String, AttributeDescriptor> e : def.getAttributes().entrySet()) {
-				final AttributeDescriptor attrDef = e.getValue();
+			for (final Entry<String, FactDescriptor> e : def.getAttributes().entrySet()) {
+				final FactDescriptor attrDef = e.getValue();
 				if (attrDef.getField().equals(idField)) {
 					standalone = false;
-					kind = attrDef.getClass();
 					key = e.getKey();
 					break;
 				}
 			}
 
 			if (standalone) {
-				kind = ClueDescriptor.class;
 				key = Clue.KEY_INTERNAL_ID;
 			}
 
-			final GlobalIdDefinition current = new GlobalIdDefinition(standalone, kind, key);
+			final GlobalIdDefinition current = new GlobalIdDefinition(standalone, key);
 
 			if (global == null) {
 				global = current;
@@ -207,6 +206,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		if (def.standalone()) {
 			return "standalone id from key '" + def.key() + "'";
 		}
-		return def.kind().getSimpleName() + " id from key '" + def.key() + "'";
+		return "id from key '" + def.key() + "'";
 	}
+
 }

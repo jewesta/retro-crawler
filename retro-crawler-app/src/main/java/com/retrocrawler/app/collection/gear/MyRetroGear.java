@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.retrocrawler.app.collection.AttributeNames;
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.util.RetroAttribute;
