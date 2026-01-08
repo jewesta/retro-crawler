@@ -11,7 +11,7 @@ import com.retrocrawler.core.util.RetroAttribute;
 
 public abstract class MyRetroGear {
 
-	@RetroFact(key = AttributeNames.LOCATION, optional = false)
+	@RetroFact(key = "@folder", optional = false)
 	private String folderName;
 
 	@RetroAnyAttribute

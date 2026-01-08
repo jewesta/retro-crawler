@@ -41,14 +41,23 @@ public class ArchiveDigger {
 		return dig(path, path, monitor);
 	}
 
-	private Clue createInternalArtifactId(final Path root, final Path path) {
+	private Set<Clue> createSyntheticClues(final Path root, final Path path) {
+		final Set<Clue> clues = new HashSet<>();
+
+		// The artificial id based on a hash of the relative path
 		final String archiveId = descriptor.getId().get();
 		final String relative = root.relativize(path).toString().replace('\\', '/');
 		final String basis = archiveId + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
 		// 16 bytes -> 32 hex chars. Usually plenty, much smaller than full paths.
 		final String id = Hashes.toHex(hash, 16);
-		return Clue.internal(Clue.KEY_INTERNAL_ID, id);
+		clues.add(Clue.internal(Clue.KEY_INTERNAL_ID, id));
+
+		// The folder name without parent folder path
+		final String folder = path.getFileName().toString();
+		clues.add(Clue.internal(Clue.KEY_INTERNAL_FOLDER, folder));
+
+		return clues;
 	}
 
 	/**
@@ -94,8 +103,8 @@ public class ArchiveDigger {
 			artifact = null;
 		} else {
 			final Set<Clue> effectiveClues = new HashSet<>(clues);
-			final Clue id = createInternalArtifactId(root, path);
-			effectiveClues.add(id);
+			final Set<Clue> syntheticClues = createSyntheticClues(root, path);
+			effectiveClues.addAll(syntheticClues);
 			artifact = new Artifact(effectiveClues);
 			logger.info("Found artifact at: " + root.relativize(path).toString());
 		}

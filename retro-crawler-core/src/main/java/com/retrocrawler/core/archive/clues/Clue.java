@@ -13,6 +13,8 @@ public class Clue implements RetroAttribute {
 
 	public static final String KEY_INTERNAL_ID = JacksonSerializable.PREFIX_INTERNAL + "id";
 
+	public static final String KEY_INTERNAL_FOLDER = JacksonSerializable.PREFIX_INTERNAL + "folder";
+
 	private static final Random RANDOM = new Random();
 
 	private final String key;
