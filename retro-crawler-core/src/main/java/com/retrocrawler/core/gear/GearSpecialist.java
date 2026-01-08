@@ -73,17 +73,6 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		}
 	}
 
-	private static void assertAssignableCollection(final Class<?> gearType, final Field field, final Object value,
-			final String key) {
-
-		final Class<?> fieldType = field.getType();
-		final Class<?> valueType = value.getClass();
-
-		if (!fieldType.isAssignableFrom(valueType)) {
-			throwTypeMismatch(gearType, field, key, valueType);
-		}
-	}
-
 	private static void throwTypeMismatch(final Class<?> gearType, final Field field, final String key,
 			final Class<?> valueType) {
 
@@ -133,35 +122,58 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		return Collection.class.isAssignableFrom(field.getType());
 	}
 
-	private static Object adaptFactValueToField(final Class<?> gearType, final Field field, final String key,
-			final Fact fact) {
+	private static boolean expectsAttributeObject(final Class<?> fieldType) {
+		return RetroAttribute.class.isAssignableFrom(fieldType) || Fact.class.isAssignableFrom(fieldType)
+				|| Clue.class.isAssignableFrom(fieldType);
+	}
+
+	private static Set<?> requireNonEmpty(final String kind, final Class<?> gearType, final String key,
+			final Set<?> set) {
+		if (set == null || set.isEmpty()) {
+			throw new IllegalStateException(kind + " for key '" + key + "' on gear " + TypeName.full(gearType)
+					+ " is empty. This violates the " + kind + " invariant.");
+		}
+		return set;
+	}
+
+	private static Object adaptAttributeToField(final Class<?> gearType, final Field field, final String key,
+			final RetroAttribute attribute) {
 
 		final Class<?> fieldType = field.getType();
 
-		// Fact / RetroAttribute: inject the Fact object directly.
-		if (fieldType.isAssignableFrom(Fact.class) || fieldType.isAssignableFrom(RetroAttribute.class)) {
-			assertAssignableSingle(gearType, field, fact, key);
-			return fact;
+		if (expectsAttributeObject(fieldType)) {
+			assertAssignableSingle(gearType, field, attribute, key);
+			return attribute;
 		}
 
-		final Set<Object> values = fact.getValue();
-		if (values.isEmpty()) {
-			throw new IllegalStateException("Fact for key '" + key + "' on gear " + TypeName.full(gearType)
-					+ " is empty. This violates the Fact invariant.");
+		if (attribute instanceof final Fact fact) {
+			final Set<?> values = requireNonEmpty("Fact", gearType, key, fact.getValue());
+			return adaptValuesToField(gearType, field, key, values);
 		}
 
-		// Set<T> / Collection<T>: inject values.
+		if (attribute instanceof final Clue clue) {
+			final Set<?> values = requireNonEmpty("Clue", gearType, key, clue.getValue());
+			return adaptValuesToField(gearType, field, key, values);
+		}
+
+		throw new IllegalStateException("Attribute for key '" + key + "' on gear " + TypeName.full(gearType)
+				+ " is neither " + TypeName.full(Clue.class) + " nor " + TypeName.full(Fact.class) + " but "
+				+ TypeName.full(attribute.getClass()) + ".");
+	}
+
+	private static Object adaptValuesToField(final Class<?> gearType, final Field field, final String key,
+			final Set<?> values) {
+
 		if (isCollectionTarget(field)) {
 			final Object collectionValue = materializeCollectionForField(field, values);
-			assertAssignableCollection(gearType, field, collectionValue, key);
+			assertAssignableSingle(gearType, field, collectionValue, key);
 			return collectionValue;
 		}
 
-		// T: inject the single value (must be exactly 1).
 		if (values.size() != 1) {
-			throw new IllegalStateException("Cannot assign multi-valued fact for key '" + key + "' to non-collection "
-					+ "field " + field.getName() + " on gear " + TypeName.full(gearType)
-					+ ". Use a collection field type or ensure the fact has exactly one value.");
+			throw new IllegalStateException("Cannot assign multi-valued attribute for key '" + key
+					+ "' to non-collection " + "field " + field.getName() + " on gear " + TypeName.full(gearType)
+					+ ". Use a collection field type or ensure the attribute has exactly one value.");
 		}
 
 		final Object single = values.iterator().next();
@@ -169,72 +181,41 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		return single;
 	}
 
-	private static Object adaptClueValueToField(final Class<?> gearType, final Field field, final String key,
-			final Clue clue) {
-
-		final Class<?> fieldType = field.getType();
-
-		// Clue / RetroAttribute -> inject the Clue object directly.
-		if (fieldType.isAssignableFrom(Clue.class) || fieldType.isAssignableFrom(RetroAttribute.class)) {
-			assertAssignableSingle(gearType, field, clue, key);
-			return clue;
-		}
-
-		final Set<String> values = clue.getValue();
-		if (values == null || values.isEmpty()) {
-			throw new IllegalStateException("Clue for key '" + key + "' on gear " + TypeName.full(gearType)
-					+ " is empty. This violates the Clue invariant.");
-		}
-
-		// Set<String> / Collection<String>: inject values.
-		if (isCollectionTarget(field)) {
-			final Object collectionValue = materializeStringCollectionForField(field, values);
-			assertAssignableCollection(gearType, field, collectionValue, key);
-			return collectionValue;
-		}
-
-		// String: inject the single value (must be exactly 1).
-		if (values.size() != 1) {
-			throw new IllegalStateException("Cannot assign multi-valued clue for key '" + key + "' to non-collection "
-					+ "field " + field.getName() + " on gear " + TypeName.full(gearType)
-					+ ". Use a collection field type or ensure the clue has exactly one value.");
-		}
-
-		final String single = values.iterator().next();
-		assertAssignableSingle(gearType, field, single, key);
-		return single;
-	}
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static Object materializeCollectionForField(final Field field, final Set<Object> values) {
+	private static Object materializeCollectionForField(final Field field, final Set<?> values) {
 		final Class<?> fieldType = field.getType();
 
 		if (EnumSet.class.isAssignableFrom(fieldType)) {
 			if (values.isEmpty()) {
-				return EnumSet.noneOf(Enum.class);
+				throw new IllegalStateException("Cannot assign empty values to EnumSet field " + field.getName()
+						+ " because the enum type cannot be inferred.");
 			}
+
 			final Object first = values.iterator().next();
 			if (!(first instanceof Enum)) {
 				throw new IllegalStateException("Cannot assign non-enum values to EnumSet field " + field.getName()
 						+ ". Expected enum values but got " + TypeName.full(first.getClass()) + ".");
 			}
+
 			final Class<? extends Enum> enumType = ((Enum) first).getDeclaringClass();
 			final EnumSet set = EnumSet.noneOf(enumType);
-			for (final Object v : values) {
-				if (!(v instanceof Enum) || ((Enum) v).getDeclaringClass() != enumType) {
+
+			for (final Object value : values) {
+				if (!(value instanceof final Enum enumValue) || enumValue.getDeclaringClass() != enumType) {
 					throw new IllegalStateException("EnumSet field " + field.getName()
 							+ " requires all values to be of the same enum type " + TypeName.full(enumType) + ".");
 				}
-				set.add(v);
+				set.add(value);
 			}
+
 			return set;
 		}
 
 		if (fieldType.isInterface()) {
 			if (List.class.isAssignableFrom(fieldType)) {
-				return List.copyOf(values);
+				return List.copyOf((Set) values);
 			}
-			return Set.copyOf(values);
+			return Set.copyOf((Set) values);
 		}
 
 		final Object instance = Reflection.newInstance(fieldType);
@@ -246,44 +227,6 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		final Collection<Object> c = (Collection<Object>) instance;
 		c.addAll(values);
 		return instance;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Object materializeStringCollectionForField(final Field field, final Set<String> values) {
-		final Class<?> fieldType = field.getType();
-
-		if (fieldType.isInterface()) {
-			if (List.class.isAssignableFrom(fieldType)) {
-				return List.copyOf(values);
-			}
-			return Set.copyOf(values);
-		}
-
-		final Object instance = Reflection.newInstance(fieldType);
-		if (!(instance instanceof Collection)) {
-			throw new IllegalStateException("Field " + field.getName() + " is a concrete type "
-					+ TypeName.full(fieldType) + " but is not a " + TypeName.full(Collection.class) + ".");
-		}
-
-		final Collection<Object> c = (Collection<Object>) instance;
-		c.addAll(values);
-		return instance;
-	}
-
-	private static Object adaptAttributeValueToField(final Class<?> gearType, final Field field, final String key,
-			final FactDescriptor attrDef, final RetroAttribute attribute) {
-
-		if (!(attrDef instanceof FactDescriptor)) {
-			throw new IllegalStateException(
-					"Unknown " + TypeName.simple(FactDescriptor.class) + " type: " + TypeName.full(attrDef.getClass()));
-		}
-
-		if (!(attribute instanceof Fact)) {
-			assertMissingAllowed(gearType, attrDef, key);
-			return null;
-		}
-
-		return adaptFactValueToField(gearType, field, key, (Fact) attribute);
 	}
 
 	private static boolean isIdFieldAlreadyHandledByFact(final GearDescriptor definition, final Field idField) {
@@ -298,12 +241,6 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 	private static void injectStandaloneIdIfPresent(final GearDescriptor definition, final Class<?> gearType,
 			final Object gear, final RetroAttributes attributes, final Map<String, RetroAttribute> unassigned) {
 
-		Objects.requireNonNull(definition, "definition");
-		Objects.requireNonNull(gearType, "gearType");
-		Objects.requireNonNull(gear, "gear");
-		Objects.requireNonNull(attributes, "attributes");
-		Objects.requireNonNull(unassigned, "unassigned");
-
 		final Optional<Field> idFieldOpt = definition.getIdField();
 		if (idFieldOpt.isEmpty()) {
 			return;
@@ -311,10 +248,6 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 
 		final Field idField = idFieldOpt.get();
 
-		/*
-		 * If the id field is also a @RetroFact field, it is already handled by the
-		 * normal attribute injection loop.
-		 */
 		if (isIdFieldAlreadyHandledByFact(definition, idField)) {
 			return;
 		}
@@ -328,17 +261,7 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 
 		unassigned.remove(Clue.KEY_INTERNAL_ID);
 
-		final Object injected;
-		if (attribute instanceof Clue) {
-			injected = adaptClueValueToField(gearType, idField, Clue.KEY_INTERNAL_ID, (Clue) attribute);
-		} else if (attribute instanceof Fact) {
-			injected = adaptFactValueToField(gearType, idField, Clue.KEY_INTERNAL_ID, (Fact) attribute);
-		} else {
-			throw new IllegalStateException("Technical id attribute for key '" + Clue.KEY_INTERNAL_ID + "' is neither "
-					+ TypeName.full(Clue.class) + " nor " + TypeName.full(Fact.class) + " but "
-					+ TypeName.full(attribute.getClass()) + ".");
-		}
-
+		final Object injected = adaptAttributeToField(gearType, idField, Clue.KEY_INTERNAL_ID, attribute);
 		if (injected != null) {
 			setField(gear, idField, injected);
 		}
@@ -351,31 +274,32 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		final Class<?> type = definition.getType();
 		final Object gear = Reflection.newInstance(type);
 
-		final RetroAttributes attributes = context.attributes();
-		Objects.requireNonNull(attributes, "attributes");
+		final RetroAttributes attributes = Objects.requireNonNull(context.attributes(), "attributes");
 
 		final Map<String, RetroAttribute> unassigned = new LinkedHashMap<>();
-		for (final Fact fact : attributes.getFacts()) {
-			unassigned.put(fact.getKey(), fact);
-		}
+
+		// Explicit policy: facts win over clues for the same key.
 		for (final Clue clue : attributes.getClues()) {
 			unassigned.put(clue.getKey(), clue);
+		}
+		for (final Fact fact : attributes.getFacts()) {
+			unassigned.put(fact.getKey(), fact);
 		}
 
 		for (final Entry<String, FactDescriptor> entry : definition.getAttributes().entrySet()) {
 			final String key = entry.getKey();
-			final FactDescriptor attrDef = entry.getValue();
-			final Field field = attrDef.getField();
+			final FactDescriptor descriptor = entry.getValue();
+			final Field field = descriptor.getField();
 
 			final RetroAttribute attribute = attributes.get(key);
 			unassigned.remove(key);
 
 			if (attribute == null) {
-				assertMissingAllowed(type, attrDef, key);
+				assertMissingAllowed(type, descriptor, key);
 				continue;
 			}
 
-			final Object injected = adaptAttributeValueToField(type, field, key, attrDef, attribute);
+			final Object injected = adaptAttributeToField(type, field, key, attribute);
 			if (injected != null) {
 				setField(gear, field, injected);
 			}
@@ -383,9 +307,7 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 
 		injectStandaloneIdIfPresent(definition, type, gear, attributes, unassigned);
 
-		definition.getAnyAttributeField().ifPresent(field -> {
-			setAnyAttributeMap(gear, field, unassigned);
-		});
+		definition.getAnyAttributeField().ifPresent(field -> setAnyAttributeMap(gear, field, unassigned));
 
 		return gear;
 	}
