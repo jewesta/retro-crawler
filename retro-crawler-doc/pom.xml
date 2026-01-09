@@ -15,9 +15,14 @@
 	<packaging>jar</packaging>
 
 	<repositories>
+		<!-- Using an embedded repository for markdown builder. The library is
+		very small. It is not (yet) available on Maven central and using the github
+		repo would require
+		putting credentials in settings.xml which is unsafe and cumbersome.-->
 		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
+			<id>data-local</id>
+			<name>data</name>
+			<url>file://${project.basedir}/repo</url>
 		</repository>
 	</repositories>
 
@@ -28,7 +33,7 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.relimitgmbh</groupId>
+			<groupId>de.relimit.commons.markdown</groupId>
 			<artifactId>markdown-builder</artifactId>
 			<version>0.8.2</version>
 		</dependency>
