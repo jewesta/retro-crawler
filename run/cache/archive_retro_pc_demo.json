@@ -1,0 +1,241 @@
+{
+  "version" : 1,
+  "id" : "retro_pc_demo",
+  "buckets" : [ {
+    "basePath" : "archives/retro_pc",
+    "root" : {
+      "folder" : "archives/retro_pc",
+      "artifact" : null,
+      "children" : [ {
+        "folder" : "Motherboards",
+        "artifact" : null,
+        "children" : [ {
+          "folder" : "Biostar MB-8500TTD [AT] [ISA, PCI] [SN 9813150136] [trw 1112] [203428]",
+          "artifact" : {
+            "_qq0ol2v1" : "203428",
+            "_9awu7iry" : [ "ISA", "PCI" ],
+            "@folder" : "Biostar MB-8500TTD [AT] [ISA, PCI] [SN 9813150136] [trw 1112] [203428]",
+            "SN" : "9813150136",
+            "@id" : "89b2679c46f53b211e19cb7d5f3f9c23",
+            "_zca2qbcc" : "AT",
+            "trw" : "1112",
+            "title" : "Biostar MB-8500TTD"
+          },
+          "children" : [ {
+            "folder" : "Pentium 90 [SN L5150766-2002] [201254]",
+            "artifact" : {
+              "SN" : "L5150766-2002",
+              "@id" : "0a42adeb62b93d07b2f5cab73e3e28b3",
+              "title" : "Pentium 90",
+              "@folder" : "Pentium 90 [SN L5150766-2002] [201254]",
+              "_f3pscszq" : "201254"
+            },
+            "children" : null
+          }, {
+            "folder" : "POST-Test",
+            "artifact" : null,
+            "children" : null
+          }, {
+            "folder" : "[SD] [PC100] [64MB] Mira [203305]",
+            "artifact" : {
+              "pic_front" : "archives/retro_pc/Motherboards/Biostar MB-8500TTD [AT] [ISA, PCI] [SN 9813150136] [trw 1112] [203428]/[SD] [PC100] [64MB] Mira [203305]/front.jpeg",
+              "_kfs2mrcw" : "PC100",
+              "_98zua7ll" : "SD",
+              "@folder" : "[SD] [PC100] [64MB] Mira [203305]",
+              "pic_back" : "archives/retro_pc/Motherboards/Biostar MB-8500TTD [AT] [ISA, PCI] [SN 9813150136] [trw 1112] [203428]/[SD] [PC100] [64MB] Mira [203305]/back.jpeg",
+              "@id" : "bdb7970c4155acbd8dd10175053fc07e",
+              "_cveckspa" : "203305",
+              "_frovlbeu" : "64MB"
+            },
+            "children" : null
+          }, {
+            "folder" : "BIOS",
+            "artifact" : null,
+            "children" : null
+          } ]
+        }, {
+          "folder" : "ASUS SP97-V Rev 1.02 [AT, ATX PWR] [ISA, PCI] [SiS 5598] [SN] [trw 881] [200395]",
+          "artifact" : {
+            "SiS" : "5598",
+            "@id" : "955149857ceb74e7fb8557ccff71caee",
+            "trw" : "881",
+            "_is091yun" : "200395",
+            "_x3ejb7rn" : [ "AT", "ATX PWR" ],
+            "_c9fia6br" : [ "ISA", "PCI" ],
+            "@folder" : "ASUS SP97-V Rev 1.02 [AT, ATX PWR] [ISA, PCI] [SiS 5598] [SN] [trw 881] [200395]",
+            "pic_back" : "archives/retro_pc/Motherboards/ASUS SP97-V Rev 1.02 [AT, ATX PWR] [ISA, PCI] [SiS 5598] [SN] [trw 881] [200395]/back.jpeg",
+            "_wazhna0s" : "SN",
+            "title" : "ASUS SP97-V Rev 1.02",
+            "pic_front" : "archives/retro_pc/Motherboards/ASUS SP97-V Rev 1.02 [AT, ATX PWR] [ISA, PCI] [SiS 5598] [SN] [trw 881] [200395]/front.jpeg"
+          },
+          "children" : null
+        }, {
+          "folder" : "Biostar M5ATA [AT] [ISA, PCI] [Aladdin IV+] [SN 9742164826] [trw 1099] [201245]",
+          "artifact" : {
+            "@id" : "8ee910fd848833919923e662578a94e6",
+            "trw" : "1099",
+            "@folder" : "Biostar M5ATA [AT] [ISA, PCI] [Aladdin IV+] [SN 9742164826] [trw 1099] [201245]",
+            "_27tiswwp" : [ "ISA", "PCI" ],
+            "Aladdin" : "IV+",
+            "pic_back" : "archives/retro_pc/Motherboards/Biostar M5ATA [AT] [ISA, PCI] [Aladdin IV+] [SN 9742164826] [trw 1099] [201245]/back.jpeg",
+            "_oy7kdae5" : "AT",
+            "title" : "Biostar M5ATA",
+            "_dp30l7sj" : "201245",
+            "SN" : "9742164826",
+            "pic_front" : "archives/retro_pc/Motherboards/Biostar M5ATA [AT] [ISA, PCI] [Aladdin IV+] [SN 9742164826] [trw 1099] [201245]/front.jpeg"
+          },
+          "children" : null
+        }, {
+          "folder" : "ASUS PCI-I-P54SP4 Rev. 1.5 [AT] [ISA, PCI] [SiS 85C50] [SN 54057417] [202332]",
+          "artifact" : {
+            "@folder" : "ASUS PCI-I-P54SP4 Rev. 1.5 [AT] [ISA, PCI] [SiS 85C50] [SN 54057417] [202332]",
+            "pic_front" : "archives/retro_pc/Motherboards/ASUS PCI-I-P54SP4 Rev. 1.5 [AT] [ISA, PCI] [SiS 85C50] [SN 54057417] [202332]/front.jpeg",
+            "SiS" : "85C50",
+            "@id" : "417833d120f9769e6d8b3803df96db82",
+            "title" : "ASUS PCI-I-P54SP4 Rev. 1.5",
+            "_1rvwta4n" : "AT",
+            "_9fr67pty" : [ "ISA", "PCI" ],
+            "_7piwfs7e" : "202332",
+            "pic_back" : "archives/retro_pc/Motherboards/ASUS PCI-I-P54SP4 Rev. 1.5 [AT] [ISA, PCI] [SiS 85C50] [SN 54057417] [202332]/back.jpeg",
+            "SN" : "54057417"
+          },
+          "children" : null
+        }, {
+          "folder" : "ASUS TX97-XE Rev. 3.01 [ATX] [ISA, PCI, AGP] [430TX] [SN 7B665639] [trw 893] [200919]",
+          "artifact" : {
+            "_qdw7xl0q" : "ATX",
+            "@id" : "5d77e737861b498fcb3ae42f98ed96d5",
+            "trw" : "893",
+            "_4zvqkcws" : "200919",
+            "_mdok1pdw" : [ "ISA", "PCI", "AGP" ],
+            "@folder" : "ASUS TX97-XE Rev. 3.01 [ATX] [ISA, PCI, AGP] [430TX] [SN 7B665639] [trw 893] [200919]",
+            "pic_back" : "archives/retro_pc/Motherboards/ASUS TX97-XE Rev. 3.01 [ATX] [ISA, PCI, AGP] [430TX] [SN 7B665639] [trw 893] [200919]/back.jpeg",
+            "title" : "ASUS TX97-XE Rev. 3.01",
+            "_wkpbhnmt" : "430TX",
+            "SN" : "7B665639",
+            "pic_front" : "archives/retro_pc/Motherboards/ASUS TX97-XE Rev. 3.01 [ATX] [ISA, PCI, AGP] [430TX] [SN 7B665639] [trw 893] [200919]/front.jpeg"
+          },
+          "children" : null
+        }, {
+          "folder" : "ASUS P-I-P55TP4XE Rev. 2.4 [AT] [ISA, PCI, AMB] [430FX] [SN 5B356701] [trw 851] [200693]",
+          "artifact" : {
+            "_np037kfl" : "200693",
+            "@id" : "717dfdecaa57406e2811f15102a467f1",
+            "trw" : "851",
+            "_lryqdlrj" : "430FX",
+            "@folder" : "ASUS P-I-P55TP4XE Rev. 2.4 [AT] [ISA, PCI, AMB] [430FX] [SN 5B356701] [trw 851] [200693]",
+            "pic_back" : "archives/retro_pc/Motherboards/ASUS P-I-P55TP4XE Rev. 2.4 [AT] [ISA, PCI, AMB] [430FX] [SN 5B356701] [trw 851] [200693]/back.jpeg",
+            "title" : "ASUS P-I-P55TP4XE Rev. 2.4",
+            "SN" : "5B356701",
+            "_g3hyrhqy" : "AT",
+            "_v0yhgrar" : [ "ISA", "AMB", "PCI" ],
+            "pic_front" : "archives/retro_pc/Motherboards/ASUS P-I-P55TP4XE Rev. 2.4 [AT] [ISA, PCI, AMB] [430FX] [SN 5B356701] [trw 851] [200693]/front.jpeg"
+          },
+          "children" : [ {
+            "folder" : "CPU Cooler Craft Fan NOS [586] [200688]",
+            "artifact" : {
+              "@folder" : "CPU Cooler Craft Fan NOS [586] [200688]",
+              "_xl6m9mo7" : "586",
+              "title" : "CPU Cooler Craft Fan NOS",
+              "@id" : "e8ca00b4c5aeddcdcd09dce549e6ce0d",
+              "_2du7rv3v" : "200688",
+              "pic_front" : "archives/retro_pc/Motherboards/ASUS P-I-P55TP4XE Rev. 2.4 [AT] [ISA, PCI, AMB] [430FX] [SN 5B356701] [trw 851] [200693]/CPU Cooler Craft Fan NOS [586] [200688]/front.jpeg"
+            },
+            "children" : null
+          } ]
+        } ]
+      }, {
+        "folder" : "Graphics Cards",
+        "artifact" : null,
+        "children" : [ {
+          "folder" : "ATI VGA Wonder 16 [SN VHK 144994] [200326]",
+          "artifact" : {
+            "_gipbtjeo" : "200326",
+            "@folder" : "ATI VGA Wonder 16 [SN VHK 144994] [200326]",
+            "title" : "ATI VGA Wonder 16",
+            "@id" : "754c9b7638ec1f307686bb9f24a5f487",
+            "SN" : "VHK 144994",
+            "pic_front" : "archives/retro_pc/Graphics Cards/ATI VGA Wonder 16 [SN VHK 144994] [200326]/front.jpeg"
+          },
+          "children" : [ {
+            "folder" : "Lot",
+            "artifact" : null,
+            "children" : null
+          } ]
+        }, {
+          "folder" : "[defective] MX-VGA 86000 [MX68000] [SN 124373] [trw 2943] []",
+          "artifact" : {
+            "pic_front" : "archives/retro_pc/Graphics Cards/[defective] MX-VGA 86000 [MX68000] [SN 124373] [trw 2943] []/front.jpeg",
+            "@folder" : "[defective] MX-VGA 86000 [MX68000] [SN 124373] [trw 2943] []",
+            "@id" : "07e7302f8c5c075b1ddadb211121278d",
+            "pic_back" : "archives/retro_pc/Graphics Cards/[defective] MX-VGA 86000 [MX68000] [SN 124373] [trw 2943] []/back.jpeg",
+            "SN" : "124373",
+            "trw" : "2943",
+            "_nxgyhdsd" : "MX68000",
+            "_macg3lfm" : "defective"
+          },
+          "children" : [ {
+            "folder" : "Repair RAM Chip",
+            "artifact" : null,
+            "children" : null
+          }, {
+            "folder" : "BIOS",
+            "artifact" : null,
+            "children" : null
+          } ]
+        }, {
+          "folder" : "Tseng Labs 9201 Rev A1 [ET4000AX] [1MB] [ISA] [SN C404006410] [201810]",
+          "artifact" : {
+            "_ut366a1u" : "ET4000AX",
+            "_tfnqao9v" : "1MB",
+            "@folder" : "Tseng Labs 9201 Rev A1 [ET4000AX] [1MB] [ISA] [SN C404006410] [201810]",
+            "_cczr9nyj" : "ISA",
+            "@id" : "21c0c2f84fd735a3421ea7beec64d43f",
+            "SN" : "C404006410",
+            "title" : "Tseng Labs 9201 Rev A1",
+            "_de2ur1rv" : "201810"
+          },
+          "children" : null
+        }, {
+          "folder" : "ATI Graphics Ultra Pro [mach32] [2MB] [ISA] [201854]",
+          "artifact" : {
+            "@id" : "a8830f34948313aeff96cfffdf0f4409",
+            "pic_front" : "archives/retro_pc/Graphics Cards/ATI Graphics Ultra Pro [mach32] [2MB] [ISA] [201854]/front.jpeg",
+            "_5ud6hxms" : "ISA",
+            "pic_back" : "archives/retro_pc/Graphics Cards/ATI Graphics Ultra Pro [mach32] [2MB] [ISA] [201854]/back.jpeg",
+            "_5wu0rkhh" : "2MB",
+            "_nrl68vd2" : "201854",
+            "_ny1nkvm2" : "mach32",
+            "@folder" : "ATI Graphics Ultra Pro [mach32] [2MB] [ISA] [201854]",
+            "title" : "ATI Graphics Ultra Pro"
+          },
+          "children" : [ {
+            "folder" : "Diskimages",
+            "artifact" : null,
+            "children" : [ {
+              "folder" : "mach32",
+              "artifact" : null,
+              "children" : null
+            } ]
+          }, {
+            "folder" : "Box",
+            "artifact" : {
+              "@id" : "b0138c905fb9b0e70ab96fc0a53ef192",
+              "pic_front" : "archives/retro_pc/Graphics Cards/ATI Graphics Ultra Pro [mach32] [2MB] [ISA] [201854]/Box/front.jpeg",
+              "@folder" : "Box"
+            },
+            "children" : null
+          }, {
+            "folder" : "User's Guide",
+            "artifact" : null,
+            "children" : null
+          }, {
+            "folder" : "BIOS",
+            "artifact" : null,
+            "children" : null
+          } ]
+        } ]
+      } ]
+    }
+  } ]
+}
