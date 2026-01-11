@@ -1,5 +1,4 @@
 @echo off
-setlocal enabledelayedexpansion
 
 REM Build modules relevant for retro-crawler-app in the correct order,
 REM skipping tests. Must be executed from parent pom, NOT retro-crawler-app pom.
