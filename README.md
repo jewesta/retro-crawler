@@ -40,13 +40,13 @@ Facts are produced by user-defined parsers and may be any Java type.
 
 RetroCrawler operates in two distinct phases:
 
-### 1. Clue Phase
+### 1. Archive / Clue Phase
 The archive is traversed recursively.
 For each folder, registered `ClueFinder`s extract clues and produce an `Artifact`.
 
 Artifacts are cached as JSON on the local storage so that expensive rescans can be avoided. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly loaded from the JSON cache.
 
-### 2. Fact Phase
+### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
 Based on these facts, `GearMatcher`s determine which gear type best represents an artifact.
 The corresponding `GearFactory` then creates the final domain object.
@@ -86,9 +86,32 @@ This allows the framework to remain strongly typed while requiring minimal boile
 
 ---
 
+## Prerequisites
+
+- Electricity
+- Java 21+
+- Apache Maven
+- Node v25 (Vaadin demo app only)
+
+---
+
 ## Demo App
 
 Since RetroCrawler is a library, we provide a demo app based on the Vaadin UI framework so you can see how all comes together. You can use this as a starting point for building your own gui. But please note that compared to `retro-crawler-core` keeping `retro-crawler-app` stable is not a priority. Anything might change any time.
+
+You can run the demo app via a provided shell script (macOS) or batch file (Windows). CD into `/run` located in the root of the repository. Then run the script. This should build and install RetroCrawler and launch the Vaadin app. Once it runs you can access it via `localhost:8080`. The demo scenario is called "Retro PC" and the archive (data folder) it is based on is located at `/retro-crawler-app/archives/retro_pc`. RetroCrawler will create a folder `retro-crawler-app/cache` where the JSON cache file is located. This folder is on the Git ignore list.
+
+#### macOS
+```sh
+cd run
+./app.sh
+```
+
+#### Windows
+```batch
+cd run
+app.bat
+```
 
 ---
 

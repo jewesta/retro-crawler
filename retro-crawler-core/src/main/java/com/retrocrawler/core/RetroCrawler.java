@@ -10,24 +10,24 @@ public interface RetroCrawler {
 
 	ArchiveDescriptor getArchiveDescriptor();
 
-	<R, N, G> R find(Monitor monitor, boolean reindex, GearTreeFactory<R, N, G> factory) throws IOException;
+	<R, N, G> R crawl(Monitor monitor, boolean reindex, GearTreeFactory<R, N, G> factory) throws IOException;
 
 	/**
 	 * Convenience method that builds a hierarchical {@link GearArchive} for the
 	 * given gear type.
 	 */
-	default <G> GearArchive<G> findArchive(final Monitor monitor, final boolean reindex, final Class<G> gearType)
+	default <G> GearArchive<G> crawlArchive(final Monitor monitor, final boolean reindex, final Class<G> gearType)
 			throws IOException {
-		return find(monitor, reindex, new GearArchiveFactory<>(gearType));
+		return crawl(monitor, reindex, new GearArchiveFactory<>(gearType));
 	}
 
 	/**
-	 * Convenience method that returns a flat list of all matching gears across all
+	 * Convenience method that returns a flat list of all matching gear across all
 	 * buckets (legacy behavior).
 	 */
-	default <G> List<G> findAll(final Monitor monitor, final boolean reindex, final Class<G> gearType)
+	default <G> List<G> crawlGear(final Monitor monitor, final boolean reindex, final Class<G> gearType)
 			throws IOException {
-		return find(monitor, reindex, new FlatListFactory<>(gearType));
+		return crawl(monitor, reindex, new FlatListFactory<>(gearType));
 	}
 
 }

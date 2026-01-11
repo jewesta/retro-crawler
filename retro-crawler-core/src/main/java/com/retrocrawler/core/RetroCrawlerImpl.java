@@ -36,7 +36,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public <R, N, G> R find(final Monitor monitor, final boolean reindex, final GearTreeFactory<R, N, G> factory)
+	public <R, N, G> R crawl(final Monitor monitor, final boolean reindex, final GearTreeFactory<R, N, G> factory)
 			throws IOException {
 
 		Objects.requireNonNull(factory, "factory");

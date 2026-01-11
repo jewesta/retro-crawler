@@ -3,20 +3,32 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<parent>
 		<groupId>com.retrocrawler</groupId>
 		<artifactId>retro-crawler</artifactId>
 		<version>1.0-SNAPSHOT</version>
-		<relativePath>../pom.xml</relativePath>
 	</parent>
+	
 	<artifactId>retro-crawler-app</artifactId>
 	<name>retro-crawler-app</name>
 	<packaging>jar</packaging>
+	
 	<properties>
 		<vaadin.version>24.3.2</vaadin.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.retrocrawler</groupId>
+			<artifactId>retro-crawler-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.retrocrawler</groupId>
+			<artifactId>retro-crawler-demo</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-spring-boot-starter</artifactId>
@@ -24,17 +36,6 @@
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.retrocrawler</groupId>
-			<artifactId>retro-crawler-core</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<!-- For ISBN handling -->
-		<dependency>
-			<groupId>de.creativecouple.validation</groupId>
-			<artifactId>fast-isbn</artifactId>
-			<version>1.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.parttio</groupId>
@@ -97,22 +98,16 @@
 	<build>
 		<defaultGoal>spring-boot:run</defaultGoal>
 		<plugins>
+			<!-- For running main methods -->
+			<!-- Default RetroCrawlerCli via mvn -DskipTests exec:java -->
+			<!-- Others via mvn -DskipTests exec:java -Dexec.mainClass=my.other.TypeWithMainMethod -->
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>3.2.0</version>
-			</plugin>
-			<plugin>
-				<groupId>com.vaadin</groupId>
-				<artifactId>vaadin-maven-plugin</artifactId>
-				<version>${vaadin.version}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>prepare-frontend</goal>
-						</goals>
-					</execution>
-				</executions>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<configuration>
+					<mainClass>com.retrocrawler.app.cli.RetroCrawlerCli</mainClass>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

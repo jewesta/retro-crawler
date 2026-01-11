@@ -32,4 +32,9 @@ public final class Bucket {
 		return new Bucket(basePath.toString(), root);
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "[basePath=" + getBasePath() + "]";
+	}
+
 }

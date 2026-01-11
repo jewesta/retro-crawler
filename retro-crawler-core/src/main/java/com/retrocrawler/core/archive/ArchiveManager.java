@@ -18,6 +18,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.util.ReadmeWriter;
 
 public class ArchiveManager {
 
@@ -42,7 +43,11 @@ public class ArchiveManager {
 	}
 
 	private Path getJsonPath() throws IOException {
-		Files.createDirectories(cacheDirectory);
+		if (!Files.exists(CACHE_DIRECTORY)) {
+			// Does NOT throw if the directory already exists.
+			Files.createDirectories(cacheDirectory);
+			ReadmeWriter.writeReadmeTemporary(CACHE_DIRECTORY);
+		}
 		final Path tmpFile = cacheDirectory.resolve("archive_" + descriptor.getId() + ".json");
 		return tmpFile;
 	}
