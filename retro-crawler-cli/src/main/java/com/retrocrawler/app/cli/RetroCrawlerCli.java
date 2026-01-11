@@ -41,7 +41,7 @@ public final class RetroCrawlerCli {
 		 * the JAR file and put them inside a local directory.
 		 * 
 		 * The local folder will be exactly what's annotated as the location in the demo
-		 * type annotated with @RetroArchive.
+		 * type annotated with @RetroArchive. Currently /rc_demo_archives.
 		 */
 		final ArchiveDescriptor descriptor = crawler.getArchiveDescriptor();
 		System.out.println("Creating local demo archive for " + descriptor.getName());
