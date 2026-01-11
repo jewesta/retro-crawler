@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import com.retrocrawler.core.RetroCrawlerFactory;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.demo.collection.DemoFiles;
 import com.retrocrawler.demo.collection.DemoTypes;
 import com.retrocrawler.demo.collection.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
@@ -87,9 +89,20 @@ public class SearchView extends HorizontalLayout {
 	public SearchView() {
 		setHeightFull();
 		final RetroCrawlerFactory factory = new RetroCrawlerFactory();
-		this.retroCrawler = getTypeSets().stream().map(factory::reflectOn)
+		this.retroCrawler = Arrays.stream(DemoTypes.values()).map(dt -> reflectOn(dt, factory))
 				.collect(Collectors.toUnmodifiableMap(rc -> rc.getArchiveDescriptor().getId(), Function.identity()));
 		activeArchiveId = retroCrawler.keySet().iterator().next();
+	}
+
+	private static RetroCrawler reflectOn(final DemoTypes types, final RetroCrawlerFactory factory) {
+		final RetroCrawler retroCrawler = factory.reflectOn(types.getTypes());
+		final ArchiveDescriptor descriptor = retroCrawler.getArchiveDescriptor();
+		try {
+			DemoFiles.copyToWorkDirectory(descriptor);
+		} catch (final IOException e) {
+			throw new IllegalStateException("Failed to copy demo data to work directory.");
+		}
+		return retroCrawler;
 	}
 
 	@Override
@@ -294,10 +307,6 @@ public class SearchView extends HorizontalLayout {
 
 	protected Optional<Monitor> getMonitor() {
 		return Optional.ofNullable(monitor);
-	}
-
-	private static List<Set<Class<?>>> getTypeSets() {
-		return DemoTypes.allTypeSets();
 	}
 
 	private static final Image drums(final int i) {
