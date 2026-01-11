@@ -1,4 +1,4 @@
-![RetroCrawler AI Slop Logo](retro-crawler-doc/src/main/resources/images/retro_crawler_ai_slop_logo.png)
+## ![RetroCrawler AI Slop Logo](retro-crawler-doc/src/main/resources/images/retro_crawler_ai_slop_logo.png)
 
 **RetroCrawler** is a Java framework for *structurally crawling* directory-based archives and turning them into typed domain objects so you can manage your stash of retro gear.
 
