@@ -10,7 +10,7 @@ import com.retrocrawler.core.RetroCrawlerFactory;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.demo.collection.DemoTypes;
-import com.retrocrawler.demo.collection.ResourceArchive;
+import com.retrocrawler.demo.collection.DemoFiles;
 import com.retrocrawler.demo.collection.gear.MyRetroGear;
 
 public final class RetroCrawlerCli {
@@ -32,12 +32,20 @@ public final class RetroCrawlerCli {
 			System.out.println(msg);
 		});
 
+		/*
+		 * To run a demo we need a folder structure with some retro gear documentation /
+		 * pictures / etc. RetroCrawler can scan and convert to POJO instances. The demo
+		 * module provides these files, but since the demo module is a JAR file they are
+		 * essentially inside a ZIP file. To make them usable for RetroCrawler which
+		 * works with the actual local file system we first need to extract them from
+		 * the JAR file and put them inside a local directory.
+		 * 
+		 * The local folder will be exactly what's annotated as the location in the demo
+		 * type annotated with @RetroArchive.
+		 */
 		final ArchiveDescriptor descriptor = crawler.getArchiveDescriptor();
 		System.out.println("Creating local demo archive for " + descriptor.getName());
-		for (final Path path : descriptor.getPaths()) {
-			System.out.println("Extracting " + path.toString() + "...");
-			ResourceArchive.ensureLocalArchive(path);
-		}
+		DemoFiles.copyToWorkDirectory(descriptor);
 		System.out.println("Local archive files created.");
 
 		System.out.println("Reindex: " + parsed.reindex + " ("

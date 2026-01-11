@@ -15,9 +15,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public final class ResourceArchive {
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 
-	private ResourceArchive() {
+public final class DemoFiles {
+
+	private DemoFiles() {
 		// no instances
 	}
 
@@ -37,7 +39,7 @@ public final class ResourceArchive {
 	 *
 	 * @return the local path (existing or newly created)
 	 */
-	public static Path ensureLocalArchive(final Path annotatedLocation) throws IOException {
+	public static Path copyToWorkDirectory(final Path annotatedLocation) throws IOException {
 		Objects.requireNonNull(annotatedLocation, "annotatedLocation");
 
 		if (annotatedLocation.isAbsolute()) {
@@ -59,7 +61,7 @@ public final class ResourceArchive {
 
 		final String classpathFolder = toClasspathFolder(targetRoot);
 
-		final URL url = ResourceArchive.class.getResource(classpathFolder);
+		final URL url = DemoFiles.class.getResource(classpathFolder);
 		if (url == null) {
 			throw new IllegalStateException("Demo archive not found on classpath at: " + classpathFolder
 					+ " (expected it in src/main/resources" + classpathFolder + ")");
@@ -80,6 +82,12 @@ public final class ResourceArchive {
 		}
 
 		return targetRoot;
+	}
+
+	public static void copyToWorkDirectory(final ArchiveDescriptor descriptor) throws IOException {
+		for (final Path path : descriptor.getPaths()) {
+			copyToWorkDirectory(path);
+		}
 	}
 
 	private static String toClasspathFolder(final Path relativePath) {
