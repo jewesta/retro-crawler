@@ -134,9 +134,9 @@ public class SearchView extends HorizontalLayout {
 //		mainLayout.add(searchArea);
 
 		treeGrid.addHierarchyColumn(p -> p.getTitle() != null ? p.getTitle() : "<unknown>").setHeader("Title")
-				.setSortable(true).setWidth("400px");
+				.setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
 		treeGrid.addComponentColumn(p -> new Anchor("file://" + p.getFolderName(), p.id + "")).setWidth("100px")
-				.setHeader("Id");
+				.setHeader("Id").setResizable(true);
 		treeGrid.addComponentColumn(p -> p.getPicFront().map(path -> {
 			/*
 			 * The StreamResource allows for loading the image from the local file system.
@@ -161,7 +161,7 @@ public class SearchView extends HorizontalLayout {
 			wrapper.setWidthFull();
 			return wrapper;
 		}).orElse(null)).setWidth("100px").setHeader("Image");
-		treeGrid.addColumn(MyKnownGear::getFolderName).setWidth("100%").setHeader("Folder Name");
+		treeGrid.addColumn(MyKnownGear::getFolderName).setWidth("100%").setResizable(true).setHeader("Folder Name");
 
 		treeGrid.setHeightFull();
 		treeGrid.addClassName("retro-treegrid");
