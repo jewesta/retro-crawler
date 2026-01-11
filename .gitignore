@@ -35,3 +35,9 @@ retro-crawler-app/src/main/bundles
 # ======================
 retro-crawler-app/drivers/
 retro-crawler-app/error-screenshots/
+
+# ======================
+# RetroCrawler auto generated temp files
+# ======================
+**/rc_demo_archives/
+**/cache/
