@@ -1,4 +1,4 @@
-# RetroCrawler
+## ![RetroCrawler AI Slop Logo](retro-crawler-doc/src/main/resources/images/retro_crawler_ai_slop_logo.png)
 
 **RetroCrawler** is a Java framework for *structurally crawling* directory-based archives and turning them into typed domain objects so you can manage your stash of retro gear.
 
@@ -98,7 +98,7 @@ This allows the framework to remain strongly typed while requiring minimal boile
 ## Demo App
 
 Since RetroCrawler is a library, we provide a demo app based on the Vaadin UI framework so you can see how all comes together. You can use this as a starting point for building your own gui. But please note that compared to `retro-crawler-core` keeping `retro-crawler-app` stable is not a priority. Anything might change any time.
-
+![RetroCrawler Demo App](retro-crawler-doc/src/main/resources/images/retro_crawler_demo_app.png)
 You can run the demo app via a provided shell script (macOS) or batch file (Windows). CD into `/run` located in the root of the repository. Then run the script. This should build and install RetroCrawler and launch the Vaadin app. Once it runs you can access it via `localhost:8080`. The demo scenario is called "Retro PC" and the archive (data folder) it is based on is located at `/retro-crawler-app/archives/retro_pc`. RetroCrawler will create a folder `retro-crawler-app/cache` where the JSON cache file is located. This folder is on the Git ignore list.
 
 #### macOS
@@ -113,9 +113,21 @@ cd run
 app.bat
 ```
 
+## Command Line Demo
+
+Even though the demo app is nice: If you do not want to install the black hole that is `node.js` and then watch maven download half the internet just to see how RetroCrawler works we have also created a command line demo. Just like the Demo App above you can run it via `cli.sh` or `cli.bat` respectively.
+
+Just don't expect anything spectacular.
+
 ---
 
 ## Status
 
 RetroCrawler is currently under active development.
 APIs may evolve, but we try to keep core concepts stable.
+
+Again: The apps (Vaadin / command line) are just there for demo purposes and so you have something to copy to get going.
+
+## Legal
+
+Developed following Starfleet Corps of Engineers (SCE) standard procedure. May only be used inside the juristiction of the United Federation of Planets.
