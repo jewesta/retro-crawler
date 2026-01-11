@@ -16,8 +16,12 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.util.ReadmeWriter;
 
 public final class DemoFiles {
+
+	// Must NOT start with "/" (must be a relative path)
+	public static final String DEMO_ARCHIVE_PARENT = "rc_demo_archives";
 
 	private DemoFiles() {
 		// no instances
@@ -39,7 +43,7 @@ public final class DemoFiles {
 	 *
 	 * @return the local path (existing or newly created)
 	 */
-	public static Path copyToWorkDirectory(final Path annotatedLocation) throws IOException {
+	private static Path copyToWorkDirectory(final Path annotatedLocation) throws IOException {
 		Objects.requireNonNull(annotatedLocation, "annotatedLocation");
 
 		if (annotatedLocation.isAbsolute()) {
@@ -52,7 +56,37 @@ public final class DemoFiles {
 
 		final Path targetRoot = annotatedLocation.normalize();
 
+		// Ensure annotated path is rooted in DEMO_ARCHIVE_PARENT (first path segment).
+		if (!DEMO_ARCHIVE_PARENT.equals(targetRoot.getName(0).toString())) {
+			throw new IllegalArgumentException(
+					"Expected demo archive path to start with " + DEMO_ARCHIVE_PARENT + " but got: " + targetRoot);
+		}
+
+		// Ensure DEMO_ARCHIVE_PARENT exists and has the readme (only there).
+		final Path demoRoot = Path.of(DEMO_ARCHIVE_PARENT);
+		if (Files.exists(demoRoot) && !Files.isDirectory(demoRoot)) {
+			throw new IllegalStateException("Expected folder but found a file at: " + demoRoot.toAbsolutePath());
+		}
+		if (!Files.exists(demoRoot)) {
+			Files.createDirectories(demoRoot);
+			ReadmeWriter.writeReadme(demoRoot, "This folder is created/managed by RetroCrawler demos.\n");
+		}
+
+		// Ensure the parent dirs for the actual target exist (no readme here).
+		final Path targetParent = targetRoot.getParent();
+		if (targetParent != null) {
+			if (Files.exists(targetParent) && !Files.isDirectory(targetParent)) {
+				throw new IllegalStateException(
+						"Expected folder but found a file at: " + targetParent.toAbsolutePath());
+			}
+			Files.createDirectories(targetParent);
+		}
+
 		if (Files.isDirectory(targetRoot)) {
+			/*
+			 * The target directory exists: Assume that all the files have already been
+			 * copied and just return the directory.
+			 */
 			return targetRoot;
 		}
 		if (Files.exists(targetRoot) && !Files.isDirectory(targetRoot)) {
@@ -68,11 +102,6 @@ public final class DemoFiles {
 		}
 
 		final URI uri = toUri(url, classpathFolder);
-
-		final Path parent = targetRoot.getParent();
-		if (parent != null) {
-			Files.createDirectories(parent);
-		}
 
 		copyFromResourceUri(uri, classpathFolder, targetRoot);
 
