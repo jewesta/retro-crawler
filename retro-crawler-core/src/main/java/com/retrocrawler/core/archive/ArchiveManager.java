@@ -24,49 +24,17 @@ public class ArchiveManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(ArchiveManager.class);
 
-	public static final Path CACHE_DIRECTORY = Path.of("cache");
-
-	private final ObjectMapper mapper = new ObjectMapper();
-
 	private Archive cache;
 
-	private final Path cacheDirectory;
-
 	private final ArchiveDescriptor descriptor;
+
+	private final Repository repository = new JsonFileRepository();
 
 	private final ArchiveDigger digger;
 
 	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger) {
-		this.cacheDirectory = CACHE_DIRECTORY;
 		this.descriptor = Objects.requireNonNull(descriptor);
 		this.digger = Objects.requireNonNull(digger);
-	}
-
-	private Path getJsonPath() throws IOException {
-		if (!Files.exists(CACHE_DIRECTORY)) {
-			// Does NOT throw if the directory already exists.
-			Files.createDirectories(cacheDirectory);
-			ReadmeWriter.writeReadmeTemporary(CACHE_DIRECTORY);
-		}
-		final Path tmpFile = cacheDirectory.resolve("archive_" + descriptor.getId() + ".json");
-		return tmpFile;
-	}
-
-	private Optional<Archive> fromCache() {
-		try {
-			final Path jsonPath = getJsonPath();
-			if (Files.exists(jsonPath)) {
-				final File jsonFile = jsonPath.toFile();
-				logger.info("Loading archive from cache at: " + jsonFile + ".");
-				final Archive stash = mapper.readValue(jsonFile, Archive.class);
-				logger.info("Archive loaded.");
-				return Optional.ofNullable(stash);
-			}
-			return Optional.empty();
-		} catch (final IOException e) {
-			logger.error("Failed to load cache: " + e.getMessage() + " Cache will be rebuilt.", e);
-			return Optional.empty();
-		}
 	}
 
 	private Archive fromFileSystem(final Monitor monitor) throws IOException {
@@ -78,9 +46,7 @@ public class ArchiveManager {
 			buckets.add(bucket);
 		}
 		final Archive archive = Archive.of(descriptor.getId(), buckets);
-		final File jsonFile = getJsonPath().toFile();
-		mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile, archive);
-		logger.info("Cache at: " + jsonFile.toString());
+		repository.stowaway(archive);
 		return archive;
 	}
 
@@ -89,7 +55,7 @@ public class ArchiveManager {
 			if (cache != null) {
 				return cache;
 			}
-			cache = fromCache().orElse(null);
+			cache = repository.retrieve(descriptor.getId()).orElse(null);
 			if (cache != null) {
 				return cache;
 			}
