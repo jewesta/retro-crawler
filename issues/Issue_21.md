@@ -2,8 +2,8 @@
 
 ## Intent
 
-RetroCrawler is intended to be a configurable toolset. Applications should be
-able to configure it in two complementary ways:
+RetroCrawler is intended to be a configurable toolset. The long-term concept
+allows applications to configure a model in two complementary ways:
 
 1. Declaratively, using RetroCrawler annotations.
 2. Programmatically, using an elegant builder and manually registered
@@ -13,51 +13,210 @@ Annotation configuration must be parsed directly by RetroCrawler. It must not
 depend on Spring beans, Spring component scanning, CDI, or another dependency
 injection framework.
 
-The annotation-driven and programmatic approaches should not become two
-independent construction pipelines. An annotation configurer should inspect the
-provided types and contribute configuration through the same builder and
-registration model that is available to application code.
+The initial implementation deliberately supports annotation-driven model
+construction only. `Model.from(basePackage)` is the primary public model
+construction path: the application names a package and RetroCrawler discovers
+and interprets its annotated types. Explicit `Set<Class<?>>` and `TypeSource`
+inputs remain available as deterministic escape hatches. This lets the
+established annotation model remain intact while the `Model`,
+type-discovery, and crawler-composition boundaries are introduced.
 
-Applications should be able to combine both approaches. Annotation-derived
-defaults may configure most of a crawler while explicit builder registrations
-provide or replace selected tools.
+If programmatic model construction is added later, it should produce the same
+`Model` rather than introduce a parallel runtime assembly path. Its detailed API
+must be driven by concrete use cases rather than assumptions made during the
+annotation-focused implementation.
 
 ## Public API Goal
 
-The builder should be the primary, discoverable composition API for
-RetroCrawler. Public interfaces should represent the tools that applications
-may implement and register.
+`Model.from(...)` and `RetroCrawler.builder()` should form the primary,
+discoverable composition API for RetroCrawler.
 
 Conceptually:
 
 ```java
 RetroCrawler crawler = RetroCrawler.builder()
-		.configure(Annotations.from(types))
-		.repository(repository)
-		.register(clueFinder)
-		.register(factParser)
-		.register(gearMatcher)
+		.model(Model.from("com.example.collection"))
+		.repository(new JsonFileRepository(cacheDirectory))
 		.build();
 ```
 
-This example illustrates the intended shape, not a finalized API. Method names,
-registration granularity, and override rules remain to be designed.
+This is the API shape targeted by the initial implementation.
 
-The builder should accept actual implementation instances, and possibly
-factories or suppliers where useful. Manual configuration must not impose the
-public no-argument-constructor restriction currently required for
-annotation-declared implementation classes.
+The repository is required configuration. The builder must not silently create
+a `JsonFileRepository` or select any other repository implementation. Choosing
+`new JsonFileRepository()` is still a concise option, but it is a choice made
+explicitly by the application.
 
-## Current State
+Manual model construction remains a valid future direction, but it is not part
+of this first implementation.
+
+## Working Builder Sketch
+
+The public composition API has two distinct parts:
+
+- `Model` describes a collection and how its archive artifacts are interpreted
+  as gear.
+- `RetroCrawler.Builder` composes that model with application infrastructure.
+
+The common annotation-driven path is concise:
+
+```java
+Model model = Model.from("com.example.collection");
+
+RetroCrawler crawler = RetroCrawler.builder()
+		.model(model)
+		.repository(new JsonFileRepository(cacheDirectory))
+		.build();
+```
+
+The package overload discovers annotated types recursively below the base
+package, then delegates to the same annotation parser used by the explicit
+overloads:
+
+```java
+public final class Model {
+
+	public static Model from(String basePackage) {
+		// Discover annotated types, then delegate to from(types).
+	}
+
+	public static Model from(Set<Class<?>> types) {
+		// Parse annotations and create the immutable model.
+	}
+
+	public static Model from(TypeSource source) {
+		return from(source.getTypes());
+	}
+}
+```
+
+`Model.from(String)` is the default mode of operation. `Model.from(Set)` is
+useful for tests, constrained runtimes, generated indexes, and applications that
+already have their own discovery mechanism. `Model.from(TypeSource)` preserves
+the existing extension point for custom discovery.
+
+The crawler builder consequently stays small:
+
+```java
+public interface RetroCrawler {
+
+	static Builder builder() {
+		// ...
+	}
+
+	interface Builder {
+
+		Builder model(Model model);
+
+		Builder repository(Repository repository);
+
+		RetroCrawler build();
+	}
+}
+```
+
+Both `Model` and `Repository` are required. Neither has a fallback. The
+repository is intentionally not part of the model or annotation configuration:
+storage is an application composition concern, not a property of the collection
+or gear declarations.
+
+The unprefixed name `Model` is deliberate and consistent with other public
+domain types such as `Repository`, `Gear`, `Archive`, and `Artifact`. Java
+packages provide their namespace; branding every abstraction with `Retro` would
+make the API unnecessarily repetitive.
+
+### Automatic Type Discovery
+
+Java does not offer a standard API for enumerating all classes below a package.
+A robust implementation must account for classpath directories, ordinary and
+nested JARs, context and custom class loaders, and the module path. RetroCrawler
+should not implement those mechanisms from scratch.
+
+ClassGraph 4.8.184 is the built-in discovery implementation. It has no runtime
+dependencies, scans both the classpath and JPMS module path, supports nested
+JARs and custom class loaders/module layers, and can inspect annotation metadata
+before loading candidate classes. Adding it to `retro-crawler-core` is a
+deliberate exception to the preference for a small core dependency set because
+automatic discovery is part of the intended primary experience, not an
+optional integration.
+
+The discovery contract should be narrow:
+
+- Scan the named package and its subpackages.
+- Discover types carrying `@RetroArchive` or `@RetroGear`.
+- Inspect annotation metadata without initializing every class in the package.
+- Load only candidate model types, using the scanner's corresponding class
+  loader.
+- Sort candidates by fully qualified class name before model parsing so
+  discovery order is deterministic.
+- Report an actionable error when the package is blank, no model annotations
+  are found, a candidate cannot be loaded, or visibility prevents scanning.
+- Never silently fall back to a partial model.
+
+Classes referenced from annotations, such as matchers, parsers, and clue
+finders, do not need separate discovery. They remain reachable from the
+discovered archive and gear declarations.
+
+Automatic scanning cannot promise visibility into every possible runtime.
+Named modules must expose relevant packages, and some application servers or
+plugin systems use custom loaders that need explicit handling. The explicit
+`Set<Class<?>>` and `TypeSource` overloads remain the reliable fallback rather
+than weakening error reporting in `Model.from(basePackage)`.
+
+The implementation is verified against exploded Maven test classes, an ordinary
+JAR reached through a custom context class loader, recursive subpackages,
+missing model annotations, multiple/missing archive declarations, and candidate
+class loading without static initialization. The current Vaadin module does not
+produce a nested Spring Boot JAR, and the project does not contain JPMS modules,
+so those two environments are not represented by project fixtures. ClassGraph
+provides those runtime mechanisms; `Model.from(Set)` and
+`Model.from(TypeSource)` remain the explicit fallback if a particular
+deployment does not expose its model packages to scanning.
+
+### Likely Internal Model
+
+The immutable `Model` contains the annotation-derived domain configuration
+needed to assemble a crawler:
+
+- One archive definition.
+- The configured clue-finder instances.
+- Fact definitions keyed by clue/fact key.
+- Gear specialists keyed by gear type.
+
+The crawler builder combines this model with its repository, then creates
+`ArchiveDigger`, fact finders, gear resolution, and `RetroCrawlerImpl`.
+Annotation reflection and model validation belong in `Model.from(...)`.
+
+The existing relationships between `GearSpecialist`, `GearMatcher`,
+`GearFactory`, descriptors, and reflective injection remain unchanged in this
+phase. They should not be generalized or made generic solely for a hypothetical
+manual configuration API.
+
+### Deferred Manual Model Construction
+
+A future `Model.builder()` remains conceptually compatible with this design. It
+could support manual and hybrid construction while still producing the same
+immutable `Model`. That later design must decide, based on real use cases:
+
+- Whether registrations operate on specialists or separate matcher and factory
+  capabilities.
+- Whether matcher, factory, context, and specialist types benefit from generic
+  parameters.
+- How annotation-derived entries can be supplemented or replaced.
+- How completely annotation-free fact and gear definitions are expressed.
+
+None of those decisions are required to establish `Model.from(...)` as the
+default mode of operation.
+
+## Implemented State
 
 ### Annotation-Based Configuration
 
-The annotation-driven path is substantially implemented and works end to end.
-`RetroCrawlerFactory.reflectOn` accepts a caller-supplied set of types and
-manually parses their annotations.
-
-There is deliberately no core classpath scanner. Applications may discover
-types themselves and provide either a `Set<Class<?>>` or a `TypeSource`.
+The annotation-driven path is implemented through `Model` and works end to end.
+`Model.from(String)` recursively discovers annotated types beneath an
+application-supplied base package. `Model.from(Set<Class<?>>)` and
+`Model.from(TypeSource)` feed the same deterministic annotation parser without
+requiring classpath scanning.
 
 The existing annotations configure:
 
@@ -84,7 +243,7 @@ The existing annotations configure:
 Annotation parsing and object creation are implemented with ordinary Java
 reflection:
 
-- `RetroCrawlerFactory` locates `@RetroArchive` and assembles the major runtime
+- `Model` locates `@RetroArchive` and assembles the model-owned runtime
   components.
 - `ArchiveDescriptor.of` reads archive metadata.
 - `ArchivePathClueFinder.of` reads clue-finder declarations and creates the
@@ -94,6 +253,14 @@ reflection:
   specialists.
 - `Reflection.newInstance` constructs annotation-declared classes through public
   no-argument constructors.
+
+`RetroCrawler.builder()` requires the model and repository, then assembles the
+archive digger and crawler. It never selects a repository implicitly.
+
+`RetroCrawlerFactory` remains temporarily available as a deprecated
+compatibility façade. It now requires a `Repository` in its constructor and
+delegates to `Model.from(types)` and the builder; its former no-argument,
+default-repository constructor has been removed.
 
 No Spring configuration mechanism is involved in `retro-crawler-core`.
 
@@ -120,66 +287,56 @@ The initial implementation also contains a TODO in `GearResolverFactory` to
 make the factory configurable so users can supply their own default parsers.
 This is evidence of the intended manual configuration direction.
 
-### Missing Programmatic Composition
+### Deferred Manual Model Construction
 
-There is currently no complete builder-based configuration path:
+There is no manual model-construction path in this phase:
 
-- No `RetroCrawler` builder exists.
-- No common configuration model or registry exists.
-- No configurer interface exists.
-- Annotation parsing constructs final runtime objects instead of contributing
-  registrations to a builder.
 - No precedence or conflict rules exist for combining annotations with manual
   registrations.
 - Clue finders, parsers, matchers, and gear factories cannot generally be
   registered as instances through the top-level public API.
 - `GearDescriptor` can only be created from annotations.
 - `FactDescriptor` requires a `RetroFact` annotation.
-- `GearResolver` and `RetroCrawlerImpl` cannot be assembled through the public
-  API.
-- `RetroCrawlerFactory` always follows the annotation-based path.
+- `GearResolver` and its descriptors remain implementation details rather than
+  public manual-registration surfaces.
 
-The result is that most extension interfaces exist, but annotation references
-are currently the only end-to-end way to connect their implementations to a
-crawler.
+This is intentional. Annotation references are the only end-to-end way to
+connect implementations to a model until concrete manual-configuration use
+cases justify `Model.builder()`.
 
 ## Architectural Direction
 
 Introduce one shared configuration and assembly pipeline:
 
 ```text
-Annotated types
-      |
-      v
-Annotation configurer ----+
-                          |
-Manual registrations -----+--> Builder/configuration model
-                                      |
-                                      v
-                              Validation and assembly
-                                      |
-                                      v
-                                RetroCrawler
+Base package --> Type discovery --+
+                                  |
+Explicit types / TypeSource ------+--> Annotation parsing
+                                              |
+                                              v
+                                       immutable Model ----+
+                                                          |
+Repository -----------------------------------------------+--> RetroCrawler.Builder
+                                                                      |
+                                                                      v
+                                                                 RetroCrawler
 ```
 
-The annotation configurer should translate annotations into the same kinds of
-registrations offered by the builder. Validation should run on the combined
-configuration rather than being duplicated between configuration styles.
+The boundary distinguishes between:
 
-The builder should distinguish between:
-
-- Required domain configuration, such as the archive and supported gear.
-- Optional tools with useful defaults.
+- Annotation-derived domain configuration in `Model`.
+- Required application composition, namely a `Model` and `Repository`, in
+  `RetroCrawler.Builder`.
 - Runtime inputs, such as `Monitor`, reindexing, and result factories, which
   should remain crawl-operation parameters.
 
 Implementation and orchestration classes should not become public configuration
 surfaces merely because the builder uses them internally.
 
-## Combination and Override Semantics
+## Future Combination and Override Semantics
 
-The two configuration styles must be usable together. This requires explicit
-rules for:
+If manual model construction is introduced later, combining it with annotation
+configuration will require explicit rules for:
 
 - Whether manual registrations replace or supplement annotation-derived
   registrations.
@@ -191,63 +348,79 @@ rules for:
 - When the combined configuration becomes immutable.
 
 Prefer deterministic behavior and actionable validation errors over implicit
-last-write-wins behavior.
+last-write-wins behavior. These rules are deferred together with the public
+`Model.builder()` API.
 
 ## Relationship to Issue 17
 
-Issue 17 extracts persistence behind the `Repository` interface while retaining
-`JsonFileRepository` as the default.
+Issue 17 extracts persistence behind the `Repository` interface. Its interim
+factory retained `JsonFileRepository` as a backward-compatible default.
 
 Issue 21 provides the public composition model through which an application can
 select that repository or supply another implementation. The responsibilities
 remain separate:
 
 - Issue 17 defines and completes the persistence extension point.
-- Issue 21 exposes extension points coherently through annotation and builder
-  configuration.
+- Issue 21 separates annotation-derived model construction from application
+  composition through the crawler builder.
+
+Issue 21 deliberately does not carry the interim repository default into the
+new composition API. `JsonFileRepository` remains a supplied implementation,
+but applications must select it explicitly. The no-argument
+`RetroCrawlerFactory` path must therefore be removed, deprecated, or otherwise
+kept out of the new primary API so it cannot undermine this requirement.
 
 The work for issues 17 and 21 is intended to be merged into `main` together.
 
-## Implementation Outline
+## Implementation
 
-- [ ] Define the shared configuration model used during crawler assembly.
-- [ ] Introduce the public builder entry point.
-- [ ] Define a configurer contract.
-- [ ] Extract annotation parsing into an annotation configurer.
-- [ ] Make the annotation configurer populate the shared configuration model.
-- [ ] Add manual registration methods for the supported public tools.
-- [ ] Define combination, override, and duplicate-registration semantics.
-- [ ] Preserve the current annotation-only construction path as a concise
-      convenience.
-- [ ] Preserve external type discovery through `Set<Class<?>>` and `TypeSource`.
-- [ ] Allow manually supplied instances to use constructor dependencies.
-- [ ] Integrate the pluggable `Repository` from issue 17.
-- [ ] Add focused tests for annotation-only, builder-only, and hybrid
-      configuration.
-- [ ] Document the builder as the primary composition API and annotations as a
-      first-party configurer.
+- [x] Define the immutable public `Model`.
+- [x] Implement `Model.from(String)` with recursive base-package discovery.
+- [x] Preserve `Model.from(Set<Class<?>>)` and `Model.from(TypeSource)` as
+      explicit alternatives using the same annotation parser.
+- [x] Select and pin ClassGraph 4.8.184 for discovery.
+- [x] Verify discovery from exploded classes and an ordinary JAR supplied by a
+      custom context class loader.
+- [x] Introduce `RetroCrawler.Builder` with required `model(...)` and
+      `repository(...)` entries.
+- [x] Require explicit repository selection; do not provide a default.
+- [x] Preserve external type discovery through `Set<Class<?>>` and `TypeSource`.
+- [x] Integrate the pluggable `Repository` from issue 17.
+- [x] Update current callers to use `Model.from(...)` and
+      `RetroCrawler.builder()`.
+- [x] Add focused tests for package discovery, explicit types,
+      annotation-derived models, required crawler composition, and validation.
+- [x] Document `Model.from(...)` and `RetroCrawler.builder()` as the primary
+      composition API.
 
-## Open Design Questions
+## Decisions
 
-- Does builder-only configuration need to support completely annotation-free
-  gear models, including field/fact mapping, or does it initially register
-  runtime tools around annotated gear classes?
-- What is the smallest useful registration unit for gear construction:
-  descriptors, matchers and factories, or a higher-level gear definition?
-- Should configurers mutate a builder, contribute to a separate configuration
-  object, or return immutable configuration fragments?
-- Should manual registrations always take precedence over annotation-derived
-  registrations, or should replacement be explicit?
-- Should `RetroCrawlerFactory` remain a supported lower-level public API after
-  the builder becomes the preferred entry point?
-- Which implementation types should accept instances, suppliers, or both?
+- `RetroCrawlerFactory` is deprecated for removal. Its remaining constructor
+  requires an explicit repository.
+- `Model` owns the annotation-derived `ArchiveDescriptor`,
+  `ArchivePathClueFinder`, and `GearResolver`. The builder owns composition with
+  the repository and creates `ArchiveDigger` and `RetroCrawlerImpl`.
+- Manual `Model.builder()` design remains deferred.
+
+## Verification
+
+- `mvn -pl retro-crawler-core test`
+- `mvn test`
+- `mvn clean install`
+
+The final core suite contains focused tests for package and subpackage
+discovery, ordinary-JAR/custom-class-loader discovery, explicit type sets,
+`TypeSource`, non-initializing candidate loading, model validation, required
+builder entries, duplicate builder entries, and repository propagation.
 
 ## Out of Scope
 
 - Spring bean configuration or Spring component scanning in
   `retro-crawler-core`.
 - Requiring an external dependency injection container.
-- Implementing package scanning in the core.
 - Adding H2 or another database implementation.
 - Configuring per-crawl runtime behavior during crawler construction.
-
+- A public `Model.builder()` or manual model registrations in the initial
+  implementation.
+- Refactoring working matcher, factory, context, or specialist contracts for
+  hypothetical manual configuration.

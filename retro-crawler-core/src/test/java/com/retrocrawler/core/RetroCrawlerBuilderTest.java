@@ -1,6 +1,7 @@
 package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,13 +24,13 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.core.util.RetroAttribute;
 
-class RetroCrawlerFactoryRepositoryTest {
+class RetroCrawlerBuilderTest {
 
 	@Test
 	void suppliesConfiguredRepositoryToCrawler() throws IOException {
 		final RecordingRepository repository = new RecordingRepository();
-		final RetroCrawler crawler = new RetroCrawlerFactory(repository)
-				.reflectOn(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
 
 		final GearArchive<TestGear> result = crawler.crawlArchive(new Monitor(message -> {
 			// No progress reporting required in tests.
@@ -37,6 +38,45 @@ class RetroCrawlerFactoryRepositoryTest {
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(0, result.getBuckets().size());
+	}
+
+	@Test
+	void requiresModel() {
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> RetroCrawler.builder().repository(new RecordingRepository()).build());
+
+		assertEquals("Missing required model configuration.", failure.getMessage());
+	}
+
+	@Test
+	void requiresRepository() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> RetroCrawler.builder().model(model).build());
+
+		assertEquals("Missing required repository configuration.", failure.getMessage());
+	}
+
+	@Test
+	void rejectsDuplicateModelConfiguration() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler.Builder builder = RetroCrawler.builder().model(model);
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class, () -> builder.model(model));
+
+		assertEquals("Model is already configured.", failure.getMessage());
+	}
+
+	@Test
+	void rejectsDuplicateRepositoryConfiguration() {
+		final RecordingRepository repository = new RecordingRepository();
+		final RetroCrawler.Builder builder = RetroCrawler.builder().repository(repository);
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> builder.repository(repository));
+
+		assertEquals("Repository is already configured.", failure.getMessage());
 	}
 
 	@RetroArchive(id = "factory_test", locations = "/this/path/must/not/be/crawled",

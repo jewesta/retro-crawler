@@ -23,6 +23,7 @@
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<classgraph.version>4.8.184</classgraph.version>
 		<slf4j.version>2.0.13</slf4j.version>
 	</properties>
 
@@ -46,6 +47,12 @@
 				<groupId>com.fasterxml.jackson.dataformat</groupId>
 				<artifactId>jackson-dataformat-xml</artifactId>
 				<version>2.16.1</version>
+			</dependency>
+			<!-- Annotation type discovery -->
+			<dependency>
+				<groupId>io.github.classgraph</groupId>
+				<artifactId>classgraph</artifactId>
+				<version>${classgraph.version}</version>
 			</dependency>
 			<!-- Testing -->
 			<dependency>
