@@ -44,7 +44,7 @@ RetroCrawler operates in two distinct phases:
 The archive is traversed recursively.
 For each folder, registered `ClueFinder`s extract clues and produce an `Artifact`.
 
-The extracted clue archive is stowed away through a `Repository` so that expensive rescans can be avoided. The default `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
+The extracted clue archive is stowed away through an application-selected `Repository` so that expensive rescans can be avoided. The bundled `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
 
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
@@ -75,13 +75,30 @@ This allows the framework to remain strongly typed while requiring minimal boile
 
 ---
 
-## Archive Repository
+## Model Discovery
 
-RetroCrawler uses `JsonFileRepository` and the local `cache` directory by default. Applications may supply any `Repository` implementation:
+RetroCrawler discovers annotated archive and gear types recursively below an application's base package:
 
 ```java
+Model model = Model.from("com.example.collection");
+```
+
+Applications that need deterministic or custom discovery can instead provide a `Set<Class<?>>` or `TypeSource`.
+
+---
+
+## Archive Repository
+
+Applications must explicitly select a `Repository`. `JsonFileRepository` remains a convenient supplied implementation and uses the local `cache` directory when constructed without a path:
+
+```java
+Model model = Model.from("com.example.collection");
 Repository repository = new JsonFileRepository(Path.of("my-cache"));
-RetroCrawler crawler = new RetroCrawlerFactory(repository).reflectOn(types);
+
+RetroCrawler crawler = RetroCrawler.builder()
+        .model(model)
+        .repository(repository)
+        .build();
 ```
 
 A missing stored archive causes the filesystem archive to be crawled. If a stored archive cannot be retrieved, RetroCrawler reports the repository failure and rebuilds it from the filesystem source.

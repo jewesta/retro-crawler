@@ -15,13 +15,15 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
-import com.retrocrawler.core.RetroCrawlerFactory;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.demo.collection.DemoFiles;
-import com.retrocrawler.demo.collection.DemoTypes;
+import com.retrocrawler.demo.collection.DemoModels;
 import com.retrocrawler.demo.collection.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
@@ -88,14 +90,15 @@ public class SearchView extends HorizontalLayout {
 
 	public SearchView() {
 		setHeightFull();
-		final RetroCrawlerFactory factory = new RetroCrawlerFactory();
-		this.retroCrawler = Arrays.stream(DemoTypes.values()).map(dt -> reflectOn(dt, factory))
+		final Repository repository = new JsonFileRepository();
+		this.retroCrawler = Arrays.stream(DemoModels.values()).map(model -> createCrawler(model, repository))
 				.collect(Collectors.toUnmodifiableMap(rc -> rc.getArchiveDescriptor().getId(), Function.identity()));
 		activeArchiveId = retroCrawler.keySet().iterator().next();
 	}
 
-	private static RetroCrawler reflectOn(final DemoTypes types, final RetroCrawlerFactory factory) {
-		final RetroCrawler retroCrawler = factory.reflectOn(types.getTypes());
+	private static RetroCrawler createCrawler(final DemoModels demoModel, final Repository repository) {
+		final Model model = Model.from(demoModel.getBasePackage());
+		final RetroCrawler retroCrawler = RetroCrawler.builder().model(model).repository(repository).build();
 		final ArchiveDescriptor descriptor = retroCrawler.getArchiveDescriptor();
 		try {
 			DemoFiles.copyToWorkDirectory(descriptor);

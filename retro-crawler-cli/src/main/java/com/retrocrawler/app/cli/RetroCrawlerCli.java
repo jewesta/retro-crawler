@@ -5,12 +5,13 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.retrocrawler.core.GearArchive;
+import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
-import com.retrocrawler.core.RetroCrawlerFactory;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.util.Monitor;
-import com.retrocrawler.demo.collection.DemoTypes;
 import com.retrocrawler.demo.collection.DemoFiles;
+import com.retrocrawler.demo.collection.DemoModels;
 import com.retrocrawler.demo.collection.gear.MyRetroGear;
 
 public final class RetroCrawlerCli {
@@ -24,8 +25,8 @@ public final class RetroCrawlerCli {
 
 		final Args parsed = Args.parse(args);
 
-		final RetroCrawlerFactory factory = new RetroCrawlerFactory();
-		final RetroCrawler crawler = factory.reflectOn(DemoTypes.RETRO_PC.getTypes());
+		final Model model = Model.from(DemoModels.RETRO_PC.getBasePackage());
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new JsonFileRepository()).build();
 
 		final Instant start = Instant.now();
 		final Monitor monitor = new Monitor(msg -> {

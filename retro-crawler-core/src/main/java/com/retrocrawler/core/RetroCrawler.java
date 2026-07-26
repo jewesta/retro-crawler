@@ -4,9 +4,35 @@ import java.io.IOException;
 import java.util.List;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.util.Monitor;
 
 public interface RetroCrawler {
+
+	/**
+	 * Starts explicit composition of a crawler from a model and repository.
+	 */
+	static Builder builder() {
+		return new DefaultRetroCrawlerBuilder();
+	}
+
+	interface Builder {
+
+		/**
+		 * Configures the annotation-derived collection model.
+		 */
+		Builder model(Model model);
+
+		/**
+		 * Configures where extracted clue archives are stowed away and retrieved.
+		 */
+		Builder repository(Repository repository);
+
+		/**
+		 * Validates the required composition and creates the crawler.
+		 */
+		RetroCrawler build();
+	}
 
 	ArchiveDescriptor getArchiveDescriptor();
 

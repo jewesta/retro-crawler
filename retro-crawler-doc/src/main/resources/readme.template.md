@@ -1,3 +1,10 @@
-### Package scanning (ClassGraph)
+### Model discovery
 
-<!-- RC:INCLUDE id="package_scan" lang="java" -->
+```java
+Model model = Model.from("com.example.collection");
+
+RetroCrawler crawler = RetroCrawler.builder()
+		.model(model)
+		.repository(repository)
+		.build();
+```
