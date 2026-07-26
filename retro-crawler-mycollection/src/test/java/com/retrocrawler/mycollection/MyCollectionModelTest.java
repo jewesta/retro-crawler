@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,12 +22,14 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.model.ExpansionBus;
+import com.retrocrawler.mycollection.model.FloppyImageId;
 import com.retrocrawler.mycollection.model.RetroId;
 
 class MyCollectionModelTest {
@@ -83,6 +86,67 @@ class MyCollectionModelTest {
 		assertEquals(2, paths.size());
 		assertTrue(paths.contains(first.toString()));
 		assertTrue(paths.contains(second.toString()));
+	}
+
+	@Test
+	void resolvesFileDerivedFactsFromTheCurrentGearFolder() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Documented object [200005]"));
+		final String markdown = "# Notes\n\nThis description belongs to the containing gear.\n";
+		Files.writeString(folder.resolve("retro.md"), markdown);
+		final Path angled = Files.createFile(folder.resolve("angled.jpeg"));
+		final Path front = Files.createFile(folder.resolve("front.jpeg"));
+		final Path back = Files.createFile(folder.resolve("back.jpeg"));
+		final Path floppy = Files.createFile(folder.resolve("FD-0007 System disk.img"));
+		final Path webReference = Files.createFile(folder.resolve("research.webloc"));
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
+				"Documented object [200005]");
+
+		assertEquals(Optional.of(markdown), gear.getDescription());
+		assertEquals(Optional.of(angled.toString()), gear.getAngledImage());
+		assertEquals(Optional.of(front.toString()), gear.getFrontImage());
+		assertEquals(Optional.of(back.toString()), gear.getBackImage());
+		assertEquals(Set.of(new FloppyImageId("FD-0007")), gear.getFloppyImageIds());
+		assertEquals(Set.of(floppy.toString()), gear.getFloppyImages());
+		assertEquals(Set.of(webReference.toString()), gear.getWebReferences());
+	}
+
+	@Test
+	void letsAFileClueEstablishAnOtherwiseUntaggedArtifact() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Notes only"));
+		Files.writeString(folder.resolve("retro.md"), "A note is an intentional description.");
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_MONITOR, true, MyGear.class);
+
+		assertEquals(1, gear.size());
+		assertInstanceOf(MysteryGear.class, gear.getFirst());
+		assertEquals(Optional.of("A note is an intentional description."), gear.getFirst().getDescription());
+	}
+
+	@Test
+	void keepsContradictoryFolderAndPropertiesValuesAsAnUnresolvedClue() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
+		Files.writeString(folder.resolve("retro.properties"), "bus=PCI\n");
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
+				"Conflicting object [AGP] [200006]");
+
+		assertInstanceOf(MysteryGear.class, gear);
+		assertEquals(Optional.empty(), gear.getBus());
+		assertEquals(Set.of("AGP", "PCI"),
+				assertInstanceOf(Clue.class, gear.getAttributes().get(AttributeNames.BUS)).getValue());
+	}
+
+	@Test
+	void collapsesCorroboratingFolderAndPropertiesValues() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Corroborated card [AGP] [200007]"));
+		Files.writeString(folder.resolve("retro.properties"), "bus=AGP\n");
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
+				"Corroborated card [AGP] [200007]");
+
+		assertInstanceOf(GraphicsCard.class, gear);
+		assertEquals(Optional.of(ExpansionBus.AGP), gear.getBus());
 	}
 
 	private RetroCrawler crawler() {

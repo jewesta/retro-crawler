@@ -486,12 +486,16 @@ artifact in exactly the same way as a folder-name clue.
 
 ## Notes and Legacy Metadata
 
-The reconnaissance found:
+The initial reconnaissance sample found:
 
 - Six `retro.properties` files.
 - Four `retro.md` files.
 
 Their contents were not read.
+
+A later, comprehensive case-insensitive filename sweep found eleven
+`retro.properties` files and six `retro.md` files. That later count supersedes
+the initial sample count; no contents were read during either sweep.
 
 The properties files are remnants of a short-lived authoring experiment.
 Properties editors are not widely available or collector-friendly, so they
@@ -836,13 +840,82 @@ The synthetic collection tests cover:
 
 No real collection paths or data are present in the module or its tests.
 
+## File-Derived Collection Clues
+
+A second read-only, filename-only convention sweep was performed on
+2026-07-27. It did not read file contents or record private names. In addition
+to the metadata files above, it found strong support for these established or
+unambiguous conventions:
+
+- `angled.jpeg`, `front.jpeg`, and `back.jpeg` gear photographs.
+- 57 filenames beginning with an `FD-*`-shaped floppy-image identifier.
+- 4,216 macOS `.webloc` files and 12 Windows `.url` files.
+
+Manuals, drivers, firmware, purchase records, repairs, warranties, and similar
+material also occur, but their names are not yet a sufficiently reliable
+language. Those plausible conventions are deliberately deferred until the
+collection supplies clearer rules. The current chaos is retained as chaos
+rather than prematurely modelled.
+
+The collection archive now configures five file-derived clue finders alongside
+the bracket path finder:
+
+- `RetroPropertiesClueFinder` imports every legacy Java property as a keyed
+  clue.
+- `RetroMarkdownClueFinder` reads the complete UTF-8 `retro.md` document into
+  the `description` clue.
+- `StandardImageClueFinder` recognizes only the exact, case-insensitive
+  `angled.jpeg`, `front.jpeg`, and `back.jpeg` conventions.
+- `FloppyImageClueFinder` recognizes a numeric `FD-*` prefix, retains both the
+  typed `FloppyImageId` and the matching file path, and does not mistake an
+  `FD-*` occurrence in the middle of a filename for a declaration.
+- `WebReferenceClueFinder` retains the paths of `.webloc` and `.url` files. It
+  does not yet parse or dereference their contents.
+
+File clues are scoped to the directory currently being crawled. A
+`front.jpeg` directly inside a gear folder belongs to that gear artifact. A
+`front.jpeg` inside a nested `Photos` directory belongs to the `Photos`
+artifact; RetroCrawler does not move the clue upward or infer ownership from
+the parent path.
+
+Consequently, `retro.md` can establish an artifact even when the containing
+folder has no bracket tags. This is intentional framework behavior:
+folder-name, file-name, and file-content clue finders remain peer discovery
+mechanisms. The personal model's practical "no tag, no gear" rule now includes
+these deliberately conventional file declarations as tags.
+
+### Corroboration and Conflict
+
+Different clue finders may observe the same semantic key. A hash suffix would
+turn one observation into the accidental canonical value and would obscure the
+fact that both sources describe the same concept. RetroCrawler therefore keeps
+the original semantic key:
+
+- Equal values corroborate and collapse to one value.
+- Different values are united under that key.
+- A scalar fact parser may resolve multiple raw spellings when they all parse
+  to the same value.
+- If the values parse to different scalar values, the attribute remains an
+  unresolved multi-valued clue. No value is injected into the gear and no
+  matcher sees a fact for that key.
+- A collection-valued fact may legitimately retain multiple parsed values.
+
+For example, folder tag `[AGP]` together with `bus=AGP` in
+`retro.properties` yields the `AGP` bus fact. `[AGP]` together with `bus=PCI`
+yields the unresolved clue `bus = {AGP, PCI}` and the gear remains a
+`MysteryGear` unless other independent facts identify it.
+
+This policy makes conflict visible without letting clue-finder execution order
+choose a winner. Deciding which source is wrong remains a cataloguing task.
+Structured conflict diagnostics belong with the later Issue 22 query and audit
+work.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
 6. Expose `MysteryGear`, retained attributes, and objective validation findings
    as a structured cataloguing audit.
-7. Add Markdown notes as an optional file-derived fact when that model feature
-   enters scope.
+7. Add Markdown notes as an optional file-derived fact. **Completed.**
 8. Run explicit local scans over selected IBM subtrees.
 9. Fix invalid source data exposed by validation rather than bypassing it.
 10. Record mismatches and generalize core one pressure point at a time.
@@ -880,6 +953,10 @@ No real collection paths or data are present in the module or its tests.
 - [x] Implement the first gear types, facts, parsers, and matcher.
 - [x] Implement optional IDs and archive-wide duplicate validation before gear
       emission.
+- [x] Add legacy properties, Markdown notes, standard-image, floppy-image, and
+      web-reference clue finders.
+- [x] Define corroborating and conflicting clue semantics without choosing a
+      value by source order.
 - [x] Add anonymized synthetic fixtures and focused tests.
 - [ ] Perform the first explicit live-subtree smoke test.
 - [x] Record resulting core changes and verification.
@@ -911,8 +988,6 @@ No real collection paths or data are present in the module or its tests.
   diagnostic severity belongs to each?
 - Does structured relative-path context need a clue-finder API at all, or can
   it remain a query/provenance and traversal concern?
-- Should `retro.properties` receive a legacy importer, or simply remain
-  unrecognized source material?
 - When the folder-tag grammar proves reusable, should it become a small
   optional adapter module shared by the demo and personal model?
 
@@ -933,6 +1008,23 @@ Completed on 2026-07-26:
 All completed successfully. The Java 25 test runtime emitted existing
 ArchUnit/Unsafe deprecation warnings, and the collection module reported that
 no test logging provider was installed; neither affected the build.
+
+Focused file-clue and conflict tests completed successfully on 2026-07-27:
+
+- Core clue merging and fact cardinality:
+  `ArchivePathClueFinderTest`, `FactFinderTest`.
+- Collection clue finders:
+  `CollectionFileClueFindersTest`.
+- End-to-end synthetic collection behavior:
+  `MyCollectionModelTest`, including file-only artifact discovery,
+  file-derived facts, corroboration, and unresolved folder/properties
+  conflicts.
+- Full reactor: `mvn test`.
+- Clean packaged reactor and module boundaries: `mvn clean install`.
+
+All completed successfully. The existing Java 25/ArchUnit compatibility
+warnings and missing collection-module SLF4J provider warning remain
+non-failing.
 
 ## Out of Scope for the Initial Slice
 

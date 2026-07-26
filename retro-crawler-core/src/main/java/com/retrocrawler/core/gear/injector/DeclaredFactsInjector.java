@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.FactDescriptor;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -26,7 +27,7 @@ final class DeclaredFactsInjector implements Injector {
 
 			final RetroAttribute attribute = session.getAttributes().get(key);
 
-			if (attribute == null) {
+			if (!(attribute instanceof Fact)) {
 				AttributeAsserter.assertMissingAllowed(session.getGearType(), descriptor, key);
 				continue;
 			}

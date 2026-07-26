@@ -1,5 +1,6 @@
 package com.retrocrawler.core.gear;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -8,6 +9,7 @@ import java.util.Set;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.util.RetroAttribute;
 
 public class FactFinder {
 
@@ -78,7 +80,15 @@ public class FactFinder {
 			}
 		}
 
+		if (values.size() > 1 && !acceptsMultipleValues()) {
+			return Optional.empty();
+		}
+
 		return Optional.of(new Fact(key, Set.copyOf(values), overall, clue));
+	}
+
+	private boolean acceptsMultipleValues() {
+		return Collection.class.isAssignableFrom(fieldType) || RetroAttribute.class.isAssignableFrom(fieldType);
 	}
 
 	public RatedFact parse(final String raw) {

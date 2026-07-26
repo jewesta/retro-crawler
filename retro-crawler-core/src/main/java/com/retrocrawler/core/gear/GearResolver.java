@@ -1,5 +1,6 @@
 package com.retrocrawler.core.gear;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,62 +51,22 @@ public class GearResolver {
 	@SuppressWarnings({ Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE })
 	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue) {
 		final Set<String> raws = clue.getValue();
-
-		if (raws.size() == 1) {
-			final String raw = raws.iterator().next();
-
-			final BestAnonymousMatch best = findBestAnonymousMatch(raw);
-			if (best == null || best.confidence() == Confidence.NONE) {
-				putAnonymousClueIfUseful(resolved, clue);
-				return;
-			}
-			final String resolvedKey = best.key();
-			if (resolved.isFact(resolvedKey)) {
-				return;
-			}
-			if (resolved.containsKey(resolvedKey)) {
-				putAnonymousClueIfUseful(resolved, clue);
-				return;
-			}
-			final FactFinder finder = factFinders.get(resolvedKey);
-			if (finder == null) {
-				putAnonymousClueIfUseful(resolved, clue);
-				return;
-			}
-			final Optional<Fact> fact = finder.find(clue);
-			if (fact.isEmpty()) {
-				putAnonymousClueIfUseful(resolved, clue);
-				return;
-			}
-			resolved.put(fact.get());
-			return;
-		}
-
-		boolean allResolved = true;
 		String resolvedKey = null;
-
 		for (final String raw : raws) {
 			final BestAnonymousMatch best = findBestAnonymousMatch(raw);
 			if (best == null || best.confidence() == Confidence.NONE) {
-				allResolved = false;
-				break;
-			}
-			final String candidateKey = best.key();
-			if (resolved.isFact(candidateKey)) {
+				putAnonymousClueIfUseful(resolved, clue);
 				return;
 			}
-			if (resolved.containsKey(candidateKey)) {
-				allResolved = false;
-				break;
-			}
+			final String candidateKey = best.key();
 			if (resolvedKey != null && !resolvedKey.equals(candidateKey)) {
-				allResolved = false;
-				break;
+				putAnonymousClueIfUseful(resolved, clue);
+				return;
 			}
 			resolvedKey = candidateKey;
 		}
 
-		if (!allResolved || resolvedKey == null) {
+		if (resolvedKey == null) {
 			putAnonymousClueIfUseful(resolved, clue);
 			return;
 		}
@@ -116,13 +77,39 @@ public class GearResolver {
 			return;
 		}
 
-		final Optional<Fact> fact = finder.find(clue);
-		if (fact.isEmpty()) {
-			putAnonymousClueIfUseful(resolved, clue);
+		final RetroAttribute existing = resolved.get(resolvedKey);
+		if (existing == null) {
+			final Optional<Fact> fact = finder.find(clue);
+			if (fact.isPresent()) {
+				resolved.put(fact.get());
+			} else {
+				putAnonymousClueIfUseful(resolved, clue);
+			}
 			return;
 		}
 
-		resolved.put(fact.get());
+		reconcile(resolved, resolvedKey, existing, clue, finder);
+	}
+
+	private static void reconcile(final RetroAttributes resolved, final String resolvedKey,
+			final RetroAttribute existing, final Clue incoming, final FactFinder finder) {
+
+		final Set<String> combinedValues = new HashSet<>(incoming.getValue());
+		if (existing instanceof final Fact fact) {
+			combinedValues.addAll(fact.source().getValue());
+		} else if (existing instanceof final Clue clue) {
+			combinedValues.addAll(clue.getValue());
+		}
+
+		final Clue combined = Clue.of(resolvedKey, Set.copyOf(combinedValues));
+		final Optional<Fact> combinedFact = finder.find(combined);
+		if (existing instanceof final Fact fact && combinedFact.isPresent()
+				&& fact.getValue().equals(combinedFact.get().getValue())) {
+			// The new observation corroborates the already resolved fact.
+			return;
+		}
+
+		resolved.replace(combinedFact.<RetroAttribute>map(Function.identity()).orElse(combined));
 	}
 
 	private void putAnonymousClueIfUseful(final RetroAttributes resolved, final Clue clue) {
@@ -260,7 +247,7 @@ public class GearResolver {
 		}
 
 		final RetroAttribute attribute = attributes.get(idKey.get());
-		if (attribute == null) {
+		if (!(attribute instanceof Fact)) {
 			return Optional.empty();
 		}
 

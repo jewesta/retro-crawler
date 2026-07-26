@@ -21,6 +21,20 @@ public class RetroAttributes {
 		}
 		final String key = attribute.getKey();
 		attributes.put(key, attribute);
+		registerAnonymousSource(attribute, key);
+	}
+
+	void replace(final RetroAttribute attribute) {
+		final String key = attribute.getKey();
+		if (!attributes.containsKey(key)) {
+			throw new IllegalArgumentException("Cannot replace missing attribute with key '" + key + "'.");
+		}
+		attributes.put(key, attribute);
+		anonymousToKnown.values().removeIf(key::equals);
+		registerAnonymousSource(attribute, key);
+	}
+
+	private void registerAnonymousSource(final RetroAttribute attribute, final String key) {
 		/*
 		 * Clues can be turned from anonymous to known. Make a note of the initial
 		 * anonymous key so we can identify former anonymous clues as already added as a

@@ -35,7 +35,7 @@ public class ArchivePathClueFinder {
 		}
 	}
 
-	private static Set<Clue> mergeAndAssertUnique(final Set<Clue> existing, final Set<Clue> incoming) {
+	private static Set<Clue> merge(final Set<Clue> existing, final Set<Clue> incoming) {
 		// Short-circuit
 		if (incoming.isEmpty()) {
 			return existing;
@@ -47,17 +47,16 @@ public class ArchivePathClueFinder {
 			byKey.put(clue.getKey(), clue);
 		}
 
-		final Set<String> duplicates = new HashSet<>();
-
 		for (final Clue clue : incoming) {
-			final Clue previous = byKey.putIfAbsent(clue.getKey(), clue);
-			if (previous != null) {
-				duplicates.add(clue.getKey());
+			final Clue previous = byKey.get(clue.getKey());
+			if (previous == null) {
+				byKey.put(clue.getKey(), clue);
+				continue;
 			}
-		}
 
-		if (!duplicates.isEmpty()) {
-			throw new DuplicateClueException("Duplicate attribute(s) [" + String.join(", ", duplicates) + "]");
+			final Set<String> combinedValues = new HashSet<>(previous.getValue());
+			combinedValues.addAll(clue.getValue());
+			byKey.put(clue.getKey(), new Clue(clue.getKey(), Set.copyOf(combinedValues)));
 		}
 
 		return new HashSet<>(byKey.values());
@@ -76,7 +75,7 @@ public class ArchivePathClueFinder {
 		Set<Clue> clues;
 		final String folderName = node.path().getFileName().toString();
 		if (folderNameClueFinder != null) {
-			clues = folderNameClueFinder.find(folderName);
+			clues = merge(new HashSet<>(), folderNameClueFinder.find(folderName));
 		} else {
 			clues = new HashSet<>();
 		}
@@ -101,7 +100,7 @@ public class ArchivePathClueFinder {
 						continue;
 					}
 					final Set<Clue> fileContentClues = from(finder, file);
-					clues = mergeAndAssertUnique(clues, fileContentClues);
+					clues = merge(clues, fileContentClues);
 				}
 			}
 		}
@@ -111,7 +110,7 @@ public class ArchivePathClueFinder {
 		 */
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
 			final Set<Clue> fileNameClues = finder.find(files);
-			clues = mergeAndAssertUnique(clues, fileNameClues);
+			clues = merge(clues, fileNameClues);
 		}
 		return clues;
 	}
