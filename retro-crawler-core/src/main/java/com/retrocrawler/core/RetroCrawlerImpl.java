@@ -1,7 +1,11 @@
 package com.retrocrawler.core;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -13,6 +17,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.util.Monitor;
 
@@ -46,15 +51,24 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 
 		final Archive archive = manager.getArchive(monitor, reindex);
+		final RetroIdRegistry retroIds = new RetroIdRegistry();
+		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
 
 		for (final Bucket bucket : archive.getBuckets()) {
-			factory.beginBucket(bucket);
-
 			final ArchiveNode root = bucket.getRoot();
-			if (root != null) {
-				emitCompressed(root, null, factory, gearType);
-			}
+			final ResolvedArchiveNode resolvedRoot = root == null ? null
+					: resolve(root, Path.of(bucket.getBasePath()), retroIds);
+			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
+		}
 
+		retroIds.assertUnique();
+
+		for (final ResolvedBucket resolvedBucket : resolvedBuckets) {
+			final Bucket bucket = resolvedBucket.bucket();
+			factory.beginBucket(bucket);
+			if (resolvedBucket.root() != null) {
+				emitCompressed(resolvedBucket.root(), null, factory, gearType);
+			}
 			factory.endBucket(bucket);
 		}
 
@@ -67,10 +81,10 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	 * resolve or type does not match: emit nothing, keep same parent for children
 	 * (lifting)
 	 */
-	private <R, N, G> void emitCompressed(final ArchiveNode node, final N parent,
+	private <R, N, G> void emitCompressed(final ResolvedArchiveNode node, final N parent,
 			final GearTreeFactory<R, N, G> factory, final Class<G> gearType) {
 
-		final Optional<Object> resolved = resolveGear(node.getArtifact());
+		final Optional<Object> resolved = node.resolution().map(GearResolution::gear);
 
 		final N nextParent;
 		if (resolved.isPresent() && gearType.isInstance(resolved.get())) {
@@ -80,19 +94,57 @@ public class RetroCrawlerImpl implements RetroCrawler {
 			nextParent = parent;
 		}
 
-		final List<ArchiveNode> children = node.getChildren();
-		if (children == null || children.isEmpty()) {
+		final List<ResolvedArchiveNode> children = node.children();
+		if (children.isEmpty()) {
 			return;
 		}
-		for (final ArchiveNode child : children) {
+		for (final ResolvedArchiveNode child : children) {
 			emitCompressed(child, nextParent, factory, gearType);
 		}
 	}
 
-	private Optional<Object> resolveGear(final Artifact artifact) {
-		if (artifact == null) {
-			return Optional.empty();
+	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path sourcePath, final RetroIdRegistry retroIds) {
+		final Artifact artifact = node.getArtifact();
+		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
+				: resolver.resolveWithIdentity(artifact);
+		resolution.ifPresent(value -> retroIds.register(value, sourcePath));
+
+		final List<ResolvedArchiveNode> children = new ArrayList<>();
+		final List<ArchiveNode> archiveChildren = node.getChildren();
+		if (archiveChildren != null) {
+			for (final ArchiveNode child : archiveChildren) {
+				children.add(resolve(child, sourcePath.resolve(child.getFolder()), retroIds));
+			}
 		}
-		return resolver.resolve(artifact);
+		return new ResolvedArchiveNode(resolution, List.copyOf(children));
+	}
+
+	private record ResolvedBucket(Bucket bucket, ResolvedArchiveNode root) {
+	}
+
+	private record ResolvedArchiveNode(Optional<GearResolution> resolution, List<ResolvedArchiveNode> children) {
+	}
+
+	private static final class RetroIdRegistry {
+
+		private final Map<Object, List<String>> occurrences = new LinkedHashMap<>();
+
+		private void register(final GearResolution resolution, final Path sourcePath) {
+			resolution.retroId()
+					.ifPresent(id -> occurrences.computeIfAbsent(id, ignored -> new ArrayList<>())
+							.add(sourcePath.toString()));
+		}
+
+		private void assertUnique() {
+			final Map<Object, List<String>> duplicates = new LinkedHashMap<>();
+			occurrences.forEach((id, paths) -> {
+				if (paths.size() > 1) {
+					duplicates.put(id, List.copyOf(paths));
+				}
+			});
+			if (!duplicates.isEmpty()) {
+				throw new DuplicateRetroIdException(duplicates);
+			}
+		}
 	}
 }

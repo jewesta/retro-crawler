@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.PathNameClueFinder;
 import com.retrocrawler.core.gear.TypeSource;
@@ -35,6 +39,52 @@ class ModelTest {
 		final Model model = Model.from(source);
 
 		assertEquals("model_test", model.getArchiveDescriptor().getId().get());
+	}
+
+	@Test
+	void overridesAnnotationLocationsAtRuntime() {
+		final Path runtimeLocation = Path.of("/runtime/archive");
+
+		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class), ArchiveRoots.from(runtimeLocation));
+
+		assertEquals(List.of(runtimeLocation), model.getArchiveDescriptor().getPaths());
+	}
+
+	@Test
+	void permitsAnnotationLocationsToBeSuppliedAtRuntime() {
+		final Path runtimeLocation = Path.of("/runtime/archive");
+
+		final Model model = Model.from(Set.of(RuntimeConfiguredArchive.class, TestGear.class),
+				ArchiveRoots.from(runtimeLocation));
+
+		assertEquals(List.of(runtimeLocation), model.getArchiveDescriptor().getPaths());
+	}
+
+	@Test
+	void copiesRuntimeLocations() {
+		final List<Path> runtimeLocations = new ArrayList<>(List.of(Path.of("/runtime/archive")));
+		final ArchiveRoots archiveRoots = ArchiveRoots.from(runtimeLocations);
+		final Model model = Model.from(Set.of(RuntimeConfiguredArchive.class, TestGear.class), archiveRoots);
+
+		runtimeLocations.add(Path.of("/another/archive"));
+
+		assertEquals(List.of(Path.of("/runtime/archive")), model.getArchiveDescriptor().getPaths());
+	}
+
+	@Test
+	void rejectsMissingAnnotationAndRuntimeLocations() {
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> Model.from(Set.of(RuntimeConfiguredArchive.class, TestGear.class)));
+
+		assertEquals("A @RetroArchive requires at least one location to be set.", failure.getMessage());
+	}
+
+	@Test
+	void rejectsEmptyRuntimeLocations() {
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> Model.from(Set.of(TestArchive.class, TestGear.class), () -> List.of()));
+
+		assertEquals("A @RetroArchive requires at least one location to be set.", failure.getMessage());
 	}
 
 	@Test
@@ -62,6 +112,11 @@ class ModelTest {
 	@RetroArchive(id = "second_model_test", locations = "/this/path/is/not-read-during-model-creation",
 			findClues = @RetroArchive.LookAt(pathName = EmptyClueFinder.class))
 	public static class SecondTestArchive {
+	}
+
+	@RetroArchive(id = "runtime_model_test",
+			findClues = @RetroArchive.LookAt(pathName = EmptyClueFinder.class))
+	public static class RuntimeConfiguredArchive {
 	}
 
 	@RetroGear(AnyGearMatcher.class)

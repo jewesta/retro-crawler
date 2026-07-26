@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
@@ -45,9 +46,30 @@ public final class Model {
 	}
 
 	/**
+	 * Discovers model types in the given package while supplying archive locations
+	 * as runtime deployment configuration.
+	 */
+	public static Model from(final String basePackage, final ArchiveRoots archiveRoots) {
+		return from(ModelTypeDiscovery.discover(basePackage), archiveRoots);
+	}
+
+	/**
 	 * Reflects on the caller-supplied set of RetroCrawler model types.
 	 */
 	public static Model from(final Set<Class<?>> types) {
+		return create(types, null);
+	}
+
+	/**
+	 * Reflects on caller-supplied model types while supplying archive locations as
+	 * runtime deployment configuration.
+	 */
+	public static Model from(final Set<Class<?>> types, final ArchiveRoots archiveRoots) {
+		Objects.requireNonNull(archiveRoots, "archiveRoots");
+		return create(types, archiveRoots);
+	}
+
+	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots) {
 		Objects.requireNonNull(types, "types");
 
 		final Set<Class<?>> immutableTypes = types.stream()
@@ -56,7 +78,8 @@ public final class Model {
 				.collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
 						Collections::unmodifiableSet));
 		final RetroArchive archive = assertRetroArchiveOnOneOf(immutableTypes);
-		final ArchiveDescriptor descriptor = ArchiveDescriptor.of(archive);
+		final ArchiveDescriptor descriptor = archiveRoots == null ? ArchiveDescriptor.of(archive)
+				: ArchiveDescriptor.of(archive, archiveRoots);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(archive.findClues());
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes);
 
@@ -69,6 +92,15 @@ public final class Model {
 	public static Model from(final TypeSource source) {
 		Objects.requireNonNull(source, "source");
 		return from(Objects.requireNonNull(source.getTypes(), "source.getTypes()"));
+	}
+
+	/**
+	 * Reflects on application-supplied model types while supplying archive
+	 * locations as runtime deployment configuration.
+	 */
+	public static Model from(final TypeSource source, final ArchiveRoots archiveRoots) {
+		Objects.requireNonNull(source, "source");
+		return from(Objects.requireNonNull(source.getTypes(), "source.getTypes()"), archiveRoots);
 	}
 
 	public ArchiveDescriptor getArchiveDescriptor() {

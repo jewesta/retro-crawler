@@ -171,6 +171,11 @@ public class GearResolver {
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
 	public Optional<Object> resolve(final Artifact artifact) {
+		return resolveWithIdentity(artifact).map(GearResolution::gear);
+	}
+
+	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
+	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact) {
 		Objects.requireNonNull(artifact, "artifact");
 
 		/*
@@ -244,8 +249,27 @@ public class GearResolver {
 		 * with the gear declaration the user would have to fix.
 		 */
 		final Object newGear = best.create(context);
-		// Intentionally not nullable!
-		return Optional.of(newGear);
+		final Optional<Object> retroId = retroId(best.getGearDefinition(), attributes);
+		return Optional.of(new GearResolution(newGear, retroId));
+	}
+
+	private static Optional<Object> retroId(final GearDescriptor descriptor, final RetroAttributes attributes) {
+		final Optional<String> idKey = descriptor.getIdAttributeKey();
+		if (idKey.isEmpty()) {
+			return Optional.empty();
+		}
+
+		final RetroAttribute attribute = attributes.get(idKey.get());
+		if (attribute == null) {
+			return Optional.empty();
+		}
+
+		final Set<? extends Object> values = attribute.getValue();
+		if (values.size() != 1) {
+			throw new IllegalStateException("Expected exactly one @RetroId value for key '" + idKey.get() + "' on "
+					+ descriptor.getType().getName() + " but got " + values.size() + ".");
+		}
+		return Optional.of(values.iterator().next());
 	}
 
 }

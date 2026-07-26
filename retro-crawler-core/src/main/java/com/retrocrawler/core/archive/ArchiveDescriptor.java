@@ -3,6 +3,7 @@ package com.retrocrawler.core.archive;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import com.retrocrawler.core.annotation.RetroArchive;
@@ -20,7 +21,7 @@ public class ArchiveDescriptor implements Descriptor {
 	public ArchiveDescriptor(final ArchiveId id, final String name, final Collection<Path> paths) {
 		this.id = Objects.requireNonNull(id, "id");
 		this.name = Objects.requireNonNull(name, "name");
-		this.paths = Objects.requireNonNull(paths, "paths");
+		this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
 	}
 
 	public ArchiveId getId() {
@@ -42,14 +43,26 @@ public class ArchiveDescriptor implements Descriptor {
 	}
 
 	public static final ArchiveDescriptor of(final RetroArchive archive) {
+		Objects.requireNonNull(archive, "archive");
+		final Collection<Path> paths = Arrays.stream(archive.locations()).map(String::trim).map(Path::of).toList();
+		return fromPaths(archive, paths);
+	}
+
+	public static final ArchiveDescriptor of(final RetroArchive archive, final ArchiveRoots archiveRoots) {
+		Objects.requireNonNull(archiveRoots, "archiveRoots");
+		return fromPaths(archive, archiveRoots.getPaths());
+	}
+
+	private static ArchiveDescriptor fromPaths(final RetroArchive archive, final Collection<Path> paths) {
+		Objects.requireNonNull(archive, "archive");
+		final List<Path> immutablePaths = List.copyOf(Objects.requireNonNull(paths, "paths"));
 		final ArchiveId id = ArchiveId.of(archive.id());
 		final String name = archive.name().isBlank() ? id.get() : archive.name().trim();
-		final Collection<String> pathNames = Arrays.stream(archive.locations()).map(String::trim).toList();
-		if (pathNames.isEmpty()) {
+		if (immutablePaths.isEmpty()) {
 			throw new IllegalArgumentException(
 					"A " + TypeName.simple(RetroArchive.class) + " requires at least one location to be set.");
 		}
-		return valueOf(id, name, pathNames);
+		return new ArchiveDescriptor(id, name, immutablePaths);
 	}
 
 }

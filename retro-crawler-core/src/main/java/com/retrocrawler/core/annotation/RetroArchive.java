@@ -23,8 +23,9 @@ public @interface RetroArchive {
 
 	/**
 	 * An archive can consist of various folders. All folders are scanned for clues.
+	 * Locations may be omitted when they are supplied explicitly at runtime.
 	 */
-	String[] locations();
+	String[] locations() default {};
 
 	/**
 	 * Clue-finder configuration.

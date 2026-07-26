@@ -65,6 +65,18 @@ public class GearDescriptor implements Descriptor {
 		return Optional.ofNullable(idField);
 	}
 
+	public Optional<String> getIdAttributeKey() {
+		if (idField == null) {
+			return Optional.empty();
+		}
+		for (final Map.Entry<String, FactDescriptor> entry : attributes.entrySet()) {
+			if (entry.getValue().getField().equals(idField)) {
+				return Optional.of(entry.getKey());
+			}
+		}
+		return Optional.of(com.retrocrawler.core.archive.clues.Clue.KEY_INTERNAL_ID);
+	}
+
 	public static Optional<GearDescriptor> of(final Class<?> type) {
 		Objects.requireNonNull(type, "type");
 
@@ -113,11 +125,6 @@ public class GearDescriptor implements Descriptor {
 				}
 
 				final RetroFact fact = field.getAnnotation(RetroFact.class);
-
-				if (retroId != null && fact != null && fact.optional()) {
-					throw new IllegalArgumentException(TypeName.simple(RetroId.class) + " must not be used on optional "
-							+ TypeName.simple(RetroFact.class) + " field: " + field + " in " + TypeName.full(type));
-				}
 
 				if (fact == null) {
 					/*

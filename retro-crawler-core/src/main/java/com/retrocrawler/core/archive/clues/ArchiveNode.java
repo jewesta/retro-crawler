@@ -29,6 +29,10 @@ public class ArchiveNode {
 		return artifact;
 	}
 
+	public String getFolder() {
+		return folder;
+	}
+
 	public List<ArchiveNode> getChildren() {
 		return children;
 	}
