@@ -849,7 +849,12 @@ unambiguous conventions:
 
 - `angled.jpeg`, `front.jpeg`, and `back.jpeg` gear photographs.
 - 57 filenames beginning with an `FD-*`-shaped floppy-image identifier.
-- 4,216 macOS `.webloc` files and 12 Windows `.url` files.
+
+The sweep also counted 4,216 macOS `.webloc` files and 12 Windows `.url`
+files. Their prevalence initially looked like a convention, but the first live
+crawl disproved that interpretation: most merely record acquisition or
+research sources in supporting subfolders. Presence alone carries no useful
+gear meaning.
 
 Manuals, drivers, firmware, purchase records, repairs, warranties, and similar
 material also occur, but their names are not yet a sufficiently reliable
@@ -857,7 +862,7 @@ language. Those plausible conventions are deliberately deferred until the
 collection supplies clearer rules. The current chaos is retained as chaos
 rather than prematurely modelled.
 
-The collection archive now configures five file-derived clue finders alongside
+The collection archive now configures four file-derived clue finders alongside
 the bracket path finder:
 
 - `RetroPropertiesClueFinder` imports every legacy Java property as a keyed
@@ -869,8 +874,10 @@ the bracket path finder:
 - `FloppyImageClueFinder` recognizes a numeric `FD-*` prefix, retains both the
   typed `FloppyImageId` and the matching file path, and does not mistake an
   `FD-*` occurrence in the middle of a filename for a declaration.
-- `WebReferenceClueFinder` retains the paths of `.webloc` and `.url` files. It
-  does not yet parse or dereference their contents.
+
+The initial `WebReferenceClueFinder` was removed after the live smoke test.
+Bookmarks may only return as clues if a future adapter can derive meaning
+beyond "there is a bookmark."
 
 File clues are scoped to the directory currently being crawled. A
 `front.jpeg` directly inside a gear folder belongs to that gear artifact. A
@@ -969,6 +976,72 @@ each refresh so a cancelled run does not poison a later crawl. Rendering the
 structured progress as a dedicated progress component remains part of the
 later application work.
 
+## First Live Subtree Smoke Test
+
+The first explicit live crawl ran successfully on 2026-07-27 against the
+graphics-card subtree selected during reconnaissance. The root file and JSON
+repository were created outside the source repository, and neither the private
+root nor cache contents were copied into this issue record. A read-only
+preflight found no symbolic links in the selected subtree.
+
+The bounded planner divided 804 directory nodes into 168 approximate crawl
+regions. Observable checkpoints included 129/168, 152/168, and 168/168 before
+the crawler entered `STOWING`. Resolution then reported exact progress through
+231/231 artifacts and finished successfully. The complete Maven-launched run
+took 28.4 seconds and produced a 212 KiB JSON clue cache.
+
+The resolved, privacy-safe aggregate was:
+
+- 231 gear: 7 `GraphicsCard` and 224 `MysteryGear`.
+- 94 gear with a Retro ID and 137 without one.
+- 45 gear folders with at least one standard image.
+- 99 gear folders with web references.
+- No Markdown descriptions or floppy images in this subtree.
+
+The seven specialized graphics cards are locally AGP-tagged artifacts. The
+model correctly did not infer their type merely from the selected subtree or
+its organizational parent folders.
+
+The live data also exposed a concrete admission problem. Ninety-three of the
+231 artifacts were established solely by web-reference clues, typically in
+nested research or acquisition-support folders. Two more were established
+solely by standard-image clues. Because the model deliberately supplies
+`MysteryGear` as its fallback, these artifacts become gear and inflate the raw
+"missing Retro ID" count. That count is therefore not yet a trustworthy
+cataloguing task list.
+
+This is not evidence that file clue finders are second-class or that file
+clues should only corroborate folder tags. It demonstrates that bookmark
+presence is not a clue at all for this model. The `WebReferenceClueFinder` and
+its `webReferences` fact were therefore removed. If bookmark support returns,
+its adapter must extract enough meaning to distinguish a useful declaration
+from an acquisition or research reference. The cache did its job: it made this
+bad convention measurable without changing the source archive.
+
+After removing that finder, the same subtree was rebuilt from source. Planning
+again found 804 nodes and 168 approximate regions, while the resolved result
+fell from 231 to 138 artifacts:
+
+- 7 `GraphicsCard` and 131 `MysteryGear`.
+- 94 gear with a Retro ID and 44 without one.
+- 45 gear folders with standard images, including 3 established by images
+  alone.
+- No `webReferences` keys anywhere in the rebuilt cache.
+
+The 93-artifact reduction exactly matches the folders previously established
+solely by bookmark presence. The specialized type and Retro ID counts remained
+unchanged, demonstrating that the removal discarded noise rather than known
+gear. The rebuilt private cache is 166 KiB. This second crawl took 48.2
+seconds; the unchanged region count but different elapsed time reinforces why
+region progress is explicitly approximate.
+
+`MyCollectionSmokeCrawl` is the explicit local launcher. It reads an
+`ArchiveRoots` text file and private cache directory from command-line
+arguments, can either rebuild or reuse the cache, streams structured progress
+in five-percent buckets, and prints only privacy-safe aggregate cataloguing
+totals at completion. Structured progress messages retain the current path for
+local operator visibility, but no runtime path is compiled into the launcher.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1006,14 +1079,15 @@ later application work.
 - [x] Add the Maven module.
 - [x] Implement the core runtime archive-location override API.
 - [x] Add `ArchiveRoots` factories and plain-text root-file loading.
-- [ ] Choose/create the actual external root file and private cache location,
+- [x] Choose/create an external root file and private cache location,
       then wire an explicit smoke-test launcher.
 - [x] Implement the collection folder-language adapter.
 - [x] Implement the first gear types, facts, parsers, and matcher.
 - [x] Implement optional IDs and archive-wide duplicate validation before gear
       emission.
-- [x] Add legacy properties, Markdown notes, standard-image, floppy-image, and
-      web-reference clue finders.
+- [x] Add legacy properties, Markdown notes, standard-image, and floppy-image
+      clue finders; remove the bookmark-presence finder disproved by the live
+      crawl.
 - [x] Define corroborating and conflicting clue semantics without choosing a
       value by source order.
 - [x] Add bounded shallow crawl planning and approximate numerical region
@@ -1022,7 +1096,7 @@ later application work.
       preserving legacy monitor messages.
 - [x] Make cancellation abort without stowing a partial archive.
 - [x] Add anonymized synthetic fixtures and focused tests.
-- [ ] Perform the first explicit live-subtree smoke test.
+- [x] Perform the first explicit live-subtree smoke test.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1107,6 +1181,20 @@ partial repository replacement.
 
 The full reactor `mvn test` and clean packaged reactor
 `mvn clean install` also completed successfully after the progress changes.
+
+The first live-subtree smoke test completed successfully on 2026-07-27 using
+the external root file and private JSON repository described above. A second
+resolution-only invocation using `--reuse-cache` reproduced the same 231-gear
+aggregate without crawling or replacing the cache. After adding the launcher
+and recording the live findings, both `mvn test` and `mvn clean install`
+completed successfully for the full reactor.
+
+Bookmark-clue removal was verified on 2026-07-27 with 11 focused
+`MyCollectionModelTest` and `CollectionFileClueFindersTest` tests, including a
+regression proving that a bookmark-only folder remains undiscovered. The
+corrected live rebuild completed successfully with zero `webReferences` keys
+in the JSON archive. The full reactor `mvn test` and `mvn clean install` also
+completed successfully afterward.
 
 ## Out of Scope for the Initial Slice
 

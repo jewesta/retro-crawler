@@ -49,9 +49,6 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, parser = StringParser.class, optional = true)
 	private Set<String> floppyImages = Set.of();
 
-	@RetroFact(key = AttributeNames.WEB_REFERENCES, parser = StringParser.class, optional = true)
-	private Set<String> webReferences = Set.of();
-
 	@RetroAnyAttribute
 	private final Map<String, RetroAttribute> attributes = new HashMap<>();
 
@@ -93,10 +90,6 @@ public abstract class MyGear {
 
 	public Set<String> getFloppyImages() {
 		return Set.copyOf(floppyImages);
-	}
-
-	public Set<String> getWebReferences() {
-		return Set.copyOf(webReferences);
 	}
 
 	public Map<String, RetroAttribute> getAttributes() {

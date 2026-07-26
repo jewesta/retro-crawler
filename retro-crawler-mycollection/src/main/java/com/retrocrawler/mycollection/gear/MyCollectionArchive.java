@@ -6,13 +6,11 @@ import com.retrocrawler.mycollection.clues.FloppyImageClueFinder;
 import com.retrocrawler.mycollection.clues.RetroMarkdownClueFinder;
 import com.retrocrawler.mycollection.clues.RetroPropertiesClueFinder;
 import com.retrocrawler.mycollection.clues.StandardImageClueFinder;
-import com.retrocrawler.mycollection.clues.WebReferenceClueFinder;
 
 @RetroArchive(id = "my_collection", name = "My Collection",
 		findClues = @RetroArchive.LookAt(pathName = BracketPathClueFinder.class,
 				fileContents = { RetroPropertiesClueFinder.class, RetroMarkdownClueFinder.class },
-				fileNames = { StandardImageClueFinder.class, FloppyImageClueFinder.class,
-						WebReferenceClueFinder.class }))
+				fileNames = { StandardImageClueFinder.class, FloppyImageClueFinder.class }))
 public final class MyCollectionArchive {
 
 	private MyCollectionArchive() {

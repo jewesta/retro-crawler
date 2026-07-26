@@ -97,7 +97,6 @@ class MyCollectionModelTest {
 		final Path front = Files.createFile(folder.resolve("front.jpeg"));
 		final Path back = Files.createFile(folder.resolve("back.jpeg"));
 		final Path floppy = Files.createFile(folder.resolve("FD-0007 System disk.img"));
-		final Path webReference = Files.createFile(folder.resolve("research.webloc"));
 
 		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
 				"Documented object [200005]");
@@ -108,7 +107,6 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of(back.toString()), gear.getBackImage());
 		assertEquals(Set.of(new FloppyImageId("FD-0007")), gear.getFloppyImageIds());
 		assertEquals(Set.of(floppy.toString()), gear.getFloppyImages());
-		assertEquals(Set.of(webReference.toString()), gear.getWebReferences());
 	}
 
 	@Test
@@ -121,6 +119,14 @@ class MyCollectionModelTest {
 		assertEquals(1, gear.size());
 		assertInstanceOf(MysteryGear.class, gear.getFirst());
 		assertEquals(Optional.of("A note is an intentional description."), gear.getFirst().getDescription());
+	}
+
+	@Test
+	void ignoresAFolderContainingOnlyABookmark() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Acquisition source"));
+		Files.createFile(folder.resolve("listing.webloc"));
+
+		assertTrue(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class).isEmpty());
 	}
 
 	@Test

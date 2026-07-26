@@ -1,7 +1,6 @@
 package com.retrocrawler.mycollection.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -75,21 +74,6 @@ class CollectionFileClueFindersTest {
 		assertEquals(Set.of(folder.resolve("FD-0007.img").toString(),
 				folder.resolve("fd-0008 Boot disk.ima").toString()),
 				clue(clues, AttributeNames.FLOPPY_IMAGES).getValue());
-	}
-
-	@Test
-	void retainsMacAndWindowsWebReferenceFiles() {
-		final WebReferenceClueFinder finder = new WebReferenceClueFinder();
-		final Path folder = Path.of("gear");
-
-		final Set<Clue> clues = finder.find(List.of(
-				folder.resolve("research.webloc"),
-				folder.resolve("support.URL"),
-				folder.resolve("offline.html")));
-
-		assertEquals(Set.of(folder.resolve("research.webloc").toString(), folder.resolve("support.URL").toString()),
-				clue(clues, AttributeNames.WEB_REFERENCES).getValue());
-		assertFalse(clues.isEmpty());
 	}
 
 	private static ByteArrayInputStream input(final String value) {

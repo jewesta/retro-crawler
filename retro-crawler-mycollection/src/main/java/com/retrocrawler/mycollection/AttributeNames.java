@@ -20,8 +20,6 @@ public final class AttributeNames {
 
 	public static final String TITLE = "title";
 
-	public static final String WEB_REFERENCES = "webReferences";
-
 	private AttributeNames() {
 		// Static vocabulary.
 	}
