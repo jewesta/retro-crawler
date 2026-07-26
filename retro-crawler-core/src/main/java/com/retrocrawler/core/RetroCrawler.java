@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.util.Monitor;
 
@@ -27,6 +28,12 @@ public interface RetroCrawler {
 		 * Configures where extracted clue archives are stowed away and retrieved.
 		 */
 		Builder repository(Repository repository);
+
+		/**
+		 * Configures the bounded analysis sweep used to create approximate crawl
+		 * regions. Defaults are used when omitted.
+		 */
+		Builder crawlPlanning(CrawlPlanning planning);
 
 		/**
 		 * Validates the required composition and creates the crawler.

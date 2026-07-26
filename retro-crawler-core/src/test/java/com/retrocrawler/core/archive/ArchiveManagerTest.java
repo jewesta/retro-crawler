@@ -20,6 +20,7 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.util.CrawlCancelledException;
 import com.retrocrawler.core.util.Monitor;
 
 class ArchiveManagerTest {
@@ -112,6 +113,26 @@ class ArchiveManagerTest {
 		assertSame(stored, manager.getArchive(monitor));
 		assertSame(stored, manager.getArchive(monitor));
 		assertEquals(1, repository.retrieveCount);
+	}
+
+	@Test
+	void cancellationDoesNotStowAwayAPartialArchive() throws IOException {
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final RecordingRepository repository = new RecordingRepository(Optional.empty());
+		final Monitor cancellingMonitor = new Monitor(message -> {
+			// No progress output required in tests.
+		});
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
+			cancellingMonitor.cancel("Stop.");
+			return Set.of(Clue.of("folder", folder));
+		}, List.of(), List.of());
+		final ArchiveDigger digger = new ArchiveDigger(descriptor, clueFinder,
+				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
+		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
+
+		assertThrows(CrawlCancelledException.class, () -> manager.getArchive(cancellingMonitor, true));
+		assertEquals(0, repository.stowawayCount);
 	}
 
 	private ArchiveDescriptor descriptor(final Path archiveDirectory) {

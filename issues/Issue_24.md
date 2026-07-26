@@ -910,6 +910,65 @@ choose a winner. Deciding which source is wrong remains a cataloguing task.
 Structured conflict diagnostics belong with the later Issue 22 query and audit
 work.
 
+## Bounded Crawl Planning and Progress
+
+A complete counting pass would make percentage progress exact, but it would
+also traverse the entire filesystem before clue extraction could begin. On a
+large archive that analysis could itself appear to hang. Reporting only the
+current path proves that the crawler is alive, but gives no numerical sense of
+movement.
+
+The agreed compromise is a bounded, shallow analysis sweep that partitions the
+archive into approximate work regions:
+
+1. Start with the configured archive roots as the frontier.
+2. List one complete directory level.
+3. Replace each non-leaf frontier directory with its child directories.
+4. Stop once the frontier contains enough regions, or a configured depth,
+   analyzed-directory, or elapsed-time bound is reached.
+5. Crawl each frontier subtree as one approximate region.
+
+The default `CrawlPlanning` configuration targets 100 regions and bounds
+analysis to six levels, 2,000 analyzed directories, or five seconds between
+level expansions. Applications can supply an explicit configuration through
+`RetroCrawler.Builder.crawlPlanning(...)`.
+
+The analysis listings are retained and reused by the actual crawl. Besides
+avoiding immediate duplicate filesystem reads, this makes one crawl operate on
+a coherent shallow directory snapshot if files are added while it runs.
+
+Region progress is intentionally labelled approximate. One region may contain
+many more folders or more expensive clue files than another. Human-readable
+messages therefore continue to include the current path while the structured
+event reports completed and total regions. The UI must not describe this as an
+exact elapsed-work percentage.
+
+`Monitor` remains source-compatible with its original
+`Consumer<String>` constructor. It now also emits `CrawlProgress` events for:
+
+- `PLANNING`
+- `CRAWLING`
+- `STOWING`
+- `RESOLVING`
+- `COMPLETE`
+- `CANCELLED`
+
+Planning is indeterminate, crawling is numerically approximate, and resolution
+is exact. Once the extracted archive exists in memory, RetroCrawler counts its
+artifacts cheaply and reports exact resolved/total progress.
+
+Cancellation is now thread-visible and abortive. It raises
+`CrawlCancelledException` at crawl checkpoints rather than returning placeholder
+nodes. `ArchiveManager` consequently never stows a partially crawled archive.
+A cancellation arriving after a complete archive has already been stowed may
+still prevent resolution or emission, but the raw cache itself remains valid.
+
+The existing Vaadin demo still consumes human-readable monitor messages, which
+now include the numerical region information. It creates a fresh monitor for
+each refresh so a cancelled run does not poison a later crawl. Rendering the
+structured progress as a dedicated progress component remains part of the
+later application work.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -957,6 +1016,11 @@ work.
       web-reference clue finders.
 - [x] Define corroborating and conflicting clue semantics without choosing a
       value by source order.
+- [x] Add bounded shallow crawl planning and approximate numerical region
+      progress to core.
+- [x] Add structured crawl phases and exact artifact-resolution progress while
+      preserving legacy monitor messages.
+- [x] Make cancellation abort without stowing a partial archive.
 - [x] Add anonymized synthetic fixtures and focused tests.
 - [ ] Perform the first explicit live-subtree smoke test.
 - [x] Record resulting core changes and verification.
@@ -1025,6 +1089,24 @@ Focused file-clue and conflict tests completed successfully on 2026-07-27:
 All completed successfully. The existing Java 25/ArchUnit compatibility
 warnings and missing collection-module SLF4J provider warning remain
 non-failing.
+
+Focused crawl-planning and progress tests completed successfully on
+2026-07-27:
+
+- `MonitorTest`
+- `CrawlPlanningTest`
+- `ArchiveDiggerPlanningTest`
+- `ArchiveManagerTest`
+- `RetroIdValidationTest`
+- `RetroCrawlerBuilderTest`
+
+They cover bounded frontier expansion, deep-tree depth limits, reuse of
+analysis listings, approximate region completion, exact resolution progress,
+builder configuration, backward-compatible messages, and cancellation without
+partial repository replacement.
+
+The full reactor `mvn test` and clean packaged reactor
+`mvn clean install` also completed successfully after the progress changes.
 
 ## Out of Scope for the Initial Slice
 

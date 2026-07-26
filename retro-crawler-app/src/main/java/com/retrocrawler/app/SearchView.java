@@ -113,15 +113,6 @@ public class SearchView extends HorizontalLayout {
 		super.onAttach(attachEvent);
 		contentArea.setPadding(false);
 
-		final UI ui = attachEvent.getUI();
-		final AtomicInteger counter = new AtomicInteger(0);
-		this.monitor = new Monitor(s -> ui.access(() -> {
-			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
-			drums.setSrc(drums(frame).getSrc());
-			messageBar.setText(s);
-			ui.push();
-		}));
-
 //		searchTerm = new TextField("Search Term");
 //		searchButton = new Button("Search");
 //		searchButton.addClickListener(e -> {
@@ -247,7 +238,6 @@ public class SearchView extends HorizontalLayout {
 		add(splitLayout);
 
 		// Perform initial loading
-		monitor.postUpdate("Loading index...");
 		refreshAsync(attachEvent.getUI(), false);
 	}
 
@@ -276,26 +266,39 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	private void refreshAsync(final UI ui, final boolean reindex) {
+		final Monitor activeMonitor = createMonitor(ui);
+		this.monitor = activeMonitor;
+		activeMonitor.postUpdate("Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				final RetroCrawler activeCrawler = retroCrawler.get(activeArchiveId);
-				return activeCrawler.crawl(monitor, reindex, new VaadinTreeDataFactory());
+				return activeCrawler.crawl(activeMonitor, reindex, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}).thenAccept(successResult -> {
 			ui.access(() -> {
-				monitor.done(INDEX_READY);
+				activeMonitor.done(INDEX_READY);
 				setParts(successResult);
 			});
 		}).exceptionally(failureException -> {
 			ui.access(() -> {
-				monitor.done(INDEX_FAILED + " " + failureException.getMessage());
+				activeMonitor.done(INDEX_FAILED + " " + failureException.getMessage());
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
 			return null;
 		});
+	}
+
+	private Monitor createMonitor(final UI ui) {
+		final AtomicInteger counter = new AtomicInteger(0);
+		return new Monitor(message -> ui.access(() -> {
+			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
+			drums.setSrc(drums(frame).getSrc());
+			messageBar.setText(message);
+			ui.push();
+		}));
 	}
 
 	public void setParts(final TreeData<MyKnownGear> tree) {

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -77,6 +79,25 @@ class RetroCrawlerBuilderTest {
 				() -> builder.repository(repository));
 
 		assertEquals("Repository is already configured.", failure.getMessage());
+	}
+
+	@Test
+	void acceptsExplicitCrawlPlanning() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final CrawlPlanning planning = new CrawlPlanning(25, 3, 200, Duration.ofSeconds(2));
+
+		RetroCrawler.builder().model(model).repository(new RecordingRepository()).crawlPlanning(planning).build();
+	}
+
+	@Test
+	void rejectsDuplicateCrawlPlanningConfiguration() {
+		final CrawlPlanning planning = CrawlPlanning.defaults();
+		final RetroCrawler.Builder builder = RetroCrawler.builder().crawlPlanning(planning);
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> builder.crawlPlanning(planning));
+
+		assertEquals("Crawl planning is already configured.", failure.getMessage());
 	}
 
 	@RetroArchive(id = "factory_test", locations = "/this/path/must/not/be/crawled",

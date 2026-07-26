@@ -1,36 +1,73 @@
 package com.retrocrawler.core.util;
 
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 public class Monitor {
 
-	private Consumer<String> progressMessageConsumer;
+	private final Consumer<String> progressMessageConsumer;
 
-	private boolean cancelled = false;
+	private final Consumer<CrawlProgress> structuredProgressConsumer;
 
-	public Monitor(Consumer<String> progressMessageConsumer) {
-		super();
-		this.progressMessageConsumer = progressMessageConsumer;
+	private final AtomicBoolean cancelled = new AtomicBoolean(false);
+
+	public Monitor(final Consumer<String> progressMessageConsumer) {
+		this(progressMessageConsumer, progress -> {
+			// Structured progress is optional.
+		});
 	}
 
-	public void postUpdate(String message) {
+	public Monitor(final Consumer<String> progressMessageConsumer,
+			final Consumer<CrawlProgress> structuredProgressConsumer) {
+		this.progressMessageConsumer = Objects.requireNonNull(progressMessageConsumer, "progressMessageConsumer");
+		this.structuredProgressConsumer = Objects.requireNonNull(structuredProgressConsumer,
+				"structuredProgressConsumer");
+	}
+
+	public static Monitor observing(final Consumer<CrawlProgress> structuredProgressConsumer) {
+		return new Monitor(message -> {
+			// The caller requested structured events only.
+		}, structuredProgressConsumer);
+	}
+
+	public void report(final CrawlProgress progress) {
+		Objects.requireNonNull(progress, "progress");
 		if (isCancelled()) {
 			return;
 		}
-		progressMessageConsumer.accept(message);
+		dispatch(progress);
 	}
 
-	public void cancel(String message) {
-		this.cancelled = true;
-		progressMessageConsumer.accept(message);
+	public void postUpdate(final String message) {
+		report(CrawlProgress.indeterminate(CrawlProgress.Phase.CRAWLING, message));
+	}
+
+	public void cancel(final String message) {
+		if (cancelled.compareAndSet(false, true)) {
+			dispatch(CrawlProgress.indeterminate(CrawlProgress.Phase.CANCELLED, message));
+		}
 	}
 
 	public boolean isCancelled() {
-		return cancelled;
+		return cancelled.get();
 	}
 
-	public void done(String message) {
-		progressMessageConsumer.accept(message);
+	public void throwIfCancelled() {
+		if (isCancelled()) {
+			throw new CrawlCancelledException("Archive crawl was cancelled.");
+		}
+	}
+
+	public void done(final String message) {
+		if (!isCancelled()) {
+			dispatch(CrawlProgress.indeterminate(CrawlProgress.Phase.COMPLETE, message));
+		}
+	}
+
+	private void dispatch(final CrawlProgress progress) {
+		structuredProgressConsumer.accept(progress);
+		progressMessageConsumer.accept(progress.message());
 	}
 
 }

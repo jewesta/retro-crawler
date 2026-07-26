@@ -30,6 +30,7 @@ import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.PathNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.util.CrawlProgress;
 import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -67,6 +68,24 @@ class RetroIdValidationTest {
 		assertTrue(paths.contains(second.toString()));
 		assertTrue(failure.getMessage().contains("200001"));
 		assertEquals(0, factory.beginBucketCount);
+	}
+
+	@Test
+	void reportsExactProgressWhileResolvingTheExtractedArchive() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("id-200001"));
+		Files.createDirectories(archiveRoot.resolve("id-200002"));
+		final List<CrawlProgress> events = new java.util.ArrayList<>();
+
+		crawler().crawlGear(Monitor.observing(events::add), true, TestGear.class);
+
+		final List<CrawlProgress> resolving = events.stream()
+				.filter(event -> event.phase() == CrawlProgress.Phase.RESOLVING).toList();
+		assertEquals(0, resolving.getFirst().completed());
+		assertEquals(2, resolving.getFirst().total());
+		assertEquals(2, resolving.getLast().completed());
+		assertEquals(2, resolving.getLast().total());
+		assertTrue(resolving.stream().noneMatch(CrawlProgress::approximate));
+		assertEquals(CrawlProgress.Phase.COMPLETE, events.getLast().phase());
 	}
 
 	private RetroCrawler crawler() {

@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.util.CrawlProgress;
 import com.retrocrawler.core.util.Monitor;
 
 public class ArchiveManager {
@@ -37,13 +38,18 @@ public class ArchiveManager {
 
 	private Archive fromFileSystem(final Monitor monitor) throws IOException {
 		final Collection<Path> rootPaths = descriptor.getPaths();
+		final ArchiveDigPlan plan = digger.plan(rootPaths, monitor);
 		final List<Bucket> buckets = new ArrayList<>();
 		for (final Path rootPath : rootPaths) {
-			final ArchiveNode rootNode = digger.dig(rootPath, monitor);
+			monitor.throwIfCancelled();
+			final ArchiveNode rootNode = digger.dig(rootPath, plan, monitor);
 			final Bucket bucket = Bucket.of(rootPath, rootNode);
 			buckets.add(bucket);
 		}
 		final Archive archive = Archive.of(descriptor.getId(), buckets);
+		monitor.throwIfCancelled();
+		monitor.report(CrawlProgress.indeterminate(CrawlProgress.Phase.STOWING,
+				"Stowing away the extracted clue archive."));
 		repository.stowaway(archive);
 		return archive;
 	}
