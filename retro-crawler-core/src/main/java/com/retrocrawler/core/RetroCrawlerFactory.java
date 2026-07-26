@@ -6,6 +6,8 @@ import java.util.Set;
 import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
+import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
@@ -15,6 +17,16 @@ import com.retrocrawler.core.util.TypeName;
 public class RetroCrawlerFactory implements ReflectiveFactory<RetroCrawler> {
 
 	private static final GearResolverFactory GEAR_RESOLVER_FACTORY = new GearResolverFactory();
+
+	private final Repository repository;
+
+	public RetroCrawlerFactory() {
+		this(new JsonFileRepository());
+	}
+
+	public RetroCrawlerFactory(final Repository repository) {
+		this.repository = Objects.requireNonNull(repository, "repository");
+	}
 
 	@Override
 	public RetroCrawler reflectOn(final Set<Class<?>> types) {
@@ -30,7 +42,7 @@ public class RetroCrawlerFactory implements ReflectiveFactory<RetroCrawler> {
 
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(types);
 
-		return new RetroCrawlerImpl(descriptor, digger, gearResolver);
+		return new RetroCrawlerImpl(descriptor, digger, gearResolver, repository);
 	}
 
 	private static RetroArchive assertRetroArchiveOnOneOf(final Set<Class<?>> types) {

@@ -8,6 +8,7 @@ import java.util.Optional;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
@@ -24,9 +25,10 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	private final GearResolver resolver;
 
 	// package-private: only factories construct this
-	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver) {
+	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver,
+			final Repository repository) {
 		this.archiveDescriptor = Objects.requireNonNull(descriptor, "descriptor");
-		this.manager = new ArchiveManager(descriptor, digger);
+		this.manager = new ArchiveManager(descriptor, digger, repository);
 		this.resolver = Objects.requireNonNull(resolver, "resolver");
 	}
 

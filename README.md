@@ -44,7 +44,7 @@ RetroCrawler operates in two distinct phases:
 The archive is traversed recursively.
 For each folder, registered `ClueFinder`s extract clues and produce an `Artifact`.
 
-Artifacts are cached as JSON on the local storage so that expensive rescans can be avoided. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly loaded from the JSON cache.
+The extracted clue archive is stowed away through a `Repository` so that expensive rescans can be avoided. The default `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
 
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
@@ -57,7 +57,7 @@ Unknown or unparseable clues are preserved and may be accessed explicitly.
 
 ## Configuration via Annotations
 
-RetroCrawler is configured entirely via annotations:
+RetroCrawler's archive and gear model can be configured via annotations:
 
 - `@RetroArchive`  
   Declares archive locations and clue-finder configuration.
@@ -72,6 +72,19 @@ RetroCrawler is configured entirely via annotations:
   Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
 
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
+
+---
+
+## Archive Repository
+
+RetroCrawler uses `JsonFileRepository` and the local `cache` directory by default. Applications may supply any `Repository` implementation:
+
+```java
+Repository repository = new JsonFileRepository(Path.of("my-cache"));
+RetroCrawler crawler = new RetroCrawlerFactory(repository).reflectOn(types);
+```
+
+A missing stored archive causes the filesystem archive to be crawled. If a stored archive cannot be retrieved, RetroCrawler reports the repository failure and rebuilds it from the filesystem source.
 
 ---
 

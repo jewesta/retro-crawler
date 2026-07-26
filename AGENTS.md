@@ -1,0 +1,89 @@
+# RetroCrawler Agent Guidelines
+
+These instructions apply to the entire repository.
+
+## Design Principles
+
+1. **Prefer real-world archive language.**
+   RetroCrawler models the behavior of a physical archive, and its vocabulary is
+   intentional. Its playful, informal tone is part of the project's identity;
+   names such as `RetroCrawler` and `Gear` should not be sanitized into sterile
+   technical vocabulary. Prefer terms from archives, crawling, clues, artifacts,
+   and gear over generic software or CRUD terminology when the domain offers a
+   suitable word. In particular, a `Repository` uses `retrieve` to obtain an
+   archive and `stowaway` to put one away. Do not rename these operations to
+   `load`, `save`, `read`, or `persist` merely to follow common framework
+   conventions.
+
+2. **Keep collectors and their gear at the center.**
+   RetroCrawler primarily serves collections of retro material, especially
+   hardware, while remaining useful for other kinds of collectors' archives.
+   `Gear` is the deliberate umbrella abstraction for an item in a collection,
+   regardless of whether that item is hardware or something else. Preserve this
+   domain focus: do not narrow `Gear` to a particular kind of retro hardware or
+   dilute it into generic terms such as `entity` or `item` merely to make the
+   framework sound more universal.
+
+3. **Keep the core a small, reusable framework.**
+   `retro-crawler-core` must not depend on the demo application, CLI, or Vaadin
+   application. Avoid adding heavy dependencies to the core when an extension
+   point or an optional module would suffice.
+
+4. **Treat the filesystem archive as the source of truth.**
+   A repository stores the extracted clue archive so that expensive crawling can
+   be avoided. Stored data is rebuildable from the configured archive locations.
+   Keep repository abstractions independent of a particular storage technology.
+
+5. **Preserve useful defaults while allowing explicit configuration.**
+   Existing callers should continue to work with sensible default behavior.
+   New extension points should also be injectable and configurable without
+   requiring application-specific framework integration.
+
+6. **Make collections explorable by humans, applications, and AI agents.**
+   RetroCrawler is a local, deterministic collection toolkit. Its core should
+   expose structured, machine-readable queries and traceable results rather
+   than depend on an LLM, an AI SDK, or natural-language prompting. Keep AI and
+   protocol integrations in thin adapters that use the same public API as the
+   CLI, Vaadin sample application, and other consumers. Preserve provenance
+   through the resolution process so an answer about a piece of gear can be
+   traced back to its archive, source path, clues, and facts.
+
+## Repository Structure
+
+- `retro-crawler-core`: public framework API and implementation.
+- `retro-crawler-demo`: sample archive types, clue finders, and demo data.
+- `retro-crawler-app`: Vaadin demonstration application.
+- `retro-crawler-cli`: command-line demonstration application.
+- `retro-crawler-doc`: documentation support and examples.
+
+The application and CLI are examples rather than stable public APIs. The Vaadin
+application remains a valuable visual browser, demonstration, and integration
+check, but it is not the primary product boundary. Future AI or protocol
+adapters should likewise remain outside `retro-crawler-core`.
+
+## Issue Documentation
+
+- Keep living issue notes in the repository-root `issues` directory.
+- Use one Markdown file per issue, named exactly `Issue_<issue_number>.md`.
+- Record the issue's intent, domain modelling, decisions, progress, open
+  questions, and verification where relevant.
+- Update the issue note as work progresses; it is a working design record, not
+  only a summary written after implementation.
+
+## Build and Verification
+
+- The project targets Java 21 and is built as a Maven multi-module reactor.
+- Run `mvn test` from the repository root for the normal test suite.
+- Run `mvn clean install` when changes must be verified across packaged module
+  boundaries.
+- Add focused tests for changed core behavior, especially extension-point
+  contracts and persistence behavior.
+- Core code uses SLF4J. Do not introduce `System.out`, `System.err`, or
+  `java.util.logging` into `retro-crawler-core`.
+
+## Change Discipline
+
+- Preserve unrelated user changes in the working tree.
+- Keep public API naming consistent with the domain vocabulary above.
+- Prefer small, reviewable changes and avoid unrelated refactoring in issue
+  branches.
