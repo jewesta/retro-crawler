@@ -6,8 +6,9 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
-import com.retrocrawler.mycollection.model.DataCapacity;
-import com.retrocrawler.mycollection.model.RamSet;
+import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.mycollection.memory.RamSet;
 
 public final class RamSetParser implements FactParser {
 

@@ -9,18 +9,23 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
+import com.retrocrawler.model.hardware.ExpansionBus;
+import com.retrocrawler.model.hardware.ExpansionBusParser;
+import com.retrocrawler.model.identifier.ISBN;
+import com.retrocrawler.model.identifier.ISBNParser;
+import com.retrocrawler.model.identifier.MacAddress;
+import com.retrocrawler.model.identifier.MacAddressParser;
+import com.retrocrawler.model.identifier.TheRetroWebId;
+import com.retrocrawler.model.identifier.TheRetroWebIdParser;
+import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.mycollection.AttributeNames;
-import com.retrocrawler.mycollection.facts.DataCapacityParser;
+import com.retrocrawler.mycollection.catalog.FloppyImageId;
+import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
-import com.retrocrawler.mycollection.facts.TheRetroWebIdParser;
-import com.retrocrawler.mycollection.model.DataCapacity;
-import com.retrocrawler.mycollection.model.ExpansionBus;
-import com.retrocrawler.mycollection.model.FloppyImageId;
-import com.retrocrawler.mycollection.model.RamSet;
-import com.retrocrawler.mycollection.model.RetroId;
-import com.retrocrawler.mycollection.model.TheRetroWebId;
+import com.retrocrawler.mycollection.memory.RamSet;
 
 public abstract class MyGear {
 
@@ -31,7 +36,7 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.RETRO_ID, parser = RetroIdParser.class, strict = false, optional = true)
 	private RetroId retroId;
 
-	@RetroFact(key = AttributeNames.BUS, strict = false, optional = true)
+	@RetroFact(key = AttributeNames.BUS, parser = ExpansionBusParser.class, strict = false, optional = true)
 	private ExpansionBus bus;
 
 	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
@@ -51,6 +56,15 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.IMAGE_BACK, optional = true)
 	private String backImage;
+
+	@RetroFact(key = AttributeNames.ISBN, parser = ISBNParser.class, optional = true)
+	private ISBN isbn;
+
+	@RetroFact(key = AttributeNames.MAC_ADDRESS, parser = MacAddressParser.class, optional = true)
+	private MacAddress macAddress;
+
+	@RetroFact(key = AttributeNames.SERIAL_NUMBER, parser = StringParser.class, optional = true)
+	private String serialNumber;
 
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGE_ID, parser = FloppyImageIdParser.class, optional = true)
 	private Set<FloppyImageId> floppyImageIds = Set.of();
@@ -101,6 +115,18 @@ public abstract class MyGear {
 
 	public Optional<String> getBackImage() {
 		return Optional.ofNullable(backImage);
+	}
+
+	public Optional<ISBN> getIsbn() {
+		return Optional.ofNullable(isbn);
+	}
+
+	public Optional<MacAddress> getMacAddress() {
+		return Optional.ofNullable(macAddress);
+	}
+
+	public Optional<String> getSerialNumber() {
+		return Optional.ofNullable(serialNumber);
 	}
 
 	public Set<FloppyImageId> getFloppyImageIds() {

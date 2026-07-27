@@ -10,9 +10,9 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.util.Monitor;
-import com.retrocrawler.demo.collection.DemoFiles;
-import com.retrocrawler.demo.collection.DemoModels;
-import com.retrocrawler.demo.collection.gear.MyRetroGear;
+import com.retrocrawler.demo.DemoFiles;
+import com.retrocrawler.demo.DemoModels;
+import com.retrocrawler.demo.gear.MyRetroGear;
 
 public final class RetroCrawlerCli {
 

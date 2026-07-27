@@ -12,6 +12,7 @@
 
 	<modules>
 		<module>retro-crawler-core</module>
+		<module>retro-crawler-model</module>
 		<module>retro-crawler-doc</module>
 		<module>retro-crawler-demo</module>
 		<module>retro-crawler-mycollection</module>

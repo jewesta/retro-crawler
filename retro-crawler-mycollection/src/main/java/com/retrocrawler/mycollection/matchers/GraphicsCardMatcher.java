@@ -4,7 +4,7 @@ import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.mycollection.AttributeNames;
-import com.retrocrawler.mycollection.model.ExpansionBus;
+import com.retrocrawler.model.hardware.ExpansionBus;
 
 public final class GraphicsCardMatcher implements GearMatcher {
 

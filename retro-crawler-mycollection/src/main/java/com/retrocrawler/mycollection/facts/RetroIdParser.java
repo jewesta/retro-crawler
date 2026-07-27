@@ -2,7 +2,7 @@ package com.retrocrawler.mycollection.facts;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
-import com.retrocrawler.mycollection.model.RetroId;
+import com.retrocrawler.mycollection.catalog.RetroId;
 
 public final class RetroIdParser implements FactParser {
 

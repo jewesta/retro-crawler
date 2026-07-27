@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,17 +24,18 @@ import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.model.hardware.ExpansionBus;
+import com.retrocrawler.model.identifier.ISBN;
+import com.retrocrawler.model.identifier.MacAddress;
+import com.retrocrawler.model.identifier.TheRetroWebId;
+import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.mycollection.catalog.FloppyImageId;
+import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
-import com.retrocrawler.mycollection.model.DataCapacity;
-import com.retrocrawler.mycollection.model.ExpansionBus;
-import com.retrocrawler.mycollection.model.FloppyImageId;
-import com.retrocrawler.mycollection.model.RamSet;
-import com.retrocrawler.mycollection.model.RetroId;
-import com.retrocrawler.mycollection.model.TheRetroWebId;
+import com.retrocrawler.mycollection.memory.RamSet;
 
 class MyCollectionModelTest {
 
@@ -73,9 +75,8 @@ class MyCollectionModelTest {
 		final MyGear serialOnly = gear(gear, "Serial only [SN 200003]");
 		assertInstanceOf(MysteryGear.class, serialOnly);
 		assertEquals(Optional.empty(), serialOnly.getRetroId());
-		assertTrue(serialOnly.getAttributes().get(AttributeNames.SERIAL_NUMBER)
-				instanceof com.retrocrawler.core.archive.clues.Clue);
-		assertTrue(serialOnly.getAttributes().values().stream().noneMatch(Fact.class::isInstance));
+		assertEquals(Optional.of("200003"), serialOnly.getSerialNumber());
+		assertFalse(serialOnly.getAttributes().containsKey(AttributeNames.SERIAL_NUMBER));
 	}
 
 	@Test
@@ -105,6 +106,18 @@ class MyCollectionModelTest {
 		assertEquals(2, gear.size());
 		assertTrue(gear.stream()
 				.allMatch(value -> value.getTheRetroWebId().equals(Optional.of(new TheRetroWebId(10510)))));
+	}
+
+	@Test
+	void resolvesSharedIdentifierTypesThroughCollectionKeys() throws IOException {
+		Files.createDirectories(archiveRoot.resolve(
+				"Network manual [MAC 00-00-C0-0D-66-AB] [ISBN 978-0-306-40615-7]"));
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
+				"Network manual [MAC 00-00-C0-0D-66-AB] [ISBN 978-0-306-40615-7]");
+
+		assertEquals(Optional.of(new MacAddress("00:00:C0:0D:66:AB")), gear.getMacAddress());
+		assertEquals(Optional.of(new ISBN("9780306406157")), gear.getIsbn());
 	}
 
 	@Test

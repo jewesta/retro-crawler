@@ -26,20 +26,30 @@ These instructions apply to the entire repository.
 
 3. **Keep the core a small, reusable framework.**
    `retro-crawler-core` must not depend on the demo application, CLI, or Vaadin
-   application. Avoid adding heavy dependencies to the core when an extension
-   point or an optional module would suffice.
+   application. It must likewise remain independent of the optional shared
+   model. Avoid adding heavy dependencies to the core when an extension point
+   or an optional module would suffice.
 
-4. **Treat the filesystem archive as the source of truth.**
+4. **Keep shared model vocabulary objective and portable.**
+   `retro-crawler-model` contains value types and canonical parsers whose
+   meaning is stable beyond one collector's archive. This includes formal
+   standards, industry vocabulary, and durable community reference systems
+   such as The Retro Web. It must not contain personal cataloguing policy,
+   collection-specific clue syntax, concrete fallback gear, or subjective
+   assessments. Collection adapters decide how their clues map onto the shared
+   vocabulary.
+
+5. **Treat the filesystem archive as the source of truth.**
    A repository stores the extracted clue archive so that expensive crawling can
    be avoided. Stored data is rebuildable from the configured archive locations.
    Keep repository abstractions independent of a particular storage technology.
 
-5. **Preserve useful defaults while allowing explicit configuration.**
+6. **Preserve useful defaults while allowing explicit configuration.**
    Existing callers should continue to work with sensible default behavior.
    New extension points should also be injectable and configurable without
    requiring application-specific framework integration.
 
-6. **Make collections explorable by humans, applications, and AI agents.**
+7. **Make collections explorable by humans, applications, and AI agents.**
    RetroCrawler is a local, deterministic collection toolkit. Its core should
    expose structured, machine-readable queries and traceable results rather
    than depend on an LLM, an AI SDK, or natural-language prompting. Keep AI and
@@ -51,6 +61,7 @@ These instructions apply to the entire repository.
 ## Repository Structure
 
 - `retro-crawler-core`: public framework API and implementation.
+- `retro-crawler-model`: optional shared facts and canonical parsers.
 - `retro-crawler-demo`: sample archive types, clue finders, and demo data.
 - `retro-crawler-app`: Vaadin demonstration application.
 - `retro-crawler-cli`: command-line demonstration application.

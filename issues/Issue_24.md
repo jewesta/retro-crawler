@@ -51,11 +51,14 @@ retro-crawler-mycollection
 
 The personal collection model must not become a privileged code path.
 
-- `retro-crawler-mycollection` depends on `retro-crawler-core`.
+- `retro-crawler-mycollection` depends on `retro-crawler-core` and the optional
+  shared `retro-crawler-model`.
 - `retro-crawler-core` must not depend on or reference the personal model.
+- `retro-crawler-core` must not depend on `retro-crawler-model`; the shared
+  vocabulary is a consumer of the same public framework API.
 - The model uses only public framework APIs.
-- Collection-specific tag names, hardware taxonomies, aliases, parsers, and
-  matchers remain outside the core.
+- Collection-specific tag names, subjective cataloguing state, aliases,
+  parsers, and matchers remain outside the core and shared model.
 - A core change is justified only when it expresses a capability useful to an
   arbitrary collection model.
 - The demo remains small and instructional. It should adopt reduced examples of
@@ -680,11 +683,11 @@ The first slice should likely contain:
   unresolved tags, ambiguity, and validation failures.
 - Preservation of unknown tags and facts.
 
-Hardware vocabulary such as ISA, PCI, AGP, or RAM form factors belongs in the
-collection model initially. A reusable optional adapter module should be
-extracted only if multiple independent models demonstrate the same need. It
-should not be placed in core merely because the vocabulary is common in this
-collection.
+The initial recommendation was to leave hardware vocabulary such as ISA, PCI,
+AGP, and RAM form factors in the collection model until real use justified an
+extraction. The demo and the live collection model subsequently supplied that
+evidence, leading to the optional `retro-crawler-model` module documented
+below. The vocabulary remains outside core.
 
 ## Test and Verification Strategy
 
@@ -787,9 +790,9 @@ source of runtime root configuration.
 
 ### Collection Module and Walking Model
 
-The reactor now contains `retro-crawler-mycollection`, whose only production
-dependency is `retro-crawler-core`. Its namespace is
-`com.retrocrawler.mycollection`.
+The reactor now contains `retro-crawler-mycollection`, whose production
+dependencies are `retro-crawler-core` and the optional shared
+`retro-crawler-model`. Its namespace is `com.retrocrawler.mycollection`.
 
 The initial model contains:
 
@@ -799,7 +802,7 @@ The initial model contains:
 - `GraphicsCard` with one deliberately conservative matcher: a local AGP fact
   is strong evidence, while PCI and other currently ambiguous buses remain
   `MysteryGear`.
-- `ExpansionBus` with AGP, EISA, ISA, PCI, and VLB.
+- Shared `ExpansionBus` vocabulary with AGP, EISA, ISA, PCI, and VLB.
 - A value-equal 2-series `RetroId` and exact parser.
 - `BracketPathClueFinder`, which ignores paths without an opening bracket,
   retains title text before, between, and after groups, parses named and
@@ -1119,12 +1122,13 @@ lowercase key by the same case-insensitive grammar rule. Thus `TRW` becomes
 `trw`, `SN` becomes `sn`, and an unknown `Alias` becomes `alias`.
 
 The model then binds typed facts explicitly to folder-language keys such as
-`trw` and `set`. Serial numbers and MAC addresses remain `sn` and `mac` clues
-for now; this slice does not yet claim a complete value grammar for them.
+`trw` and `set`. A subsequent shared-model extraction added a validated
+`MacAddress` fact and retained serial numbers as collection-owned strings
+because their syntax remains manufacturer-specific.
 
 ### Typed Facts
 
-Three model-owned value types and exact parsers were added:
+The initial pass added three value types and exact parsers:
 
 - `TheRetroWebId` represents a positive numeric database reference. It is not
   a physical identity and is therefore not annotated with `@RetroId`; two
@@ -1138,6 +1142,10 @@ Three model-owned value types and exact parsers were added:
   the capacity per member, and derives the total capacity. The property is
   named `memberCount`, rather than `stickCount`, because the live archive also
   applies the set convention to loose memory components.
+
+`TheRetroWebId` and `DataCapacity` were subsequently promoted into
+`retro-crawler-model`; `RamSet` and its folder-language parser remain owned by
+the personal collection.
 
 The Retro Web deep-link category is deliberately not guessed by the ID parser.
 An ID alone does not say whether the target belongs below `motherboards`,
@@ -1154,12 +1162,18 @@ Aggregate mining of the 6,362-node private cache found:
 
 - 234 The Retro Web observations: 231 positive numeric IDs parse exactly and
   three explicit non-numeric placeholders remain unresolved.
+- 30 named MAC-address observations, all accepted and normalized by the shared
+  `MacAddress` grammar.
 - 424 standalone KB/MB/GB/TB capacity observations, all accepted by the
   capacity grammar.
 - 163 `Set` observations: 149 use the canonical count-first form, 12 use the
   reverse form, and two are more complex. The latter 14 remain clues.
 - All 149 canonical RAM sets also declare a standalone total capacity.
   147 derived totals agree with that declaration; two conflict.
+- No folder name or bracket group in this cache contains an explicit or
+  checksum-valid ISBN. ISBN remains in the shared model because the preexisting
+  demo parser records prior collection-domain intent and because arbitrary
+  unrecognized filenames and file contents are outside this cache's evidence.
 
 The two conflicts are useful catalogue findings, not parser exceptions to be
 papered over. They remain in the private source for the collector to inspect
@@ -1169,6 +1183,61 @@ report.
 
 No private path, folder name, identifier, or cache content was copied into the
 repository during this mining pass.
+
+## Shared Model Extraction
+
+The existing demo model was built from the same collection vocabulary and
+therefore represents prior domain knowledge, not disposable sample noise. The
+live collection also exposed objective facts useful to other collectors. These
+two sources now meet in the optional `retro-crawler-model` module.
+
+The shared-model inclusion rule is:
+
+> A fact belongs in the shared model when its meaning is stable outside one
+> collector's archive and other collectors can interpret it objectively.
+
+This includes formal standards such as ISBN, industry vocabulary such as ISA
+and PCI, and durable community reference systems such as The Retro Web. It
+excludes personal identity schemes, subjective condition, workflow state,
+collection clue syntax, matchers, and concrete fallback gear.
+
+The initial package structure is deliberately organized by what a fact is,
+rather than every collection domain in which it may be used:
+
+```text
+com.retrocrawler.model
+├── hardware
+├── identifier
+└── measurement
+```
+
+The first shared vocabulary contains:
+
+- `ISBN`, `MacAddress`, and `TheRetroWebId`, with canonical parsers.
+- `ExpansionBus`, including AGP, EISA, ISA, MCA, PCI, PCI Express, and VLB.
+- `DataCapacity`.
+- `MemoryFormFactor` and `MemoryFeature`.
+- Separate `MemoryAccessTime` and `MemoryStandard` types. The old demo
+  `RAMSpeed` enum was not copied because it conflated nanosecond access times
+  with PC66/PC100/PC133 standards.
+
+Parsers live beside their value types. They know canonical textual
+representations but do not know collection clue keys or folder syntax. The
+demo and personal collection independently bind their own keys to these shared
+facts.
+
+The personal model no longer has a generic `.model` package:
+
+- `RetroId` and `FloppyImageId` live under
+  `com.retrocrawler.mycollection.catalog`.
+- `RamSet` lives under `com.retrocrawler.mycollection.memory`.
+- Shared facts are imported from `com.retrocrawler.model`.
+
+The demo package root was shortened from `com.retrocrawler.demo.collection` to
+`com.retrocrawler.demo`. Its subjective and demonstration-only state lives
+under `com.retrocrawler.demo.catalog`; reusable facts were removed in favor of
+the shared model. The demo bracket adapter now normalizes every named key
+uniformly and contains no collection-vocabulary switch.
 
 ## Subsequent Implementation Direction
 
@@ -1233,12 +1302,16 @@ repository during this mining pass.
       parsers.
 - [x] Mine the private full-archive cache for parser coverage and RAM-set total
       consistency without copying private data into the repository.
+- [x] Extract objective and durable community vocabulary into the optional
+      `retro-crawler-model` module.
+- [x] Remove consumer `.model` packages and give personal concepts semantic
+      package homes.
+- [x] Shorten the demo namespace to `com.retrocrawler.demo` and make the demo a
+      real consumer of the shared model.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
 
-- Which external configuration format and local location should supply the
-  personal archive roots and private repository/cache directory?
 - Should ignore policy and subtree-pruning policy be one contract or separate
   extension points?
 - Which repeated uses of a 1-series or `FD-*` identifier are valid references,
@@ -1353,6 +1426,20 @@ by different physical gear.
 
 The full reactor `mvn test` and clean packaged reactor
 `mvn clean install` also completed successfully after the fact-mining changes.
+
+The shared-model extraction and consumer package cleanup were verified on
+2026-07-27:
+
+- Focused shared-model, demo, and collection tests covered identifier,
+  hardware, and capacity parsers; demo discovery; uniform bracket-key
+  normalization; collection fact parsing; and end-to-end model resolution.
+- The full reactor `mvn test` completed successfully.
+- The clean packaged reactor `mvn clean install` completed successfully,
+  verifying the new `core -> model -> consumers` module boundaries.
+- Source scans found no remaining Java references to
+  `com.retrocrawler.demo.collection` or `com.retrocrawler.mycollection.model`.
+- A repository privacy scan found no collection roots or private cache/report
+  paths in source-controlled files.
 
 ## Out of Scope for the Initial Slice
 

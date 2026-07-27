@@ -18,6 +18,8 @@ public final class AttributeNames {
 
 	public static final String IMAGE_FRONT = "imageFront";
 
+	public static final String ISBN = "isbn";
+
 	public static final String MAC_ADDRESS = "mac";
 
 	public static final String RAM_SET = "set";

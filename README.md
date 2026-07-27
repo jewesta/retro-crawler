@@ -87,6 +87,20 @@ Applications that need deterministic or custom discovery can instead provide a `
 
 ---
 
+## Optional Shared Model
+
+RetroCrawler remains a bring-your-own-type framework. The optional
+`retro-crawler-model` module provides reusable value types and canonical
+parsers for facts whose meaning is stable across collections, including ISBNs,
+MAC addresses, The Retro Web IDs, expansion buses, memory vocabulary, and data
+capacities.
+
+Collection adapters remain responsible for mapping their own folder tags,
+metadata files, or other clues onto that shared vocabulary. The core does not
+depend on the shared model.
+
+---
+
 ## Archive Repository
 
 Applications must explicitly select a `Repository`. `JsonFileRepository` remains a convenient supplied implementation and uses the local `cache` directory when constructed without a path:

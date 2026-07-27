@@ -4,7 +4,7 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
-import com.retrocrawler.mycollection.model.FloppyImageId;
+import com.retrocrawler.mycollection.catalog.FloppyImageId;
 
 public final class FloppyImageIdParser implements FactParser {
 

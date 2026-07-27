@@ -8,9 +8,11 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
-import com.retrocrawler.mycollection.model.DataCapacity;
-import com.retrocrawler.mycollection.model.RamSet;
-import com.retrocrawler.mycollection.model.TheRetroWebId;
+import com.retrocrawler.model.identifier.TheRetroWebId;
+import com.retrocrawler.model.identifier.TheRetroWebIdParser;
+import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.mycollection.memory.RamSet;
 
 class CollectionFactParsersTest {
 
