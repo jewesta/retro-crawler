@@ -1074,6 +1074,102 @@ automation cannot mistake an invalid catalogue for a successful result. The
 report path and its contents remain external runtime data and are not recorded
 in this repository.
 
+After the collector corrected the first set of source findings, the complete
+archive was rebuilt rather than resolved from stale cache. The second pass
+completed 518 approximate regions, stowed 6,362 directory nodes, and resolved
+2,193 artifacts. It then found:
+
+- 9 duplicated Retro ID values, down from 17.
+- 18 total folder occurrences, down from 35.
+- Only two-way collisions; the previous three-way collision was corrected.
+
+Thus eight duplicate values were eliminated by the source corrections. The
+remaining nine pairs still prevent gear emission. The second run took 9
+minutes 54 seconds because one approximate region experienced a long
+filesystem delay; it eventually completed without intervention. The private
+report was replaced with the current findings and retained owner-only
+permissions.
+
+## First Fact-Mining Slice
+
+The first fact-mining pass was implemented on 2026-07-27 against the existing
+private full-archive cache. The cache still contains each archive node's
+original folder name, so it can prove candidate parsing conventions without
+requiring another expensive source traversal. A later reindex is nevertheless
+required before the stored clues themselves use the new key normalization and
+comma grammar.
+
+### Folder-Language Corrections
+
+The first cache inspection exposed a concrete parser defect: the original
+comma splitter treated decimal commas as list separators. Values such as
+`3,5`, `1,44MB`, `3,3V`, and `1,125MB` were consequently damaged before a
+fact parser could see them.
+
+The collection grammar now treats a comma followed by whitespace as a list
+separator. A comma without following whitespace remains part of one value.
+This applies equally to anonymous and keyed groups: a list such as
+`[ISA, PCI]` still yields two values, while `[Set 2 x 1,125MB]` retains one
+complete set declaration.
+
+The bracket finder must understand syntax, not collection vocabulary. It
+therefore contains no list of known keys and does not translate `trw` into a
+semantic field name. Every syntactically valid keyed group is normalized to a
+lowercase key by the same case-insensitive grammar rule. Thus `TRW` becomes
+`trw`, `SN` becomes `sn`, and an unknown `Alias` becomes `alias`.
+
+The model then binds typed facts explicitly to folder-language keys such as
+`trw` and `set`. Serial numbers and MAC addresses remain `sn` and `mac` clues
+for now; this slice does not yet claim a complete value grammar for them.
+
+### Typed Facts
+
+Three model-owned value types and exact parsers were added:
+
+- `TheRetroWebId` represents a positive numeric database reference. It is not
+  a physical identity and is therefore not annotated with `@RetroId`; two
+  collection objects may legitimately refer to the same database entry.
+- `DataCapacity` represents a positive decimal quantity in KB, MB, GB, or TB,
+  supports decimal commas, comparison across units, and multiplication.
+  Lowercase `kb` is normalized to KB because the live archive uses it for byte
+  capacities on SIMMs, cache modules, disks, and memory chips; capitalization
+  is not a reliable bit/byte distinction in this folder language.
+- `RamSet` represents a count-first declaration such as `2 x 16MB`, exposes
+  the capacity per member, and derives the total capacity. The property is
+  named `memberCount`, rather than `stickCount`, because the live archive also
+  applies the set convention to loose memory components.
+
+The Retro Web deep-link category is deliberately not guessed by the ID parser.
+An ID alone does not say whether the target belongs below `motherboards`,
+`expansioncards`, or another site route. Link construction should be added
+after the resolved gear taxonomy can supply that category.
+
+Reverse-order and embellished set spellings are left unresolved. The parser
+does not quietly reinterpret them, because the agreed collection convention is
+count first and obvious inconsistencies should be corrected at the source.
+
+### Private-Cache Coverage
+
+Aggregate mining of the 6,362-node private cache found:
+
+- 234 The Retro Web observations: 231 positive numeric IDs parse exactly and
+  three explicit non-numeric placeholders remain unresolved.
+- 424 standalone KB/MB/GB/TB capacity observations, all accepted by the
+  capacity grammar.
+- 163 `Set` observations: 149 use the canonical count-first form, 12 use the
+  reverse form, and two are more complex. The latter 14 remain clues.
+- All 149 canonical RAM sets also declare a standalone total capacity.
+  147 derived totals agree with that declaration; two conflict.
+
+The two conflicts are useful catalogue findings, not parser exceptions to be
+papered over. They remain in the private source for the collector to inspect
+and correct. This is the first example beyond duplicate Retro IDs where typed
+facts expose a cross-fact consistency check that the later structured audit can
+report.
+
+No private path, folder name, identifier, or cache content was copied into the
+repository during this mining pass.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1131,6 +1227,12 @@ in this repository.
 - [x] Perform the first explicit live-subtree smoke test.
 - [x] Crawl the complete IBM-compatible archive and report duplicate Retro IDs
       without changing the source collection.
+- [x] Correct decimal-comma handling and normalize named folder keys uniformly
+      without teaching the clue finder collection vocabulary.
+- [x] Add typed The Retro Web, data-capacity, and RAM-set facts with conservative
+      parsers.
+- [x] Mine the private full-archive cache for parser coverage and RAM-set total
+      consistency without copying private data into the repository.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1236,6 +1338,21 @@ Retro ID validation. A cache-only rerun reproduced all 17 duplicate values and
 35 occurrences without another filesystem crawl and generated the private
 owner-readable report. After adding that launcher behavior, the full reactor
 `mvn test` and `mvn clean install` completed successfully.
+
+The corrected-source full rebuild completed extraction and exact resolution on
+2026-07-27 and replaced the private report with the remaining 9 duplicate
+values and 18 occurrences. The full reactor `mvn test` and
+`mvn clean install` completed successfully after updating stale-report cleanup.
+
+The first fact-mining slice was verified on 2026-07-27 with 19 focused
+`BracketPathClueFinderTest`, `CollectionFactParsersTest`, and
+`MyCollectionModelTest` tests. They cover decimal commas, whitespace-delimited
+lists, uniform key normalization, exact typed parsing, derived RAM-set totals,
+end-to-end fact injection, and legitimate reuse of a The Retro Web reference
+by different physical gear.
+
+The full reactor `mvn test` and clean packaged reactor
+`mvn clean install` also completed successfully after the fact-mining changes.
 
 ## Out of Scope for the Initial Slice
 

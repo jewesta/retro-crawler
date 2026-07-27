@@ -3,6 +3,7 @@ package com.retrocrawler.mycollection.clues;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -79,11 +80,11 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 		final String possibleKey = group.substring(0, firstWhitespace);
 		final String rawValues = group.substring(firstWhitespace).trim();
 		if (possibleKey.contains(",") || rawValues.isEmpty()) {
-			return Clue.of(group);
+			return Clue.of(splitValues(group));
 		}
 
 		try {
-			return Clue.of(possibleKey, splitValues(rawValues));
+			return Clue.of(possibleKey.toLowerCase(Locale.ROOT), splitValues(rawValues));
 		} catch (final IllegalArgumentException e) {
 			/*
 			 * Reserved or otherwise invalid keys are still valuable observations. Keep
@@ -103,7 +104,8 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 	}
 
 	private static Set<String> splitValues(final String rawValues) {
-		return Arrays.stream(rawValues.split(",", -1)).map(String::trim)
+		return Arrays.stream(rawValues.split(",\\s+", -1)).map(String::trim)
 				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 	}
+
 }

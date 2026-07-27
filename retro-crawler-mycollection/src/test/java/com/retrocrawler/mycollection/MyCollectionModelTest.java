@@ -28,9 +28,12 @@ import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
+import com.retrocrawler.mycollection.model.DataCapacity;
 import com.retrocrawler.mycollection.model.ExpansionBus;
 import com.retrocrawler.mycollection.model.FloppyImageId;
+import com.retrocrawler.mycollection.model.RamSet;
 import com.retrocrawler.mycollection.model.RetroId;
+import com.retrocrawler.mycollection.model.TheRetroWebId;
 
 class MyCollectionModelTest {
 
@@ -70,8 +73,38 @@ class MyCollectionModelTest {
 		final MyGear serialOnly = gear(gear, "Serial only [SN 200003]");
 		assertInstanceOf(MysteryGear.class, serialOnly);
 		assertEquals(Optional.empty(), serialOnly.getRetroId());
-		assertTrue(serialOnly.getAttributes().get("SN") instanceof com.retrocrawler.core.archive.clues.Clue);
+		assertTrue(serialOnly.getAttributes().get(AttributeNames.SERIAL_NUMBER)
+				instanceof com.retrocrawler.core.archive.clues.Clue);
 		assertTrue(serialOnly.getAttributes().values().stream().noneMatch(Fact.class::isInstance));
+	}
+
+	@Test
+	void resolvesTheRetroWebAndRamSetFacts() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Memory set [32MB] [Set 2 x 16MB] [TRW 10510]"));
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_MONITOR, true, MyGear.class),
+				"Memory set [32MB] [Set 2 x 16MB] [TRW 10510]");
+
+		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32),
+				DataCapacity.Unit.MB);
+		final RamSet expectedSet = new RamSet(2,
+				new DataCapacity(java.math.BigDecimal.valueOf(16), DataCapacity.Unit.MB));
+		assertEquals(Optional.of(expectedCapacity), gear.getCapacity());
+		assertEquals(Optional.of(expectedSet), gear.getRamSet());
+		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
+		assertEquals(Optional.of(new TheRetroWebId(10510)), gear.getTheRetroWebId());
+	}
+
+	@Test
+	void permitsTheSameRetroWebEntryForDifferentPhysicalGear() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("First board [200010] [trw 10510]"));
+		Files.createDirectories(archiveRoot.resolve("Second board [200011] [TRW 10510]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_MONITOR, true, MyGear.class);
+
+		assertEquals(2, gear.size());
+		assertTrue(gear.stream()
+				.allMatch(value -> value.getTheRetroWebId().equals(Optional.of(new TheRetroWebId(10510)))));
 	}
 
 	@Test

@@ -10,11 +10,17 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.mycollection.AttributeNames;
+import com.retrocrawler.mycollection.facts.DataCapacityParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
+import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
+import com.retrocrawler.mycollection.facts.TheRetroWebIdParser;
+import com.retrocrawler.mycollection.model.DataCapacity;
 import com.retrocrawler.mycollection.model.ExpansionBus;
 import com.retrocrawler.mycollection.model.FloppyImageId;
+import com.retrocrawler.mycollection.model.RamSet;
 import com.retrocrawler.mycollection.model.RetroId;
+import com.retrocrawler.mycollection.model.TheRetroWebId;
 
 public abstract class MyGear {
 
@@ -27,6 +33,9 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.BUS, strict = false, optional = true)
 	private ExpansionBus bus;
+
+	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
+	private DataCapacity capacity;
 
 	@RetroFact(key = AttributeNames.TITLE, optional = true)
 	private String title;
@@ -49,6 +58,12 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, parser = StringParser.class, optional = true)
 	private Set<String> floppyImages = Set.of();
 
+	@RetroFact(key = AttributeNames.RAM_SET, parser = RamSetParser.class, optional = true)
+	private RamSet ramSet;
+
+	@RetroFact(key = AttributeNames.THE_RETRO_WEB_ID, parser = TheRetroWebIdParser.class, optional = true)
+	private TheRetroWebId theRetroWebId;
+
 	@RetroAnyAttribute
 	private final Map<String, RetroAttribute> attributes = new HashMap<>();
 
@@ -62,6 +77,10 @@ public abstract class MyGear {
 
 	public Optional<ExpansionBus> getBus() {
 		return Optional.ofNullable(bus);
+	}
+
+	public Optional<DataCapacity> getCapacity() {
+		return Optional.ofNullable(capacity);
 	}
 
 	public Optional<String> getTitle() {
@@ -90,6 +109,14 @@ public abstract class MyGear {
 
 	public Set<String> getFloppyImages() {
 		return Set.copyOf(floppyImages);
+	}
+
+	public Optional<RamSet> getRamSet() {
+		return Optional.ofNullable(ramSet);
+	}
+
+	public Optional<TheRetroWebId> getTheRetroWebId() {
+		return Optional.ofNullable(theRetroWebId);
 	}
 
 	public Map<String, RetroAttribute> getAttributes() {

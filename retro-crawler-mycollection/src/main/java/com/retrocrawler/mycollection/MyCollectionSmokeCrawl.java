@@ -44,6 +44,7 @@ public final class MyCollectionSmokeCrawl {
 
 		try {
 			final List<MyGear> gear = crawler.crawlGear(monitor, reindex, MyGear.class);
+			Files.deleteIfExists(cacheDirectory.resolve("duplicate-retro-ids.txt"));
 			printSummary(gear);
 		} catch (final DuplicateRetroIdException failure) {
 			final Path report = writeDuplicateReport(cacheDirectory, failure);
