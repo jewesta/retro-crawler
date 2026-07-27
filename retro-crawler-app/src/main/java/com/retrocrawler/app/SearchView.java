@@ -21,7 +21,8 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.Repository;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
 import com.retrocrawler.demo.gear.MyKnownGear;
@@ -80,7 +81,7 @@ public class SearchView extends HorizontalLayout {
 
 	private final Paragraph messageBar = new Paragraph();
 
-	private Monitor monitor;
+	private Progressor progressor;
 
 	private final Map<ArchiveId, RetroCrawler> retroCrawler;
 
@@ -184,7 +185,7 @@ public class SearchView extends HorizontalLayout {
 
 		final Button cancel = retroButton("Cancel Indexing");
 		cancel.addClickListener(event -> {
-			monitor.cancel("Cancel requested...");
+			progressor.cancel("Cancel requested...");
 			logger.info("Repository indexing cancelled.");
 		});
 
@@ -266,24 +267,24 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	private void refreshAsync(final UI ui, final boolean reindex) {
-		final Monitor activeMonitor = createMonitor(ui);
-		this.monitor = activeMonitor;
-		activeMonitor.postUpdate("Loading index...");
+		final Progressor activeProgressor = createProgressor(ui);
+		this.progressor = activeProgressor;
+		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				final RetroCrawler activeCrawler = retroCrawler.get(activeArchiveId);
-				return activeCrawler.crawl(activeMonitor, reindex, new VaadinTreeDataFactory());
+				return activeCrawler.crawl(activeProgressor, reindex, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}).thenAccept(successResult -> {
 			ui.access(() -> {
-				activeMonitor.done(INDEX_READY);
+				activeProgressor.complete(INDEX_READY);
 				setParts(successResult);
 			});
 		}).exceptionally(failureException -> {
 			ui.access(() -> {
-				activeMonitor.done(INDEX_FAILED + " " + failureException.getMessage());
+				activeProgressor.fail(INDEX_FAILED + " " + failureException.getMessage());
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
@@ -291,9 +292,9 @@ public class SearchView extends HorizontalLayout {
 		});
 	}
 
-	private Monitor createMonitor(final UI ui) {
+	private Progressor createProgressor(final UI ui) {
 		final AtomicInteger counter = new AtomicInteger(0);
-		return new Monitor(message -> ui.access(() -> {
+		return Progressor.reportingMessages(message -> ui.access(() -> {
 			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
 			drums.setSrc(drums(frame).getSrc());
 			messageBar.setText(message);
@@ -311,8 +312,8 @@ public class SearchView extends HorizontalLayout {
 		return parts;
 	}
 
-	protected Optional<Monitor> getMonitor() {
-		return Optional.ofNullable(monitor);
+	protected Optional<Progressor> getProgressor() {
+		return Optional.ofNullable(progressor);
 	}
 
 	private static final Image drums(final int i) {

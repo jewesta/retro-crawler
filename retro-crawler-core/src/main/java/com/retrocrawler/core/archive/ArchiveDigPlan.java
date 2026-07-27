@@ -8,8 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
 final class ArchiveDigPlan {
@@ -24,6 +25,8 @@ final class ArchiveDigPlan {
 	private final int analyzedDepth;
 
 	private long completedRegions;
+
+	private boolean progressStarted;
 
 	ArchiveDigPlan(final Map<Path, List<Path>> analyzedListings, final List<Region> regions, final int analyzedDepth) {
 		this.analyzedListings = new LinkedHashMap<>(analyzedListings);
@@ -47,20 +50,24 @@ final class ArchiveDigPlan {
 		return analyzedDepth;
 	}
 
-	void reportCurrent(final Path path, final boolean insideRegion, final Monitor monitor) {
+	void reportCurrent(final Path path, final boolean insideRegion, final Progressor progressor) {
 		final long current = Math.min(completedRegions + 1, totalRegions());
 		final String prefix = insideRegion
 				? "Crawling archive region " + current + " of " + totalRegions() + ": "
 				: "Crawling archive structure: ";
-		monitor.report(CrawlProgress.approximate(CrawlProgress.Phase.CRAWLING,
-				prefix + PathNames.abbreviatePathName(path.toString()), completedRegions, totalRegions()));
+		final String message = prefix + PathNames.abbreviatePathName(path.toString());
+		if (!progressStarted) {
+			progressor.begin(ProgressStage.CRAWLING, message, totalRegions(), ProgressAccuracy.APPROXIMATE);
+			progressStarted = true;
+			return;
+		}
+		progressor.advanceTo(completedRegions, message);
 	}
 
-	void completeRegion(final Path path, final Monitor monitor) {
+	void completeRegion(final Path path, final Progressor progressor) {
 		completedRegions++;
-		monitor.report(CrawlProgress.approximate(CrawlProgress.Phase.CRAWLING,
+		progressor.advanceTo(completedRegions,
 				"Completed archive region " + completedRegions + " of " + totalRegions() + ": "
-						+ PathNames.abbreviatePathName(path.toString()),
-				completedRegions, totalRegions()));
+						+ PathNames.abbreviatePathName(path.toString()));
 	}
 }

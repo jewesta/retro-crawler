@@ -6,7 +6,6 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.retrocrawler.core.DuplicateRetroIdException;
@@ -14,8 +13,9 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.JsonFileRepository;
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.FixedStepProgressMonitor;
+import com.retrocrawler.core.progress.ProgressSnapshot;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.mycollection.gear.MyGear;
 
 /**
@@ -40,10 +40,10 @@ public final class MyCollectionSmokeCrawl {
 		final Model model = Model.from(AttributeNames.class.getPackageName(), roots);
 		final RetroCrawler crawler = RetroCrawler.builder().model(model)
 				.repository(new JsonFileRepository(cacheDirectory)).build();
-		final Monitor monitor = Monitor.observing(new CompactProgressPrinter());
+		final Progressor progressor = Progressor.observing(new CompactProgressPrinter());
 
 		try {
-			final List<MyGear> gear = crawler.crawlGear(monitor, reindex, MyGear.class);
+			final List<MyGear> gear = crawler.crawlGear(progressor, reindex, MyGear.class);
 			Files.deleteIfExists(cacheDirectory.resolve("duplicate-retro-ids.txt"));
 			printSummary(gear);
 		} catch (final DuplicateRetroIdException failure) {
@@ -123,40 +123,22 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
 	}
 
-	private static final class CompactProgressPrinter implements Consumer<CrawlProgress> {
+	private static final class CompactProgressPrinter extends FixedStepProgressMonitor {
 
-		private CrawlProgress.Phase previousPhase;
-
-		private long previousPercentageBucket = Long.MIN_VALUE;
+		private CompactProgressPrinter() {
+			super(20);
+		}
 
 		@Override
-		public void accept(final CrawlProgress progress) {
-			final boolean phaseChanged = progress.phase() != previousPhase;
-			final long percentageBucket = percentageBucket(progress);
-			final boolean completed = progress.isDeterminate() && progress.completed() == progress.total();
-			if (!phaseChanged && !completed && percentageBucket == previousPercentageBucket) {
-				return;
-			}
-
+		protected void onProgressStep(final long maximumStep, final long currentStep,
+				final ProgressSnapshot progress) {
 			final String amount = progress.isDeterminate()
 					? progress.completed() + "/" + progress.total()
 					: "-";
-			final String precision = progress.isDeterminate()
-					? progress.approximate() ? "APPROXIMATE" : "EXACT"
-					: "INDETERMINATE";
+			final String precision = progress.accuracy().toString();
 			final String message = progress.message().replace('\n', ' ').replace('\r', ' ');
-			System.out.println("RC_PROGRESS\t" + progress.phase() + "\t" + amount + "\t" + precision + "\t"
+			System.out.println("RC_PROGRESS\t" + progress.stage() + "\t" + amount + "\t" + precision + "\t"
 					+ message);
-
-			previousPhase = progress.phase();
-			previousPercentageBucket = percentageBucket;
-		}
-
-		private static long percentageBucket(final CrawlProgress progress) {
-			if (!progress.isDeterminate() || progress.total() == 0) {
-				return Long.MIN_VALUE;
-			}
-			return progress.completed() * 100 / progress.total() / 5;
 		}
 	}
 }

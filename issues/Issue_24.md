@@ -953,31 +953,57 @@ messages therefore continue to include the current path while the structured
 event reports completed and total regions. The UI must not describe this as an
 exact elapsed-work percentage.
 
-`Monitor` remains source-compatible with its original
-`Consumer<String>` constructor. It now also emits `CrawlProgress` events for:
+The original RC-specific `Monitor`, `CrawlProgress`, and
+`CrawlCancelledException` were subsequently folded into one core progress
+abstraction rather than retained behind adapters. `Progressor` now owns
+control, observation, cancellation, timing, and structured snapshots:
 
-- `PLANNING`
-- `CRAWLING`
-- `STOWING`
-- `RESOLVING`
-- `COMPLETE`
-- `CANCELLED`
+- `ProgressStage` identifies the active phase. The supplied archive stages are
+  `PLANNING`, `CRAWLING`, `STOWING`, and `RESOLVING`, while applications may
+  define their own stages.
+- `ProgressAccuracy` distinguishes indeterminate, approximate, and exact
+  units.
+- `ProgressSnapshot` freezes the active stage, message, units, accuracy,
+  terminal state, root fraction, elapsed time, and a simple remaining-time
+  estimate.
+- `ProgressMonitor` observes snapshots; `Progressor.reportingMessages(...)`
+  is the deliberately small convenience bridge for CLI and GUI consumers that
+  only need human-readable status.
+- `FixedStepProgressMonitor` throttles determinate observers to a chosen number
+  of steps without hiding stage or state transitions.
+- A progressor can be split into nested, weighted windows. This supports later
+  multi-step operations without hard-coding one global percentage model into
+  the crawler.
+- `COMPLETE`, `CANCELLED`, and `FAILED` are terminal states rather than
+  pseudo-stages. A failed crawl publishes `FAILED` before propagating the
+  original exception.
+
+The implementation is a dependency-free adaptation of progressor work from
+Relimit GmbH, used with permission and attributed in the class-level comments.
+Pepper-specific translation, logging, Spring, Jackson, console, and pipeline
+support was not copied into core. The resulting API retains the useful
+weighted-progress and snapshot concepts while making RC's stage accuracy and
+abortive cancellation first-class.
 
 Planning is indeterminate, crawling is numerically approximate, and resolution
 is exact. Once the extracted archive exists in memory, RetroCrawler counts its
-artifacts cheaply and reports exact resolved/total progress.
+artifacts cheaply and reports exact resolved/total progress. Stages in the
+current crawl replace one another and therefore report phase-local root
+fractions. Weighted child progressors are available when a caller wants to
+compose several operations into one deliberate overall percentage.
 
-Cancellation is now thread-visible and abortive. It raises
-`CrawlCancelledException` at crawl checkpoints rather than returning placeholder
-nodes. `ArchiveManager` consequently never stows a partially crawled archive.
-A cancellation arriving after a complete archive has already been stowed may
-still prevent resolution or emission, but the raw cache itself remains valid.
+Cancellation is thread-visible and abortive. It raises
+`ProgressCancelledException` at crawl checkpoints rather than returning
+placeholder nodes. `ArchiveManager` consequently never stows a partially
+crawled archive. A cancellation arriving after a complete archive has already
+been stowed may still prevent resolution or emission, but the raw cache itself
+remains valid.
 
-The existing Vaadin demo still consumes human-readable monitor messages, which
-now include the numerical region information. It creates a fresh monitor for
-each refresh so a cancelled run does not poison a later crawl. Rendering the
-structured progress as a dedicated progress component remains part of the
-later application work.
+The existing Vaadin demo and CLI consume the message view of the same
+`Progressor`; the private smoke runner consumes structured snapshots. The
+Vaadin demo creates a fresh progressor for each refresh so a cancelled run does
+not poison a later crawl. Rendering the structured snapshot as a dedicated
+progress component remains part of the later application work.
 
 ## First Live Subtree Smoke Test
 
@@ -1310,8 +1336,10 @@ uniformly and contains no collection-vocabulary switch.
 - [x] Add bounded shallow crawl planning and approximate numerical region
       progress to core.
 - [x] Add structured crawl phases and exact artifact-resolution progress while
-      preserving legacy monitor messages.
+      retaining a lightweight message-consumer view.
 - [x] Make cancellation abort without stowing a partial archive.
+- [x] Fold the crawl monitor, progress event, and cancellation controller into
+      an attributed, weighted `Progressor` API in core.
 - [x] Add anonymized synthetic fixtures and focused tests.
 - [x] Perform the first explicit live-subtree smoke test.
 - [x] Crawl the complete IBM-compatible archive and report duplicate Retro IDs
@@ -1399,7 +1427,7 @@ non-failing.
 Focused crawl-planning and progress tests completed successfully on
 2026-07-27:
 
-- `MonitorTest`
+- `ProgressorTest`
 - `CrawlPlanningTest`
 - `ArchiveDiggerPlanningTest`
 - `ArchiveManagerTest`
@@ -1408,11 +1436,31 @@ Focused crawl-planning and progress tests completed successfully on
 
 They cover bounded frontier expansion, deep-tree depth limits, reuse of
 analysis listings, approximate region completion, exact resolution progress,
-builder configuration, backward-compatible messages, and cancellation without
-partial repository replacement.
+builder configuration, message-only observation, structured terminal states,
+nested weighted windows, and cancellation without partial repository
+replacement.
 
 The full reactor `mvn test` and clean packaged reactor
 `mvn clean install` also completed successfully after the progress changes.
+
+The later Relimit progressor adaptation and RC API consolidation were verified
+on 2026-07-27:
+
+- `ProgressorTest` covers structured and message-only observation,
+  indeterminate/exact/approximate units, simple ETA behavior, fixed-step
+  throttling, nested weighted windows, child completion, terminal states, and
+  cancellation retaining the active child stage.
+- `RetroCrawlerBuilderTest` verifies that a crawl failure publishes `FAILED`
+  and still propagates the original exception.
+- Existing planning, repository, duplicate-ID, clue-finder, collection-model,
+  CLI, and Vaadin consumers compile and test against `Progressor`; there are no
+  remaining Java references to the retired RC `Monitor`, `CrawlProgress`, or
+  `CrawlCancelledException`.
+- The full reactor `mvn test` and clean packaged reactor
+  `mvn clean install` both completed successfully.
+- The packaged core JAR contains the new `com.retrocrawler.core.progress`
+  API and none of the retired progress classes. Privacy and core-library-policy
+  scans remained clean.
 
 The first live-subtree smoke test completed successfully on 2026-07-27 using
 the external root file and private JSON repository described above. A second

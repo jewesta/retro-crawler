@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Bucket;
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 
 public class ArchiveManager {
 
@@ -36,25 +36,24 @@ public class ArchiveManager {
 		this.repository = Objects.requireNonNull(repository, "repository");
 	}
 
-	private Archive fromFileSystem(final Monitor monitor) throws IOException {
+	private Archive fromFileSystem(final Progressor progressor) throws IOException {
 		final Collection<Path> rootPaths = descriptor.getPaths();
-		final ArchiveDigPlan plan = digger.plan(rootPaths, monitor);
+		final ArchiveDigPlan plan = digger.plan(rootPaths, progressor);
 		final List<Bucket> buckets = new ArrayList<>();
 		for (final Path rootPath : rootPaths) {
-			monitor.throwIfCancelled();
-			final ArchiveNode rootNode = digger.dig(rootPath, plan, monitor);
+			progressor.throwIfCancelled();
+			final ArchiveNode rootNode = digger.dig(rootPath, plan, progressor);
 			final Bucket bucket = Bucket.of(rootPath, rootNode);
 			buckets.add(bucket);
 		}
 		final Archive archive = Archive.of(descriptor.getId(), buckets);
-		monitor.throwIfCancelled();
-		monitor.report(CrawlProgress.indeterminate(CrawlProgress.Phase.STOWING,
-				"Stowing away the extracted clue archive."));
+		progressor.throwIfCancelled();
+		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
 
-	public synchronized Archive getArchive(final Monitor monitor, final boolean refreshCache) throws IOException {
+	public synchronized Archive getArchive(final Progressor progressor, final boolean refreshCache) throws IOException {
 		if (!refreshCache) {
 			if (cache != null) {
 				return cache;
@@ -64,12 +63,12 @@ public class ArchiveManager {
 				return cache;
 			}
 		}
-		cache = fromFileSystem(monitor);
+		cache = fromFileSystem(progressor);
 		return cache;
 	}
 
-	public Archive getArchive(final Monitor monitor) throws IOException {
-		return getArchive(monitor, false);
+	public Archive getArchive(final Progressor progressor) throws IOException {
+		return getArchive(progressor, false);
 	}
 
 	private Optional<Archive> retrieve() {

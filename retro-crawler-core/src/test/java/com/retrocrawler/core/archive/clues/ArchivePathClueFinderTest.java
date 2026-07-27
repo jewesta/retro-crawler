@@ -12,13 +12,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.archive.ArchivePath;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.Progressor;
 
 class ArchivePathClueFinderTest {
 
-	private static final Monitor SILENT_MONITOR = new Monitor(message -> {
-		// No progress output required in tests.
-	});
+	private static final Progressor SILENT_PROGRESSOR = new Progressor();
 
 	@TempDir
 	private Path folder;
@@ -31,7 +29,7 @@ class ArchivePathClueFinderTest {
 				List.of(),
 				List.of(files -> Set.of(Clue.of("bus", "AGP"))));
 
-		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_MONITOR);
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
 
 		assertEquals(Set.of("AGP"), clue(clues, "bus").getValue());
 	}
@@ -44,7 +42,7 @@ class ArchivePathClueFinderTest {
 				List.of(),
 				List.of(files -> Set.of(Clue.of("bus", "PCI"))));
 
-		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_MONITOR);
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
 
 		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").getValue());
 	}
@@ -56,7 +54,7 @@ class ArchivePathClueFinderTest {
 				List.of(),
 				List.of());
 
-		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), SILENT_MONITOR);
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), SILENT_PROGRESSOR);
 
 		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").getValue());
 	}

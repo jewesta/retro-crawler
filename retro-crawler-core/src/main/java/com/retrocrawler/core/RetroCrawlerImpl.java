@@ -19,8 +19,9 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
 public class RetroCrawlerImpl implements RetroCrawler {
@@ -45,45 +46,70 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public <R, N, G> R crawl(final Monitor monitor, final boolean reindex, final GearTreeFactory<R, N, G> factory)
+	public <R, N, G> R crawl(final Progressor progressor, final boolean reindex, final GearTreeFactory<R, N, G> factory)
 			throws IOException {
 
-		Objects.requireNonNull(monitor, "monitor");
+		Objects.requireNonNull(progressor, "progressor");
 		Objects.requireNonNull(factory, "factory");
-		monitor.throwIfCancelled();
+		progressor.throwIfCancelled();
 
+		try {
+			return crawlToCompletion(progressor, reindex, factory);
+		} catch (final IOException | RuntimeException failure) {
+			reportFailure(progressor, failure);
+			throw failure;
+		}
+	}
+
+	private <R, N, G> R crawlToCompletion(final Progressor progressor, final boolean reindex,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 
-		final Archive archive = manager.getArchive(monitor, reindex);
+		final Archive archive = manager.getArchive(progressor, reindex);
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
 		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
 		final long artifactCount = archive.getBuckets().stream().map(Bucket::getRoot)
 				.mapToLong(RetroCrawlerImpl::countArtifacts).sum();
-		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, monitor);
+		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
 
 		for (final Bucket bucket : archive.getBuckets()) {
-			monitor.throwIfCancelled();
+			progressor.throwIfCancelled();
 			final ArchiveNode root = bucket.getRoot();
 			final ResolvedArchiveNode resolvedRoot = root == null ? null
-					: resolve(root, Path.of(bucket.getBasePath()), retroIds, resolutionProgress, monitor);
+					: resolve(root, Path.of(bucket.getBasePath()), retroIds, resolutionProgress, progressor);
 			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
 		}
 
 		retroIds.assertUnique();
 
 		for (final ResolvedBucket resolvedBucket : resolvedBuckets) {
-			monitor.throwIfCancelled();
+			progressor.throwIfCancelled();
 			final Bucket bucket = resolvedBucket.bucket();
 			factory.beginBucket(bucket);
 			if (resolvedBucket.root() != null) {
-				emitCompressed(resolvedBucket.root(), null, factory, gearType, monitor);
+				emitCompressed(resolvedBucket.root(), null, factory, gearType, progressor);
 			}
 			factory.endBucket(bucket);
 		}
 
 		final R result = factory.build();
-		monitor.done("Crawl complete.");
+		progressor.complete("Crawl complete.");
 		return result;
+	}
+
+	private static String failureDescription(final Throwable failure) {
+		final String message = failure.getMessage();
+		return message == null || message.isBlank() ? failure.getClass().getSimpleName() : message;
+	}
+
+	private static void reportFailure(final Progressor progressor, final Throwable failure) {
+		try {
+			progressor.fail("Crawl failed: " + failureDescription(failure));
+		} catch (final RuntimeException reportingFailure) {
+			if (reportingFailure != failure) {
+				failure.addSuppressed(reportingFailure);
+			}
+		}
 	}
 
 	private static long countArtifacts(final ArchiveNode node) {
@@ -107,9 +133,9 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	 * (lifting)
 	 */
 	private <R, N, G> void emitCompressed(final ResolvedArchiveNode node, final N parent,
-			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Monitor monitor) {
+			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Progressor progressor) {
 
-		monitor.throwIfCancelled();
+		progressor.throwIfCancelled();
 		final Optional<Object> resolved = node.resolution().map(GearResolution::gear);
 
 		final N nextParent;
@@ -125,13 +151,13 @@ public class RetroCrawlerImpl implements RetroCrawler {
 			return;
 		}
 		for (final ResolvedArchiveNode child : children) {
-			emitCompressed(child, nextParent, factory, gearType, monitor);
+			emitCompressed(child, nextParent, factory, gearType, progressor);
 		}
 	}
 
 	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path sourcePath, final RetroIdRegistry retroIds,
-			final ResolutionProgress progress, final Monitor monitor) {
-		monitor.throwIfCancelled();
+			final ResolutionProgress progress, final Progressor progressor) {
+		progressor.throwIfCancelled();
 		final Artifact artifact = node.getArtifact();
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
 				: resolver.resolveWithIdentity(artifact);
@@ -144,7 +170,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		final List<ArchiveNode> archiveChildren = node.getChildren();
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
-				children.add(resolve(child, sourcePath.resolve(child.getFolder()), retroIds, progress, monitor));
+				children.add(resolve(child, sourcePath.resolve(child.getFolder()), retroIds, progress, progressor));
 			}
 		}
 		return new ResolvedArchiveNode(resolution, List.copyOf(children));
@@ -154,23 +180,22 @@ public class RetroCrawlerImpl implements RetroCrawler {
 
 		private final long total;
 
-		private final Monitor monitor;
+		private final Progressor progressor;
 
 		private long completed;
 
-		private ResolutionProgress(final long total, final Monitor monitor) {
+		private ResolutionProgress(final long total, final Progressor progressor) {
 			this.total = total;
-			this.monitor = monitor;
+			this.progressor = progressor;
 			final String message = total == 0 ? "No artifacts to resolve." : "Resolving " + total + " artifacts.";
-			monitor.report(CrawlProgress.exact(CrawlProgress.Phase.RESOLVING, message, 0, total));
+			progressor.begin(ProgressStage.RESOLVING, message, total, ProgressAccuracy.EXACT);
 		}
 
 		private void complete(final Path sourcePath) {
 			completed++;
-			monitor.report(CrawlProgress.exact(CrawlProgress.Phase.RESOLVING,
+			progressor.advanceTo(completed,
 					"Resolved artifact " + completed + " of " + total + ": "
-							+ PathNames.abbreviatePathName(sourcePath.toString()),
-					completed, total));
+							+ PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
 

@@ -18,8 +18,10 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressSnapshot;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerPlanningTest {
 
@@ -30,20 +32,20 @@ class ArchiveDiggerPlanningTest {
 	void expandsShallowLevelsUntilItHasEnoughApproximateRegions() throws IOException {
 		createTree();
 		final ArchiveDigger digger = digger(new CrawlPlanning(3, 5, 100, Duration.ofMinutes(1)));
-		final List<CrawlProgress> events = new ArrayList<>();
-		final Monitor monitor = Monitor.observing(events::add);
+		final List<ProgressSnapshot> events = new ArrayList<>();
+		final Progressor progressor = Progressor.observing(events::add);
 
-		final ArchiveDigPlan plan = digger.plan(List.of(root), monitor);
-		final ArchiveNode archive = digger.dig(root, plan, monitor);
+		final ArchiveDigPlan plan = digger.plan(List.of(root), progressor);
+		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
 		assertEquals(2, plan.analyzedDepth());
 		assertEquals(4, plan.totalRegions());
 		assertEquals(2, archive.getChildren().size());
 
-		final List<CrawlProgress> crawling = events.stream()
-				.filter(event -> event.phase() == CrawlProgress.Phase.CRAWLING).toList();
-		final CrawlProgress last = crawling.getLast();
-		assertTrue(last.approximate());
+		final List<ProgressSnapshot> crawling = events.stream()
+				.filter(event -> event.stage().equals(ProgressStage.CRAWLING)).toList();
+		final ProgressSnapshot last = crawling.getLast();
+		assertEquals(ProgressAccuracy.APPROXIMATE, last.accuracy());
 		assertEquals(4, last.completed());
 		assertEquals(4, last.total());
 	}
@@ -55,9 +57,7 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(second.resolve("three"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(100, 2, 100, Duration.ofMinutes(1)));
 
-		final ArchiveDigPlan plan = digger.plan(List.of(root), new Monitor(message -> {
-			// No progress output required.
-		}));
+		final ArchiveDigPlan plan = digger.plan(List.of(root), new Progressor());
 
 		assertEquals(2, plan.analyzedDepth());
 		assertEquals(1, plan.totalRegions());
@@ -68,13 +68,11 @@ class ArchiveDiggerPlanningTest {
 	void reusesListingsCollectedByTheAnalysisSweep() throws IOException {
 		Files.createDirectory(root.resolve("known"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
-		final Monitor monitor = new Monitor(message -> {
-			// No progress output required.
-		});
-		final ArchiveDigPlan plan = digger.plan(List.of(root), monitor);
+		final Progressor progressor = new Progressor();
+		final ArchiveDigPlan plan = digger.plan(List.of(root), progressor);
 		Files.createDirectory(root.resolve("created-after-planning"));
 
-		final ArchiveNode archive = digger.dig(root, plan, monitor);
+		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
 		assertEquals(List.of("known"), archive.getChildren().stream().map(ArchiveNode::getFolder).toList());
 		assertFalse(archive.getChildren().stream()

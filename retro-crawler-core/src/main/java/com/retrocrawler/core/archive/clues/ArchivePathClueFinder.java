@@ -13,7 +13,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.archive.ArchivePath;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Reflection;
 
 public class ArchivePathClueFinder {
@@ -66,12 +66,12 @@ public class ArchivePathClueFinder {
 		try (InputStream in = Files.newInputStream(file)) {
 			return finder.find(in);
 		} catch (final IOException e) {
-			// TODO Error handling via Monitor
+			// TODO Report the affected clue file through structured progress diagnostics.
 			throw new ClueFileIOException(e);
 		}
 	}
 
-	public Set<Clue> find(final ArchivePath node, final Monitor monitor) {
+	public Set<Clue> find(final ArchivePath node, final Progressor progressor) {
 		Set<Clue> clues;
 		final String folderName = node.path().getFileName().toString();
 		if (folderNameClueFinder != null) {

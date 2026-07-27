@@ -23,9 +23,9 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.util.CrawlProgress;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
-import com.retrocrawler.core.util.Monitor;
 
 public class ArchiveDigger {
 
@@ -48,15 +48,15 @@ public class ArchiveDigger {
 		this.planning = Objects.requireNonNull(planning, "planning");
 	}
 
-	public ArchiveNode dig(final Path path, final Monitor monitor) throws IOException {
-		final ArchiveDigPlan plan = plan(List.of(path), monitor);
-		return dig(path, plan, monitor);
+	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
+		final ArchiveDigPlan plan = plan(List.of(path), progressor);
+		return dig(path, plan, progressor);
 	}
 
-	ArchiveDigPlan plan(final Collection<Path> roots, final Monitor monitor) throws IOException {
+	ArchiveDigPlan plan(final Collection<Path> roots, final Progressor progressor) throws IOException {
 		Objects.requireNonNull(roots, "roots");
-		Objects.requireNonNull(monitor, "monitor");
-		monitor.throwIfCancelled();
+		Objects.requireNonNull(progressor, "progressor");
+		progressor.throwIfCancelled();
 
 		final List<ArchiveDigPlan.Region> initialRegions = new ArrayList<>();
 		for (final Path root : roots) {
@@ -73,10 +73,10 @@ public class ArchiveDigger {
 		final Map<Path, List<Path>> analyzedListings = new LinkedHashMap<>();
 		List<ArchiveDigPlan.Region> frontier = initialRegions;
 		int depth = 0;
-		reportPlanning(monitor, depth, frontier.size(), false);
+		reportPlanning(progressor, depth, frontier.size(), false);
 
 		while (frontier.size() < planning.targetRegions() && depth < planning.maximumDepth()) {
-			monitor.throwIfCancelled();
+			progressor.throwIfCancelled();
 
 			final Set<Path> unanalyzed = frontier.stream().map(ArchiveDigPlan.Region::path)
 					.filter(path -> !analyzedListings.containsKey(path))
@@ -89,7 +89,7 @@ public class ArchiveDigger {
 			final List<ArchiveDigPlan.Region> next = new ArrayList<>();
 			boolean expanded = false;
 			for (final ArchiveDigPlan.Region region : frontier) {
-				monitor.throwIfCancelled();
+				progressor.throwIfCancelled();
 				List<Path> listing = analyzedListings.get(region.path());
 				if (listing == null) {
 					listing = list(region.path());
@@ -106,13 +106,13 @@ public class ArchiveDigger {
 
 			depth++;
 			frontier = next;
-			reportPlanning(monitor, depth, frontier.size(), false);
+			reportPlanning(progressor, depth, frontier.size(), false);
 			if (!expanded) {
 				break;
 			}
 		}
 
-		reportPlanning(monitor, depth, frontier.size(), true);
+		reportPlanning(progressor, depth, frontier.size(), true);
 		return new ArchiveDigPlan(analyzedListings, frontier, depth);
 	}
 
@@ -121,12 +121,12 @@ public class ArchiveDigger {
 		return elapsed.compareTo(planning.maximumDuration()) >= 0;
 	}
 
-	private static void reportPlanning(final Monitor monitor, final int depth, final int regions,
+	private static void reportPlanning(final Progressor progressor, final int depth, final int regions,
 			final boolean complete) {
 		final String message = complete
 				? "Crawl planning complete at depth " + depth + ": " + regions + " approximate archive regions."
 				: "Planning crawl depth " + depth + ": " + regions + " candidate archive regions.";
-		monitor.report(CrawlProgress.indeterminate(CrawlProgress.Phase.PLANNING, message));
+		progressor.indeterminate(ProgressStage.PLANNING, message);
 	}
 
 	private static List<Path> list(final Path path) throws IOException {
@@ -139,11 +139,11 @@ public class ArchiveDigger {
 		}
 	}
 
-	ArchiveNode dig(final Path root, final ArchiveDigPlan plan, final Monitor monitor) throws IOException {
+	ArchiveNode dig(final Path root, final ArchiveDigPlan plan, final Progressor progressor) throws IOException {
 		if (!Files.isDirectory(root)) {
 			throw new IllegalArgumentException("Expected a folder but got: " + root);
 		}
-		return dig(root, root, plan, monitor, false);
+		return dig(root, root, plan, progressor, false);
 	}
 
 	private Set<Clue> createSyntheticClues(final Path root, final Path path) {
@@ -168,11 +168,12 @@ public class ArchiveDigger {
 	/**
 	 * @param root    Guaranteed to be a folder (not a file)
 	 * @param path    Guaranteed to be a folder (not a file)
-	 * @param monitor
+	 * @param progressor
 	 * @return
 	 * @throws IOException
 	 */
-	private ArchiveNode dig(final Path root, final Path path, final ArchiveDigPlan plan, final Monitor monitor,
+	private ArchiveNode dig(final Path root, final Path path, final ArchiveDigPlan plan,
+			final Progressor progressor,
 			final boolean parentInsideRegion) throws IOException {
 		final String pathName;
 		if (path.equals(root)) {
@@ -185,17 +186,17 @@ public class ArchiveDigger {
 		} else {
 			pathName = path.getFileName().toString();
 		}
-		monitor.throwIfCancelled();
+		progressor.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(root, path);
 		final boolean insideRegion = parentInsideRegion || startsRegion;
-		plan.reportCurrent(path, insideRegion, monitor);
+		plan.reportCurrent(path, insideRegion, progressor);
 
 		final List<Path> paths = plan.listing(path).orElse(null);
 		final List<Path> effectivePaths = paths == null ? list(path) : paths;
 
 		final ArchivePath node = new ArchivePath(path, effectivePaths);
-		final Set<Clue> clues = clueFinder.find(node, monitor);
-		monitor.throwIfCancelled();
+		final Set<Clue> clues = clueFinder.find(node, progressor);
+		progressor.throwIfCancelled();
 
 		final Artifact artifact;
 		if (clues.isEmpty()) {
@@ -211,14 +212,14 @@ public class ArchiveDigger {
 		final List<ArchiveNode> children = new ArrayList<>();
 		for (final Path child : effectivePaths) {
 			if (Files.isDirectory(child)) {
-				children.add(dig(root, child, plan, monitor, insideRegion));
+				children.add(dig(root, child, plan, progressor, insideRegion));
 			}
 		}
 
 		final List<ArchiveNode> effectiveChildren = children.isEmpty() ? null : children;
 		final ArchiveNode result = new ArchiveNode(pathName, artifact, effectiveChildren);
 		if (startsRegion) {
-			plan.completeRegion(path, monitor);
+			plan.completeRegion(path, progressor);
 		}
 		return result;
 	}

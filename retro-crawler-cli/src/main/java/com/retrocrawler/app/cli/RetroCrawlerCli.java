@@ -9,7 +9,7 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.JsonFileRepository;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
 import com.retrocrawler.demo.gear.MyRetroGear;
@@ -29,7 +29,7 @@ public final class RetroCrawlerCli {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new JsonFileRepository()).build();
 
 		final Instant start = Instant.now();
-		final Monitor monitor = new Monitor(msg -> {
+		final Progressor progressor = Progressor.reportingMessages(msg -> {
 			System.out.println(msg);
 		});
 
@@ -53,7 +53,8 @@ public final class RetroCrawlerCli {
 				+ (parsed.reindex ? "Cache will be re-built" : "Cache will be used if present") + ")");
 
 		System.out.println();
-		final GearArchive<MyRetroGear> myRetroGear = crawler.crawlArchive(monitor, parsed.reindex, MyRetroGear.class);
+		final GearArchive<MyRetroGear> myRetroGear = crawler.crawlArchive(progressor, parsed.reindex,
+				MyRetroGear.class);
 
 		final Duration dur = Duration.between(start, Instant.now());
 

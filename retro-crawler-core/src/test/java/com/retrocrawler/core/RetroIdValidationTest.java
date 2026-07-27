@@ -30,15 +30,16 @@ import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.PathNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.util.CrawlProgress;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressSnapshot;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.ProgressState;
+import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class RetroIdValidationTest {
 
-	private static final Monitor SILENT_MONITOR = new Monitor(message -> {
-		// No progress output required in tests.
-	});
+	private static final Progressor SILENT_PROGRESSOR = new Progressor();
 
 	@TempDir
 	private Path archiveRoot;
@@ -47,7 +48,7 @@ class RetroIdValidationTest {
 	void permitsMissingOptionalFactBackedRetroId() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("gear-without-id"));
 
-		final List<TestGear> gear = crawler().crawlGear(SILENT_MONITOR, true, TestGear.class);
+		final List<TestGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, true, TestGear.class);
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().catalogId);
@@ -60,7 +61,7 @@ class RetroIdValidationTest {
 		final RecordingFactory factory = new RecordingFactory();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler().crawl(SILENT_MONITOR, true, factory));
+				() -> crawler().crawl(SILENT_PROGRESSOR, true, factory));
 
 		final List<String> paths = failure.getDuplicates().get("200001");
 		assertEquals(2, paths.size());
@@ -74,18 +75,18 @@ class RetroIdValidationTest {
 	void reportsExactProgressWhileResolvingTheExtractedArchive() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("id-200001"));
 		Files.createDirectories(archiveRoot.resolve("id-200002"));
-		final List<CrawlProgress> events = new java.util.ArrayList<>();
+		final List<ProgressSnapshot> events = new java.util.ArrayList<>();
 
-		crawler().crawlGear(Monitor.observing(events::add), true, TestGear.class);
+		crawler().crawlGear(Progressor.observing(events::add), true, TestGear.class);
 
-		final List<CrawlProgress> resolving = events.stream()
-				.filter(event -> event.phase() == CrawlProgress.Phase.RESOLVING).toList();
+		final List<ProgressSnapshot> resolving = events.stream()
+				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();
 		assertEquals(0, resolving.getFirst().completed());
 		assertEquals(2, resolving.getFirst().total());
 		assertEquals(2, resolving.getLast().completed());
 		assertEquals(2, resolving.getLast().total());
-		assertTrue(resolving.stream().noneMatch(CrawlProgress::approximate));
-		assertEquals(CrawlProgress.Phase.COMPLETE, events.getLast().phase());
+		assertTrue(resolving.stream().allMatch(event -> event.accuracy() == ProgressAccuracy.EXACT));
+		assertEquals(ProgressState.COMPLETE, events.getLast().state());
 	}
 
 	private RetroCrawler crawler() {

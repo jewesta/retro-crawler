@@ -119,6 +119,25 @@ A missing stored archive causes the filesystem archive to be crawled. If a store
 
 ---
 
+## Progress and Cancellation
+
+Crawler operations accept a `Progressor`. It publishes immutable, structured
+snapshots with an extensible stage, human-readable message, exact or
+approximate work units, timing, and operation state. A lightweight message
+view is available for simple command-line or GUI integrations:
+
+```java
+Progressor progressor = Progressor.reportingMessages(System.out::println);
+List<MyGear> gear = crawler.crawlGear(progressor, true, MyGear.class);
+```
+
+Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl
+at its next checkpoint. For larger workflows, progressors can be divided into
+nested equal or weighted windows with `splitIntoEqualParts(...)` and
+`splitInRelationTo(...)`.
+
+---
+
 ## Design Goals
 
 - No database

@@ -20,17 +20,15 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.util.CrawlCancelledException;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressCancelledException;
+import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveManagerTest {
 
 	@TempDir
 	private Path temporaryDirectory;
 
-	private final Monitor monitor = new Monitor(message -> {
-		// No progress reporting required in tests.
-	});
+	private final Progressor progressor = new Progressor();
 
 	@Test
 	void retrievesStoredArchiveWithoutCrawlingFilesystem() throws IOException {
@@ -39,7 +37,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.getArchive(monitor);
+		final Archive result = manager.getArchive(progressor);
 
 		assertSame(stored, result);
 		assertEquals(1, repository.retrieveCount);
@@ -53,7 +51,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.getArchive(monitor);
+		final Archive result = manager.getArchive(progressor);
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
@@ -68,7 +66,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.getArchive(monitor, true);
+		final Archive result = manager.getArchive(progressor, true);
 
 		assertNotSame(stored, result);
 		assertEquals(0, repository.retrieveCount);
@@ -83,7 +81,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(new RepositoryException("Unavailable"));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.getArchive(monitor);
+		final Archive result = manager.getArchive(progressor);
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
@@ -98,7 +96,7 @@ class ArchiveManagerTest {
 		repository.stowawayFailure = new RepositoryException("Read only");
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		assertThrows(RepositoryException.class, () -> manager.getArchive(monitor));
+		assertThrows(RepositoryException.class, () -> manager.getArchive(progressor));
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 	}
@@ -110,8 +108,8 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		assertSame(stored, manager.getArchive(monitor));
-		assertSame(stored, manager.getArchive(monitor));
+		assertSame(stored, manager.getArchive(progressor));
+		assertSame(stored, manager.getArchive(progressor));
 		assertEquals(1, repository.retrieveCount);
 	}
 
@@ -120,18 +118,16 @@ class ArchiveManagerTest {
 		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final Monitor cancellingMonitor = new Monitor(message -> {
-			// No progress output required in tests.
-		});
+		final Progressor cancellingProgressor = new Progressor();
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
-			cancellingMonitor.cancel("Stop.");
+			cancellingProgressor.cancel("Stop.");
 			return Set.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(descriptor, clueFinder,
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 
-		assertThrows(CrawlCancelledException.class, () -> manager.getArchive(cancellingMonitor, true));
+		assertThrows(ProgressCancelledException.class, () -> manager.getArchive(cancellingProgressor, true));
 		assertEquals(0, repository.stowawayCount);
 	}
 

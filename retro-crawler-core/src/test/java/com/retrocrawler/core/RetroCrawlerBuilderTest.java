@@ -23,7 +23,8 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.PathNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.progress.ProgressState;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class RetroCrawlerBuilderTest {
@@ -34,12 +35,48 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
 
-		final GearArchive<TestGear> result = crawler.crawlArchive(new Monitor(message -> {
-			// No progress reporting required in tests.
-		}), false, TestGear.class);
+		final GearArchive<TestGear> result = crawler.crawlArchive(new Progressor(), false, TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(0, result.getBuckets().size());
+	}
+
+	@Test
+	void reportsFactoryFailureAsTerminalProgress() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository()).build();
+		final Progressor progressor = new Progressor();
+		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
+
+			@Override
+			public Class<Object> gearType() {
+				return Object.class;
+			}
+
+			@Override
+			public void beginBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
+				// No buckets in this test archive.
+			}
+
+			@Override
+			public void endBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
+				// No buckets in this test archive.
+			}
+
+			@Override
+			public Object addNode(final Object parent, final Object gear) {
+				throw new AssertionError("No gear expected.");
+			}
+
+			@Override
+			public Object build() {
+				throw new IllegalStateException("Factory broke.");
+			}
+		};
+
+		assertThrows(IllegalStateException.class, () -> crawler.crawl(progressor, false, failingFactory));
+		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
+		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
 	}
 
 	@Test
