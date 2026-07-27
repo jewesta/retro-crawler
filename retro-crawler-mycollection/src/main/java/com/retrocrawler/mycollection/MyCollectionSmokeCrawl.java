@@ -1,12 +1,15 @@
 package com.retrocrawler.mycollection;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.retrocrawler.core.DuplicateRetroIdException;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveRoots;
@@ -39,8 +42,16 @@ public final class MyCollectionSmokeCrawl {
 				.repository(new JsonFileRepository(cacheDirectory)).build();
 		final Monitor monitor = Monitor.observing(new CompactProgressPrinter());
 
-		final List<MyGear> gear = crawler.crawlGear(monitor, reindex, MyGear.class);
-		printSummary(gear);
+		try {
+			final List<MyGear> gear = crawler.crawlGear(monitor, reindex, MyGear.class);
+			printSummary(gear);
+		} catch (final DuplicateRetroIdException failure) {
+			final Path report = writeDuplicateReport(cacheDirectory, failure);
+			final long occurrences = failure.getDuplicates().values().stream().mapToLong(List::size).sum();
+			System.out.println("RC_VALIDATION\tduplicateRetroIds=" + failure.getDuplicates().size()
+					+ "\toccurrences=" + occurrences + "\treport=" + report);
+			throw new IllegalStateException("Duplicate Retro IDs detected; see private report: " + report);
+		}
 	}
 
 	private static boolean reindex(final String[] arguments) {
@@ -66,6 +77,33 @@ public final class MyCollectionSmokeCrawl {
 		System.out.println("RC_RESULT\tgear=" + gear.size() + "\ttypes=" + types + "\tretroIds=" + withRetroId
 				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
 				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\timagesOnly=" + onlyImages);
+	}
+
+	private static Path writeDuplicateReport(final Path cacheDirectory, final DuplicateRetroIdException failure)
+			throws java.io.IOException {
+		final Path report = cacheDirectory.resolve("duplicate-retro-ids.txt");
+		final long occurrences = failure.getDuplicates().values().stream().mapToLong(List::size).sum();
+		final StringBuilder contents = new StringBuilder()
+				.append("Duplicate Retro IDs\n")
+				.append("===================\n\n")
+				.append("Values: ").append(failure.getDuplicates().size()).append('\n')
+				.append("Occurrences: ").append(occurrences).append("\n\n");
+
+		failure.getDuplicates().entrySet().stream()
+				.sorted(Map.Entry.comparingByKey((left, right) -> left.toString().compareTo(right.toString())))
+				.forEach(entry -> {
+					contents.append(entry.getKey()).append('\n');
+					entry.getValue().forEach(path -> contents.append("  ").append(path).append('\n'));
+					contents.append('\n');
+				});
+
+		Files.writeString(report, contents);
+		try {
+			Files.setPosixFilePermissions(report, PosixFilePermissions.fromString("rw-------"));
+		} catch (final UnsupportedOperationException ignored) {
+			// The private cache directory remains the privacy boundary on non-POSIX systems.
+		}
+		return report;
 	}
 
 	private static boolean hasImage(final MyGear gear) {

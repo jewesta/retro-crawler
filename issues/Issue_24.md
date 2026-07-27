@@ -1042,6 +1042,38 @@ in five-percent buckets, and prints only privacy-safe aggregate cataloguing
 totals at completion. Structured progress messages retain the current path for
 local operator visibility, but no runtime path is compiled into the launcher.
 
+## First Full IBM-Compatible Crawl
+
+The model was released against the complete IBM-compatible archive on
+2026-07-27. It used a separate external root file and private repository so the
+focused graphics-card cache remained available as a comparison baseline. A
+read-only preflight found no symbolic links.
+
+The planner produced 519 approximate regions. Crawling completed every region,
+stowed a 1.8 MiB JSON archive, and then reported exact resolution through all
+2,197 artifacts. The cache contains 6,365 directory nodes. The complete
+Maven-launched run took 3 minutes 48 seconds.
+
+Archive-wide Retro ID validation then deliberately stopped gear emission. It
+found:
+
+- 17 duplicated Retro ID values.
+- 35 total folder occurrences.
+- 16 two-way collisions and one three-way collision.
+
+This is the intended garbage-in/garbage-out result. No duplicate was silently
+selected, no hierarchy-based exception was invented, and no collection folder
+was changed. The fully extracted clue cache remains usable for repeated
+resolution, but source corrections require a rebuild before validation can
+pass.
+
+The smoke launcher now catches `DuplicateRetroIdException`, writes the complete
+value-and-path details to an owner-readable private report beside the cache,
+prints only aggregate validation counts, and still exits unsuccessfully so
+automation cannot mistake an invalid catalogue for a successful result. The
+report path and its contents remain external runtime data and are not recorded
+in this repository.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1097,6 +1129,8 @@ local operator visibility, but no runtime path is compiled into the launcher.
 - [x] Make cancellation abort without stowing a partial archive.
 - [x] Add anonymized synthetic fixtures and focused tests.
 - [x] Perform the first explicit live-subtree smoke test.
+- [x] Crawl the complete IBM-compatible archive and report duplicate Retro IDs
+      without changing the source collection.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1195,6 +1229,13 @@ regression proving that a bookmark-only folder remains undiscovered. The
 corrected live rebuild completed successfully with zero `webReferences` keys
 in the JSON archive. The full reactor `mvn test` and `mvn clean install` also
 completed successfully afterward.
+
+The first complete IBM-compatible crawl completed extraction and exact
+resolution on 2026-07-27, then failed intentionally on archive-wide duplicate
+Retro ID validation. A cache-only rerun reproduced all 17 duplicate values and
+35 occurrences without another filesystem crawl and generated the private
+owner-readable report. After adding that launcher behavior, the full reactor
+`mvn test` and `mvn clean install` completed successfully.
 
 ## Out of Scope for the Initial Slice
 
