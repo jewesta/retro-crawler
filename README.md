@@ -92,8 +92,8 @@ Applications that need deterministic or custom discovery can instead provide a `
 RetroCrawler remains a bring-your-own-type framework. The optional
 `retro-crawler-model` module provides reusable value types and canonical
 parsers for facts whose meaning is stable across collections, including ISBNs,
-MAC addresses, The Retro Web IDs, expansion buses, memory vocabulary, and data
-capacities.
+MAC addresses, category-qualified The Retro Web references, expansion buses,
+memory vocabulary, and data capacities.
 
 Collection adapters remain responsible for mapping their own folder tags,
 metadata files, or other clues onto that shared vocabulary. The core does not

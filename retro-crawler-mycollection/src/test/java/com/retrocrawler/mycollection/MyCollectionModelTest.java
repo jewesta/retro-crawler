@@ -28,7 +28,9 @@ import com.retrocrawler.core.util.Monitor;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.MacAddress;
+import com.retrocrawler.model.identifier.TheRetroWebCategory;
 import com.retrocrawler.model.identifier.TheRetroWebId;
+import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
@@ -36,6 +38,7 @@ import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.memory.RamSet;
+import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
 class MyCollectionModelTest {
 
@@ -51,7 +54,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Grouping folder without tags"));
 		Files.createDirectories(archiveRoot.resolve("Mystery object [200001]"));
 		Files.createDirectories(archiveRoot.resolve("Unnumbered object [PCI]"));
-		Files.createDirectories(archiveRoot.resolve("Known card [AGP] [200002]"));
+		Files.createDirectories(archiveRoot.resolve("Known card [AGP] [200002] [TRW 10510]"));
 		Files.createDirectories(archiveRoot.resolve("Serial only [SN 200003]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_MONITOR, true, MyGear.class);
@@ -67,10 +70,16 @@ class MyCollectionModelTest {
 		assertEquals(Optional.empty(), unnumbered.getRetroId());
 		assertEquals(Optional.of(ExpansionBus.PCI), unnumbered.getBus());
 
-		final MyGear graphicsCard = gear(gear, "Known card [AGP] [200002]");
+		final MyGear graphicsCard = gear(gear, "Known card [AGP] [200002] [TRW 10510]");
 		assertInstanceOf(GraphicsCard.class, graphicsCard);
 		assertEquals(Optional.of(new RetroId(200002)), graphicsCard.getRetroId());
 		assertEquals(Optional.of(ExpansionBus.AGP), graphicsCard.getBus());
+		final TheRetroWebReference expectedReference = new TheRetroWebReference(
+				TheRetroWebCategory.EXPANSION_CARD, new TheRetroWebId(10510));
+		assertEquals(Optional.of(expectedReference),
+				new TheRetroWebReferences().referenceFor(graphicsCard));
+		assertEquals("https://theretroweb.com/expansioncards/10510",
+				expectedReference.lookupUri().toString());
 
 		final MyGear serialOnly = gear(gear, "Serial only [SN 200003]");
 		assertInstanceOf(MysteryGear.class, serialOnly);
@@ -94,6 +103,7 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of(expectedSet), gear.getRamSet());
 		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
 		assertEquals(Optional.of(new TheRetroWebId(10510)), gear.getTheRetroWebId());
+		assertEquals(Optional.empty(), new TheRetroWebReferences().referenceFor(gear));
 	}
 
 	@Test

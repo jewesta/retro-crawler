@@ -2,6 +2,8 @@ package com.retrocrawler.model.identifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
@@ -35,5 +37,16 @@ class IdentifierParsersTest {
 
 		assertEquals(new TheRetroWebId(10_510), parser.parse(" 10510 ").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("motherboard-10510").getConfidence());
+	}
+
+	@Test
+	void buildsCategoryQualifiedTheRetroWebLookupUris() {
+		final TheRetroWebId id = new TheRetroWebId(10_510);
+		final TheRetroWebReference motherboard = TheRetroWebCategory.MOTHERBOARD.reference(id);
+		final TheRetroWebReference expansionCard = TheRetroWebCategory.EXPANSION_CARD.reference(id);
+
+		assertEquals(new TheRetroWebReference(TheRetroWebCategory.MOTHERBOARD, id), motherboard);
+		assertEquals(URI.create("https://theretroweb.com/motherboards/10510"), motherboard.lookupUri());
+		assertEquals(URI.create("https://theretroweb.com/expansioncards/10510"), expansionCard.lookupUri());
 	}
 }

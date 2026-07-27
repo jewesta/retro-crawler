@@ -1130,8 +1130,8 @@ because their syntax remains manufacturer-specific.
 
 The initial pass added three value types and exact parsers:
 
-- `TheRetroWebId` represents a positive numeric database reference. It is not
-  a physical identity and is therefore not annotated with `@RetroId`; two
+- `TheRetroWebId` represents a positive numeric database ID. It is not a
+  physical identity and is therefore not annotated with `@RetroId`; two
   collection objects may legitimately refer to the same database entry.
 - `DataCapacity` represents a positive decimal quantity in KB, MB, GB, or TB,
   supports decimal commas, comparison across units, and multiplication.
@@ -1149,8 +1149,26 @@ the personal collection.
 
 The Retro Web deep-link category is deliberately not guessed by the ID parser.
 An ID alone does not say whether the target belongs below `motherboards`,
-`expansioncards`, or another site route. Link construction should be added
-after the resolved gear taxonomy can supply that category.
+`expansioncards`, or another site route. The shared model therefore separates:
+
+- `TheRetroWebId`, the positive numeric component parsed from a clue.
+- `TheRetroWebCategory`, The Retro Web's public content taxonomy and route
+  names. This is deliberately distinct from RetroCrawler's gear taxonomy.
+- `TheRetroWebReference`, the unambiguous combination of category and ID.
+
+`TheRetroWebReference.lookupUri()` constructs the widely used numeric lookup
+route, such as `https://theretroweb.com/expansioncards/10510`. This route is
+undocumented and redirects to the canonical slug page, but a site maintainer
+has confirmed awareness of external reliance on numeric IDs. URI construction
+is deterministic and performs no network access or redirect resolution.
+
+The collection-side `TheRetroWebReferences` adapter supplies the category only
+after gear resolution. It maps a recognized `GraphicsCard` and its ID onto an
+`EXPANSION_CARD` reference; generic and mystery gear retain the ID without
+inventing a potentially incorrect link. Neither `GraphicsCard` nor the shared
+reference type depends on the other model. The adapter deliberately owns
+knowledge of both, in the same way that a watch accepts a time without time
+having to know about watches.
 
 Reverse-order and embellished set spellings are left unresolved. The parser
 does not quietly reinterpret them, because the agreed collection convention is
@@ -1214,6 +1232,8 @@ com.retrocrawler.model
 The first shared vocabulary contains:
 
 - `ISBN`, `MacAddress`, and `TheRetroWebId`, with canonical parsers.
+- `TheRetroWebCategory` and category-qualified `TheRetroWebReference`, with
+  deterministic numeric lookup-URI construction.
 - `ExpansionBus`, including AGP, EISA, ISA, MCA, PCI, PCI Express, and VLB.
 - `DataCapacity`.
 - `MemoryFormFactor` and `MemoryFeature`.
@@ -1308,6 +1328,9 @@ uniformly and contains no collection-vocabulary switch.
       package homes.
 - [x] Shorten the demo namespace to `com.retrocrawler.demo` and make the demo a
       real consumer of the shared model.
+- [x] Model category-qualified The Retro Web references and derive expansion-
+      card lookup links in a collection-side adapter only after gear
+      recognition.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1440,6 +1463,16 @@ The shared-model extraction and consumer package cleanup were verified on
   `com.retrocrawler.demo.collection` or `com.retrocrawler.mycollection.model`.
 - A repository privacy scan found no collection roots or private cache/report
   paths in source-controlled files.
+
+The category-qualified The Retro Web reference was verified on 2026-07-27:
+
+- Focused `IdentifierParsersTest` coverage verifies motherboard and expansion-
+  card numeric lookup URIs.
+- Focused `MyCollectionModelTest` coverage verifies that a recognized
+  `GraphicsCard` is mapped to an `EXPANSION_CARD` reference from its existing
+  `TheRetroWebId`, while mystery gear with the same ID does not produce a link.
+- The full reactor `mvn test` completed successfully.
+- The clean packaged reactor `mvn clean install` completed successfully.
 
 ## Out of Scope for the Initial Slice
 
