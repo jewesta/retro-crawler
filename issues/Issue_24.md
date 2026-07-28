@@ -1522,6 +1522,12 @@ The category-qualified The Retro Web reference was verified on 2026-07-27:
 - The full reactor `mvn test` completed successfully.
 - The clean packaged reactor `mvn clean install` completed successfully.
 
+ArchUnit was upgraded from 1.3.0 to 1.4.2 on 2026-07-28 while retaining
+Java 21 as the compiler release target. The focused `LibraryUsePolicyTest` and
+the full `mvn test` reactor completed successfully under JDK 25. The upgrade
+eliminated both the unsupported class-file-major-version fallback stack traces
+and the shaded-Guava `sun.misc.Unsafe` warning previously noted above.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.
