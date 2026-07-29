@@ -1189,12 +1189,12 @@ has confirmed awareness of external reliance on numeric IDs. URI construction
 is deterministic and performs no network access or redirect resolution.
 
 The collection-side `TheRetroWebReferences` adapter supplies the category only
-after gear resolution. It maps a recognized `GraphicsCard` and its ID onto an
-`EXPANSION_CARD` reference; generic and mystery gear retain the ID without
-inventing a potentially incorrect link. Neither `GraphicsCard` nor the shared
-reference type depends on the other model. The adapter deliberately owns
-knowledge of both, in the same way that a watch accepts a time without time
-having to know about watches.
+after gear resolution. It maps recognized graphics cards and motherboards onto
+`EXPANSION_CARD` and `MOTHERBOARD` references respectively; generic and mystery
+gear retain the ID without inventing a potentially incorrect link. Neither the
+gear types nor the shared reference type depends on the other model. The
+adapter deliberately owns knowledge of both, in the same way that a watch
+accepts a time without time having to know about watches.
 
 Reverse-order and embellished set spellings are left unresolved. The parser
 does not quietly reinterpret them, because the agreed collection convention is
@@ -1285,6 +1285,158 @@ under `com.retrocrawler.demo.catalog`; reusable facts were removed in favor of
 the shared model. The demo bracket adapter now normalizes every named key
 uniformly and contains no collection-vocabulary switch.
 
+## Second Fact-Mining Slice
+
+A macOS update removed the earlier clue archive because it had been placed in
+OS-managed temporary storage. The collection itself was unchanged. A complete
+rebuild planned 518 crawl regions, visited 6,362 nodes, and stowed 2,193
+artifacts in 3 minutes 6 seconds. Resolution then reproduced the same nine
+duplicate Retro ID values and 18 occurrences. Future long-lived private caches
+should use a persistent user cache directory; root configuration belongs in a
+persistent application-support location. Both remain external to the
+repository.
+
+The rebuilt archive contains 4,032 anonymous clues comprising 4,121
+observations and 2,045 distinct raw values. Aggregate mining exposed a
+cardinality error in the personal model: 151 artifacts resolve at least one
+expansion bus, and 40 of those resolve two or three buses. Expansion buses are
+therefore a set on `MyGear`, as they already were in the demo, rather than a
+single optional value.
+
+More importantly, the real archive disproved the first graphics-card shortcut:
+AGP alone is not a sufficient signature. Of 25 AGP-tagged artifacts, 16 are in
+the motherboard area, seven are in the graphics-card area, and two are
+elsewhere. Archive location was used only to audit the proposed tag-only
+matcher; it was not added as model evidence.
+
+Four tag-only signatures were tested with clue-level resolution semantics:
+
+- one expansion bus plus a video connector, without an explicit computer
+  form factor, identifies four graphics cards in the current archive;
+- an expansion bus plus a computer form factor identifies 28 motherboards,
+  including one board moved outside the motherboard area;
+- capacity plus either a RAM-module form factor or a memory standard identifies
+  226 memory modules, including 34 modules stored inside boards, controllers,
+  or computer builds;
+- a watt value plus a computer form-factor tag identifies 12 power
+  supplies, including two moved outside the power-supply area.
+
+These matchers use facts on the artifact itself. The folder tree serves only as
+an independent test oracle during this private mining pass. The results are a
+direct proof of the intended behavior: moved gear remains recognizable without
+turning parent folders into type evidence.
+
+The shared model gained objective vocabulary and conservative parsers for:
+
+- computer form factors shared by boards, cases, and power supplies;
+- video connectors;
+- electrical power;
+- RAM module form factors and features;
+- PC2100, PC2700, and PC3200 memory standards in addition to the existing
+  PC66/PC100/PC133 vocabulary.
+
+The personal model binds those facts and adds `Motherboard`, `MemoryModule`,
+and `PowerSupply` gear. `GraphicsCard` now requires its stronger tag
+combination. `TheRetroWebReferences` derives motherboard links only after a
+motherboard has been recognized.
+
+The cache contains six 1-series scan observations representing five distinct
+scans. One scan is legitimately referenced by two different physical manuals.
+The personal `ScanId` is consequently a reusable fact, not `@RetroId` identity
+and not an archive-wide uniqueness constraint.
+
+The same pass exposed cataloguing findings that remain deliberately unresolved:
+
+- four artifacts contain more than one 2-series ID candidate: three contain two
+  candidates and one contains five;
+- 163 bracket groups are empty;
+- 42 bracket groups contain a serial-number marker without a value;
+- eight groups contain a bare The Retro Web marker and three named TRW values
+  are non-numeric placeholders;
+- 27 `EDOFPM` observations initially did not say whether EDO or FPM was
+  intended;
+- 18 otherwise plausible motherboard signatures keep form-factor and
+  power-connector semantics in the same comma-separated clue, so partial
+  interpretation is correctly refused.
+
+No parser guesses around these cases. They belong in the later structured
+cataloguing audit, and obvious source inconsistencies should be corrected in
+the collection.
+
+No private root, path, folder name, identifier value, report, or cache content
+was copied into the repository during this pass.
+
+### First photo-assisted catalogue correction
+
+The 27 `EDOFPM` observations were subsequently audited read-only against the
+existing standard images. Every affected folder contains a `front.jpeg`, a
+`back.jpeg`, and one additional photograph. The front images make the module
+or DRAM part numbers readable, so the filesystem archive itself provides the
+starting evidence without requiring physical retrieval of the modules.
+
+Manufacturer data sheets and product guides resolve 26 observations directly:
+16 are Fast Page Mode and ten are EDO. Evidence includes explicit module
+labels, documented DRAM access modes, and manufacturer module descriptions.
+This also caught a useful counterexample to marketplace folklore: two Samsung
+module families that are frequently advertised as EDO are explicitly Fast
+Page Mode in Samsung's own material.
+
+The remaining K-branded `IC418165CJ` module is a strong EDO inference from its
+`1M x 16` `418165` family designation and the documented meaning of the same
+family number across contemporary manufacturers, but an exact manufacturer
+data sheet has not yet been found. It remains a separately identified
+confidence case rather than being silently treated as certain.
+
+The audit therefore produced 16 `FPM` corrections and 11 `EDO` corrections,
+with one of the latter clearly marked as inferred. After collector review, all
+27 corrections were applied to the source archive. Each folder now also carries
+one `IC` clue for the module's main RAM chip; chip-only free-text labels became
+`Unidentified`, while OEM and module labels were preserved. The independent
+chip-designation transcription error was corrected at the same time.
+
+Post-change verification found all 27 destination folders, all 27 front images,
+all 27 back images, and no remaining `EDOFPM` placeholder in the audited
+directory. A private reversal manifest was kept outside the repository. No
+private path, folder name, collection identifier, report, or cache content was
+copied into this issue record.
+
+### Completing the unclassified SIMM-72 entries
+
+After removing the explicit `EDOFPM` placeholders, 19 additional module
+folders in the same SIMM-72 subtree still carried neither an `EDO` nor an
+`FPM` clue. These were audited against their existing photographs rather than
+classified from speed, capacity, date, or marketplace convention.
+
+Eighteen entries expose a readable main RAM-chip designation or an explicit
+module label. Manufacturer data sheets resolve these directly. The remaining
+module uses opaque encapsulated packages, but its acquisition photographs tie
+it to a specific contemporary motherboard and that manufacturer's manual
+explicitly requires Fast Page Mode DRAM. This provides concrete provenance
+without inventing an IC designation.
+
+The audit resolved 17 entries as Fast Page Mode and two as EDO. It caught
+another worthwhile nomenclature trap: a Samsung `4103` Quad-CAS family used by
+one OEM module is documented as Fast Page Mode despite being described as EDO
+in some parts listings. The manufacturer's data sheet won.
+
+All 19 corrections were applied to the source archive. Readable main RAM-chip
+designations were normalized into one `IC` clue, chip-only labels became
+`Unidentified`, existing short labels were preserved, and one manufacturer
+spelling error was corrected. Recursive before-and-after inventories verified
+that no contained file or subdirectory changed. A final audit found no
+SIMM-72 module folder left without either an `EDO` or `FPM` clue. A private
+reversal manifest remains outside the repository; no private path, folder
+name, identifier value, or photograph was copied into this issue record.
+
+The same photographs and manufacturer speed-grade documentation also establish
+the access time of 18 of these 19 modules: ten are 60 ns and eight are 70 ns.
+Those folders now carry the corresponding speed clue immediately after their
+main `IC` clue. The opaque-package module remains deliberately untagged:
+motherboard documentation establishes its memory technology and compatibility
+requirements, but not the module's actual access time. Post-change verification
+found all 18 destination folders and confirmed that the unresolved module was
+unchanged. A separate private reversal manifest remains outside the repository.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1359,6 +1511,21 @@ uniformly and contains no collection-vocabulary switch.
 - [x] Model category-qualified The Retro Web references and derive expansion-
       card lookup links in a collection-side adapter only after gear
       recognition.
+- [x] Repeat private-cache mining after the temporary cache was purged by an OS
+      update.
+- [x] Correct expansion-bus cardinality and replace the disproved AGP-only
+      graphics-card matcher.
+- [x] Add tag-only motherboard, memory-module, and power-supply vertical slices.
+- [x] Add reusable 1-series scan references without treating them as identity.
+- [x] Audit all `EDOFPM` placeholders from their existing photographs and
+      prepare evidence-backed `EDO`/`FPM` corrections without changing the
+      source collection.
+- [x] Apply the 27 catalogue corrections, normalize the main RAM chip into one
+      `IC` clue per folder, and retain a private reversal manifest.
+- [x] Classify and normalize the remaining 19 SIMM-72 module folders, verify
+      their contents after renaming, and reduce the unclassified count to zero.
+- [x] Add 18 photo- and data-sheet-backed SIMM-72 access-speed clues while
+      leaving the one unprovable speed unset.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1379,6 +1546,8 @@ uniformly and contains no collection-vocabulary switch.
   separate annotation, or another explicit model declaration?
 - Which cataloguing findings belong to Issue 24's model proof, and which should
   wait for the public Issue 22 query API?
+- How should artifacts with multiple otherwise valid identity candidates be
+  surfaced when their singular `@RetroId` fact correctly remains unresolved?
 - Should a failed rebuild leave the previous snapshot retrievable only with an
   explicit stale-state indication?
 - Should raw bracket-group ordering be preserved explicitly?
@@ -1527,6 +1696,22 @@ Java 21 as the compiler release target. The focused `LibraryUsePolicyTest` and
 the full `mvn test` reactor completed successfully under JDK 25. The upgrade
 eliminated both the unsupported class-file-major-version fallback stack traces
 and the shaded-Guava `sun.misc.Unsafe` warning previously noted above.
+
+The second private-cache mining slice was verified on 2026-07-29:
+
+- focused shared-model and collection tests cover new hardware vocabulary,
+  power parsing, multi-valued expansion buses, tag-only motherboard,
+  memory-module, graphics-card, and power-supply recognition, reusable scan
+  references, and category-qualified motherboard links;
+- cache-only resolution processed all 2,193 artifacts without a parser
+  ambiguity, then stopped at the unchanged duplicate-ID gate with nine values
+  and 18 occurrences;
+- private clue-level analysis reproduced RC's all-or-nothing handling of
+  multi-value clues and validated 28 motherboard, 226 memory-module, 12
+  power-supply, and four graphics-card signatures without using hierarchy as
+  model input;
+- the full `mvn test` reactor completed successfully;
+- the clean packaged `mvn clean install` reactor completed successfully.
 
 ## Out of Scope for the Initial Slice
 

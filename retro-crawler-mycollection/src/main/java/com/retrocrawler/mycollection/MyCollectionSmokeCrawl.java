@@ -117,9 +117,15 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
-		return gear.getRetroId().isEmpty() && gear.getBus().isEmpty() && gear.getTitle().isEmpty()
-				&& gear.getDescription().isEmpty() && gear.getFloppyImages().isEmpty()
-				&& gear.getFloppyImageIds().isEmpty()
+		return gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty() && gear.getTitle().isEmpty()
+				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
+				&& gear.getMacAddress().isEmpty() && gear.getSerialNumber().isEmpty()
+				&& gear.getFloppyImages().isEmpty() && gear.getFloppyImageIds().isEmpty()
+				&& gear.getMemoryAccessTimes().isEmpty()
+				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()
+				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
+				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getScanIds().isEmpty()
+				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
 	}
 

@@ -9,8 +9,20 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
+import com.retrocrawler.model.hardware.ComputerFormFactor;
+import com.retrocrawler.model.hardware.ComputerFormFactorParser;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.hardware.ExpansionBusParser;
+import com.retrocrawler.model.hardware.MemoryAccessTime;
+import com.retrocrawler.model.hardware.MemoryAccessTimeParser;
+import com.retrocrawler.model.hardware.MemoryFeature;
+import com.retrocrawler.model.hardware.MemoryFeatureParser;
+import com.retrocrawler.model.hardware.MemoryFormFactor;
+import com.retrocrawler.model.hardware.MemoryFormFactorParser;
+import com.retrocrawler.model.hardware.MemoryStandard;
+import com.retrocrawler.model.hardware.MemoryStandardParser;
+import com.retrocrawler.model.hardware.VideoConnector;
+import com.retrocrawler.model.hardware.VideoConnectorParser;
 import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.ISBNParser;
 import com.retrocrawler.model.identifier.MacAddress;
@@ -19,12 +31,16 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.model.measurement.Power;
+import com.retrocrawler.model.measurement.PowerParser;
 import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
+import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
+import com.retrocrawler.mycollection.facts.ScanIdParser;
 import com.retrocrawler.mycollection.memory.RamSet;
 
 public abstract class MyGear {
@@ -37,10 +53,32 @@ public abstract class MyGear {
 	private RetroId retroId;
 
 	@RetroFact(key = AttributeNames.BUS, parser = ExpansionBusParser.class, strict = false, optional = true)
-	private ExpansionBus bus;
+	private Set<ExpansionBus> expansionBuses = Set.of();
 
 	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
 	private DataCapacity capacity;
+
+	@RetroFact(key = AttributeNames.MEMORY_ACCESS_TIME, parser = MemoryAccessTimeParser.class, strict = false,
+			optional = true)
+	private Set<MemoryAccessTime> memoryAccessTimes = Set.of();
+
+	@RetroFact(key = AttributeNames.MEMORY_FEATURE, parser = MemoryFeatureParser.class, strict = false, optional = true)
+	private Set<MemoryFeature> memoryFeatures = Set.of();
+
+	@RetroFact(key = AttributeNames.MEMORY_FORM_FACTOR, parser = MemoryFormFactorParser.class, strict = false,
+			optional = true)
+	private Set<MemoryFormFactor> memoryFormFactors = Set.of();
+
+	@RetroFact(key = AttributeNames.MEMORY_STANDARD, parser = MemoryStandardParser.class, strict = false,
+			optional = true)
+	private Set<MemoryStandard> memoryStandards = Set.of();
+
+	@RetroFact(key = AttributeNames.COMPUTER_FORM_FACTOR, parser = ComputerFormFactorParser.class,
+			strict = false, optional = true)
+	private Set<ComputerFormFactor> computerFormFactors = Set.of();
+
+	@RetroFact(key = AttributeNames.POWER, parser = PowerParser.class, strict = false, optional = true)
+	private Power power;
 
 	@RetroFact(key = AttributeNames.TITLE, optional = true)
 	private String title;
@@ -75,8 +113,15 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.RAM_SET, parser = RamSetParser.class, optional = true)
 	private RamSet ramSet;
 
+	@RetroFact(key = AttributeNames.SCAN_ID, parser = ScanIdParser.class, strict = false, optional = true)
+	private Set<ScanId> scanIds = Set.of();
+
 	@RetroFact(key = AttributeNames.THE_RETRO_WEB_ID, parser = TheRetroWebIdParser.class, optional = true)
 	private TheRetroWebId theRetroWebId;
+
+	@RetroFact(key = AttributeNames.VIDEO_CONNECTOR, parser = VideoConnectorParser.class, strict = false,
+			optional = true)
+	private Set<VideoConnector> videoConnectors = Set.of();
 
 	@RetroAnyAttribute
 	private final Map<String, RetroAttribute> attributes = new HashMap<>();
@@ -89,12 +134,36 @@ public abstract class MyGear {
 		return Optional.ofNullable(retroId);
 	}
 
-	public Optional<ExpansionBus> getBus() {
-		return Optional.ofNullable(bus);
+	public Set<ExpansionBus> getExpansionBuses() {
+		return Set.copyOf(expansionBuses);
 	}
 
 	public Optional<DataCapacity> getCapacity() {
 		return Optional.ofNullable(capacity);
+	}
+
+	public Set<MemoryAccessTime> getMemoryAccessTimes() {
+		return Set.copyOf(memoryAccessTimes);
+	}
+
+	public Set<MemoryFeature> getMemoryFeatures() {
+		return Set.copyOf(memoryFeatures);
+	}
+
+	public Set<MemoryFormFactor> getMemoryFormFactors() {
+		return Set.copyOf(memoryFormFactors);
+	}
+
+	public Set<MemoryStandard> getMemoryStandards() {
+		return Set.copyOf(memoryStandards);
+	}
+
+	public Set<ComputerFormFactor> getComputerFormFactors() {
+		return Set.copyOf(computerFormFactors);
+	}
+
+	public Optional<Power> getPower() {
+		return Optional.ofNullable(power);
 	}
 
 	public Optional<String> getTitle() {
@@ -141,8 +210,16 @@ public abstract class MyGear {
 		return Optional.ofNullable(ramSet);
 	}
 
+	public Set<ScanId> getScanIds() {
+		return Set.copyOf(scanIds);
+	}
+
 	public Optional<TheRetroWebId> getTheRetroWebId() {
 		return Optional.ofNullable(theRetroWebId);
+	}
+
+	public Set<VideoConnector> getVideoConnectors() {
+		return Set.copyOf(videoConnectors);
 	}
 
 	public Map<String, RetroAttribute> getAttributes() {

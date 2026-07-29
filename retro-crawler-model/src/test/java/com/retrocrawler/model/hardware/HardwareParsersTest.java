@@ -29,6 +29,26 @@ class HardwareParsersTest {
 		assertEquals(Confidence.NONE, accessTimeParser.parse("70").getConfidence());
 		assertEquals(MemoryStandard.PC_100, standardParser.parse("PC100").getValue().orElseThrow());
 		assertEquals(MemoryStandard.PC_133, standardParser.parse("pc-133").getValue().orElseThrow());
+		assertEquals(MemoryStandard.PC_3200, standardParser.parse("PC3200").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, standardParser.parse("70ns").getConfidence());
+	}
+
+	@Test
+	void parsesPortableMemoryAndBoardVocabulary() {
+		final MemoryFormFactorParser memoryForm = new MemoryFormFactorParser();
+		final MemoryFeatureParser memoryFeature = new MemoryFeatureParser();
+		final ComputerFormFactorParser computerForm = new ComputerFormFactorParser();
+		final VideoConnectorParser videoConnector = new VideoConnectorParser();
+
+		assertEquals(MemoryFormFactor.SIMM_30_PIN, memoryForm.parse("SIMM30").getValue().orElseThrow());
+		assertEquals(MemoryFormFactor.SIMM_72_PIN, memoryForm.parse("72-pin SIMM").getValue().orElseThrow());
+		assertEquals(MemoryFormFactor.SO_DIMM, memoryForm.parse("SO-DIMM").getValue().orElseThrow());
+		assertEquals(MemoryFeature.EXTENDED_DATA_OUT, memoryFeature.parse("EDO").getValue().orElseThrow());
+		assertEquals(MemoryFeature.FAST_PAGE_MODE, memoryFeature.parse("FPM").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, memoryFeature.parse("EDOFPM").getConfidence());
+		assertEquals(ComputerFormFactor.MICRO_ATX,
+				computerForm.parse("microATX").getValue().orElseThrow());
+		assertEquals(VideoConnector.S_VIDEO, videoConnector.parse("S-Video").getValue().orElseThrow());
+		assertEquals(VideoConnector.DISPLAY_PORT, videoConnector.parse("DP").getValue().orElseThrow());
 	}
 }

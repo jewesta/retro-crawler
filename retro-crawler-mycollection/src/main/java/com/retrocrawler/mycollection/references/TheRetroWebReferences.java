@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.retrocrawler.model.identifier.TheRetroWebCategory;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
+import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 
 /**
@@ -23,6 +24,9 @@ public final class TheRetroWebReferences {
 
 		if (gear instanceof GraphicsCard) {
 			return gear.getTheRetroWebId().map(TheRetroWebCategory.EXPANSION_CARD::reference);
+		}
+		if (gear instanceof Motherboard) {
+			return gear.getTheRetroWebId().map(TheRetroWebCategory.MOTHERBOARD::reference);
 		}
 
 		return Optional.empty();

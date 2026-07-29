@@ -17,6 +17,9 @@ public final class MemoryStandardParser implements FactParser {
 		case "PC66" -> RatedFact.exact(MemoryStandard.PC_66);
 		case "PC100" -> RatedFact.exact(MemoryStandard.PC_100);
 		case "PC133" -> RatedFact.exact(MemoryStandard.PC_133);
+		case "PC2100" -> RatedFact.exact(MemoryStandard.PC_2100);
+		case "PC2700" -> RatedFact.exact(MemoryStandard.PC_2700);
+		case "PC3200" -> RatedFact.exact(MemoryStandard.PC_3200);
 		default -> RatedFact.none("Expected a recognized memory standard.");
 		};
 	}

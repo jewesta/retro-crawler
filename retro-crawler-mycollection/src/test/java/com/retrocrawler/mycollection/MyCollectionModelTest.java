@@ -23,20 +23,30 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
+import com.retrocrawler.model.hardware.MemoryAccessTime;
+import com.retrocrawler.model.hardware.MemoryFeature;
+import com.retrocrawler.model.hardware.MemoryFormFactor;
+import com.retrocrawler.model.hardware.MemoryStandard;
+import com.retrocrawler.model.hardware.VideoConnector;
 import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.MacAddress;
 import com.retrocrawler.model.identifier.TheRetroWebCategory;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
+import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
+import com.retrocrawler.mycollection.gear.MemoryModule;
+import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
+import com.retrocrawler.mycollection.gear.PowerSupply;
 import com.retrocrawler.mycollection.memory.RamSet;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
@@ -52,7 +62,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Grouping folder without tags"));
 		Files.createDirectories(archiveRoot.resolve("Mystery object [200001]"));
 		Files.createDirectories(archiveRoot.resolve("Unnumbered object [PCI]"));
-		Files.createDirectories(archiveRoot.resolve("Known card [AGP] [200002] [TRW 10510]"));
+		Files.createDirectories(archiveRoot.resolve("Known card [AGP] [VGA] [200002] [TRW 10510]"));
 		Files.createDirectories(archiveRoot.resolve("Serial only [SN 200003]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, true, MyGear.class);
@@ -66,12 +76,13 @@ class MyCollectionModelTest {
 		final MyGear unnumbered = gear(gear, "Unnumbered object [PCI]");
 		assertInstanceOf(MysteryGear.class, unnumbered);
 		assertEquals(Optional.empty(), unnumbered.getRetroId());
-		assertEquals(Optional.of(ExpansionBus.PCI), unnumbered.getBus());
+		assertEquals(Set.of(ExpansionBus.PCI), unnumbered.getExpansionBuses());
 
-		final MyGear graphicsCard = gear(gear, "Known card [AGP] [200002] [TRW 10510]");
+		final MyGear graphicsCard = gear(gear, "Known card [AGP] [VGA] [200002] [TRW 10510]");
 		assertInstanceOf(GraphicsCard.class, graphicsCard);
 		assertEquals(Optional.of(new RetroId(200002)), graphicsCard.getRetroId());
-		assertEquals(Optional.of(ExpansionBus.AGP), graphicsCard.getBus());
+		assertEquals(Set.of(ExpansionBus.AGP), graphicsCard.getExpansionBuses());
+		assertEquals(Set.of(VideoConnector.VGA), graphicsCard.getVideoConnectors());
 		final TheRetroWebReference expectedReference = new TheRetroWebReference(
 				TheRetroWebCategory.EXPANSION_CARD, new TheRetroWebId(10510));
 		assertEquals(Optional.of(expectedReference),
@@ -102,6 +113,51 @@ class MyCollectionModelTest {
 		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
 		assertEquals(Optional.of(new TheRetroWebId(10510)), gear.getTheRetroWebId());
 		assertEquals(Optional.empty(), new TheRetroWebReferences().referenceFor(gear));
+	}
+
+	@Test
+	void resolvesMinedGearSignaturesFromTheirOwnTags() throws IOException {
+		Files.createDirectories(
+				archiveRoot.resolve("Moved board [ATX] [ISA, PCI, AGP] [TRW 10510] [200020]"));
+		Files.createDirectories(
+				archiveRoot.resolve("Moved old memory [SIMM72] [8MB] [70ns] [EDO] [200021]"));
+		Files.createDirectories(archiveRoot.resolve("Moved DDR memory [PC3200] [512MB] [200022]"));
+		Files.createDirectories(archiveRoot.resolve("Moved supply [ATX] [300W] [200023]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, true, MyGear.class);
+
+		final MyGear board = gear(gear, "Moved board [ATX] [ISA, PCI, AGP] [TRW 10510] [200020]");
+		assertInstanceOf(Motherboard.class, board);
+		assertEquals(Set.of(ExpansionBus.ISA, ExpansionBus.PCI, ExpansionBus.AGP),
+				board.getExpansionBuses());
+		assertEquals(Set.of(ComputerFormFactor.ATX), board.getComputerFormFactors());
+		assertEquals(Optional.of(TheRetroWebCategory.MOTHERBOARD.reference(new TheRetroWebId(10510))),
+				new TheRetroWebReferences().referenceFor(board));
+
+		final MyGear oldMemory = gear(gear, "Moved old memory [SIMM72] [8MB] [70ns] [EDO] [200021]");
+		assertInstanceOf(MemoryModule.class, oldMemory);
+		assertEquals(Set.of(MemoryFormFactor.SIMM_72_PIN), oldMemory.getMemoryFormFactors());
+		assertEquals(Set.of(new MemoryAccessTime(70)), oldMemory.getMemoryAccessTimes());
+		assertEquals(Set.of(MemoryFeature.EXTENDED_DATA_OUT), oldMemory.getMemoryFeatures());
+
+		final MyGear ddrMemory = gear(gear, "Moved DDR memory [PC3200] [512MB] [200022]");
+		assertInstanceOf(MemoryModule.class, ddrMemory);
+		assertEquals(Set.of(MemoryStandard.PC_3200), ddrMemory.getMemoryStandards());
+
+		final MyGear supply = gear(gear, "Moved supply [ATX] [300W] [200023]");
+		assertInstanceOf(PowerSupply.class, supply);
+		assertEquals(Optional.of(new Power(java.math.BigDecimal.valueOf(300))), supply.getPower());
+	}
+
+	@Test
+	void treatsScanIdsAsReusableReferencesRatherThanGearIdentity() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("First scanned manual [101534] [200030]"));
+		Files.createDirectories(archiveRoot.resolve("Second scanned manual [101534] [200031]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, true, MyGear.class);
+
+		assertEquals(2, gear.size());
+		assertTrue(gear.stream().allMatch(value -> value.getScanIds().equals(Set.of(new ScanId(101534)))));
 	}
 
 	@Test
@@ -184,7 +240,7 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void keepsContradictoryFolderAndPropertiesValuesAsAnUnresolvedClue() throws IOException {
+	void combinesExpansionBusesAcrossFolderAndPropertiesClues() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
 		Files.writeString(folder.resolve("retro.properties"), "bus=PCI\n");
 
@@ -192,21 +248,21 @@ class MyCollectionModelTest {
 				"Conflicting object [AGP] [200006]");
 
 		assertInstanceOf(MysteryGear.class, gear);
-		assertEquals(Optional.empty(), gear.getBus());
-		assertEquals(Set.of("AGP", "PCI"),
-				assertInstanceOf(Clue.class, gear.getAttributes().get(AttributeNames.BUS)).getValue());
+		assertEquals(Set.of(ExpansionBus.AGP, ExpansionBus.PCI), gear.getExpansionBuses());
+		assertFalse(gear.getAttributes().containsKey(AttributeNames.BUS));
 	}
 
 	@Test
 	void collapsesCorroboratingFolderAndPropertiesValues() throws IOException {
-		final Path folder = Files.createDirectories(archiveRoot.resolve("Corroborated card [AGP] [200007]"));
+		final Path folder = Files.createDirectories(
+				archiveRoot.resolve("Corroborated card [AGP] [VGA] [200007]"));
 		Files.writeString(folder.resolve("retro.properties"), "bus=AGP\n");
 
 		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, true, MyGear.class),
-				"Corroborated card [AGP] [200007]");
+				"Corroborated card [AGP] [VGA] [200007]");
 
 		assertInstanceOf(GraphicsCard.class, gear);
-		assertEquals(Optional.of(ExpansionBus.AGP), gear.getBus());
+		assertEquals(Set.of(ExpansionBus.AGP), gear.getExpansionBuses());
 	}
 
 	private RetroCrawler crawler() {
