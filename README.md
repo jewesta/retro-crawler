@@ -103,7 +103,9 @@ depend on the shared model.
 
 ## Archive Repository
 
-Applications must explicitly select a `Repository`. `JsonFileRepository` remains a convenient supplied implementation and uses the local `cache` directory when constructed without a path:
+Applications must explicitly select a `Repository`. `JsonFileRepository` is a
+convenient persistent implementation and uses the local `cache` directory when
+constructed without a path:
 
 ```java
 Model model = Model.from("com.example.collection");
@@ -114,6 +116,16 @@ RetroCrawler crawler = RetroCrawler.builder()
         .repository(repository)
         .build();
 ```
+
+For applications that only need the extracted archives for the lifetime of the
+process, the framework also supplies a thread-safe `InMemoryRepository`:
+
+```java
+Repository repository = new InMemoryRepository();
+```
+
+An in-memory repository does not write to the filesystem and starts empty after
+an application restart.
 
 A missing stored archive causes the filesystem archive to be crawled. If a stored archive cannot be retrieved, RetroCrawler reports the repository failure and rebuilds it from the filesystem source.
 
