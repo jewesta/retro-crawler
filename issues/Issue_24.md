@@ -1609,6 +1609,12 @@ format, `Artifact`, resolution, or facts. Tree finders are configured through
 `@RetroArchive.LookAt(trees = ...)`; a tree finder alone may establish an
 artifact. Existing finders remain valid without modification.
 
+Direct entries are classified once into an internal `FolderListing` containing
+the original entries, child folders, and regular files. Crawl planning retains
+that classified listing and the digging pass reuses it. Recursion, existing
+local clue finders, and transient file views consequently share the same
+classification without repeating `Files.isRegularFile(...)` checks.
+
 Focused tests prove post-order inspection, lazy nested-file access,
 tree-only annotation configuration, local/tree clue merging, artifact
 establishment by a tree finder, and pruning of a child artifact together with
@@ -1617,9 +1623,26 @@ its metadata subtree.
 Verification completed successfully on 2026-07-29:
 
 - focused tree-discovery and crawl-planning tests;
-- all 96 core tests, including the library-use boundary checks;
+- all 99 core tests, including the `FolderListing` reuse and library-use
+  boundary checks;
 - the complete eight-module `mvn test` reactor;
 - the clean packaged reactor through `mvn clean install`.
+
+A subsequent full live re-index of the IBM-compatible archive exercised the
+classified listings across all 518 approximate crawl regions. The crawler
+stowed a 1,862,932-byte clue archive, resolved all 2,168 artifacts, and
+completed successfully in 4 minutes 31 seconds. This is a successful
+real-world regression and performance sanity check, not a controlled benchmark:
+the archive contents and filesystem conditions differ from earlier runs. No
+private path or cache content is recorded here.
+
+A no-consumer shortcut was then benchmarked which omitted folder and file view
+construction when no tree clue finders were configured. The otherwise
+identical full re-index produced the same cache and aggregate result but took 4
+minutes 44 seconds, 13 seconds longer than the 4-minute-31-second baseline.
+View allocation therefore produced no wall-clock cost distinguishable from
+filesystem variation. The shortcut and its extra branch were removed in favor
+of the simpler unconditional post-order pipeline.
 
 One indexing rule remains deliberately explicit for this first slice: when a
 stored parent artifact contains clues derived from a metadata descendant,

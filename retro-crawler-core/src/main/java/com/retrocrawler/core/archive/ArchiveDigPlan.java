@@ -18,7 +18,7 @@ final class ArchiveDigPlan {
 	record Region(Path root, Path path) {
 	}
 
-	private final Map<Path, List<Path>> analyzedListings;
+	private final Map<Path, FolderListing> analyzedListings;
 
 	private final Set<Region> regions;
 
@@ -28,13 +28,14 @@ final class ArchiveDigPlan {
 
 	private boolean progressStarted;
 
-	ArchiveDigPlan(final Map<Path, List<Path>> analyzedListings, final List<Region> regions, final int analyzedDepth) {
+	ArchiveDigPlan(final Map<Path, FolderListing> analyzedListings, final List<Region> regions,
+			final int analyzedDepth) {
 		this.analyzedListings = new LinkedHashMap<>(analyzedListings);
 		this.regions = new LinkedHashSet<>(regions);
 		this.analyzedDepth = analyzedDepth;
 	}
 
-	Optional<List<Path>> listing(final Path path) {
+	Optional<FolderListing> listing(final Path path) {
 		return Optional.ofNullable(analyzedListings.get(path));
 	}
 

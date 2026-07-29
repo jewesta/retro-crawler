@@ -83,6 +83,17 @@ public class ArchivePathClueFinder {
 	}
 
 	public Set<Clue> find(final ArchivePath node, final Progressor progressor) {
+		final List<Path> files = node.children().stream().filter(Files::isRegularFile).toList();
+		return find(node, files, progressor);
+	}
+
+	/**
+	 * Runs local clue finders with a caller-supplied classification of the current
+	 * folder's direct files.
+	 */
+	public Set<Clue> find(final ArchivePath node, final List<Path> files, final Progressor progressor) {
+		Objects.requireNonNull(node, "node");
+		Objects.requireNonNull(files, "files");
 		Set<Clue> clues;
 		final String folderName = node.path().getFileName().toString();
 		if (folderNameClueFinder != null) {
@@ -90,11 +101,6 @@ public class ArchivePathClueFinder {
 		} else {
 			clues = new HashSet<>();
 		}
-		/*
-		 * For the file related clue finders we need to get regular files only, omitting
-		 * folders.
-		 */
-		final List<Path> files = node.children().stream().filter(Files::isRegularFile).toList();
 		if (files.isEmpty()) {
 			/* No files. Nothing to get further clues from. */
 			return clues;

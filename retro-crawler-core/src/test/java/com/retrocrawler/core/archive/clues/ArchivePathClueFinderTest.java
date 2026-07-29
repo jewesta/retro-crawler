@@ -115,6 +115,22 @@ class ArchivePathClueFinderTest {
 		assertEquals(Set.of("folder", "conversation"), clue(clues, "origin").getValue());
 	}
 
+	@Test
+	void acceptsFilesAlreadyClassifiedByTheDigger() throws IOException {
+		final Path classifiedFile = Files.createFile(folder.resolve("classified.txt"));
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(), List.of(files -> {
+			final String names = files.stream().map(path -> path.getFileName().toString())
+					.collect(java.util.stream.Collectors.joining(","));
+			return Set.of(Clue.of("files", names));
+		}));
+		Files.delete(classifiedFile);
+
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), List.of(classifiedFile),
+				SILENT_PROGRESSOR);
+
+		assertEquals(Set.of("classified.txt"), clue(clues, "files").getValue());
+	}
+
 	private static Clue clue(final Set<Clue> clues, final String key) {
 		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
 	}

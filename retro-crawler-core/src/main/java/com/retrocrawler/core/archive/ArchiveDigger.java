@@ -77,7 +77,7 @@ public class ArchiveDigger {
 		}
 
 		final long started = System.nanoTime();
-		final Map<Path, List<Path>> analyzedListings = new LinkedHashMap<>();
+		final Map<Path, FolderListing> analyzedListings = new LinkedHashMap<>();
 		List<ArchiveDigPlan.Region> frontier = initialRegions;
 		int depth = 0;
 		reportPlanning(progressor, depth, frontier.size(), false);
@@ -97,12 +97,12 @@ public class ArchiveDigger {
 			boolean expanded = false;
 			for (final ArchiveDigPlan.Region region : frontier) {
 				progressor.throwIfCancelled();
-				List<Path> listing = analyzedListings.get(region.path());
+				FolderListing listing = analyzedListings.get(region.path());
 				if (listing == null) {
-					listing = list(region.path());
+					listing = FolderListing.from(list(region.path()));
 					analyzedListings.put(region.path(), listing);
 				}
-				final List<Path> directories = listing.stream().filter(Files::isDirectory).toList();
+				final List<Path> directories = listing.folders();
 				if (directories.isEmpty()) {
 					next.add(region);
 				} else {
@@ -209,21 +209,21 @@ public class ArchiveDigger {
 		final boolean insideRegion = parentInsideRegion || startsRegion;
 		plan.reportCurrent(path, insideRegion, progressor);
 
-		final List<Path> paths = plan.listing(path).orElse(null);
-		final List<Path> effectivePaths = paths == null ? list(path) : paths;
+		FolderListing listing = plan.listing(path).orElse(null);
+		if (listing == null) {
+			listing = FolderListing.from(list(path));
+		}
 
-		final ArchivePath archivePath = new ArchivePath(path, effectivePaths);
-		final Set<Clue> localClues = clueFinder.find(archivePath, progressor);
+		final ArchivePath archivePath = new ArchivePath(path, listing.entries());
+		final Set<Clue> localClues = clueFinder.find(archivePath, listing.files(), progressor);
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
-		for (final Path child : effectivePaths) {
-			if (Files.isDirectory(child)) {
-				children.add(digFolder(root, child, plan, progressor, insideRegion));
-			}
+		for (final Path child : listing.folders()) {
+			children.add(digFolder(root, child, plan, progressor, insideRegion));
 		}
 
-		final ArchiveFolderView folderView = folderView(path, effectivePaths, children, progressor);
+		final ArchiveFolderView folderView = folderView(path, listing.files(), children, progressor);
 		final Set<Clue> clues = clueFinder.enrich(localClues, folderView, progressor);
 		progressor.throwIfCancelled();
 
@@ -247,18 +247,17 @@ public class ArchiveDigger {
 		return new DigResult(result, folderView);
 	}
 
-	private static ArchiveFolderView folderView(final Path path, final List<Path> paths,
+	private static ArchiveFolderView folderView(final Path path, final List<Path> files,
 			final List<DigResult> children, final Progressor progressor) {
 		final List<ArchiveFolderView> metadataFolders = children.stream()
 				.filter(child -> child.node().getArtifact() == null)
 				.map(DigResult::folderView)
 				.toList();
-		final List<ArchiveFileView> files = paths.stream()
-				.filter(Files::isRegularFile)
+		final List<ArchiveFileView> fileViews = files.stream()
 				.map(file -> new DefaultArchiveFileView(file, progressor))
 				.map(ArchiveFileView.class::cast)
 				.toList();
-		return new DefaultArchiveFolderView(folderName(path), metadataFolders, files);
+		return new DefaultArchiveFolderView(folderName(path), metadataFolders, fileViews);
 	}
 
 	private static String folderName(final Path path) {

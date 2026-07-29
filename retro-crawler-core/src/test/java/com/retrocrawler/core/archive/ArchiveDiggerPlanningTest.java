@@ -79,6 +79,20 @@ class ArchiveDiggerPlanningTest {
 				.anyMatch(node -> "created-after-planning".equals(node.getFolder())));
 	}
 
+	@Test
+	void reusesEntryClassificationCollectedByTheAnalysisSweep() throws IOException {
+		final Path changingEntry = Files.createFile(root.resolve("changing-entry"));
+		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
+		final Progressor progressor = new Progressor();
+		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
+		Files.delete(changingEntry);
+		Files.createDirectory(changingEntry);
+
+		final ArchiveNode archive = digger.dig(root, plan, progressor);
+
+		assertTrue(archive.getChildren() == null || archive.getChildren().isEmpty());
+	}
+
 	private ArchiveDigger digger(final CrawlPlanning planning) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("planning_test"), "Planning test",
 				List.of(root));
