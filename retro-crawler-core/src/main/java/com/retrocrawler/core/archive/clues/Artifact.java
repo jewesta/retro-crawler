@@ -1,5 +1,6 @@
 package com.retrocrawler.core.archive.clues;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,15 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * A model-independent bundle of {@link Clue clues} observed at one archive
+ * location.
+ * <p>
+ * Artifacts form the rebuildable repository representation. They contain raw
+ * evidence, never resolved facts or gear. Resolution may derive an effective
+ * clue view but must leave the artifact unchanged so that another model can
+ * reinterpret the same cached evidence.
+ */
 public class Artifact {
 
 	@JsonIgnore
@@ -33,11 +43,14 @@ public class Artifact {
 			throw new IllegalArgumentException(
 					"Clues cannot be empty. The existence of an artifact implies that there is at least one clue.");
 		}
-		this.clues = clues;
+		this.clues = new HashSet<>(clues);
 	}
 
+	/**
+	 * Returns an unmodifiable view of the raw clues.
+	 */
 	public Set<Clue> getClues() {
-		return clues;
+		return Collections.unmodifiableSet(clues);
 	}
 
 	@JsonAnyGetter

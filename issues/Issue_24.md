@@ -336,6 +336,44 @@ It emits neither an empty clue nor a title derived solely from that empty
 group. This preserves the collection's "no tag, no gear" rule while allowing a
 nonempty marker such as `[SN]` to establish unfinished gear.
 
+### Clues and Facts Are Separate Levels
+
+The cache-stability discussion exposed a general framework invariant:
+
+> A clue is model-independent evidence. A fact is a model-dependent
+> interpretation of that evidence. Archives persist clues, never facts.
+
+The dependency deliberately points in only one direction. `Artifact` contains
+raw `Clue` instances; `Fact` retains the source `Clue` from which its typed value
+was derived. The archive and repository layers do not depend on gear
+resolution. Consequently, adding or changing model types, fact keys, parsers,
+or matchers can reinterpret a stored archive without crawling the filesystem.
+
+A clue finder may preserve a key that is explicitly present in its source
+format, such as a property name. It must not obtain the model's known key set,
+create facts, or decide which gear type an artifact represents. Resolution may
+derive an effective clue view for the active model, as it does for a bare
+`[SN]` marker, but that view is not written back into the artifact.
+
+This contract is formalized in several ways:
+
+- The repository-wide design principles state the clue/fact boundary.
+- Public Javadocs define the responsibilities of `ClueFinder`, `Clue`,
+  `Artifact`, `Fact`, and `GearResolver`.
+- Archive packages are architecture-tested against dependencies on gear
+  resolution packages.
+- Artifacts and clues defensively protect their cached evidence from external
+  mutation.
+- A fact must contain at least one interpreted value and protects that value
+  from external mutation.
+- The model-evolution test proves that resolution can reinterpret the same
+  cached artifact without replacing or changing it.
+
+Separate `RawClue` and `ResolvedClue` types are deliberately not introduced. A
+clue may be observed directly or derived during resolution while remaining a
+clue. The important boundary is between cached evidence and model-dependent
+interpretation, not between two species of clue.
+
 ## Hierarchy Is Snapshot Context, Not Type Evidence
 
 The reconnaissance initially suggested inheriting classification facts from
@@ -1634,6 +1672,8 @@ here.
 - [x] Preserve bare key markers as artifact-establishing raw clues and derive
       missing-value clues during resolution while keeping the cache and clue
       finders model-ignorant.
+- [x] Formalize and enforce the separation between cached clues and resolved
+      facts.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1694,6 +1734,20 @@ The focused reactor command completed successfully:
 
 The full reactor `mvn test` and clean packaged reactor `mvn clean install` also
 completed successfully.
+
+Focused clue/fact boundary verification completed on 2026-07-29:
+
+- `LibraryUsePolicyTest` prevents the archive packages from depending on gear
+  resolution packages.
+- `ArtifactTest` proves that cached clue sets and raw clue values cannot be
+  modified through caller-owned or returned collections.
+- `FactTest` proves that a fact cannot exist without an interpreted value and
+  that its typed values cannot be modified externally.
+- `CacheModelEvolutionTest` remains the behavioral proof that an unchanged
+  archive can be reinterpreted by an evolved model.
+
+The full packaged reactor `mvn clean install` completed successfully after
+these boundary contracts were added; the core module ran 85 tests.
 
 Completed on 2026-07-26:
 

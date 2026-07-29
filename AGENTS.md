@@ -58,6 +58,16 @@ These instructions apply to the entire repository.
    through the resolution process so an answer about a piece of gear can be
    traced back to its archive, source path, clues, and facts.
 
+8. **Keep clues and facts on separate levels.**
+   A `Clue` is model-independent evidence observed while crawling an archive;
+   an `Artifact` and its repository representation contain clues, never facts.
+   A `Fact` is a model-dependent, typed interpretation produced during gear
+   resolution and must retain its source clue. Clue finders may preserve keys
+   explicitly present in their source format, but must not consult the model's
+   known fact-key registry. Resolution may derive an effective clue view, but
+   must not mutate the cached artifact. Model and parser changes must therefore
+   be able to reinterpret an existing clue archive without re-indexing.
+
 ## Repository Structure
 
 - `retro-crawler-core`: public framework API and implementation.

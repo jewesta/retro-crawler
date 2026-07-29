@@ -7,6 +7,14 @@ import java.util.Set;
 import com.retrocrawler.core.util.JacksonSerializable;
 import com.retrocrawler.core.util.RetroAttribute;
 
+/**
+ * Model-independent evidence observed while crawling an archive.
+ * <p>
+ * A clue retains the raw string values and any key explicitly observed by its
+ * finder. It may be cached as part of an {@link Artifact}; only later gear
+ * resolution may interpret it as a typed
+ * {@link com.retrocrawler.core.gear.Fact Fact}.
+ */
 public class Clue implements RetroAttribute {
 
 	public static final String PREFIX_ANONYMOUS = "_";
@@ -23,7 +31,7 @@ public class Clue implements RetroAttribute {
 
 	Clue(final String key, final Set<String> values) {
 		this.key = key;
-		this.value = Objects.requireNonNull(values, "values");
+		this.value = Set.copyOf(Objects.requireNonNull(values, "values"));
 	}
 
 	@Override

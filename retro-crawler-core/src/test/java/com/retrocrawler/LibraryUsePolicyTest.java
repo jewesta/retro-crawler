@@ -21,4 +21,11 @@ class LibraryUsePolicyTest {
 				.check(classes);
 	}
 
+	@Test
+	void clueArchiveMustNotDependOnGearResolution() {
+		final JavaClasses classes = new ClassFileImporter().importPackages("com.retrocrawler");
+		noClasses().that().resideInAnyPackage("com.retrocrawler.core.archive..").should().dependOnClassesThat()
+				.resideInAnyPackage("com.retrocrawler.core.gear..").check(classes);
+	}
+
 }

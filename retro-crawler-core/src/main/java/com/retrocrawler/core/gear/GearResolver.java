@@ -15,6 +15,10 @@ import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.core.util.Sonar;
 
+/**
+ * Interprets a model-independent {@link Artifact} as model-dependent facts and
+ * gear without modifying the artifact or its cached clues.
+ */
 public class GearResolver {
 
 	private final Map<Class<?>, GearSpecialist> gearSpecialists;
