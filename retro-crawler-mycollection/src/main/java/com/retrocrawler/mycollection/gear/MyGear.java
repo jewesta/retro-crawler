@@ -84,7 +84,7 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.TITLE, optional = true)
 	private String title;
 
-	@RetroFact(key = AttributeNames.DESCRIPTION, optional = true)
+	@RetroFact(key = AttributeNames.DESC, optional = true)
 	private String description;
 
 	@RetroFact(key = AttributeNames.IMAGE_ANGLED, optional = true)

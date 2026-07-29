@@ -971,7 +971,8 @@ the bracket path finder:
   clue. The collection's files are decoded explicitly as UTF-8 rather than
   through `Properties.load(InputStream)` and its ISO-8859-1 interpretation.
 - `RetroMarkdownClueFinder` reads the complete UTF-8 `retro.md` document into
-  the `description` clue.
+  the `desc` clue. The short key is also the established legacy-properties
+  spelling, while the Markdown convention keeps it implicit for collectors.
 - `StandardImageClueFinder` recognizes only the exact, case-insensitive
   `angled.jpeg`, `front.jpeg`, and `back.jpeg` conventions.
 - `FloppyImageClueFinder` recognizes a numeric `FD-*` prefix, retains both the

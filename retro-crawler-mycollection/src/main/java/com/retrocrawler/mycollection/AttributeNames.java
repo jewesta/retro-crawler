@@ -6,7 +6,7 @@ public final class AttributeNames {
 
 	public static final String CAPACITY = "capacity";
 
-	public static final String DESCRIPTION = "description";
+	public static final String DESC = "desc";
 
 	public static final String FLOPPY_IMAGE_ID = "floppyImageId";
 

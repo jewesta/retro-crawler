@@ -38,14 +38,14 @@ class CollectionFileClueFindersTest {
 	}
 
 	@Test
-	void importsTheCompleteMarkdownDocumentAsDescription() {
+	void importsTheCompleteMarkdownDocumentAsDesc() {
 		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
 		final String markdown = "# Notes\n\nA human-maintained description.\n";
 
 		final Set<Clue> clues = finder.find(input(markdown));
 
 		assertTrue(finder.matches("retro.md"));
-		assertEquals(Set.of(markdown), clue(clues, AttributeNames.DESCRIPTION).getValue());
+		assertEquals(Set.of(markdown), clue(clues, AttributeNames.DESC).getValue());
 	}
 
 	@Test

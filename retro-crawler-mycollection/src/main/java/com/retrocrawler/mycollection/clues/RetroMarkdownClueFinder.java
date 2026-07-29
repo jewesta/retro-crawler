@@ -25,7 +25,7 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 	@Override
 	public Set<Clue> find(final InputStream is) {
 		try {
-			return Set.of(Clue.of(AttributeNames.DESCRIPTION, new String(is.readAllBytes(), StandardCharsets.UTF_8)));
+			return Set.of(Clue.of(AttributeNames.DESC, new String(is.readAllBytes(), StandardCharsets.UTF_8)));
 		} catch (final IOException e) {
 			throw new ClueFileIOException("Could not read " + FILE_NAME + ".", e);
 		}
