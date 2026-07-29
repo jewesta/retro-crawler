@@ -24,13 +24,24 @@ public class ArchivePathClueFinder {
 
 	private final List<FileNameClueFinder> fileNameClueFinders;
 
+	private final List<TreeClueFinder> treeClueFinders;
+
 	public ArchivePathClueFinder(final PathNameClueFinder folderNameClueFinder,
 			final List<FileContentClueFinder> fileContentClueFinders,
 			final List<FileNameClueFinder> fileNameClueFinders) {
+		this(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders, List.of());
+	}
+
+	public ArchivePathClueFinder(final PathNameClueFinder folderNameClueFinder,
+			final List<FileContentClueFinder> fileContentClueFinders,
+			final List<FileNameClueFinder> fileNameClueFinders,
+			final List<TreeClueFinder> treeClueFinders) {
 		this.folderNameClueFinder = folderNameClueFinder;
 		this.fileContentClueFinders = Objects.requireNonNullElse(fileContentClueFinders, List.of());
 		this.fileNameClueFinders = Objects.requireNonNullElse(fileNameClueFinders, List.of());
-		if (folderNameClueFinder == null && fileContentClueFinders.isEmpty() && fileNameClueFinders.isEmpty()) {
+		this.treeClueFinders = Objects.requireNonNullElse(treeClueFinders, List.of());
+		if (folderNameClueFinder == null && this.fileContentClueFinders.isEmpty()
+				&& this.fileNameClueFinders.isEmpty() && this.treeClueFinders.isEmpty()) {
 			throw new IllegalArgumentException("Require at least one clue finder.");
 		}
 	}
@@ -115,6 +126,22 @@ public class ArchivePathClueFinder {
 		return clues;
 	}
 
+	/**
+	 * Enriches clues already found locally with observations from the configured
+	 * post-order tree finders.
+	 */
+	public Set<Clue> enrich(final Set<Clue> localClues, final ArchiveFolderView folder,
+			final Progressor progressor) {
+		Objects.requireNonNull(localClues, "localClues");
+		Objects.requireNonNull(folder, "folder");
+		Set<Clue> clues = merge(new HashSet<>(), localClues);
+		for (final TreeClueFinder finder : treeClueFinders) {
+			progressor.throwIfCancelled();
+			clues = merge(clues, finder.find(folder));
+		}
+		return clues;
+	}
+
 	public static ArchivePathClueFinder of(final RetroArchive.LookAt lookAt) {
 		Objects.requireNonNull(lookAt, "lookAt");
 
@@ -131,8 +158,12 @@ public class ArchivePathClueFinder {
 		final List<FileNameClueFinder> fileNameClueFinders = List.of(lookAt.fileNames()).stream()
 				.map(Reflection::newInstance).map(FileNameClueFinder.class::cast).toList();
 
+		final List<TreeClueFinder> treeClueFinders = List.of(lookAt.trees()).stream()
+				.map(Reflection::newInstance).map(TreeClueFinder.class::cast).toList();
+
 		// Let the constructor enforce that at least one finder is present.
-		return new ArchivePathClueFinder(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders);
+		return new ArchivePathClueFinder(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders,
+				treeClueFinders);
 	}
 
 }

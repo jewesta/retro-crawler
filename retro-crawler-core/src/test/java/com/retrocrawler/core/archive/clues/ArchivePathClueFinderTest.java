@@ -11,6 +11,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.archive.ArchivePath;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -59,7 +60,75 @@ class ArchivePathClueFinderTest {
 		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").getValue());
 	}
 
+	@Test
+	void createsTreeOnlyConfigurationFromArchiveAnnotation() {
+		final RetroArchive.LookAt lookAt = TreeConfiguredArchive.class.getAnnotation(RetroArchive.class).findClues();
+		final ArchivePathClueFinder finder = ArchivePathClueFinder.of(lookAt);
+		final ArchiveFolderView view = new ArchiveFolderView() {
+
+			@Override
+			public String name() {
+				return "gear";
+			}
+
+			@Override
+			public List<ArchiveFolderView> folders() {
+				return List.of();
+			}
+
+			@Override
+			public List<ArchiveFileView> files() {
+				return List.of();
+			}
+		};
+
+		final Set<Clue> localClues = finder.find(new ArchivePath(folder, List.of()), SILENT_PROGRESSOR);
+		final Set<Clue> clues = finder.enrich(localClues, view, SILENT_PROGRESSOR);
+
+		assertEquals(Set.of("gear"), clue(clues, "tree").getValue());
+	}
+
+	@Test
+	void mergesTreeCluesWithExistingLocalClues() {
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(), List.of(),
+				List.of(view -> Set.of(Clue.of("origin", "conversation"))));
+		final ArchiveFolderView view = new ArchiveFolderView() {
+
+			@Override
+			public String name() {
+				return "gear";
+			}
+
+			@Override
+			public List<ArchiveFolderView> folders() {
+				return List.of();
+			}
+
+			@Override
+			public List<ArchiveFileView> files() {
+				return List.of();
+			}
+		};
+
+		final Set<Clue> clues = finder.enrich(Set.of(Clue.of("origin", "folder")), view, SILENT_PROGRESSOR);
+
+		assertEquals(Set.of("folder", "conversation"), clue(clues, "origin").getValue());
+	}
+
 	private static Clue clue(final Set<Clue> clues, final String key) {
 		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
+	}
+
+	@RetroArchive(id = "tree_configured", locations = "/not/read",
+			findClues = @RetroArchive.LookAt(trees = ConfiguredTreeClueFinder.class))
+	private static final class TreeConfiguredArchive {
+	}
+
+	public static final class ConfiguredTreeClueFinder implements TreeClueFinder {
+
+		@Override
+		public Set<Clue> find(final ArchiveFolderView folder) {
+			return Set.of(Clue.of("tree", folder.name()));
+		}
 	}
 }

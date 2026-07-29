@@ -46,6 +46,14 @@ For each folder, registered `ClueFinder`s extract clues and produce an `Artifact
 
 The extracted clue archive is stowed away through an application-selected `Repository` so that expensive rescans can be avoided. The bundled `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
 
+Most clue finders inspect only the current folder name or its direct files.
+Collections with meaningful metadata subtrees may additionally configure
+`TreeClueFinder`s. These run depth-first in post-order through a transient
+`ArchiveFolderView`, may inspect file content lazily through
+`ArchiveFileView.peek(...)`, and return clues for the current folder. Child
+folders that already established an artifact are pruned from the view, so a
+finder cannot cross into another potential collection part.
+
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
 Based on these facts, `GearMatcher`s determine which gear type best represents an artifact.

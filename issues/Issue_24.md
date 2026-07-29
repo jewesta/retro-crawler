@@ -1580,6 +1580,53 @@ validation continue to operate over the complete merged archive. No private
 root, selected path, folder name, cache path, or identifier value is recorded
 here.
 
+### Post-order metadata-tree clues
+
+Collection use exposed a structural clue source that the original local finder
+contracts could not express: a gear folder may contain a metadata folder such
+as a marketplace name, and that folder may in turn contain a conversation or
+invoice whose contents describe the gear. The metadata folders are not
+artifacts because they are not potential collection parts. Allowing individual
+finders to traverse the filesystem would nevertheless surrender crawl
+planning, cancellation, archive boundaries, and predictable I/O.
+
+Core now offers an additive `TreeClueFinder` contract. It receives a transient,
+read-only `ArchiveFolderView` with direct `ArchiveFileView`s and recursively
+navigable metadata folders. File content remains lazy and can be inspected
+through crawler-owned `peek(...)`; no filesystem `Path` is exposed through the
+new API. All clues returned by a tree finder belong to the current folder.
+
+The digger retains the original pre-order timing of path-name, file-name, and
+file-content finders. It then descends depth-first, establishes every child,
+constructs the current folder view, runs tree finders post-order, and finally
+establishes the current artifact. Any child that established an artifact is
+removed from the navigable view but retained unchanged in the persistent
+`ArchiveNode` tree. This makes artifact folders opaque clue boundaries while
+letting metadata folders remain inspectable to arbitrary depth.
+
+The new views are crawl-time objects and do not alter the repository JSON
+format, `Artifact`, resolution, or facts. Tree finders are configured through
+`@RetroArchive.LookAt(trees = ...)`; a tree finder alone may establish an
+artifact. Existing finders remain valid without modification.
+
+Focused tests prove post-order inspection, lazy nested-file access,
+tree-only annotation configuration, local/tree clue merging, artifact
+establishment by a tree finder, and pruning of a child artifact together with
+its metadata subtree.
+
+Verification completed successfully on 2026-07-29:
+
+- focused tree-discovery and crawl-planning tests;
+- all 96 core tests, including the library-use boundary checks;
+- the complete eight-module `mvn test` reactor;
+- the clean packaged reactor through `mvn clean install`.
+
+One indexing rule remains deliberately explicit for this first slice: when a
+stored parent artifact contains clues derived from a metadata descendant,
+callers must re-index that artifact folder rather than only the deeper metadata
+folder. Precise upward invalidation or automatic widening can be added after
+real collection use establishes the desired policy.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.

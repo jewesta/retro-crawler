@@ -1,6 +1,7 @@
 package com.retrocrawler.core.archive;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -21,8 +23,11 @@ import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFileView;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFileIOException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -156,7 +161,7 @@ public class ArchiveDigger {
 		if (!path.startsWith(root)) {
 			throw new IllegalArgumentException("Expected archive path '" + path + "' to be below root '" + root + "'.");
 		}
-		return dig(root, path, plan, progressor, false);
+		return digFolder(root, path, plan, progressor, false).node();
 	}
 
 	private Set<Clue> createSyntheticClues(final Path root, final Path path) {
@@ -185,7 +190,7 @@ public class ArchiveDigger {
 	 * @return
 	 * @throws IOException
 	 */
-	private ArchiveNode dig(final Path root, final Path path, final ArchiveDigPlan plan,
+	private DigResult digFolder(final Path root, final Path path, final ArchiveDigPlan plan,
 			final Progressor progressor,
 			final boolean parentInsideRegion) throws IOException {
 		final String pathName;
@@ -207,8 +212,19 @@ public class ArchiveDigger {
 		final List<Path> paths = plan.listing(path).orElse(null);
 		final List<Path> effectivePaths = paths == null ? list(path) : paths;
 
-		final ArchivePath node = new ArchivePath(path, effectivePaths);
-		final Set<Clue> clues = clueFinder.find(node, progressor);
+		final ArchivePath archivePath = new ArchivePath(path, effectivePaths);
+		final Set<Clue> localClues = clueFinder.find(archivePath, progressor);
+		progressor.throwIfCancelled();
+
+		final List<DigResult> children = new ArrayList<>();
+		for (final Path child : effectivePaths) {
+			if (Files.isDirectory(child)) {
+				children.add(digFolder(root, child, plan, progressor, insideRegion));
+			}
+		}
+
+		final ArchiveFolderView folderView = folderView(path, effectivePaths, children, progressor);
+		final Set<Clue> clues = clueFinder.enrich(localClues, folderView, progressor);
 		progressor.throwIfCancelled();
 
 		final Artifact artifact;
@@ -222,18 +238,70 @@ public class ArchiveDigger {
 			logger.info("Found artifact at: " + root.relativize(path).toString());
 		}
 
-		final List<ArchiveNode> children = new ArrayList<>();
-		for (final Path child : effectivePaths) {
-			if (Files.isDirectory(child)) {
-				children.add(dig(root, child, plan, progressor, insideRegion));
-			}
-		}
-
-		final List<ArchiveNode> effectiveChildren = children.isEmpty() ? null : children;
+		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
+		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
 		final ArchiveNode result = new ArchiveNode(pathName, artifact, effectiveChildren);
 		if (startsRegion) {
 			plan.completeRegion(path, progressor);
 		}
-		return result;
+		return new DigResult(result, folderView);
+	}
+
+	private static ArchiveFolderView folderView(final Path path, final List<Path> paths,
+			final List<DigResult> children, final Progressor progressor) {
+		final List<ArchiveFolderView> metadataFolders = children.stream()
+				.filter(child -> child.node().getArtifact() == null)
+				.map(DigResult::folderView)
+				.toList();
+		final List<ArchiveFileView> files = paths.stream()
+				.filter(Files::isRegularFile)
+				.map(file -> new DefaultArchiveFileView(file, progressor))
+				.map(ArchiveFileView.class::cast)
+				.toList();
+		return new DefaultArchiveFolderView(folderName(path), metadataFolders, files);
+	}
+
+	private static String folderName(final Path path) {
+		final Path fileName = path.getFileName();
+		return fileName == null ? path.toString() : fileName.toString();
+	}
+
+	private record DigResult(ArchiveNode node, ArchiveFolderView folderView) {
+	}
+
+	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders,
+			List<ArchiveFileView> files) implements ArchiveFolderView {
+
+		private DefaultArchiveFolderView {
+			Objects.requireNonNull(name, "name");
+			folders = List.copyOf(Objects.requireNonNull(folders, "folders"));
+			files = List.copyOf(Objects.requireNonNull(files, "files"));
+		}
+	}
+
+	private record DefaultArchiveFileView(Path path, Progressor progressor) implements ArchiveFileView {
+
+		private DefaultArchiveFileView {
+			Objects.requireNonNull(path, "path");
+			Objects.requireNonNull(progressor, "progressor");
+		}
+
+		@Override
+		public String name() {
+			return path.getFileName().toString();
+		}
+
+		@Override
+		public <T> T peek(final Function<? super InputStream, ? extends T> inspector) {
+			Objects.requireNonNull(inspector, "inspector");
+			progressor.throwIfCancelled();
+			try (InputStream in = Files.newInputStream(path)) {
+				final T result = inspector.apply(in);
+				progressor.throwIfCancelled();
+				return result;
+			} catch (final IOException e) {
+				throw new ClueFileIOException("Could not inspect clue file at: " + path, e);
+			}
+		}
 	}
 }
