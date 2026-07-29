@@ -968,7 +968,8 @@ The collection archive now configures four file-derived clue finders alongside
 the bracket path finder:
 
 - `RetroPropertiesClueFinder` imports every legacy Java property as a keyed
-  clue.
+  clue. The collection's files are decoded explicitly as UTF-8 rather than
+  through `Properties.load(InputStream)` and its ISO-8859-1 interpretation.
 - `RetroMarkdownClueFinder` reads the complete UTF-8 `retro.md` document into
   the `description` clue.
 - `StandardImageClueFinder` recognizes only the exact, case-insensitive

@@ -2,6 +2,8 @@ package com.retrocrawler.mycollection.clues;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -26,7 +28,7 @@ public final class RetroPropertiesClueFinder implements FileContentClueFinder {
 	public Set<Clue> find(final InputStream is) {
 		final Properties properties = new Properties();
 		try {
-			properties.load(is);
+			properties.load(new InputStreamReader(is, StandardCharsets.UTF_8));
 		} catch (final IOException e) {
 			throw new ClueFileIOException("Could not read " + FILE_NAME + ".", e);
 		}

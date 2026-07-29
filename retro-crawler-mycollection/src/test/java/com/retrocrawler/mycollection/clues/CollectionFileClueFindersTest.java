@@ -29,6 +29,15 @@ class CollectionFileClueFindersTest {
 	}
 
 	@Test
+	void decodesLegacyPropertiesAsUtf8() {
+		final RetroPropertiesClueFinder finder = new RetroPropertiesClueFinder();
+
+		final Set<Clue> clues = finder.find(input("desc=Gerät läuft\n"));
+
+		assertEquals(Set.of("Gerät läuft"), clue(clues, "desc").getValue());
+	}
+
+	@Test
 	void importsTheCompleteMarkdownDocumentAsDescription() {
 		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
 		final String markdown = "# Notes\n\nA human-maintained description.\n";
