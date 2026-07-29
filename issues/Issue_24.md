@@ -578,10 +578,9 @@ the framework must not make folder tags privileged or mandatory.
 
 The collection model's current "no tag, no gear" rule is expressed by its
 configured clue finders returning no clues for an untagged folder. It does not
-imply a framework restriction. If the model later treats a `retro.md` or
-`retro.properties` file as an alternative intentional description of gear, a
-file-content clue from that file can establish the containing folder as an
-artifact in exactly the same way as a folder-name clue.
+imply a framework restriction. A `retro.md` file is an alternative intentional
+description of gear, so a file-content clue from it can establish the
+containing folder as an artifact in exactly the same way as a folder-name clue.
 
 ## Notes and Legacy Metadata
 
@@ -596,16 +595,19 @@ A later, comprehensive case-insensitive filename sweep found eleven
 `retro.properties` files and six `retro.md` files. That later count supersedes
 the initial sample count; no contents were read during either sweep.
 
-The properties files are remnants of a short-lived authoring experiment.
-Properties editors are not widely available or collector-friendly, so they
-should not define the future workflow. A legacy clue finder may still import
-them if that proves useful.
+The properties files were remnants of a short-lived authoring experiment.
+Properties editors are not widely available or collector-friendly, so the
+collection now uses one `retro.md` convention for both prose and sparse
+structured metadata. A final live inventory found ten remaining properties
+files, five under each collection root. They were migrated to
+UTF-8 `retro.md` documents and removed from the filesystem archive.
 
-A `retro.md` file is the preferred direction for free-form notes:
+A `retro.md` file is the collection convention for human-maintained notes:
 
 - Markdown is human-editable with common tools.
-- It can be read as an optional file-content clue.
-- Its content can become a notes fact associated with the containing gear.
+- Its optional flat front matter supplies keyed clues.
+- Its Markdown body supplies the `desc` clue associated with the containing
+  gear.
 - It may either contribute to already-recognized gear or help establish the
   containing folder as gear, according to the collection model's clue finder
   and matcher design.
@@ -964,15 +966,16 @@ language. Those plausible conventions are deliberately deferred until the
 collection supplies clearer rules. The current chaos is retained as chaos
 rather than prematurely modelled.
 
-The collection archive now configures four file-derived clue finders alongside
+The collection archive now configures three file-derived clue finders alongside
 the bracket path finder:
 
-- `RetroPropertiesClueFinder` imports every legacy Java property as a keyed
-  clue. The collection's files are decoded explicitly as UTF-8 rather than
-  through `Properties.load(InputStream)` and its ISO-8859-1 interpretation.
-- `RetroMarkdownClueFinder` reads the complete UTF-8 `retro.md` document into
-  the `desc` clue. The short key is also the established legacy-properties
-  spelling, while the Markdown convention keeps it implicit for collectors.
+- `RetroMarkdownClueFinder` reads UTF-8 `retro.md`. An optional opening
+  front-matter block accepts deliberately flat `key: value` entries and emits
+  them as raw keyed clues; this is not a general YAML implementation. The
+  remaining Markdown body becomes `desc`. Unknown keys remain clues, empty
+  values remain missing-value clues, and malformed or unclosed front matter is
+  rejected rather than guessed. `desc` itself is forbidden in front matter
+  because the body owns that concept.
 - `StandardImageClueFinder` recognizes only the exact, case-insensitive
   `angled.jpeg`, `front.jpeg`, and `back.jpeg` conventions.
 - `FloppyImageClueFinder` recognizes a numeric `FD-*` prefix, retains both the
@@ -1011,10 +1014,10 @@ the original semantic key:
   matcher sees a fact for that key.
 - A collection-valued fact may legitimately retain multiple parsed values.
 
-For example, folder tag `[AGP]` together with `bus=AGP` in
-`retro.properties` yields the `AGP` bus fact. `[AGP]` together with `bus=PCI`
-yields the unresolved clue `bus = {AGP, PCI}` and the gear remains a
-`MysteryGear` unless other independent facts identify it.
+For example, folder tag `[AGP]` together with `bus: AGP` in `retro.md` front
+matter yields the `AGP` bus fact. `[AGP]` together with `bus: PCI` yields the
+unresolved clue `bus = {AGP, PCI}` and the gear remains a `MysteryGear` unless
+other independent facts identify it.
 
 This policy makes conflict visible without letting clue-finder execution order
 choose a winner. Deciding which source is wrong remains a cataloguing task.
@@ -1650,6 +1653,52 @@ callers must re-index that artifact folder rather than only the deeper metadata
 folder. Precise upward invalidation or automatic widening can be added after
 real collection use establishes the desired policy.
 
+### One Markdown note to rule them all
+
+The collection no longer uses `retro.properties`. The ten remaining files were
+migrated into `retro.md`; nine legacy `desc` values became Markdown bodies.
+Sparse structured values became flat front matter:
+
+```markdown
+---
+price: 120 EUR
+fcc: TEST-FCC-123
+health: defekt
+tested: post
+---
+```
+
+A typed collection-side price parser preserves the raw clue while interpreting
+a missing currency as EUR by collection convention. The sole legacy
+`tested=bios` value became `tested: post`: the gear shows life, without
+asserting stability or a successful boot. The current testing vocabulary is
+`post`, `boot`, and `full`.
+
+Redundant `type` and `bus` properties were discarded because the archive's
+ordinary clues already carry that evidence. `from` and `origin` were discarded
+as agreed, and `bios.dumped` is deferred until dump-file presence can support a
+real convention. Origin inference from marketplace metadata folders is
+explicitly deferred for further discussion despite the availability of
+`TreeClueFinder`.
+
+The model now recognizes the German destiny values `verschenkt`, `verkauft`,
+`entsorgt`, `geschlachtet`, `retourniert`, and `gestohlen`. Passing gear on is
+normalized to `verschenkt`, not retained as a separate `weitergegeben` value.
+The two legacy `gifted` entries and three abbreviated `verschenk` tags were
+renamed accordingly. A recipient embedded in a destiny tag was moved to a
+one-sentence German Markdown note instead of remaining part of the tag value.
+
+Three mixed `defekt`/`entsorgt` tags were corrected to the single leading
+`entsorgt` destiny tag. Their independent defective condition is now retained
+as `health: defekt` front matter. This keeps one bracket value aligned with one
+fact concept instead of teaching a parser to accept malformed mixtures.
+
+A partial live re-index rebuilt 86 approximate regions covering the affected
+IBM-compatible subtrees, stowed the merged clue archive, and resolved all 2,168
+artifacts without duplicate-ID failure. Ten descriptions were then present in
+the IBM cache. The live manufacturer-root changes remain source-of-truth
+filesystem changes until that root is included in a future crawl.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1746,6 +1795,11 @@ real collection use establishes the desired policy.
       finders model-ignorant.
 - [x] Formalize and enforce the separation between cached clues and resolved
       facts.
+- [x] Consolidate legacy properties and Markdown notes into one flat-front-
+      matter `retro.md` convention, migrate the ten remaining live files, and
+      remove the legacy clue finder.
+- [x] Add model-owned German destiny and testing vocabularies, then normalize
+      the agreed live archive tags without inferring origin.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1777,8 +1831,26 @@ real collection use establishes the desired policy.
   it remain a query/provenance and traversal concern?
 - When the folder-tag grammar proves reusable, should it become a small
   optional adapter module shared by the demo and personal model?
+- How should marketplace metadata folders express origin without letting an
+  origin-only tree clue establish unrelated untagged artifacts?
 
 ## Verification
+
+Focused Markdown metadata verification completed on 2026-07-29:
+
+- `CollectionFileClueFindersTest` covers plain Markdown bodies, flat keyed
+  front matter, UTF-8 text, and rejection of malformed, unclosed, or misplaced
+  `desc` metadata.
+- `CollectionFactParsersTest` covers the German destiny vocabulary and the
+  exact `post`, `boot`, and `full` testing values while rejecting the retired
+  `weitergegeben` and `bios` spellings. It also proves decimal-comma prices,
+  explicit ISO currency codes, and the collection's default-EUR convention.
+- `MyCollectionModelTest` proves front-matter fact resolution, anonymous
+  `[verschenkt]` resolution, and folder/front-matter corroboration and conflict.
+- A partial live re-index resolved the complete merged 2,168-artifact archive
+  after rebuilding only the affected subtrees.
+- A subsequent cache-only run reinterpreted the same clues with the typed price
+  model and again resolved all 2,168 artifacts without re-indexing.
 
 Focused missing-value clue verification completed on 2026-07-29:
 

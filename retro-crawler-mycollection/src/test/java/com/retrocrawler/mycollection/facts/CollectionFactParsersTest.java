@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.util.Currency;
 
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,9 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.mycollection.catalog.Destiny;
+import com.retrocrawler.mycollection.catalog.Price;
+import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.memory.RamSet;
 
 class CollectionFactParsersTest {
@@ -60,5 +64,32 @@ class CollectionFactParsersTest {
 				DataCapacity.Unit.MB).multiply(2);
 
 		assertTrue(oneGigabyte.sameSizeAs(twoTimes512Megabytes));
+	}
+
+	@Test
+	void parsesTheCollectionLifecycleVocabulary() {
+		assertEquals(Destiny.VERSCHENKT,
+				new DestinyParser().parse("verschenkt").getValue().orElseThrow());
+		assertEquals(Destiny.ENTSORGT,
+				new DestinyParser().parse("ENTSORGT").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, new DestinyParser().parse("weitergegeben").getConfidence());
+
+		assertEquals(Tested.POST, new TestedParser().parse("post").getValue().orElseThrow());
+		assertEquals(Tested.BOOT, new TestedParser().parse("boot").getValue().orElseThrow());
+		assertEquals(Tested.FULL, new TestedParser().parse("full").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, new TestedParser().parse("bios").getConfidence());
+	}
+
+	@Test
+	void defaultsBarePricesToEuros() {
+		final PriceParser parser = new PriceParser();
+
+		assertEquals(new Price(new BigDecimal("12.34"), Currency.getInstance("EUR")),
+				parser.parse("12,34").getValue().orElseThrow());
+		assertEquals(new Price(new BigDecimal("120"), Currency.getInstance("EUR")),
+				parser.parse("120 EUR").getValue().orElseThrow());
+		assertEquals(new Price(new BigDecimal("20"), Currency.getInstance("USD")),
+				parser.parse("20 usd").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("20 EURO").getConfidence());
 	}
 }

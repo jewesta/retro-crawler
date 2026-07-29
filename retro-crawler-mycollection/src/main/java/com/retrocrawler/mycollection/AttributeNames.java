@@ -8,6 +8,10 @@ public final class AttributeNames {
 
 	public static final String DESC = "desc";
 
+	public static final String DESTINY = "dest";
+
+	public static final String FCC_ID = "fcc";
+
 	public static final String FLOPPY_IMAGE_ID = "floppyImageId";
 
 	public static final String FLOPPY_IMAGES = "floppyImages";
@@ -22,6 +26,8 @@ public final class AttributeNames {
 
 	public static final String MAC_ADDRESS = "mac";
 
+	public static final String HEALTH = "health";
+
 	public static final String MEMORY_ACCESS_TIME = "memoryAccessTime";
 
 	public static final String MEMORY_FEATURE = "memoryFeature";
@@ -34,6 +40,8 @@ public final class AttributeNames {
 
 	public static final String POWER = "power";
 
+	public static final String PRICE = "price";
+
 	public static final String RAM_SET = "set";
 
 	public static final String RETRO_ID = "id";
@@ -43,6 +51,8 @@ public final class AttributeNames {
 	public static final String SERIAL_NUMBER = "sn";
 
 	public static final String THE_RETRO_WEB_ID = "trw";
+
+	public static final String TESTED = "tested";
 
 	public static final String TITLE = "title";
 

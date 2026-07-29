@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -13,29 +14,10 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFileIOException;
 import com.retrocrawler.mycollection.AttributeNames;
 
 class CollectionFileClueFindersTest {
-
-	@Test
-	void importsLegacyPropertiesAsKeyedClues() {
-		final RetroPropertiesClueFinder finder = new RetroPropertiesClueFinder();
-
-		final Set<Clue> clues = finder.find(input("bus=AGP\ntitle=Example card\n"));
-
-		assertTrue(finder.matches("RETRO.PROPERTIES"));
-		assertEquals(Set.of("AGP"), clue(clues, AttributeNames.BUS).getValue());
-		assertEquals(Set.of("Example card"), clue(clues, AttributeNames.TITLE).getValue());
-	}
-
-	@Test
-	void decodesLegacyPropertiesAsUtf8() {
-		final RetroPropertiesClueFinder finder = new RetroPropertiesClueFinder();
-
-		final Set<Clue> clues = finder.find(input("desc=Gerät läuft\n"));
-
-		assertEquals(Set.of("Gerät läuft"), clue(clues, "desc").getValue());
-	}
 
 	@Test
 	void importsTheCompleteMarkdownDocumentAsDesc() {
@@ -46,6 +28,37 @@ class CollectionFileClueFindersTest {
 
 		assertTrue(finder.matches("retro.md"));
 		assertEquals(Set.of(markdown), clue(clues, AttributeNames.DESC).getValue());
+	}
+
+	@Test
+	void importsFlatFrontMatterAndTheMarkdownBody() {
+		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
+		final String markdown = """
+				---
+				price: 120 EUR
+				fcc: 123
+				health: defekt
+				tested: post
+				---
+				Gerät läuft wieder.
+				""";
+
+		final Set<Clue> clues = finder.find(input(markdown));
+
+		assertEquals(Set.of("120 EUR"), clue(clues, AttributeNames.PRICE).getValue());
+		assertEquals(Set.of("123"), clue(clues, AttributeNames.FCC_ID).getValue());
+		assertEquals(Set.of("defekt"), clue(clues, AttributeNames.HEALTH).getValue());
+		assertEquals(Set.of("post"), clue(clues, AttributeNames.TESTED).getValue());
+		assertEquals(Set.of("Gerät läuft wieder."), clue(clues, AttributeNames.DESC).getValue());
+	}
+
+	@Test
+	void rejectsMalformedOrMisplacedFrontMatter() {
+		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
+
+		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\nprice 120 EUR\n---\n")));
+		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\ndesc: Wrong level\n---\n")));
+		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\nprice: 120 EUR\n")));
 	}
 
 	@Test

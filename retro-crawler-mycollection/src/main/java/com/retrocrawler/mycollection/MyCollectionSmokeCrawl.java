@@ -130,7 +130,9 @@ public final class MyCollectionSmokeCrawl {
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
 		return gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty() && gear.getTitle().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
+				&& gear.getDestiny().isEmpty() && gear.getFccId().isEmpty() && gear.getHealth().isEmpty()
 				&& gear.getMacAddress().isEmpty() && gear.getSerialNumber().isEmpty()
+				&& gear.getPrice().isEmpty() && gear.getTested().isEmpty()
 				&& gear.getFloppyImages().isEmpty() && gear.getFloppyImageIds().isEmpty()
 				&& gear.getMemoryAccessTimes().isEmpty()
 				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()

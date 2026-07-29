@@ -35,13 +35,19 @@ import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.PowerParser;
 import com.retrocrawler.mycollection.AttributeNames;
+import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
+import com.retrocrawler.mycollection.catalog.Price;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
+import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
+import com.retrocrawler.mycollection.facts.PriceParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
 import com.retrocrawler.mycollection.facts.ScanIdParser;
+import com.retrocrawler.mycollection.facts.TestedParser;
 import com.retrocrawler.mycollection.memory.RamSet;
 
 public abstract class MyGear {
@@ -86,6 +92,21 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.DESC, optional = true)
 	private String description;
+
+	@RetroFact(key = AttributeNames.DESTINY, parser = DestinyParser.class, strict = false, optional = true)
+	private Destiny destiny;
+
+	@RetroFact(key = AttributeNames.FCC_ID, optional = true)
+	private String fccId;
+
+	@RetroFact(key = AttributeNames.HEALTH, optional = true)
+	private String health;
+
+	@RetroFact(key = AttributeNames.PRICE, parser = PriceParser.class, optional = true)
+	private Price price;
+
+	@RetroFact(key = AttributeNames.TESTED, parser = TestedParser.class, optional = true)
+	private Tested tested;
 
 	@RetroFact(key = AttributeNames.IMAGE_ANGLED, optional = true)
 	private String angledImage;
@@ -173,6 +194,26 @@ public abstract class MyGear {
 
 	public Optional<String> getDescription() {
 		return Optional.ofNullable(description);
+	}
+
+	public Optional<Destiny> getDestiny() {
+		return Optional.ofNullable(destiny);
+	}
+
+	public Optional<String> getFccId() {
+		return Optional.ofNullable(fccId);
+	}
+
+	public Optional<String> getHealth() {
+		return Optional.ofNullable(health);
+	}
+
+	public Optional<Price> getPrice() {
+		return Optional.ofNullable(price);
+	}
+
+	public Optional<Tested> getTested() {
+		return Optional.ofNullable(tested);
 	}
 
 	public Optional<String> getAngledImage() {

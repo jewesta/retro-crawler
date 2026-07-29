@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,9 +42,12 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Power;
+import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
+import com.retrocrawler.mycollection.catalog.Price;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
+import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
@@ -203,7 +208,15 @@ class MyCollectionModelTest {
 	@Test
 	void resolvesFileDerivedFactsFromTheCurrentGearFolder() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Documented object [200005]"));
-		final String markdown = "# Notes\n\nThis description belongs to the containing gear.\n";
+		final String markdown = """
+				---
+				price: 120 EUR
+				fcc: TEST-FCC-123
+				health: defekt
+				tested: post
+				---
+				This description belongs to the containing gear.
+				""";
 		Files.writeString(folder.resolve("retro.md"), markdown);
 		final Path angled = Files.createFile(folder.resolve("angled.jpeg"));
 		final Path front = Files.createFile(folder.resolve("front.jpeg"));
@@ -213,7 +226,12 @@ class MyCollectionModelTest {
 		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Documented object [200005]");
 
-		assertEquals(Optional.of(markdown), gear.getDescription());
+		assertEquals(Optional.of("This description belongs to the containing gear."), gear.getDescription());
+		assertEquals(Optional.of(new Price(new BigDecimal("120"), Currency.getInstance("EUR"))),
+				gear.getPrice());
+		assertEquals(Optional.of("TEST-FCC-123"), gear.getFccId());
+		assertEquals(Optional.of("defekt"), gear.getHealth());
+		assertEquals(Optional.of(Tested.POST), gear.getTested());
 		assertEquals(Optional.of(angled.toString()), gear.getAngledImage());
 		assertEquals(Optional.of(front.toString()), gear.getFrontImage());
 		assertEquals(Optional.of(back.toString()), gear.getBackImage());
@@ -259,9 +277,9 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void combinesExpansionBusesAcrossFolderAndPropertiesClues() throws IOException {
+	void combinesExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
-		Files.writeString(folder.resolve("retro.properties"), "bus=PCI\n");
+		Files.writeString(folder.resolve("retro.md"), "---\nbus: PCI\n---\n");
 
 		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Conflicting object [AGP] [200006]");
@@ -272,16 +290,26 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void collapsesCorroboratingFolderAndPropertiesValues() throws IOException {
+	void collapsesCorroboratingFolderAndMarkdownValues() throws IOException {
 		final Path folder = Files.createDirectories(
 				archiveRoot.resolve("Corroborated card [AGP] [VGA] [200007]"));
-		Files.writeString(folder.resolve("retro.properties"), "bus=AGP\n");
+		Files.writeString(folder.resolve("retro.md"), "---\nbus: AGP\n---\n");
 
 		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Corroborated card [AGP] [VGA] [200007]");
 
 		assertInstanceOf(GraphicsCard.class, gear);
 		assertEquals(Set.of(ExpansionBus.AGP), gear.getExpansionBuses());
+	}
+
+	@Test
+	void resolvesGermanDestinyTagsWithoutKeepingLegacySynonyms() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("[verschenkt] Passed-on object [200008]"));
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+				"[verschenkt] Passed-on object [200008]");
+
+		assertEquals(Optional.of(Destiny.VERSCHENKT), gear.getDestiny());
 	}
 
 	private RetroCrawler crawler() {
