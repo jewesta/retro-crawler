@@ -24,6 +24,7 @@ import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
@@ -230,6 +231,23 @@ class MyCollectionModelTest {
 		assertEquals(1, gear.size());
 		assertInstanceOf(MysteryGear.class, gear.getFirst());
 		assertEquals(Optional.of("A note is an intentional description."), gear.getFirst().getDescription());
+	}
+
+	@Test
+	void preservesAKnownKeyWithoutAValueAsAnArtifactClue() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Serial pending [SN]"));
+		Files.createDirectories(archiveRoot.resolve("Actually empty []"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		assertEquals(1, gear.size());
+		final MyGear serialPending = gear.getFirst();
+		assertInstanceOf(MysteryGear.class, serialPending);
+		assertEquals(Optional.of("Serial pending"), serialPending.getTitle());
+		assertEquals(Optional.empty(), serialPending.getSerialNumber());
+		final Clue missingSerial = assertInstanceOf(Clue.class,
+				serialPending.getAttributes().get(AttributeNames.SERIAL_NUMBER));
+		assertTrue(missingSerial.isMissingValue());
 	}
 
 	@Test

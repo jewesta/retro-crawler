@@ -278,6 +278,64 @@ A real parser should:
 Whether raw group ordering needs an explicit representation remains an open
 question, but parsing must not make the original observation unrecoverable.
 
+### Known Keys Without Values
+
+Empty syntax and an intentionally placed key marker are not the same thing.
+The agreed interpretation is:
+
+| Observation | Meaning |
+|---|---|
+| `[]` | No clue; ignore it completely |
+| `[SN]` | The known `sn` key was deliberately placed but has no value yet |
+| `[AGP]` | An anonymous value clue because `agp` is not a model key |
+| `[SN 123]` | An explicitly keyed value clue |
+
+A bare observation already establishes the artifact independently of the
+model. During resolution, a bare observation that matches a known key is
+interpreted as a **missing-value clue**. It:
+
+- Establishes that the containing folder is an artifact.
+- Allows derived metadata such as the folder title to be retained.
+- Keeps the key and source provenance for a later cataloguing audit.
+- Does not become a fact and therefore leaves the corresponding gear field
+  absent.
+- Can be superseded by a real value for the same key from another clue finder.
+
+This is a core resolution semantic rather than collection-specific model
+knowledge. Individual clue finders remain unaware of the model vocabulary.
+After all model types have been reflected, `GearResolver` centrally compares
+anonymous, single-valued clues with the known `@RetroFact` keys. An unambiguous
+case-insensitive match is reclassified under the canonical model key with no
+values for that resolution only.
+
+The cached archive retains the raw finder observation. In the bracket example,
+it stores anonymous `SN`, not a model-dependent `sn` marker, and resolution
+does not mutate the `Artifact`. Adding, removing, or renaming a fact key can
+therefore reinterpret an existing cache without crawling the filesystem again.
+The derived missing-value clue remains available in the resolved gear's
+unassigned attributes for cataloguing audits and user interfaces.
+
+The public clue representation can also express an explicit missing-value clue
+emitted directly by a finder, for example when a keyed file format contains a
+declared key with no value. Such a raw clue is represented in JSON as
+`"<key>": []` and survives repository round trips. This is the established
+version 1 representation: the reader already interpreted an empty value array
+as a keyed clue with zero values. The corresponding writer path is now covered
+explicitly, and no archive-format version change is required.
+
+Neither `ArchiveDigger`, `ArchivePathClueFinder`, nor an individual configured
+finder receives or exposes the model's known keys.
+
+This deliberately reserves known keys against anonymous use: if `foo` is a
+model key, bare `foo` means that the value for `foo` is missing. A literal value
+with the same spelling must be expressed under an explicit key. This avoids a
+second, open-ended registry of known values.
+
+The personal bracket adapter handles the syntactically empty `[]` separately.
+It emits neither an empty clue nor a title derived solely from that empty
+group. This preserves the collection's "no tag, no gear" rule while allowing a
+nonempty marker such as `[SN]` to establish unfinished gear.
+
 ## Hierarchy Is Snapshot Context, Not Type Evidence
 
 The reconnaissance initially suggested inheriting classification facts from
@@ -806,8 +864,9 @@ The initial model contains:
 - A value-equal 2-series `RetroId` and exact parser.
 - `BracketPathClueFinder`, which ignores paths without an opening bracket,
   retains title text before, between, and after groups, parses named and
-  anonymous groups, and preserves empty, unknown, reserved-key, and unmatched
-  groups as clues rather than silently discarding them.
+  anonymous groups, ignores syntactically empty groups, and preserves unknown,
+  reserved-key, and unmatched groups as clues rather than silently discarding
+  them.
 
 No file finder is configured yet because none is needed for this milestone,
 not because file clues have different framework status.
@@ -835,9 +894,11 @@ The synthetic collection tests cover:
 - A locally tagged AGP `GraphicsCard`.
 - A serial-number clue containing a 2-series-looking value that is not parsed
   as a Retro ID.
+- A serial-number key marker without a value that establishes `MysteryGear`,
+  retains its title and remains a clue rather than becoming a fact.
 - Duplicate typed Retro IDs reported with both synthetic source paths.
 - Title text following leading tags.
-- Empty and unmatched bracket groups retained as clues.
+- Empty bracket groups ignored and unmatched bracket groups retained as clues.
 - Annotation locations overridden by immutable runtime configuration.
 - Optional fact-backed IDs at core level.
 
@@ -1570,6 +1631,9 @@ here.
       leaving the one unprovable speed unset.
 - [x] Replace boolean re-indexing with `ReindexScope`, implement safe subtree
       archive replacement, and validate it against the private archive.
+- [x] Preserve bare key markers as artifact-establishing raw clues and derive
+      missing-value clues during resolution while keeping the cache and clue
+      finders model-ignorant.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1603,6 +1667,33 @@ here.
   optional adapter module shared by the demo and personal model?
 
 ## Verification
+
+Focused missing-value clue verification completed on 2026-07-29:
+
+- `ClueClassifierTest` covers central, case-insensitive reclassification
+  of a known anonymous key, rejection of genuinely empty observations, and
+  replacement of a marker by a real value from another finder.
+- `CacheModelEvolutionTest` proves that a raw anonymous clue cache built with
+  one model is reused without replacement and reinterpreted after a later model
+  adds the corresponding `@RetroFact` key.
+- `FactFinderTest` proves that a clue without values cannot become a fact.
+- `JsonFileRepositoryTest` proves that a missing-value clue is stored using the
+  established empty-array representation in an archive marked as version 1 and
+  survives a JSON repository round trip.
+- `BracketPathClueFinderTest` proves that `[]` contributes neither a clue nor a
+  derived title while malformed nonempty syntax remains traceable.
+- `MyCollectionModelTest` proves that `[SN]` establishes titled `MysteryGear`
+  with no serial-number fact and a retained missing-value clue, while an
+  otherwise identical `[]` folder remains undiscovered.
+
+The focused reactor command completed successfully:
+
+`mvn -pl retro-crawler-mycollection -am
+-Dtest=CacheModelEvolutionTest,ClueClassifierTest,FactFinderTest,JsonFileRepositoryTest,BracketPathClueFinderTest,MyCollectionModelTest
+-Dsurefire.failIfNoSpecifiedTests=false test`
+
+The full reactor `mvn test` and clean packaged reactor `mvn clean install` also
+completed successfully.
 
 Completed on 2026-07-26:
 

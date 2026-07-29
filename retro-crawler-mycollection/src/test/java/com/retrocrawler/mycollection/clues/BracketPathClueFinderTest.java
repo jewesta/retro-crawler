@@ -56,12 +56,17 @@ class BracketPathClueFinderTest {
 	}
 
 	@Test
-	void retainsEmptyAndMalformedGroups() {
-		final Set<Clue> clues = finder.find("Board [] [unfinished");
+	void ignoresAnEmptyGroupAndDoesNotDeriveATitleFromIt() {
+		assertTrue(finder.find("Board []").isEmpty());
+	}
 
-		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.getValue().contains("")));
+	@Test
+	void retainsMalformedGroups() {
+		final Set<Clue> clues = finder.find("Board [unfinished");
+
 		assertTrue(clues.stream().filter(Clue::isAnonymous)
 				.anyMatch(value -> value.getValue().contains("[unfinished")));
+		assertEquals(Set.of("Board"), clue(clues, AttributeNames.TITLE).getValue());
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {

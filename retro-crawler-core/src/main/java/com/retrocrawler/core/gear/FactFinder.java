@@ -46,6 +46,9 @@ public class FactFinder {
 
 	public Optional<Fact> find(final Clue clue) {
 		final Set<String> raws = clue.getValue();
+		if (raws.isEmpty()) {
+			return Optional.empty();
+		}
 
 		final Set<Object> values = HashSet.newHashSet(raws.size());
 		Confidence overall = Confidence.EXACT;

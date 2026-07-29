@@ -21,10 +21,13 @@ public class GearResolver {
 
 	private final Map<String, FactFinder> factFinders;
 
+	private final ClueClassifier clueClassifier;
+
 	// package-private: only factories construct this
 	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders) {
 		this.gearSpecialists = Objects.requireNonNull(specialists, "specialists");
 		this.factFinders = Objects.requireNonNull(factFinders, "factFinders");
+		this.clueClassifier = new ClueClassifier(factFinders.keySet());
 	}
 
 	private record BestAnonymousMatch(String key, Confidence confidence) {
@@ -172,7 +175,7 @@ public class GearResolver {
 		 * clues.
 		 */
 		final RetroAttributes attributes = new RetroAttributes();
-		final Set<Clue> clues = artifact.getClues();
+		final Set<Clue> clues = clueClassifier.classify(artifact.getClues());
 		for (final Clue clue : clues) {
 			if (!clue.isAnonymous()) {
 				handleKnownKeyClue(attributes, clue);

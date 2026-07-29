@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
@@ -47,12 +48,12 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 			}
 
 			final String group = pathName.substring(openingBracket + 1, closingBracket);
-			clues.add(parseGroup(group));
+			parseGroup(group).ifPresent(clues::add);
 			cursor = closingBracket + 1;
 		}
 
 		final String title = String.join(" ", titleParts);
-		if (!title.isBlank()) {
+		if (!clues.isEmpty() && !title.isBlank()) {
 			clues.add(Clue.of(AttributeNames.TITLE, title));
 		}
 
@@ -66,31 +67,31 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 		}
 	}
 
-	private static Clue parseGroup(final String rawGroup) {
+	private static Optional<Clue> parseGroup(final String rawGroup) {
 		final String group = rawGroup.trim();
 		if (group.isEmpty()) {
-			return Clue.of("");
+			return Optional.empty();
 		}
 
 		final int firstWhitespace = firstWhitespace(group);
 		if (firstWhitespace < 0) {
-			return Clue.of(splitValues(group));
+			return Optional.of(Clue.of(splitValues(group)));
 		}
 
 		final String possibleKey = group.substring(0, firstWhitespace);
 		final String rawValues = group.substring(firstWhitespace).trim();
 		if (possibleKey.contains(",") || rawValues.isEmpty()) {
-			return Clue.of(splitValues(group));
+			return Optional.of(Clue.of(splitValues(group)));
 		}
 
 		try {
-			return Clue.of(possibleKey.toLowerCase(Locale.ROOT), splitValues(rawValues));
+			return Optional.of(Clue.of(possibleKey.toLowerCase(Locale.ROOT), splitValues(rawValues)));
 		} catch (final IllegalArgumentException e) {
 			/*
 			 * Reserved or otherwise invalid keys are still valuable observations. Keep
 			 * the complete group as an anonymous clue rather than losing it.
 			 */
-			return Clue.of(group);
+			return Optional.of(Clue.of(group));
 		}
 	}
 

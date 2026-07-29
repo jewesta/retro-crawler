@@ -9,14 +9,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.util.ReadmeWriter;
 
 class JsonFileRepositoryTest {
@@ -61,6 +66,29 @@ class JsonFileRepositoryTest {
 
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
 		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.getBuckets().get(0).getBasePath());
+	}
+
+	@Test
+	void preservesMissingValueCluesUsingEstablishedEmptyArrayFormat() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("missing_value");
+		final Artifact artifact = new Artifact(Set.of(Clue.missingValue("sn")));
+		final ArchiveNode root = new ArchiveNode("root", artifact, null);
+		repository.stowaway(Archive.of(id, List.of(Bucket.of(temporaryDirectory.resolve("root"), root))));
+
+		final JsonNode json = new ObjectMapper()
+				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
+		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().getBuckets().getFirst().getRoot()
+				.getArtifact();
+		final Clue clue = retrieved.getClues().stream().findFirst().orElseThrow();
+
+		assertEquals(1, json.path("version").asInt());
+		assertTrue(storedClue.isArray());
+		assertTrue(storedClue.isEmpty());
+		assertEquals("sn", clue.getKey());
+		assertTrue(clue.isMissingValue());
 	}
 
 	@Test

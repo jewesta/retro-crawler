@@ -41,4 +41,11 @@ class FactFinderTest {
 		assertEquals(Set.of(Bus.AGP),
 				finder.find(Clue.of("bus", Set.of("AGP", "agp"))).orElseThrow().getValue());
 	}
+
+	@Test
+	void doesNotCreateAFactWithoutAValue() {
+		final FactFinder finder = new FactFinder("bus", parser, Bus.class, false);
+
+		assertTrue(finder.find(Clue.missingValue("bus")).isEmpty());
+	}
 }

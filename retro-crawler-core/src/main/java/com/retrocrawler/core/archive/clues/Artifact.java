@@ -45,7 +45,7 @@ public class Artifact {
 		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::getKey, clue -> {
 			switch (clue.size()) {
 			case 0:
-				return null;
+				return List.of();
 			case 1:
 				/*
 				 * This makes the JSON a bit smaller and less verbose.

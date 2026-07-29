@@ -44,6 +44,15 @@ public class Clue implements RetroAttribute {
 		return key.startsWith(PREFIX_ANONYMOUS);
 	}
 
+	/**
+	 * A missing-value clue records that a known key was deliberately observed even
+	 * though no value was supplied. It can establish an artifact and retain source
+	 * intent, but cannot be resolved into a fact.
+	 */
+	public boolean isMissingValue() {
+		return !isAnonymous() && value.isEmpty();
+	}
+
 	public static Clue of(final String value) {
 		return new Clue(createAnonymousKey(), Set.of(value));
 	}
@@ -60,6 +69,11 @@ public class Clue implements RetroAttribute {
 	public static Clue of(final String key, final Set<String> values) {
 		assertUnreserved(key);
 		return new Clue(key, values);
+	}
+
+	public static Clue missingValue(final String key) {
+		assertUnreserved(key);
+		return new Clue(key, Set.of());
 	}
 
 	private static String random(final int length) {
