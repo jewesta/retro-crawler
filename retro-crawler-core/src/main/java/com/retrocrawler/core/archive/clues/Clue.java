@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-import com.retrocrawler.core.util.JacksonSerializable;
 import com.retrocrawler.core.util.RetroAttribute;
 
 /**
@@ -18,10 +17,6 @@ import com.retrocrawler.core.util.RetroAttribute;
 public class Clue implements RetroAttribute {
 
 	public static final String PREFIX_ANONYMOUS = "_";
-
-	public static final String KEY_INTERNAL_ID = JacksonSerializable.PREFIX_INTERNAL + "id";
-
-	public static final String KEY_INTERNAL_FOLDER = JacksonSerializable.PREFIX_INTERNAL + "folder";
 
 	private static final Random RANDOM = new Random();
 
@@ -95,13 +90,13 @@ public class Clue implements RetroAttribute {
 	}
 
 	public static Clue internal(final String key, final String value) {
-		if (!key.startsWith(JacksonSerializable.PREFIX_INTERNAL)) {
+		if (!key.startsWith(InternalClueKeys.PREFIX)) {
 			throw new IllegalArgumentException("Expected internal key starting with '"
-					+ JacksonSerializable.PREFIX_INTERNAL + "' but got: '" + key + "'.");
+					+ InternalClueKeys.PREFIX + "' but got: '" + key + "'.");
 		}
-		if (key.equals(JacksonSerializable.TYPE)) {
+		if (key.equals(InternalClueKeys.TYPE)) {
 			throw new IllegalArgumentException(
-					JacksonSerializable.TYPE + " is reserved for serialization and cannot be used.");
+					InternalClueKeys.TYPE + " is reserved for serialization and cannot be used.");
 		}
 		return new Clue(key, Set.of(value));
 	}
@@ -116,8 +111,8 @@ public class Clue implements RetroAttribute {
 					+ "'. This prefix is reserved for anonymous keys and cannot be used. Offending key: '" + key
 					+ "'.");
 		}
-		if (key.startsWith(JacksonSerializable.PREFIX_INTERNAL)) {
-			throw new IllegalArgumentException("Expected key that doesn't start '" + JacksonSerializable.PREFIX_INTERNAL
+		if (key.startsWith(InternalClueKeys.PREFIX)) {
+			throw new IllegalArgumentException("Expected key that doesn't start '" + InternalClueKeys.PREFIX
 					+ "'. This prefix is reserved for internal keys and cannot be used. Offending key: '" + key + "'.");
 		}
 	}

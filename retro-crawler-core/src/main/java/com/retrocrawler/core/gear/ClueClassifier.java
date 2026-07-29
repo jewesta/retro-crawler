@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.util.JacksonSerializable;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 
 /**
  * Applies model-aware clue semantics during gear resolution without mutating
@@ -92,7 +92,7 @@ final class ClueClassifier {
 	}
 
 	private static boolean isReserved(final String key) {
-		return key.startsWith(Clue.PREFIX_ANONYMOUS) || key.startsWith(JacksonSerializable.PREFIX_INTERNAL);
+		return key.startsWith(Clue.PREFIX_ANONYMOUS) || key.startsWith(InternalClueKeys.PREFIX);
 	}
 
 	private static String normalize(final String value) {

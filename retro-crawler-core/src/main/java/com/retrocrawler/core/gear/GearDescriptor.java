@@ -12,6 +12,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.util.Descriptor;
 import com.retrocrawler.core.util.Reflection;
@@ -74,7 +75,7 @@ public class GearDescriptor implements Descriptor {
 				return Optional.of(entry.getKey());
 			}
 		}
-		return Optional.of(com.retrocrawler.core.archive.clues.Clue.KEY_INTERNAL_ID);
+		return Optional.of(InternalClueKeys.ID);
 	}
 
 	public static Optional<GearDescriptor> of(final Class<?> type) {

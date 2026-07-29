@@ -21,6 +21,7 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -269,7 +270,7 @@ class ArchiveManagerTest {
 	}
 
 	private static String technicalId(final ArchiveNode node) {
-		return node.getArtifact().getClues().stream().filter(clue -> Clue.KEY_INTERNAL_ID.equals(clue.getKey()))
+		return node.getArtifact().getClues().stream().filter(clue -> InternalClueKeys.ID.equals(clue.getKey()))
 				.findFirst().orElseThrow().getValue().iterator().next();
 	}
 

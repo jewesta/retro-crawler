@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
@@ -45,7 +46,7 @@ import com.retrocrawler.mycollection.memory.RamSet;
 
 public abstract class MyGear {
 
-	@RetroFact(key = "@folder", optional = false)
+	@RetroFact(key = InternalClueKeys.FOLDER, optional = false)
 	private String folderName;
 
 	@com.retrocrawler.core.annotation.RetroId

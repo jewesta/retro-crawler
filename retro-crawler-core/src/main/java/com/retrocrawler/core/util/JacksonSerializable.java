@@ -1,6 +1,7 @@
 package com.retrocrawler.core.util;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 
 /**
  * Implement this an Jackson will automatically include type information should
@@ -11,11 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * Retro Crawler reserves the key "@type" even though it is currently not used
  * for serialization. It might be in the future.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = JacksonSerializable.TYPE)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = InternalClueKeys.TYPE)
 public interface JacksonSerializable {
-
-	String PREFIX_INTERNAL = "@";
-
-	String TYPE = PREFIX_INTERNAL + "type";
 
 }

@@ -23,6 +23,7 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
@@ -168,11 +169,11 @@ public class ArchiveDigger {
 		final byte[] hash = Hashes.sha256(basis);
 		// 16 bytes -> 32 hex chars. Usually plenty, much smaller than full paths.
 		final String id = Hashes.toHex(hash, 16);
-		clues.add(Clue.internal(Clue.KEY_INTERNAL_ID, id));
+		clues.add(Clue.internal(InternalClueKeys.ID, id));
 
 		// The folder name without parent folder path
 		final String folder = path.getFileName().toString();
-		clues.add(Clue.internal(Clue.KEY_INTERNAL_FOLDER, folder));
+		clues.add(Clue.internal(InternalClueKeys.FOLDER, folder));
 
 		return clues;
 	}

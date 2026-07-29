@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.retrocrawler.core.annotation.RetroId;
-import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.FactDescriptor;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -30,13 +30,13 @@ final class StandaloneIdInjector implements Injector {
 		if (isIdFieldAlreadyHandledByFact(definition, idField)) {
 			return;
 		}
-		final RetroAttribute attribute = session.getAttributes().get(Clue.KEY_INTERNAL_ID);
+		final RetroAttribute attribute = session.getAttributes().get(InternalClueKeys.ID);
 		if (attribute == null) {
-			throw new IllegalStateException("Missing technical id clue for key '" + Clue.KEY_INTERNAL_ID
+			throw new IllegalStateException("Missing technical id clue for key '" + InternalClueKeys.ID
 					+ "' required by standalone " + TypeName.simple(RetroId.class) + " on gear "
 					+ TypeName.full(session.getGearType()) + " field " + idField.getName() + ".");
 		}
-		final Object inject = adapter.adaptAttributeToField(session.getGearType(), idField, Clue.KEY_INTERNAL_ID,
+		final Object inject = adapter.adaptAttributeToField(session.getGearType(), idField, InternalClueKeys.ID,
 				attribute);
 		Objects.requireNonNull(inject);
 		FieldSetter.setField(session.getGear(), idField, inject);

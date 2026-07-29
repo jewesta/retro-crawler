@@ -10,7 +10,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
-import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
@@ -183,7 +183,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			}
 
 			if (standalone) {
-				key = Clue.KEY_INTERNAL_ID;
+				key = InternalClueKeys.ID;
 			}
 
 			final GlobalIdDefinition current = new GlobalIdDefinition(standalone, key);

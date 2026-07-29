@@ -1749,6 +1749,27 @@ Focused clue/fact boundary verification completed on 2026-07-29:
 The full packaged reactor `mvn clean install` completed successfully after
 these boundary contracts were added; the core module ran 85 tests.
 
+The complete IBM-compatible archive was re-indexed on 2026-07-29 after the
+empty-group and missing-value semantics were implemented. The persistent roots
+file and private JSON repository remained external to the project. Planning
+produced 518 approximate regions; crawling, atomic stowaway, and exact
+resolution of 2,168 artifacts completed in 4 minutes 28 seconds. Archive-wide
+Retro ID validation passed, and the obsolete private duplicate report was
+removed.
+
+A read-only aggregate audit of the rebuilt cache and resolved gear confirmed:
+
+- No empty JSON value array remains from a syntactically empty `[]` group.
+- 42 case-insensitive bare `SN` observations occur across 41 artifacts and
+  resolve to 41 missing-value `sn` clues. One artifact contains the observation
+  more than once, while resolved attributes remain keyed per artifact.
+- Eight bare `trw` observations resolve to eight missing-value `trw` clues.
+- Three named non-numeric `trw` values remain unresolved clues rather than
+  being ignored or guessed.
+
+No private root, folder name, identifier, or cache content was added to the
+repository while recording these aggregate findings.
+
 Completed on 2026-07-26:
 
 - Focused core tests:

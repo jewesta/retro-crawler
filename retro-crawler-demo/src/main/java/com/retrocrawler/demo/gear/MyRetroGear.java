@@ -6,11 +6,12 @@ import java.util.stream.Collectors;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.util.RetroAttribute;
 
 public abstract class MyRetroGear {
 
-	@RetroFact(key = "@folder", optional = false)
+	@RetroFact(key = InternalClueKeys.FOLDER, optional = false)
 	private String folderName;
 
 	@RetroAnyAttribute
