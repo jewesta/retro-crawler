@@ -24,6 +24,7 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Bucket;
@@ -48,7 +49,7 @@ class RetroIdValidationTest {
 	void permitsMissingOptionalFactBackedRetroId() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("gear-without-id"));
 
-		final List<TestGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, true, TestGear.class);
+		final List<TestGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().catalogId);
@@ -61,7 +62,7 @@ class RetroIdValidationTest {
 		final RecordingFactory factory = new RecordingFactory();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler().crawl(SILENT_PROGRESSOR, true, factory));
+				() -> crawler().crawl(SILENT_PROGRESSOR, ReindexScope.all(), factory));
 
 		final List<String> paths = failure.getDuplicates().get("200001");
 		assertEquals(2, paths.size());
@@ -77,7 +78,7 @@ class RetroIdValidationTest {
 		Files.createDirectories(archiveRoot.resolve("id-200002"));
 		final List<ProgressSnapshot> events = new java.util.ArrayList<>();
 
-		crawler().crawlGear(Progressor.observing(events::add), true, TestGear.class);
+		crawler().crawlGear(Progressor.observing(events::add), ReindexScope.all(), TestGear.class);
 
 		final List<ProgressSnapshot> resolving = events.stream()
 				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();

@@ -1437,6 +1437,48 @@ requirements, but not the module's actual access time. Post-change verification
 found all 18 destination folders and confirmed that the unresolved module was
 unchanged. A separate private reversal manifest remains outside the repository.
 
+### Partial archive re-indexing
+
+The catalogue corrections made a full-archive rebuild unnecessarily expensive:
+the clue archive was stale only below one stable ancestor. Core now represents
+indexing intent explicitly with `ReindexScope` instead of a boolean:
+
+- `none()` reuses a stored archive when available;
+- `all()` rebuilds every configured archive root;
+- `subtree(Path)` and `subtrees(...)` rebuild selected existing folders and
+  everything below them.
+
+There is deliberately no boolean compatibility API. All core, test, demo CLI,
+Vaadin, and personal-collection consumers use the explicit scope.
+
+A subtree rebuild requires an existing complete clue archive. Requested paths
+are normalized, must belong to exactly one configured root, and must identify
+nodes already present in the stored archive. Nested requested paths are reduced
+to their outermost ancestor. Consequently a renamed folder is refreshed by
+selecting its stable stored parent: rebuilding that parent removes the old
+cached child, discovers the new child, and also accounts for additions and
+deletions below the selected boundary.
+
+The digger now keeps the configured archive root distinct from the selected
+crawl path. Synthetic gear IDs therefore remain based on the same
+archive-root-relative path during both complete and partial indexing. Fresh
+subtrees replace their immutable stored nodes by rebuilding only the ancestor
+chain; unrelated buckets and branches are retained. The resulting complete
+archive is still stowed through the repository's atomic whole-archive
+replacement. Cancellation, crawl failure, or stowaway failure leaves the
+previous in-memory and stored archive intact.
+
+The private smoke launcher accepts
+`--reindex-subtree <path> [<path>...]`. Its first real use rebuilt only the
+corrected memory-module subtree. Planning produced 71 approximate regions, the
+merged archive was stowed, and subsequent archive-wide resolution still
+processed 2,193 artifacts and reproduced the same nine known duplicate Retro
+ID values and 18 occurrences. This demonstrates the intended boundary:
+filesystem clue extraction is partial, while resolution and uniqueness
+validation continue to operate over the complete merged archive. No private
+root, selected path, folder name, cache path, or identifier value is recorded
+here.
+
 ## Subsequent Implementation Direction
 
 5. Broaden the graphics-card model only as real tag combinations justify it.
@@ -1526,6 +1568,8 @@ unchanged. A separate private reversal manifest remains outside the repository.
       their contents after renaming, and reduce the unclassified count to zero.
 - [x] Add 18 photo- and data-sheet-backed SIMM-72 access-speed clues while
       leaving the one unprovable speed unset.
+- [x] Replace boolean re-indexing with `ReindexScope`, implement safe subtree
+      archive replacement, and validate it against the private archive.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1712,6 +1756,20 @@ The second private-cache mining slice was verified on 2026-07-29:
   model input;
 - the full `mvn test` reactor completed successfully;
 - the clean packaged `mvn clean install` reactor completed successfully.
+
+Partial archive re-indexing was verified on 2026-07-29:
+
+- nine focused new core tests cover scope construction, subtree replacement,
+  rename handling through a stable parent, preservation of unrelated branches
+  and technical IDs, JSON retrieval in a new crawler session,
+  missing-base rejection, and failed-stowaway rollback;
+- source scans found no remaining boolean crawl or archive-manager indexing
+  API;
+- the full `mvn test` reactor completed successfully;
+- the clean packaged reactor `mvn clean install` completed successfully;
+- a private live subtree rebuild crawled 71 approximate regions, stowed the
+  merged archive, resolved all 2,193 artifacts, and reproduced the unchanged
+  duplicate-ID validation result.
 
 ## Out of Scope for the Initial Slice
 

@@ -35,7 +35,7 @@ class ArchiveDiggerPlanningTest {
 		final List<ProgressSnapshot> events = new ArrayList<>();
 		final Progressor progressor = Progressor.observing(events::add);
 
-		final ArchiveDigPlan plan = digger.plan(List.of(root), progressor);
+		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
 		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
 		assertEquals(2, plan.analyzedDepth());
@@ -57,7 +57,7 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(second.resolve("three"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(100, 2, 100, Duration.ofMinutes(1)));
 
-		final ArchiveDigPlan plan = digger.plan(List.of(root), new Progressor());
+		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), new Progressor());
 
 		assertEquals(2, plan.analyzedDepth());
 		assertEquals(1, plan.totalRegions());
@@ -69,7 +69,7 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(root.resolve("known"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
-		final ArchiveDigPlan plan = digger.plan(List.of(root), progressor);
+		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
 		Files.createDirectory(root.resolve("created-after-planning"));
 
 		final ArchiveNode archive = digger.dig(root, plan, progressor);

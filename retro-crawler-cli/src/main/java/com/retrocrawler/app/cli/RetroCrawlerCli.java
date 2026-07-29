@@ -9,6 +9,7 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
@@ -49,11 +50,10 @@ public final class RetroCrawlerCli {
 		DemoFiles.copyToWorkDirectory(descriptor);
 		System.out.println("Local archive files created.");
 
-		System.out.println("Reindex: " + parsed.reindex + " ("
-				+ (parsed.reindex ? "Cache will be re-built" : "Cache will be used if present") + ")");
+		System.out.println("Reindex scope: " + parsed.reindexScope);
 
 		System.out.println();
-		final GearArchive<MyRetroGear> myRetroGear = crawler.crawlArchive(progressor, parsed.reindex,
+		final GearArchive<MyRetroGear> myRetroGear = crawler.crawlArchive(progressor, parsed.reindexScope,
 				MyRetroGear.class);
 
 		final Duration dur = Duration.between(start, Instant.now());
@@ -71,20 +71,20 @@ public final class RetroCrawlerCli {
 	}
 
 	static final class Args {
-		final boolean reindex;
+		final ReindexScope reindexScope;
 
-		Args(final boolean reindex) {
-			this.reindex = reindex;
+		Args(final ReindexScope reindexScope) {
+			this.reindexScope = reindexScope;
 		}
 
 		static Args parse(final String[] args) {
-			boolean reindex = false;
+			ReindexScope reindexScope = ReindexScope.none();
 			for (final String a : args) {
 				if ("--reindex".equalsIgnoreCase(a) || "-r".equalsIgnoreCase(a)) {
-					reindex = true;
+					reindexScope = ReindexScope.all();
 				}
 			}
-			return new Args(reindex);
+			return new Args(reindexScope);
 		}
 	}
 }

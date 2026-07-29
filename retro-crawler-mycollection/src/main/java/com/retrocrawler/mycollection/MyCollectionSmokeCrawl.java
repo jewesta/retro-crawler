@@ -3,6 +3,7 @@ package com.retrocrawler.mycollection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -13,6 +14,7 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.FixedStepProgressMonitor;
 import com.retrocrawler.core.progress.ProgressSnapshot;
 import com.retrocrawler.core.progress.Progressor;
@@ -29,21 +31,22 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	public static void main(final String[] arguments) throws Exception {
-		if (arguments.length < 2 || arguments.length > 3) {
+		if (arguments.length < 2) {
 			throw new IllegalArgumentException(
-					"Expected arguments: <archive-roots-file> <private-cache-directory> [--reindex|--reuse-cache]");
+					"Expected arguments: <archive-roots-file> <private-cache-directory> "
+							+ "[--reindex|--reuse-cache|--reindex-subtree <path>...]");
 		}
 
 		final ArchiveRoots roots = ArchiveRoots.load(Path.of(arguments[0]));
 		final Path cacheDirectory = Path.of(arguments[1]);
-		final boolean reindex = reindex(arguments);
+		final ReindexScope reindexScope = reindexScope(arguments);
 		final Model model = Model.from(AttributeNames.class.getPackageName(), roots);
 		final RetroCrawler crawler = RetroCrawler.builder().model(model)
 				.repository(new JsonFileRepository(cacheDirectory)).build();
 		final Progressor progressor = Progressor.observing(new CompactProgressPrinter());
 
 		try {
-			final List<MyGear> gear = crawler.crawlGear(progressor, reindex, MyGear.class);
+			final List<MyGear> gear = crawler.crawlGear(progressor, reindexScope, MyGear.class);
 			Files.deleteIfExists(cacheDirectory.resolve("duplicate-retro-ids.txt"));
 			printSummary(gear);
 		} catch (final DuplicateRetroIdException failure) {
@@ -55,14 +58,22 @@ public final class MyCollectionSmokeCrawl {
 		}
 	}
 
-	private static boolean reindex(final String[] arguments) {
-		if (arguments.length == 2 || "--reindex".equals(arguments[2])) {
-			return true;
+	private static ReindexScope reindexScope(final String[] arguments) {
+		if (arguments.length == 2) {
+			return ReindexScope.all();
 		}
-		if ("--reuse-cache".equals(arguments[2])) {
-			return false;
+		if ("--reindex".equals(arguments[2]) && arguments.length == 3) {
+			return ReindexScope.all();
 		}
-		throw new IllegalArgumentException("Unknown crawl mode: " + arguments[2]);
+		if ("--reuse-cache".equals(arguments[2]) && arguments.length == 3) {
+			return ReindexScope.none();
+		}
+		if ("--reindex-subtree".equals(arguments[2]) && arguments.length >= 4) {
+			final List<Path> paths = Arrays.stream(arguments, 3, arguments.length).map(Path::of).toList();
+			return ReindexScope.subtrees(paths);
+		}
+		throw new IllegalArgumentException(
+				"Expected --reindex, --reuse-cache, or --reindex-subtree followed by at least one path.");
 	}
 
 	private static void printSummary(final List<MyGear> gear) {

@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.CrawlPlanning;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -43,24 +44,25 @@ public interface RetroCrawler {
 
 	ArchiveDescriptor getArchiveDescriptor();
 
-	<R, N, G> R crawl(Progressor progressor, boolean reindex, GearTreeFactory<R, N, G> factory) throws IOException;
+	<R, N, G> R crawl(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
+			throws IOException;
 
 	/**
 	 * Convenience method that builds a hierarchical {@link GearArchive} for the
 	 * given gear type.
 	 */
-	default <G> GearArchive<G> crawlArchive(final Progressor progressor, final boolean reindex, final Class<G> gearType)
-			throws IOException {
-		return crawl(progressor, reindex, new GearArchiveFactory<>(gearType));
+	default <G> GearArchive<G> crawlArchive(final Progressor progressor, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawl(progressor, reindexScope, new GearArchiveFactory<>(gearType));
 	}
 
 	/**
 	 * Convenience method that returns a flat list of all matching gear across all
 	 * buckets (legacy behavior).
 	 */
-	default <G> List<G> crawlGear(final Progressor progressor, final boolean reindex, final Class<G> gearType)
-			throws IOException {
-		return crawl(progressor, reindex, new FlatListFactory<>(gearType));
+	default <G> List<G> crawlGear(final Progressor progressor, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawl(progressor, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 }

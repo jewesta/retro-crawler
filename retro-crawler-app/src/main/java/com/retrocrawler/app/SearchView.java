@@ -20,6 +20,7 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -180,7 +181,7 @@ public class SearchView extends HorizontalLayout {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
 			final ArchiveDescriptor location = archives.getValue();
 			activeArchiveId = location.getId();
-			refreshAsync(eventUI, true);
+			refreshAsync(eventUI, ReindexScope.all());
 		});
 
 		final Button cancel = retroButton("Cancel Indexing");
@@ -239,7 +240,7 @@ public class SearchView extends HorizontalLayout {
 		add(splitLayout);
 
 		// Perform initial loading
-		refreshAsync(attachEvent.getUI(), false);
+		refreshAsync(attachEvent.getUI(), ReindexScope.none());
 	}
 
 	private static VerticalLayout createHeaderArea(final Component... children) {
@@ -266,14 +267,14 @@ public class SearchView extends HorizontalLayout {
 		return button;
 	}
 
-	private void refreshAsync(final UI ui, final boolean reindex) {
+	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final Progressor activeProgressor = createProgressor(ui);
 		this.progressor = activeProgressor;
 		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				final RetroCrawler activeCrawler = retroCrawler.get(activeArchiveId);
-				return activeCrawler.crawl(activeProgressor, reindex, new VaadinTreeDataFactory());
+				return activeCrawler.crawl(activeProgressor, reindexScope, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}

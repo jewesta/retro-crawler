@@ -49,24 +49,25 @@ public class ArchiveDigger {
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
-		final ArchiveDigPlan plan = plan(List.of(path), progressor);
+		final ArchiveDigTarget target = new ArchiveDigTarget(path, path);
+		final ArchiveDigPlan plan = plan(List.of(target), progressor);
 		return dig(path, plan, progressor);
 	}
 
-	ArchiveDigPlan plan(final Collection<Path> roots, final Progressor progressor) throws IOException {
-		Objects.requireNonNull(roots, "roots");
+	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Progressor progressor) throws IOException {
+		Objects.requireNonNull(targets, "targets");
 		Objects.requireNonNull(progressor, "progressor");
 		progressor.throwIfCancelled();
 
 		final List<ArchiveDigPlan.Region> initialRegions = new ArrayList<>();
-		for (final Path root : roots) {
-			if (!Files.isDirectory(root)) {
-				throw new IllegalArgumentException("Expected a folder but got: " + root);
+		for (final ArchiveDigTarget target : targets) {
+			if (!Files.isDirectory(target.path())) {
+				throw new IllegalArgumentException("Expected a folder but got: " + target.path());
 			}
-			initialRegions.add(new ArchiveDigPlan.Region(root, root));
+			initialRegions.add(new ArchiveDigPlan.Region(target.root(), target.path()));
 		}
 		if (initialRegions.isEmpty()) {
-			throw new IllegalArgumentException("At least one archive root is required.");
+			throw new IllegalArgumentException("At least one archive dig target is required.");
 		}
 
 		final long started = System.nanoTime();
@@ -140,10 +141,21 @@ public class ArchiveDigger {
 	}
 
 	ArchiveNode dig(final Path root, final ArchiveDigPlan plan, final Progressor progressor) throws IOException {
+		return dig(root, root, plan, progressor);
+	}
+
+	ArchiveNode dig(final Path root, final Path path, final ArchiveDigPlan plan, final Progressor progressor)
+			throws IOException {
 		if (!Files.isDirectory(root)) {
 			throw new IllegalArgumentException("Expected a folder but got: " + root);
 		}
-		return dig(root, root, plan, progressor, false);
+		if (!Files.isDirectory(path)) {
+			throw new IllegalArgumentException("Expected a folder but got: " + path);
+		}
+		if (!path.startsWith(root)) {
+			throw new IllegalArgumentException("Expected archive path '" + path + "' to be below root '" + root + "'.");
+		}
+		return dig(root, path, plan, progressor, false);
 	}
 
 	private Set<Clue> createSyntheticClues(final Path root, final Path path) {

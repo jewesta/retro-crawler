@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
@@ -46,26 +47,27 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public <R, N, G> R crawl(final Progressor progressor, final boolean reindex, final GearTreeFactory<R, N, G> factory)
-			throws IOException {
+	public <R, N, G> R crawl(final Progressor progressor, final ReindexScope reindexScope,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
 
 		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
 		progressor.throwIfCancelled();
 
 		try {
-			return crawlToCompletion(progressor, reindex, factory);
+			return crawlToCompletion(progressor, reindexScope, factory);
 		} catch (final IOException | RuntimeException failure) {
 			reportFailure(progressor, failure);
 			throw failure;
 		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final Progressor progressor, final boolean reindex,
+	private <R, N, G> R crawlToCompletion(final Progressor progressor, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 
-		final Archive archive = manager.getArchive(progressor, reindex);
+		final Archive archive = manager.getArchive(progressor, reindexScope);
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
 		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
 		final long artifactCount = archive.getBuckets().stream().map(Bucket::getRoot)

@@ -18,6 +18,7 @@ import com.retrocrawler.core.annotation.RetroArchive;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -35,7 +36,8 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
 
-		final GearArchive<TestGear> result = crawler.crawlArchive(new Progressor(), false, TestGear.class);
+		final GearArchive<TestGear> result = crawler.crawlArchive(new Progressor(), ReindexScope.none(),
+				TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(0, result.getBuckets().size());
@@ -74,7 +76,8 @@ class RetroCrawlerBuilderTest {
 			}
 		};
 
-		assertThrows(IllegalStateException.class, () -> crawler.crawl(progressor, false, failingFactory));
+		assertThrows(IllegalStateException.class,
+				() -> crawler.crawl(progressor, ReindexScope.none(), failingFactory));
 		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
 		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
 	}
