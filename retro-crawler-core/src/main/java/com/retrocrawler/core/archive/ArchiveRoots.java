@@ -14,7 +14,8 @@ import java.util.Objects;
 /**
  * Supplies archive roots to a model. Factory methods create immutable
  * implementations, including from a plain UTF-8 file containing one path per
- * line.
+ * line. Root order is significant: stored buckets are rebound to current
+ * deployment paths in the same order when a clue archive is reused.
  */
 @FunctionalInterface
 public interface ArchiveRoots {

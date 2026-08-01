@@ -1926,6 +1926,56 @@ Focused acquisition-metadata verification completed on 2026-08-01:
 - All acquisition reconnaissance was read-only; no collection metadata was
   created or changed.
 
+The explicit Kleinanzeigen source migration completed on 2026-08-01 against
+the two live collection roots through the confined NAS container. A fresh
+preflight reproduced the reconnaissance exactly: 868 exact source-folder
+parents, comprising 524 IBM-compatible and 344 manufacturer-organized parents;
+eleven already contained `retro.md` and 857 did not. The migration created 857
+minimal files containing `source: kleinanzeigen.de`, prepended canonical front
+matter to eight existing Markdown bodies, and inserted the source key into
+three existing front-matter blocks. It added no `price` or `lot-price` facts.
+
+The migration guarded every target against concurrent changes and retained
+rollback copies while writing. An independent post-write pass reconstructed
+all eleven pre-existing files by removing only the migration addition and
+matched every pre-migration SHA-256 hash, including the duplicated hash shared
+by two identical files. It also verified 868 exact source declarations, 857
+minimal-template files, zero price keys, and zero leftover temporary files. The
+independent pass caught excess blank-line formatting in the eight newly wrapped
+front matters; those prefixes were normalized without changing their bodies,
+then the complete hash verification passed with zero mismatches.
+
+Archive file clues are now portable across deployment-specific mount points.
+`FileNameClueFinder` receives paths relative to the configured archive root and
+provides stable slash-separated serialization for caches. File-content finders
+continue to open the actual filesystem paths, so this does not weaken clue-file
+inspection. The cached archive tree also represents its root as `.` instead of
+repeating the absolute root path.
+
+Location-dependent interpretation happens only during gear resolution.
+`FactParseContext` carries the current archive root and artifact path, while
+the built-in `PathParser` validates a cached relative path and resolves it
+against the current root. `Path` is RetroCrawler's canonical type for this
+concept, so automatic parser selection handles both scalar `Path` fields and
+collection element type `Path`; model annotations do not repeat an explicit
+parser. The demo and personal collection now model photographs and floppy
+images as `Path` facts rather than as deployment-specific strings. Raw cached
+clues remain relative and their resolved facts remain traceable to those raw
+clues.
+
+On cache retrieval, stored buckets are rebound by order to the roots in the
+current `ArchiveRoots` configuration. Root order is consequently part of the
+runtime configuration contract. A cache built against NAS-container paths can
+therefore be reused against desktop mount paths without re-indexing. Cache
+version 2 marks the relative-file-path contract; version 1 caches are rejected
+and rebuilt rather than being silently interpreted as relative. A relocation
+integration test builds and stows a cache under one root, moves the synthetic
+archive, reuses the cache under another root, and verifies that the resolved
+image points into the new root while the stored clue remains relative.
+Focused archive-path, repository, collection-file, and collection-model tests
+completed successfully. The full reactor `mvn test` and packaged-boundary
+verification `mvn clean install` also completed successfully.
+
 Focused missing-value clue verification completed on 2026-07-29:
 
 - `ClueClassifierTest` covers central, case-insensitive reclassification

@@ -30,6 +30,10 @@ public final class Archive {
 		return id;
 	}
 
+	public ArchiveVersion getVersion() {
+		return version;
+	}
+
 	public List<Bucket> getBuckets() {
 		return buckets;
 	}

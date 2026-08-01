@@ -20,6 +20,7 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -77,8 +78,9 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		for (final Bucket bucket : archive.getBuckets()) {
 			progressor.throwIfCancelled();
 			final ArchiveNode root = bucket.getRoot();
+			final Path archiveRoot = Path.of(bucket.getBasePath());
 			final ResolvedArchiveNode resolvedRoot = root == null ? null
-					: resolve(root, Path.of(bucket.getBasePath()), retroIds, resolutionProgress, progressor);
+					: resolve(root, archiveRoot, archiveRoot, retroIds, resolutionProgress, progressor);
 			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
 		}
 
@@ -157,12 +159,12 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		}
 	}
 
-	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path sourcePath, final RetroIdRegistry retroIds,
-			final ResolutionProgress progress, final Progressor progressor) {
+	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path archiveRoot, final Path sourcePath,
+			final RetroIdRegistry retroIds, final ResolutionProgress progress, final Progressor progressor) {
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.getArtifact();
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
-				: resolver.resolveWithIdentity(artifact);
+				: resolver.resolveWithIdentity(artifact, FactParseContext.located(archiveRoot, sourcePath));
 		resolution.ifPresent(value -> retroIds.register(value, sourcePath));
 		if (artifact != null) {
 			progress.complete(sourcePath);
@@ -172,7 +174,8 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		final List<ArchiveNode> archiveChildren = node.getChildren();
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
-				children.add(resolve(child, sourcePath.resolve(child.getFolder()), retroIds, progress, progressor));
+				children.add(resolve(child, archiveRoot, sourcePath.resolve(child.getFolder()), retroIds, progress,
+						progressor));
 			}
 		}
 		return new ResolvedArchiveNode(resolution, List.copyOf(children));

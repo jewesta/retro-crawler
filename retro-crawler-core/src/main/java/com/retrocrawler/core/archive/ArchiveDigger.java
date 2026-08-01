@@ -195,12 +195,8 @@ public class ArchiveDigger {
 			final boolean parentInsideRegion) throws IOException {
 		final String pathName;
 		if (path.equals(root)) {
-			/**
-			 * In order to get unique root node ids among various buckets we need to use the
-			 * folder's name including all parents (the full path) for the root node. All
-			 * other nodes below it just use the folder name itself.
-			 */
-			pathName = path.toString();
+			// A bucket supplies the runtime root; the cached tree begins at archive ".".
+			pathName = ".";
 		} else {
 			pathName = path.getFileName().toString();
 		}
@@ -214,7 +210,7 @@ public class ArchiveDigger {
 			listing = FolderListing.from(list(path));
 		}
 
-		final ArchivePath archivePath = new ArchivePath(path, listing.entries());
+		final ArchivePath archivePath = new ArchivePath(root, path, listing.entries());
 		final Set<Clue> localClues = clueFinder.find(archivePath, listing.files(), progressor);
 		progressor.throwIfCancelled();
 

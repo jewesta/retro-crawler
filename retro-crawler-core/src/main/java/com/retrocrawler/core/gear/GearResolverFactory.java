@@ -1,6 +1,7 @@
 package com.retrocrawler.core.gear;
 
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,6 +17,7 @@ import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.IntParser;
+import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.Reflection;
 import com.retrocrawler.core.util.TypeName;
@@ -118,6 +120,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			return new IntParser();
 		}
 
+		if (fieldType == Path.class) {
+			return new PathParser();
+		}
+
 		if (fieldType.isEnum()) {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			final Class<? extends Enum> enumType = (Class<? extends Enum>) fieldType;
@@ -144,6 +150,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 						+ "or specify a parser explicitly (not " + TypeName.simple(AutoDetectParser.class) + ").");
 			}
 			final Class<?> elementType = genericType.get();
+			if (elementType == Path.class) {
+				return new PathParser();
+			}
 			throw new UnsupportedOperationException("Auto-detected " + TypeName.full(fieldType) + "<"
 					+ TypeName.full(elementType) + "> for key '" + key + "', but no parser is implemented yet.");
 		}

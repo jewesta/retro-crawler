@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -112,17 +113,43 @@ public class ArchiveManager {
 			throw new IllegalStateException(
 					"Cannot re-index archive subtrees because no stored clue archive exists. Re-index the complete archive first.");
 		}
-		return stored.get();
+		return bindToConfiguredRoots(stored.get());
 	}
 
 	private Optional<Archive> retrieve() {
 		try {
-			return repository.retrieve(descriptor.getId());
+			return repository.retrieve(descriptor.getId()).map(this::bindToConfiguredRoots);
 		} catch (final RepositoryException e) {
 			logger.warn("Could not retrieve archive '{}'. The filesystem archive will be crawled again.",
 					descriptor.getId(), e);
 			return Optional.empty();
 		}
+	}
+
+	private Archive bindToConfiguredRoots(final Archive stored) {
+		if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(stored.getVersion())) {
+			throw new RepositoryException("Stored archive '" + stored.getId() + "' uses cache version "
+					+ stored.getVersion() + " but this crawler requires "
+					+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
+		}
+		final List<Path> configuredRoots = List.copyOf(descriptor.getPaths());
+		final List<Bucket> storedBuckets = stored.getBuckets();
+		if (storedBuckets.size() != configuredRoots.size()) {
+			throw new RepositoryException("Stored archive '" + stored.getId() + "' contains " + storedBuckets.size()
+					+ " buckets but the current configuration supplies " + configuredRoots.size() + " archive roots.");
+		}
+
+		boolean unchanged = true;
+		final List<Bucket> bound = new ArrayList<>(storedBuckets.size());
+		for (int index = 0; index < storedBuckets.size(); index++) {
+			final Bucket storedBucket = storedBuckets.get(index);
+			final Path configuredRoot = configuredRoots.get(index);
+			if (!normalize(Path.of(storedBucket.getBasePath())).equals(normalize(configuredRoot))) {
+				unchanged = false;
+			}
+			bound.add(Bucket.of(configuredRoot, storedBucket.getRoot()));
+		}
+		return unchanged ? stored : Archive.of(stored.getId(), List.copyOf(bound));
 	}
 
 	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<Path> requestedPaths) {

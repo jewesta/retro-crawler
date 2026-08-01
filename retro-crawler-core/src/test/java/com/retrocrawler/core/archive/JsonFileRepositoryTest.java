@@ -17,6 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
@@ -84,7 +85,7 @@ class JsonFileRepositoryTest {
 				.getArtifact();
 		final Clue clue = retrieved.getClues().stream().findFirst().orElseThrow();
 
-		assertEquals(1, json.path("version").asInt());
+		assertEquals(2, json.path("version").asInt());
 		assertTrue(storedClue.isArray());
 		assertTrue(storedClue.isEmpty());
 		assertEquals("sn", clue.getKey());
@@ -133,6 +134,21 @@ class JsonFileRepositoryTest {
 				repositoryDirectory.resolve("archive_requested.json"));
 
 		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("requested")));
+	}
+
+	@Test
+	void rejectsAnOlderCacheWhoseFileCluesMayContainAbsolutePaths() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("old_paths");
+		repository.stowaway(archive(id, "root"));
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_paths.json");
+		final ObjectMapper mapper = new ObjectMapper();
+		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
+		json.put("version", 1);
+		mapper.writeValue(jsonPath.toFile(), json);
+
+		assertThrows(RepositoryException.class, () -> repository.retrieve(id));
 	}
 
 	private Archive archive(final ArchiveId id, final String folder) {

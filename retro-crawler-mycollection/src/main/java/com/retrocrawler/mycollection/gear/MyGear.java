@@ -1,5 +1,6 @@
 package com.retrocrawler.mycollection.gear;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -115,13 +116,13 @@ public abstract class MyGear {
 	private Tested tested;
 
 	@RetroFact(key = AttributeNames.IMAGE_ANGLED, optional = true)
-	private String angledImage;
+	private Path angledImage;
 
 	@RetroFact(key = AttributeNames.IMAGE_FRONT, optional = true)
-	private String frontImage;
+	private Path frontImage;
 
 	@RetroFact(key = AttributeNames.IMAGE_BACK, optional = true)
-	private String backImage;
+	private Path backImage;
 
 	@RetroFact(key = AttributeNames.ISBN, parser = ISBNParser.class, optional = true)
 	private ISBN isbn;
@@ -135,8 +136,8 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGE_ID, parser = FloppyImageIdParser.class, optional = true)
 	private Set<FloppyImageId> floppyImageIds = Set.of();
 
-	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, parser = StringParser.class, optional = true)
-	private Set<String> floppyImages = Set.of();
+	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, optional = true)
+	private Set<Path> floppyImages = Set.of();
 
 	@RetroFact(key = AttributeNames.RAM_SET, parser = RamSetParser.class, optional = true)
 	private RamSet ramSet;
@@ -230,15 +231,15 @@ public abstract class MyGear {
 		return Optional.ofNullable(tested);
 	}
 
-	public Optional<String> getAngledImage() {
+	public Optional<Path> getAngledImage() {
 		return Optional.ofNullable(angledImage);
 	}
 
-	public Optional<String> getFrontImage() {
+	public Optional<Path> getFrontImage() {
 		return Optional.ofNullable(frontImage);
 	}
 
-	public Optional<String> getBackImage() {
+	public Optional<Path> getBackImage() {
 		return Optional.ofNullable(backImage);
 	}
 
@@ -258,7 +259,7 @@ public abstract class MyGear {
 		return Set.copyOf(floppyImageIds);
 	}
 
-	public Set<String> getFloppyImages() {
+	public Set<Path> getFloppyImages() {
 		return Set.copyOf(floppyImages);
 	}
 

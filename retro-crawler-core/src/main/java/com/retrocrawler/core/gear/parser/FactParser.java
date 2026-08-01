@@ -17,4 +17,12 @@ public interface FactParser {
 	 */
 	RatedFact parse(String rawValue);
 
+	/**
+	 * Parses one raw value with its runtime archive location. Parsers whose
+	 * interpretation is location-independent inherit the traditional behavior.
+	 */
+	default RatedFact parse(final String rawValue, final FactParseContext context) {
+		return parse(rawValue);
+	}
+
 }

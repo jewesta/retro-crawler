@@ -23,6 +23,7 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
@@ -235,11 +236,36 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of("TEST-FCC-123"), gear.getFccId());
 		assertEquals(Optional.of("defekt"), gear.getHealth());
 		assertEquals(Optional.of(Tested.POST), gear.getTested());
-		assertEquals(Optional.of(angled.toString()), gear.getAngledImage());
-		assertEquals(Optional.of(front.toString()), gear.getFrontImage());
-		assertEquals(Optional.of(back.toString()), gear.getBackImage());
+		assertEquals(Optional.of(angled), gear.getAngledImage());
+		assertEquals(Optional.of(front), gear.getFrontImage());
+		assertEquals(Optional.of(back), gear.getBackImage());
 		assertEquals(Set.of(new FloppyImageId("FD-0007")), gear.getFloppyImageIds());
-		assertEquals(Set.of(floppy.toString()), gear.getFloppyImages());
+		assertEquals(Set.of(floppy), gear.getFloppyImages());
+	}
+
+	@Test
+	void rebindsCachedRelativeFileCluesToANewArchiveRoot() throws IOException {
+		final Path nasRoot = Files.createDirectory(archiveRoot.resolve("nas-root"));
+		final Path gearFolder = Files.createDirectory(nasRoot.resolve("Portable object [200006]"));
+		Files.createFile(gearFolder.resolve("front.jpeg"));
+		final JsonFileRepository repository = new JsonFileRepository(archiveRoot.resolve("repository"));
+
+		crawler(nasRoot, repository).crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final Archive stored = repository.retrieve(ArchiveId.of("my_collection")).orElseThrow();
+		final Clue storedImage = stored.getBuckets().getFirst().getRoot().getChildren().getFirst().getArtifact()
+				.getClues().stream().filter(clue -> AttributeNames.IMAGE_FRONT.equals(clue.getKey()))
+				.findFirst().orElseThrow();
+		assertEquals(Set.of(Path.of("Portable object [200006]", "front.jpeg").toString()),
+				storedImage.getValue());
+
+		final Path desktopRoot = Files.move(nasRoot, archiveRoot.resolve("desktop-root"));
+		final MyGear rebound = gear(
+				crawler(desktopRoot, repository).crawlGear(SILENT_PROGRESSOR, ReindexScope.none(), MyGear.class),
+				"Portable object [200006]");
+
+		assertEquals(Optional.of(desktopRoot.resolve("Portable object [200006]").resolve("front.jpeg")),
+				rebound.getFrontImage());
 	}
 
 	@Test
@@ -337,6 +363,11 @@ class MyCollectionModelTest {
 	private RetroCrawler crawler() {
 		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(archiveRoot));
 		return RetroCrawler.builder().model(model).repository(new MemoryRepository()).build();
+	}
+
+	private static RetroCrawler crawler(final Path root, final Repository repository) {
+		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(root));
+		return RetroCrawler.builder().model(model).repository(repository).build();
 	}
 
 	private static MyGear gear(final List<MyGear> gear, final String folderName) {

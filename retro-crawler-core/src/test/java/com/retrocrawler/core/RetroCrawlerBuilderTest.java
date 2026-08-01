@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,8 @@ import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.PathNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -40,7 +43,7 @@ class RetroCrawlerBuilderTest {
 				TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
-		assertEquals(0, result.getBuckets().size());
+		assertEquals(1, result.getBuckets().size());
 	}
 
 	@Test
@@ -175,7 +178,8 @@ class RetroCrawlerBuilderTest {
 		@Override
 		public Optional<Archive> retrieve(final ArchiveId id) {
 			retrieveCount++;
-			return Optional.of(Archive.of(id, List.of()));
+			final Path root = Path.of("/this/path/must/not/be/crawled");
+			return Optional.of(Archive.of(id, List.of(Bucket.of(root, new ArchiveNode(".", null, null)))));
 		}
 	}
 

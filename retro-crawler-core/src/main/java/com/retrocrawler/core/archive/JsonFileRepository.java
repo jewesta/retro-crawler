@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.util.ReadmeWriter;
 
 /**
@@ -114,6 +115,11 @@ public class JsonFileRepository implements Repository {
 			if (!id.equals(archive.getId())) {
 				throw new RepositoryException(
 						"Expected archive id '" + id + "' but retrieved '" + archive.getId() + "' from: " + jsonPath);
+			}
+			if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(archive.getVersion())) {
+				throw new RepositoryException("Stored archive at " + jsonPath + " uses cache version "
+						+ archive.getVersion() + " but this crawler requires "
+						+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 			}
 			return Optional.of(archive);
 		} catch (final IOException e) {

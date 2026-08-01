@@ -47,7 +47,7 @@ public class MyKnownGear extends MyRetroGear {
 	private MacAddress macAddress;
 
 	@RetroFact(key = AttributeNames.PIC_FRONT, optional = true)
-	public String picFront;
+	public Path picFront;
 
 	public DemoId getId() {
 		return id;
@@ -58,7 +58,7 @@ public class MyKnownGear extends MyRetroGear {
 	}
 
 	public Optional<Path> getPicFront() {
-		return Optional.ofNullable(picFront).map(Path::of);
+		return Optional.ofNullable(picFront);
 	}
 
 	public Optional<TheRetroWebId> getTheRetroWebId() {

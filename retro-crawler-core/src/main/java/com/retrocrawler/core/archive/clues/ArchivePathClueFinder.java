@@ -125,8 +125,9 @@ public class ArchivePathClueFinder {
 		 * For the file name clue finders it is the other way around: Each finder we
 		 * invoke with the total list of available files.
 		 */
+		final List<Path> relativeFiles = files.stream().map(node::relative).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			final Set<Clue> fileNameClues = finder.find(files);
+			final Set<Clue> fileNameClues = finder.find(relativeFiles);
 			clues = merge(clues, fileNameClues);
 		}
 		return clues;

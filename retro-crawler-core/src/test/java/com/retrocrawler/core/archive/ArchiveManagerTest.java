@@ -35,7 +35,7 @@ class ArchiveManagerTest {
 	@Test
 	void retrievesStoredArchiveWithoutCrawlingFilesystem() throws IOException {
 		final ArchiveDescriptor descriptor = descriptor(temporaryDirectory.resolve("does-not-exist"));
-		final Archive stored = Archive.of(descriptor.getId(), List.of());
+		final Archive stored = emptyStoredArchive(descriptor);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
@@ -43,6 +43,23 @@ class ArchiveManagerTest {
 
 		assertSame(stored, result);
 		assertEquals(1, repository.retrieveCount);
+		assertEquals(0, repository.stowawayCount);
+	}
+
+	@Test
+	void rebindsStoredBucketsToTheCurrentlyConfiguredRoots() throws IOException {
+		final Path configuredRoot = temporaryDirectory.resolve("desktop-mount");
+		final ArchiveDescriptor descriptor = descriptor(configuredRoot);
+		final ArchiveNode storedRoot = new ArchiveNode(".", null, null);
+		final Archive stored = Archive.of(descriptor.getId(),
+				List.of(Bucket.of(Path.of("/nas-container/archive"), storedRoot)));
+		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
+
+		final Archive rebound = manager(descriptor, repository).getArchive(progressor, ReindexScope.none());
+
+		assertNotSame(stored, rebound);
+		assertSame(storedRoot, rebound.getBuckets().getFirst().getRoot());
+		assertEquals(configuredRoot.toString(), rebound.getBuckets().getFirst().getBasePath());
 		assertEquals(0, repository.stowawayCount);
 	}
 
@@ -64,7 +81,7 @@ class ArchiveManagerTest {
 	void reindexingBypassesRepositoryRetrievalAndReplacesArchive() throws IOException {
 		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
-		final Archive stored = Archive.of(descriptor.getId(), List.of());
+		final Archive stored = emptyStoredArchive(descriptor);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
@@ -106,7 +123,7 @@ class ArchiveManagerTest {
 	@Test
 	void retainsRetrievedArchiveInMemory() throws IOException {
 		final ArchiveDescriptor descriptor = descriptor(temporaryDirectory.resolve("does-not-exist"));
-		final Archive stored = Archive.of(descriptor.getId(), List.of());
+		final Archive stored = emptyStoredArchive(descriptor);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
@@ -276,6 +293,11 @@ class ArchiveManagerTest {
 
 	private ArchiveDescriptor descriptor(final Path archiveDirectory) {
 		return new ArchiveDescriptor(ArchiveId.of("test_archive"), "Test archive", List.of(archiveDirectory));
+	}
+
+	private static Archive emptyStoredArchive(final ArchiveDescriptor descriptor) {
+		final Path root = descriptor.getPaths().iterator().next();
+		return Archive.of(descriptor.getId(), List.of(Bucket.of(root, new ArchiveNode(".", null, null))));
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {

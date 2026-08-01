@@ -12,6 +12,7 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.core.util.Sonar;
 
@@ -37,7 +38,8 @@ public class GearResolver {
 	private record BestAnonymousMatch(String key, Confidence confidence) {
 	}
 
-	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue) {
+	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue,
+			final FactParseContext parseContext) {
 		final String key = clue.getKey();
 
 		if (resolved.containsKey(key)) {
@@ -49,18 +51,19 @@ public class GearResolver {
 		if (finder == null) {
 			attribute = clue;
 		} else {
-			attribute = finder.find(clue).<RetroAttribute>map(Function.identity()).orElse(clue);
+			attribute = finder.find(clue, parseContext).<RetroAttribute>map(Function.identity()).orElse(clue);
 		}
 
 		resolved.put(attribute);
 	}
 
 	@SuppressWarnings({ Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE })
-	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue) {
+	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue,
+			final FactParseContext parseContext) {
 		final Set<String> raws = clue.getValue();
 		String resolvedKey = null;
 		for (final String raw : raws) {
-			final BestAnonymousMatch best = findBestAnonymousMatch(raw);
+			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext);
 			if (best == null || best.confidence() == Confidence.NONE) {
 				putAnonymousClueIfUseful(resolved, clue);
 				return;
@@ -86,7 +89,7 @@ public class GearResolver {
 
 		final RetroAttribute existing = resolved.get(resolvedKey);
 		if (existing == null) {
-			final Optional<Fact> fact = finder.find(clue);
+			final Optional<Fact> fact = finder.find(clue, parseContext);
 			if (fact.isPresent()) {
 				resolved.put(fact.get());
 			} else {
@@ -95,11 +98,12 @@ public class GearResolver {
 			return;
 		}
 
-		reconcile(resolved, resolvedKey, existing, clue, finder);
+		reconcile(resolved, resolvedKey, existing, clue, finder, parseContext);
 	}
 
 	private static void reconcile(final RetroAttributes resolved, final String resolvedKey,
-			final RetroAttribute existing, final Clue incoming, final FactFinder finder) {
+			final RetroAttribute existing, final Clue incoming, final FactFinder finder,
+			final FactParseContext parseContext) {
 
 		final Set<String> combinedValues = new HashSet<>(incoming.getValue());
 		if (existing instanceof final Fact fact) {
@@ -109,7 +113,7 @@ public class GearResolver {
 		}
 
 		final Clue combined = Clue.of(resolvedKey, Set.copyOf(combinedValues));
-		final Optional<Fact> combinedFact = finder.find(combined);
+		final Optional<Fact> combinedFact = finder.find(combined, parseContext);
 		if (existing instanceof final Fact fact && combinedFact.isPresent()
 				&& fact.getValue().equals(combinedFact.get().getValue())) {
 			// The new observation corroborates the already resolved fact.
@@ -125,21 +129,21 @@ public class GearResolver {
 		}
 	}
 
-	private BestAnonymousMatch findBestAnonymousMatch(final String raw) {
+	private BestAnonymousMatch findBestAnonymousMatch(final String raw, final FactParseContext parseContext) {
 		BestAnonymousMatch best = null;
 		for (final FactFinder finder : factFinders.values()) {
 			if (finder.isStrict()) {
 				continue;
 			}
-			best = considerAnonymousCandidate(best, finder, raw);
+			best = considerAnonymousCandidate(best, finder, raw, parseContext);
 		}
 		return best;
 	}
 
 	private BestAnonymousMatch considerAnonymousCandidate(final BestAnonymousMatch bestSoFar, final FactFinder finder,
-			final String raw) {
+			final String raw, final FactParseContext parseContext) {
 
-		final RatedFact rated = finder.parse(raw);
+		final RatedFact rated = finder.parse(raw, parseContext);
 		final Confidence confidence = rated.getConfidence();
 		if (confidence == Confidence.NONE) {
 			return bestSoFar;
@@ -168,9 +172,20 @@ public class GearResolver {
 		return resolveWithIdentity(artifact).map(GearResolution::gear);
 	}
 
+	public Optional<Object> resolve(final Artifact artifact, final FactParseContext parseContext) {
+		return resolveWithIdentity(artifact, parseContext).map(GearResolution::gear);
+	}
+
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
 	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact) {
+		return resolveWithIdentity(artifact, FactParseContext.detached());
+	}
+
+	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
+	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact,
+			final FactParseContext parseContext) {
 		Objects.requireNonNull(artifact, "artifact");
+		Objects.requireNonNull(parseContext, "parseContext");
 
 		/*
 		 * We are now looking at the given artifact and we want to turn it into a new
@@ -182,12 +197,12 @@ public class GearResolver {
 		final Set<Clue> clues = clueClassifier.classify(artifact.getClues());
 		for (final Clue clue : clues) {
 			if (!clue.isAnonymous()) {
-				handleKnownKeyClue(attributes, clue);
+				handleKnownKeyClue(attributes, clue, parseContext);
 			}
 		}
 		for (final Clue clue : clues) {
 			if (clue.isAnonymous()) {
-				handleAnonymousClue(attributes, clue);
+				handleAnonymousClue(attributes, clue, parseContext);
 			}
 		}
 

@@ -28,7 +28,8 @@ public final class StandardImageClueFinder implements FileNameClueFinder {
 			final String fileName = file.getFileName().toString().toLowerCase(Locale.ROOT);
 			final String key = KEYS_BY_FILE_NAME.get(fileName);
 			if (key != null) {
-				valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(file.toString());
+				valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>())
+						.add(FileNameClueFinder.portablePath(file));
 			}
 		}
 

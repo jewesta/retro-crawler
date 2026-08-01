@@ -131,6 +131,20 @@ class ArchivePathClueFinderTest {
 		assertEquals(Set.of("classified.txt"), clue(clues, "files").getValue());
 	}
 
+	@Test
+	void givesFileNameFindersArchiveRootRelativePaths() throws IOException {
+		final Path gearFolder = Files.createDirectories(folder.resolve("shelf").resolve("gear"));
+		final Path image = Files.createFile(gearFolder.resolve("front.jpeg"));
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(),
+				List.of(files -> Set.of(Clue.of("image", files.iterator().next().toString()))));
+
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, gearFolder, List.of(image)),
+				SILENT_PROGRESSOR);
+
+		assertEquals(Set.of(Path.of("shelf", "gear", "front.jpeg").toString()),
+				clue(clues, "image").getValue());
+	}
+
 	private static Clue clue(final Set<Clue> clues, final String key) {
 		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
 	}

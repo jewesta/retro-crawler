@@ -17,7 +17,7 @@ public class ImageClueFinder implements FileNameClueFinder {
 		final Set<Clue> clues = new HashSet<>();
 		files.stream().forEach(path -> {
 			final String fileName = path.getFileName().toString();
-			final String fullPathName = path.toString();
+			final String fullPathName = FileNameClueFinder.portablePath(path);
 			if (fileName.equalsIgnoreCase("front.jpeg")) {
 				clues.add(Clue.of(AttributeNames.PIC_FRONT, fullPathName));
 			} else if (fileName.equalsIgnoreCase("back.jpeg")) {

@@ -26,7 +26,7 @@ public final class FloppyImageClueFinder implements FileNameClueFinder {
 			final Matcher matcher = FILE_NAME.matcher(file.getFileName().toString());
 			if (matcher.matches()) {
 				ids.add(matcher.group(1).toUpperCase(java.util.Locale.ROOT));
-				paths.add(file.toString());
+				paths.add(FileNameClueFinder.portablePath(file));
 			}
 		}
 
