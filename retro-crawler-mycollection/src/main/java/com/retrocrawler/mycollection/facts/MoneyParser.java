@@ -8,21 +8,24 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
-import com.retrocrawler.mycollection.catalog.Price;
+import com.retrocrawler.model.commerce.Money;
 
-public final class PriceParser implements FactParser {
+/**
+ * Parses the collection's monetary convention, including its default currency.
+ */
+public final class MoneyParser implements FactParser {
 
 	private static final Currency DEFAULT_CURRENCY = Currency.getInstance("EUR");
 
-	private static final Pattern PRICE = Pattern.compile("^(\\d+(?:[.,]\\d{1,2})?)\\s*([A-Za-z]{3})?$");
+	private static final Pattern MONEY = Pattern.compile("^(\\d+(?:[.,]\\d{1,2})?)\\s*([A-Za-z]{3})?$");
 
 	@Override
 	public RatedFact parse(final String rawValue) {
 		if (rawValue == null) {
-			return RatedFact.none("Expected a non-null price.");
+			return RatedFact.none("Expected a non-null monetary amount.");
 		}
 
-		final Matcher matcher = PRICE.matcher(rawValue.trim());
+		final Matcher matcher = MONEY.matcher(rawValue.trim());
 		if (!matcher.matches()) {
 			return RatedFact.none("Expected an amount optionally followed by a three-letter currency code.");
 		}
@@ -37,6 +40,6 @@ public final class PriceParser implements FactParser {
 		} catch (final IllegalArgumentException e) {
 			return RatedFact.none("Unknown currency code: " + rawCurrency);
 		}
-		return RatedFact.exact(new Price(amount, currency));
+		return RatedFact.exact(new Money(amount, currency));
 	}
 }

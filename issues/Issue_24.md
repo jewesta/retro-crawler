@@ -1668,8 +1668,10 @@ tested: post
 ---
 ```
 
-A typed collection-side price parser preserves the raw clue while interpreting
-a missing currency as EUR by collection convention. The sole legacy
+A typed collection-side monetary parser preserves the raw clue while
+interpreting a missing currency as EUR by collection convention. Its value is
+the shared-model `Money(BigDecimal, Currency)` record: `price` is the meaning
+of a collection fact, not the Java value type. The sole legacy
 `tested=bios` value became `tested: post`: the gear shows life, without
 asserting stability or a successful boot. The current testing vocabulary is
 `post`, `boot`, and `full`.
@@ -1677,9 +1679,45 @@ asserting stability or a successful boot. The current testing vocabulary is
 Redundant `type` and `bus` properties were discarded because the archive's
 ordinary clues already carry that evidence. `from` and `origin` were discarded
 as agreed, and `bios.dumped` is deferred until dump-file presence can support a
-real convention. Origin inference from marketplace metadata folders is
-explicitly deferred for further discussion despite the availability of
-`TreeClueFinder`.
+real convention. Origin inference from marketplace metadata folders was
+subsequently rejected. An arbitrary child-folder name cannot say whether that
+folder is an acquisition source, documentation, firmware, or contained gear.
+Acquisition source must therefore be explicit in `retro.md`. It remains
+open-valued rather than an enum or registry; the canonical value for the
+Kleinanzeigen service is its domain, `source: kleinanzeigen.de`.
+
+Acquisition mining also established two distinct monetary facts. `price` is an
+individual gear price. `lot-price` is the complete price of an acquisition lot
+and may deliberately recur on every linked lot member; it must not be treated
+as an allocated item price. Both facts use the same shared `Money` value and
+the collection's default-EUR parser convention.
+
+The collector's existing practice of copying a source dossier into every item
+from a lot provides deterministic relationship evidence. Exact content hashes,
+not camera filenames, link copied conversations, receipts, listings, and lot
+photographs; camera counter rollover is therefore irrelevant. Generated NAS
+thumbnails, AppleDouble files, and seller-profile documents are excluded as
+noise. A read-only reconnaissance found 868 exact `Kleinanzeigen` folders over
+the two collection roots (524 IBM-compatible and 344 manufacturer-organized).
+
+Exact conversations and payment documents alone form 113 multi-folder
+components covering 721 source folders. Adding exact photographs forms 123
+multi-folder components covering 770 source folders, with another 98 folders
+remaining singletons. Twelve components cross the two configured roots, which
+is legitimate for purchases containing both IBM-compatible and
+manufacturer-organized gear.
+
+These components are source-history bundles, not necessarily purchases. An
+audit of every component containing multiple payment or conversation hashes
+found repeated purchases from the same seller, split or continued
+conversations, and a payment followed by a refund. One six-game bundle, for
+example, contains a 24 EUR purchase and a later 142.50 EUR five-game purchase
+from the same seller. A nine-item bundle preserves at least three transactions
+with that seller. Exact dossier equality is therefore strong provenance and
+relationship evidence but cannot, on its own, justify one recurring
+`lot-price`. Transaction allocation needs payment notes, conversation content,
+listing identity, and chronology. No collection metadata was written during
+this investigation.
 
 The model now recognizes the German destiny values `verschenkt`, `verkauft`,
 `entsorgt`, `geschlachtet`, `retourniert`, and `gestohlen`. Passing gear on is
@@ -1800,6 +1838,11 @@ filesystem changes until that root is included in a future crawl.
       remove the legacy clue finder.
 - [x] Add model-owned German destiny and testing vocabularies, then normalize
       the agreed live archive tags without inferring origin.
+- [x] Make acquisition source explicit and open-valued, choose
+      `kleinanzeigen.de` as the canonical service value, and distinguish item
+      `price` from recurring `lot-price`.
+- [x] Replace the collection-specific `Price` value with shared-model `Money`
+      while retaining the collection's default-EUR parsing convention.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1831,8 +1874,9 @@ filesystem changes until that root is included in a future crawl.
   it remain a query/provenance and traversal concern?
 - When the folder-tag grammar proves reusable, should it become a small
   optional adapter module shared by the demo and personal model?
-- How should marketplace metadata folders express origin without letting an
-  origin-only tree clue establish unrelated untagged artifacts?
+- How should repeated purchases inside one source-history bundle be partitioned
+  into proposed acquisitions while retaining the exact-evidence links that made
+  the bundle discoverable?
 
 ## Verification
 
@@ -1851,6 +1895,36 @@ Focused Markdown metadata verification completed on 2026-07-29:
   after rebuilding only the affected subtrees.
 - A subsequent cache-only run reinterpreted the same clues with the typed price
   model and again resolved all 2,168 artifacts without re-indexing.
+
+Focused acquisition-metadata verification completed on 2026-08-01:
+
+- `MoneyTest` proves scale-independent monetary value semantics and keeps
+  generic money independent of price policy.
+- `CollectionFactParsersTest` proves decimal-comma parsing, explicit ISO
+  currencies, default EUR, and rejection of negative collection prices.
+- `MyCollectionModelTest` proves that both `price` and `lot-price` resolve to
+  `Money`, that a lot price does not become an item price, and that an unknown
+  future source value resolves without a source whitelist.
+- The focused core, shared-model, and collection Maven reactor completed with
+  144 tests and no failures.
+- Exact-evidence analysis over all 868 Kleinanzeigen source folders produced
+  123 multi-folder source-history components covering 770 folders, plus 98
+  singleton folders. The largest component contains 30 folders and twelve
+  components cross the configured roots.
+- The 180 copied PayPal PDFs reduce to 43 unique documents. Local text
+  extraction found an amount in every document header: 38 explicitly record
+  money sent, three record money received, and two use layouts without a
+  direction phrase. Thirty-six contain a non-empty transaction note.
+- Eleven of the 868 parent folders already contain `retro.md`; 857 do not.
+  None currently declare `source`, `price`, or `lot-price`, so a future source
+  migration must preserve eleven hand-maintained Markdown files and can create
+  minimal metadata files for the remainder.
+- Auditing every multi-payment or multi-conversation component established that
+  exact source dossiers can span repeated purchases from one seller. This
+  prevents blind `lot-price` propagation even though amount extraction itself
+  is reliable.
+- All acquisition reconnaissance was read-only; no collection metadata was
+  created or changed.
 
 Focused missing-value clue verification completed on 2026-07-29:
 

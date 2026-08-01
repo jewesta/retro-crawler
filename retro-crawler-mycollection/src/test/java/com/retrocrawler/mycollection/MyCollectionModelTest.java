@@ -28,6 +28,7 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.hardware.MemoryAccessTime;
@@ -44,7 +45,6 @@ import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
-import com.retrocrawler.mycollection.catalog.Price;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.catalog.Tested;
@@ -211,6 +211,7 @@ class MyCollectionModelTest {
 		final String markdown = """
 				---
 				price: 120 EUR
+				source: kleinanzeigen.de
 				fcc: TEST-FCC-123
 				health: defekt
 				tested: post
@@ -227,8 +228,10 @@ class MyCollectionModelTest {
 				"Documented object [200005]");
 
 		assertEquals(Optional.of("This description belongs to the containing gear."), gear.getDescription());
-		assertEquals(Optional.of(new Price(new BigDecimal("120"), Currency.getInstance("EUR"))),
+		assertEquals(Optional.of(new Money(new BigDecimal("120"), Currency.getInstance("EUR"))),
 				gear.getPrice());
+		assertEquals(Optional.empty(), gear.getLotPrice());
+		assertEquals(Optional.of("kleinanzeigen.de"), gear.getSource());
 		assertEquals(Optional.of("TEST-FCC-123"), gear.getFccId());
 		assertEquals(Optional.of("defekt"), gear.getHealth());
 		assertEquals(Optional.of(Tested.POST), gear.getTested());
@@ -237,6 +240,25 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of(back.toString()), gear.getBackImage());
 		assertEquals(Set.of(new FloppyImageId("FD-0007")), gear.getFloppyImageIds());
 		assertEquals(Set.of(floppy.toString()), gear.getFloppyImages());
+	}
+
+	@Test
+	void resolvesAnOpenSourceAndLotPriceWithoutPretendingItIsAnItemPrice() throws IOException {
+		final Path folder = Files.createDirectories(archiveRoot.resolve("Lot member [200009]"));
+		Files.writeString(folder.resolve("retro.md"), """
+				---
+				source: future-market.example
+				lot-price: 100
+				---
+				""");
+
+		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+				"Lot member [200009]");
+
+		assertEquals(Optional.of("future-market.example"), gear.getSource());
+		assertEquals(Optional.of(new Money(new BigDecimal("100"), Currency.getInstance("EUR"))),
+				gear.getLotPrice());
+		assertEquals(Optional.empty(), gear.getPrice());
 	}
 
 	@Test

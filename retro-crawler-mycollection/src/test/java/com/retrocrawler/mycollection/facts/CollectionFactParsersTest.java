@@ -9,12 +9,12 @@ import java.util.Currency;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.mycollection.catalog.Destiny;
-import com.retrocrawler.mycollection.catalog.Price;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.memory.RamSet;
 
@@ -81,15 +81,16 @@ class CollectionFactParsersTest {
 	}
 
 	@Test
-	void defaultsBarePricesToEuros() {
-		final PriceParser parser = new PriceParser();
+	void defaultsBareMonetaryAmountsToEuros() {
+		final MoneyParser parser = new MoneyParser();
 
-		assertEquals(new Price(new BigDecimal("12.34"), Currency.getInstance("EUR")),
+		assertEquals(new Money(new BigDecimal("12.34"), Currency.getInstance("EUR")),
 				parser.parse("12,34").getValue().orElseThrow());
-		assertEquals(new Price(new BigDecimal("120"), Currency.getInstance("EUR")),
+		assertEquals(new Money(new BigDecimal("120"), Currency.getInstance("EUR")),
 				parser.parse("120 EUR").getValue().orElseThrow());
-		assertEquals(new Price(new BigDecimal("20"), Currency.getInstance("USD")),
+		assertEquals(new Money(new BigDecimal("20"), Currency.getInstance("USD")),
 				parser.parse("20 usd").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("20 EURO").getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("-20 EUR").getConfidence());
 	}
 }

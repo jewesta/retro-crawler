@@ -24,6 +24,8 @@ public final class AttributeNames {
 
 	public static final String ISBN = "isbn";
 
+	public static final String LOT_PRICE = "lot-price";
+
 	public static final String MAC_ADDRESS = "mac";
 
 	public static final String HEALTH = "health";
@@ -49,6 +51,8 @@ public final class AttributeNames {
 	public static final String SCAN_ID = "scanId";
 
 	public static final String SERIAL_NUMBER = "sn";
+
+	public static final String SOURCE = "source";
 
 	public static final String THE_RETRO_WEB_ID = "trw";
 

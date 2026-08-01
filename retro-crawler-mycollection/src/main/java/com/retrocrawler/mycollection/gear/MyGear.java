@@ -10,6 +10,7 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
+import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ComputerFormFactorParser;
 import com.retrocrawler.model.hardware.ExpansionBus;
@@ -37,13 +38,12 @@ import com.retrocrawler.model.measurement.PowerParser;
 import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
-import com.retrocrawler.mycollection.catalog.Price;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
-import com.retrocrawler.mycollection.facts.PriceParser;
+import com.retrocrawler.mycollection.facts.MoneyParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
 import com.retrocrawler.mycollection.facts.ScanIdParser;
@@ -102,8 +102,14 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.HEALTH, optional = true)
 	private String health;
 
-	@RetroFact(key = AttributeNames.PRICE, parser = PriceParser.class, optional = true)
-	private Price price;
+	@RetroFact(key = AttributeNames.PRICE, parser = MoneyParser.class, optional = true)
+	private Money price;
+
+	@RetroFact(key = AttributeNames.LOT_PRICE, parser = MoneyParser.class, optional = true)
+	private Money lotPrice;
+
+	@RetroFact(key = AttributeNames.SOURCE, optional = true)
+	private String source;
 
 	@RetroFact(key = AttributeNames.TESTED, parser = TestedParser.class, optional = true)
 	private Tested tested;
@@ -208,8 +214,16 @@ public abstract class MyGear {
 		return Optional.ofNullable(health);
 	}
 
-	public Optional<Price> getPrice() {
+	public Optional<Money> getPrice() {
 		return Optional.ofNullable(price);
+	}
+
+	public Optional<Money> getLotPrice() {
+		return Optional.ofNullable(lotPrice);
+	}
+
+	public Optional<String> getSource() {
+		return Optional.ofNullable(source);
 	}
 
 	public Optional<Tested> getTested() {
