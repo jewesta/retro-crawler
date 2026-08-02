@@ -91,6 +91,8 @@ public final class MyCollectionSmokeCrawl {
 				.filter(value -> !value.getNintendoGameBoyCartridgeCodes().isEmpty()).count();
 		final long withPlayStationPortableDiscIds = gear.stream()
 				.filter(value -> !value.getPlayStationPortableDiscIds().isEmpty()).count();
+		final long withSegaGameGearCartridgeCodes = gear.stream()
+				.filter(value -> !value.getSegaGameGearCartridgeCodes().isEmpty()).count();
 		final long withRegions = gear.stream().filter(value -> !value.getRegions().isEmpty()).count();
 		final long onlyImages = gear.stream().filter(MyCollectionSmokeCrawl::hasOnlyImages).count();
 
@@ -99,6 +101,7 @@ public final class MyCollectionSmokeCrawl {
 				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages
 				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
 				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
+				+ "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
 				+ "\tpspDiscIds=" + withPlayStationPortableDiscIds
 				+ "\tlotMemberships=" + withLotMembership + "\timagesOnly=" + onlyImages);
 	}
@@ -148,6 +151,7 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getMacAddress().isEmpty() && gear.getSerialNumber().isEmpty()
 				&& gear.getNintendoGameBoyCartridgeCodes().isEmpty()
 				&& gear.getPlayStationPortableDiscIds().isEmpty()
+				&& gear.getSegaGameGearCartridgeCodes().isEmpty()
 				&& gear.getPrice().isEmpty() && gear.getLot().isEmpty() && gear.getLotPrice().isEmpty()
 				&& gear.getSource().isEmpty()
 				&& gear.getTested().isEmpty()
@@ -155,7 +159,9 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getMemoryAccessTimes().isEmpty()
 				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()
 				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
-				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getScanIds().isEmpty()
+				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getDocumentIds().isEmpty()
+				&& gear.getFloppyDiskFormFactors().isEmpty() && gear.getHardDiskDriveFormFactors().isEmpty()
+				&& gear.getScreenSizes().isEmpty() && gear.getVersion().isEmpty() && gear.getYears().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
 	}

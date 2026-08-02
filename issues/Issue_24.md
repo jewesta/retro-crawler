@@ -447,7 +447,7 @@ gear type can be inferred. This suggests distinct model value types such as:
 
 ```text
 RetroId
-ScanId
+DocumentId
 FloppyImageId
 ```
 
@@ -1455,7 +1455,7 @@ motherboard has been recognized.
 
 The cache contains six 1-series scan observations representing five distinct
 scans. One scan is legitimately referenced by two different physical manuals.
-The personal `ScanId` is consequently a reusable fact, not `@RetroId` identity
+The personal `DocumentId` is consequently a reusable fact, not `@RetroId` identity
 and not an archive-wide uniqueness constraint.
 
 The same pass exposed cataloguing findings that remain deliberately unresolved:
@@ -2919,6 +2919,61 @@ Focused catalogue-resource, one-to-many lookup, structured release-region,
 multi-game language-set, shared-value, parser, prefix-matrix, and
 collection-resolution tests pass. The complete `mvn test` reactor and clean
 packaged reactor via `mvn clean install` also complete successfully.
+
+### Numeric-clue feedback pass
+
+The collection owner classified the 181 number-shaped observations from the
+fresh-cache review. One `60%` condition marker deliberately remains an
+anonymous clue: it is meaningful evidence, but the collection does not need a
+formal condition scale for that single observation.
+
+The feedback distinguishes source corrections from model additions. The 108
+literal tag replacements affect 103 folders because five folders contained two
+independent form-factor spellings. All replacements were resolved against the
+live roots by exact basename, checked for destination collisions, applied
+deepest-first where folders were nested, and recorded in the three archive
+journals. The final audit found all 103 folders at their combined target names.
+No private folder name or path is recorded here.
+
+Reusable vocabulary added to `retro-crawler-model` comprises:
+
+- conventional floppy-disk and hard-disk-drive form factors, retaining their
+  nominal inch sizes as typed values;
+- screen diagonal size in inches, with strong rather than exact confidence for
+  an anonymous unit-qualified length so a known storage form factor can win;
+- `Version`, whose canonical spelling begins with `v` followed by a digit and
+  may retain arbitrary version text after that digit;
+- a current-year-aware parser for `java.time.Year`, moved out of core and
+  restricted to the inclusive range from 1950 through the current year; and
+- four-digit Sega Game Gear cartridge catalogue codes, with optional `GG`
+  decoration in the portable parser.
+
+The 1-series catalogue namespace was renamed from the overly narrow `ScanId`
+to `DocumentId`: it identifies either a locally scanned document or one
+obtained digitally. This type and its parser remain in
+`retro-crawler-mycollection` because the namespace is personal. The shared
+`DataCapacity` type already models canonical `1,44MB` observations and was
+reused rather than duplicated as a floppy-only quantity.
+
+The workbook called `2,5″` a hard-drive capacity, but the unit and every folder
+context establish a form factor instead. The portable hard-drive parser covers
+the conventional values; the collection adapter currently admits only the
+observed 2.5-inch value for anonymous matching. This prevents the collection's
+3.5- and 5.25-inch floppy tags from becoming ambiguous with hard-drive form
+factors while leaving the neutral parser reusable. The same adapter discipline
+limits anonymous screen-size matching to the observed 19-inch spelling, so a
+new small inch-based form factor remains a clue until deliberately admitted.
+
+Source corrections supply the evidence the canonical parsers require: missing
+inch marks and the `3,25` typo were corrected, unprefixed versions gained `v`,
+Game Gear codes gained their `gg` key, serial numbers gained `sn`, incomplete
+Retro-ID templates became empty tags, and the OCR-damaged Retro ID was repaired.
+`586` became the descriptive `Pentium` tag but remains informal vocabulary; no
+processor-compatibility fact was invented from it.
+
+Focused shared-model and collection-resolution tests cover the new invariants,
+canonical spellings, confidence ordering, current-year boundary, document
+namespace, and interaction between the competing inch-based parsers.
 
 ## Out of Scope for the Initial Slice
 

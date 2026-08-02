@@ -16,6 +16,7 @@ import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.model.measurement.ScreenSize;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.memory.RamSet;
@@ -113,5 +114,14 @@ class CollectionFactParsersTest {
 			assertEquals(Confidence.EXACT, language.parse(code).getConfidence());
 			assertEquals(Confidence.EXACT, region.parse(code).getConfidence());
 		}
+	}
+
+	@Test
+	void limitsAnonymousScreenSizesToEstablishedCollectionEvidence() {
+		final CollectionScreenSizeParser parser = new CollectionScreenSizeParser();
+
+		assertEquals(new ScreenSize(BigDecimal.valueOf(19)), parser.parse("19″").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("1,8″").getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("24″").getConfidence());
 	}
 }

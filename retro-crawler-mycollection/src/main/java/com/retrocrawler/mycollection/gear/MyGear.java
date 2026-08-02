@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection.gear;
 
 import java.nio.file.Path;
+import java.time.Year;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +34,8 @@ import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
 import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCodeParser;
 import com.retrocrawler.model.identifier.PlayStationPortableDiscId;
 import com.retrocrawler.model.identifier.PlayStationPortableDiscIdParser;
+import com.retrocrawler.model.identifier.SegaGameGearCartridgeCode;
+import com.retrocrawler.model.identifier.SegaGameGearCartridgeCodeParser;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.locale.LanguageCode;
@@ -41,20 +44,29 @@ import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.PowerParser;
+import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.software.Version;
+import com.retrocrawler.model.software.VersionParser;
+import com.retrocrawler.model.storage.FloppyDiskFormFactor;
+import com.retrocrawler.model.storage.FloppyDiskFormFactorParser;
+import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
+import com.retrocrawler.model.temporal.YearParser;
 import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.Destiny;
+import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
-import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
 import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
 import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
+import com.retrocrawler.mycollection.facts.CollectionScreenSizeParser;
 import com.retrocrawler.mycollection.facts.DestinyParser;
+import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
-import com.retrocrawler.mycollection.facts.ScanIdParser;
 import com.retrocrawler.mycollection.facts.TestedParser;
 import com.retrocrawler.mycollection.memory.RamSet;
 
@@ -74,6 +86,14 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
 	private DataCapacity capacity;
+
+	@RetroFact(key = AttributeNames.FLOPPY_DISK_FORM_FACTOR, parser = FloppyDiskFormFactorParser.class,
+			strict = false, optional = true)
+	private Set<FloppyDiskFormFactor> floppyDiskFormFactors = Set.of();
+
+	@RetroFact(key = AttributeNames.HARD_DISK_DRIVE_FORM_FACTOR,
+			parser = CollectionHardDiskDriveFormFactorParser.class, strict = false, optional = true)
+	private Set<HardDiskDriveFormFactor> hardDiskDriveFormFactors = Set.of();
 
 	@RetroFact(key = AttributeNames.MEMORY_ACCESS_TIME, parser = MemoryAccessTimeParser.class, strict = false,
 			optional = true)
@@ -96,6 +116,16 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.POWER, parser = PowerParser.class, strict = false, optional = true)
 	private Power power;
+
+	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = CollectionScreenSizeParser.class, strict = false,
+			optional = true)
+	private Set<ScreenSize> screenSizes = Set.of();
+
+	@RetroFact(key = AttributeNames.VERSION, parser = VersionParser.class, strict = false, optional = true)
+	private Version version;
+
+	@RetroFact(key = AttributeNames.YEAR, parser = YearParser.class, strict = false, optional = true)
+	private Set<Year> years = Set.of();
 
 	@RetroFact(key = AttributeNames.TITLE, optional = true)
 	private String title;
@@ -158,6 +188,10 @@ public abstract class MyGear {
 			strict = false, optional = true)
 	private Set<PlayStationPortableDiscId> playStationPortableDiscIds = Set.of();
 
+	@RetroFact(key = AttributeNames.SEGA_GAME_GEAR_CARTRIDGE_CODE,
+			parser = SegaGameGearCartridgeCodeParser.class, optional = true)
+	private Set<SegaGameGearCartridgeCode> segaGameGearCartridgeCodes = Set.of();
+
 	@RetroFact(key = AttributeNames.SERIAL_NUMBER, parser = StringParser.class, optional = true)
 	private String serialNumber;
 
@@ -170,8 +204,8 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.RAM_SET, parser = RamSetParser.class, optional = true)
 	private RamSet ramSet;
 
-	@RetroFact(key = AttributeNames.SCAN_ID, parser = ScanIdParser.class, strict = false, optional = true)
-	private Set<ScanId> scanIds = Set.of();
+	@RetroFact(key = AttributeNames.DOCUMENT, parser = DocumentIdParser.class, strict = false, optional = true)
+	private Set<DocumentId> documentIds = Set.of();
 
 	@RetroFact(key = AttributeNames.THE_RETRO_WEB_ID, parser = TheRetroWebIdParser.class, optional = true)
 	private TheRetroWebId theRetroWebId;
@@ -199,6 +233,14 @@ public abstract class MyGear {
 		return Optional.ofNullable(capacity);
 	}
 
+	public Set<FloppyDiskFormFactor> getFloppyDiskFormFactors() {
+		return Set.copyOf(floppyDiskFormFactors);
+	}
+
+	public Set<HardDiskDriveFormFactor> getHardDiskDriveFormFactors() {
+		return Set.copyOf(hardDiskDriveFormFactors);
+	}
+
 	public Set<MemoryAccessTime> getMemoryAccessTimes() {
 		return Set.copyOf(memoryAccessTimes);
 	}
@@ -221,6 +263,18 @@ public abstract class MyGear {
 
 	public Optional<Power> getPower() {
 		return Optional.ofNullable(power);
+	}
+
+	public Set<ScreenSize> getScreenSizes() {
+		return Set.copyOf(screenSizes);
+	}
+
+	public Optional<Version> getVersion() {
+		return Optional.ofNullable(version);
+	}
+
+	public Set<Year> getYears() {
+		return Set.copyOf(years);
 	}
 
 	public Optional<String> getTitle() {
@@ -299,6 +353,10 @@ public abstract class MyGear {
 		return Set.copyOf(playStationPortableDiscIds);
 	}
 
+	public Set<SegaGameGearCartridgeCode> getSegaGameGearCartridgeCodes() {
+		return Set.copyOf(segaGameGearCartridgeCodes);
+	}
+
 	public Optional<String> getSerialNumber() {
 		return Optional.ofNullable(serialNumber);
 	}
@@ -315,8 +373,8 @@ public abstract class MyGear {
 		return Optional.ofNullable(ramSet);
 	}
 
-	public Set<ScanId> getScanIds() {
-		return Set.copyOf(scanIds);
+	public Set<DocumentId> getDocumentIds() {
+		return Set.copyOf(documentIds);
 	}
 
 	public Optional<TheRetroWebId> getTheRetroWebId() {

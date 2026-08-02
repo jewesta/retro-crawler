@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Year;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +43,7 @@ import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
 import com.retrocrawler.model.identifier.NintendoGameBoyPlatform;
 import com.retrocrawler.model.identifier.PlayStationPortableDiscId;
 import com.retrocrawler.model.identifier.PlayStationPortableDiscPrefix;
+import com.retrocrawler.model.identifier.SegaGameGearCartridgeCode;
 import com.retrocrawler.model.identifier.TheRetroWebCategory;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
@@ -50,13 +52,17 @@ import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.TrackDensity;
+import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.software.Version;
 import com.retrocrawler.model.storage.FloppyDiskFormat;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
+import com.retrocrawler.model.storage.FloppyDiskFormFactor;
+import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
-import com.retrocrawler.mycollection.catalog.ScanId;
+import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
@@ -194,14 +200,37 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void treatsScanIdsAsReusableReferencesRatherThanGearIdentity() throws IOException {
+	void treatsDocumentIdsAsReusableReferencesRatherThanGearIdentity() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("First scanned manual [101534] [200030]"));
 		Files.createDirectories(archiveRoot.resolve("Second scanned manual [101534] [200031]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(2, gear.size());
-		assertTrue(gear.stream().allMatch(value -> value.getScanIds().equals(Set.of(new ScanId(101534)))));
+		assertTrue(gear.stream().allMatch(value -> value.getDocumentIds().equals(Set.of(new DocumentId(101534)))));
+	}
+
+	@Test
+	void resolvesTheNewTypedFolderVocabularyWithoutStealingMoreSpecificFormFactors() throws IOException {
+		Files.createDirectories(archiveRoot.resolve(
+				"Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]"));
+		Files.createDirectories(archiveRoot.resolve("Hard drive [2,5″] [19″]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final MyGear floppy = gear(gear,
+				"Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
+		assertEquals(Set.of(FloppyDiskFormFactor.INCH_3_5), floppy.getFloppyDiskFormFactors());
+		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), DataCapacity.Unit.MB)),
+				floppy.getCapacity());
+		assertEquals(Set.of(Year.of(1989)), floppy.getYears());
+		assertEquals(Optional.of(new Version("v5.0")), floppy.getVersion());
+		assertEquals(Set.of(new SegaGameGearCartridgeCode("2449")),
+				floppy.getSegaGameGearCartridgeCodes());
+		assertEquals(Set.of(new DocumentId(101534)), floppy.getDocumentIds());
+
+		final MyGear hardDrive = gear(gear, "Hard drive [2,5″] [19″]");
+		assertEquals(Set.of(HardDiskDriveFormFactor.INCH_2_5), hardDrive.getHardDiskDriveFormFactors());
+		assertEquals(Set.of(new ScreenSize(BigDecimal.valueOf(19))), hardDrive.getScreenSizes());
 	}
 
 	@Test

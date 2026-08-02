@@ -13,6 +13,15 @@ import de.creativecouple.validation.isbn.ISBN;
 class IdentifierParsersTest {
 
 	@Test
+	void parsesSegaGameGearCartridgeCatalogueNumbers() {
+		final SegaGameGearCartridgeCodeParser parser = new SegaGameGearCartridgeCodeParser();
+
+		assertEquals(new SegaGameGearCartridgeCode("2449"), parser.parse("2449").getValue().orElseThrow());
+		assertEquals(new SegaGameGearCartridgeCode("2567"), parser.parse("GG-2567").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("GG 256").getConfidence());
+	}
+
+	@Test
 	void validatesAndNormalizesIsbn10AndIsbn13() {
 		final ISBNParser parser = new ISBNParser();
 		final ISBN isbn10 = (ISBN) parser.parse("0-306-40615-2").getValue().orElseThrow();

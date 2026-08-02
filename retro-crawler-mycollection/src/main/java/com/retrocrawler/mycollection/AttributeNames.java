@@ -10,6 +10,8 @@ public final class AttributeNames {
 
 	public static final String DESTINY = "dest";
 
+	public static final String DOCUMENT = "document";
+
 	public static final String FCC_ID = "fcc";
 
 	public static final String FLOPPY_IMAGE_ID = "floppyImageId";
@@ -17,6 +19,8 @@ public final class AttributeNames {
 	public static final String FLOPPY_IMAGES = "floppyImages";
 
 	public static final String FLOPPY_DISK_FORMAT = "floppyDiskFormat";
+
+	public static final String FLOPPY_DISK_FORM_FACTOR = "floppyDiskFormFactor";
 
 	public static final String IMAGE_ANGLED = "imageAngled";
 
@@ -37,6 +41,8 @@ public final class AttributeNames {
 	public static final String NINTENDO_GAME_BOY_CARTRIDGE_CODE = "nintendoGameBoyCartridgeCode";
 
 	public static final String HEALTH = "health";
+
+	public static final String HARD_DISK_DRIVE_FORM_FACTOR = "hardDiskDriveFormFactor";
 
 	public static final String MEMORY_ACCESS_TIME = "memoryAccessTime";
 
@@ -60,7 +66,9 @@ public final class AttributeNames {
 
 	public static final String REGION = "region";
 
-	public static final String SCAN_ID = "scanId";
+	public static final String SCREEN_SIZE = "screenSize";
+
+	public static final String SEGA_GAME_GEAR_CARTRIDGE_CODE = "gg";
 
 	public static final String SERIAL_NUMBER = "sn";
 
@@ -75,6 +83,10 @@ public final class AttributeNames {
 	public static final String TRACK_DENSITY = "trackDensity";
 
 	public static final String VIDEO_CONNECTOR = "videoConnector";
+
+	public static final String VERSION = "version";
+
+	public static final String YEAR = "year";
 
 	private AttributeNames() {
 		// Static vocabulary.
