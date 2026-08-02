@@ -8,14 +8,24 @@ import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
 
+import de.creativecouple.validation.isbn.ISBN;
+
 class IdentifierParsersTest {
 
 	@Test
 	void validatesAndNormalizesIsbn10AndIsbn13() {
 		final ISBNParser parser = new ISBNParser();
+		final ISBN isbn10 = (ISBN) parser.parse("0-306-40615-2").getValue().orElseThrow();
+		final ISBN isbn13 = (ISBN) parser.parse("978-0-306-40615-7").getValue().orElseThrow();
 
-		assertEquals(new ISBN("0306406152"), parser.parse("0-306-40615-2").getValue().orElseThrow());
-		assertEquals(new ISBN("9780306406157"), parser.parse("978-0-306-40615-7").getValue().orElseThrow());
+		assertEquals(isbn13, isbn10);
+		assertEquals("9780306406157", isbn13.toCompactString());
+		assertEquals("978-0-306-40615-7", isbn13.toString());
+		assertEquals("0", isbn13.getGroup());
+		assertEquals("English language", isbn13.getGroupName());
+		assertEquals("306", isbn13.getPublisher());
+		assertEquals("40615", isbn13.getTitle());
+		assertEquals(URI.create("urn:isbn:9780306406157"), isbn13.toURI());
 		assertEquals(Confidence.NONE, parser.parse("978-0-306-40615-8").getConfidence());
 		assertEquals(Confidence.NONE, parser.parse("not-an-isbn").getConfidence());
 	}

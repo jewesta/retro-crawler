@@ -36,6 +36,7 @@ class CollectionFileClueFindersTest {
 		final String markdown = """
 				---
 				price: 120 EUR
+				lot: 200001, 200002,200003
 				fcc: 123
 				health: defekt
 				tested: post
@@ -46,6 +47,7 @@ class CollectionFileClueFindersTest {
 		final Set<Clue> clues = finder.find(input(markdown));
 
 		assertEquals(Set.of("120 EUR"), clue(clues, AttributeNames.PRICE).getValue());
+		assertEquals(Set.of("200001", "200002,200003"), clue(clues, AttributeNames.LOT).getValue());
 		assertEquals(Set.of("123"), clue(clues, AttributeNames.FCC_ID).getValue());
 		assertEquals(Set.of("defekt"), clue(clues, AttributeNames.HEALTH).getValue());
 		assertEquals(Set.of("post"), clue(clues, AttributeNames.TESTED).getValue());

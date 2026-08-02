@@ -35,7 +35,7 @@ public class GearResolver {
 		this.clueClassifier = new ClueClassifier(factFinders.keySet());
 	}
 
-	private record BestAnonymousMatch(String key, Confidence confidence) {
+	private record BestAnonymousMatch(String key, Confidence confidence, boolean ambiguous) {
 	}
 
 	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue,
@@ -64,7 +64,7 @@ public class GearResolver {
 		String resolvedKey = null;
 		for (final String raw : raws) {
 			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext);
-			if (best == null || best.confidence() == Confidence.NONE) {
+			if (best == null || best.confidence() == Confidence.NONE || best.ambiguous()) {
 				putAnonymousClueIfUseful(resolved, clue);
 				return;
 			}
@@ -149,7 +149,7 @@ public class GearResolver {
 			return bestSoFar;
 		}
 
-		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.getKey(), confidence);
+		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.getKey(), confidence, false);
 
 		if (bestSoFar == null) {
 			return candidate;
@@ -160,8 +160,13 @@ public class GearResolver {
 		}
 
 		if (confidence == bestSoFar.confidence()) {
-			throw new IllegalArgumentException("Ambiguous anonymous clue '" + raw + "': multiple parsers returned "
-					+ confidence + " (keys '" + bestSoFar.key() + "' and '" + finder.getKey() + "').");
+			/*
+			 * Equal candidates mean that the model cannot identify what the anonymous
+			 * observation says. Keep that evidence as a clue instead of choosing by map
+			 * iteration order or failing resolution. An explicitly keyed clue remains
+			 * unambiguous and is handled by handleKnownKeyClue(...).
+			 */
+			return new BestAnonymousMatch(bestSoFar.key(), confidence, true);
 		}
 
 		return bestSoFar;

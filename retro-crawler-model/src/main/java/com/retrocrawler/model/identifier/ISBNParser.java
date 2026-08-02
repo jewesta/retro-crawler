@@ -3,14 +3,16 @@ package com.retrocrawler.model.identifier;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
+import de.creativecouple.validation.isbn.ISBN;
+
 public final class ISBNParser implements FactParser {
 
 	@Override
 	public RatedFact parse(final String rawValue) {
 		try {
-			return RatedFact.exact(new ISBN(rawValue));
-		} catch (final IllegalArgumentException | NullPointerException e) {
-			return RatedFact.none("Expected a valid ISBN-10 or ISBN-13.");
+			return RatedFact.exact(ISBN.valueOf(rawValue));
+		} catch (final NumberFormatException e) {
+			return RatedFact.none("Expected an ISBN number but got " + rawValue);
 		}
 	}
 }

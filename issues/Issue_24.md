@@ -1376,6 +1376,15 @@ representations but do not know collection clue keys or folder syntax. The
 demo and personal collection independently bind their own keys to these shared
 facts.
 
+The first extraction accidentally replaced the demo's deliberately selected
+`fast-isbn` dependency with a local checksum-only `ISBN` record. That duplicated
+standardized work and discarded the library's official range validation,
+canonical ISBN-10-to-ISBN-13 conversion and ISO hyphenation, as well as its
+registration-group, agency, publisher, publication, and URI views. The shared
+model now restores the original `ISBN.valueOf(...)` parser and exposes the
+library's small domain type directly. `fast-isbn` is an intentional lightweight
+dependency of `retro-crawler-model`, not collection-specific policy.
+
 The personal model no longer has a generic `.model` package:
 
 - `RetroId` and `FloppyImageId` live under
@@ -1945,6 +1954,436 @@ independent pass caught excess blank-line formatting in the eight newly wrapped
 front matters; those prefixes were normalized without changing their bodies,
 then the complete hash verification passed with zero mismatches.
 
+The corresponding acquisition-dossier names were normalized on 2026-08-01.
+A live census separated 880 genuine Kleinanzeigen source dossiers from 28
+incidental mentions in gear labels, outbound-sale folders, contact notes, and
+an extracted archive directory. The latter remained untouched. Of the source
+dossiers, 878 now use the exact directory name `kleinanzeigen.de`; one gear
+with two distinct acquisitions retains the necessary disambiguation as
+`kleinanzeigen.de #1` and `kleinanzeigen.de #2`. The twelve pre-existing naming
+variants covered eleven additional gear parents, for which the migration
+created minimal `retro.md` files declaring `source: kleinanzeigen.de`.
+
+The guarded migration rejected target collisions and nested rename candidates,
+verified directory identity across every move, and could roll back both renames
+and newly created metadata. An independent read-only pass found 878 exact
+canonical directories, two numbered canonical directories, 879 source-bearing
+parents, no remaining acquisition folders under a legacy name, and all 28
+deliberately excluded incidental mentions unchanged.
+
+Price mining then resumed as a read-only evidence pass. Excluding generated NAS
+thumbnails and AppleDouble files leaves 182 PayPal-document occurrences that
+reduce to 45 unique originals. Every original exposes a transaction amount;
+42 are outgoing payments and three record incoming money or refunds. The 164
+gear parents containing payment evidence share only 44 unique conversation PDFs
+(about 174 MB), rather than the 218 unique conversations (about 911 MB) across
+all source dossiers. All 44 relevant conversations were deduplicated before
+local extraction. Representative PayPal layouts were also rendered and checked
+visually: the `Summe` field is reliable, including the older `EUR` layout and
+the newer euro-sign layout.
+
+This established the explicit collection convention: `price` is the total
+amount actually paid for one acquisition, including postage and fees, while
+`lot-price` is the corresponding total for a complete lot. Price mining does
+not attempt an incomplete split between goods and postage. A gifted Tyan lot
+therefore legitimately has a 10 EUR lot price because that was its total
+postage-only acquisition cost. A separately gifted Terratec diskette likewise
+cost 3 EUR postage. It is preserved as floppy image FD207 inside the Terratec
+gear entry: floppies that belong to particular gear are normally merged into
+that gear rather than receiving their own Retro ID and folder. The final
+archive representation keeps the original transaction boundary as
+`lot-price: 100 EUR`, has no separate item-price fact, and records the later
+3 EUR FD207 postage only in a Markdown note. Another observed payment
+legitimately records 20 EUR even though an 18 EUR delivered total had been
+quoted. The one pre-existing live price follows the same convention: 186.66
+EUR comprises a 179.66 EUR item price plus 7 EUR delivery.
+
+The first guarded price tranche covered the fifteen outgoing PayPal documents
+that each occur in exactly one collection parent and have no competing payment
+or refund document there. It wrote ten prices in the IBM-compatible archive and
+five in the manufacturer-organized archive. Every payment PDF was re-matched by
+SHA-256 before writing; every target was still the minimal source-only
+`retro.md`; and no existing price was overwritten. One exact relative-path
+journal line was appended for every changed metadata file. An independent pass
+verified all fifteen values and journal entries, sixteen live `price` facts in
+total including the legacy entry, zero `lot-price` facts, and zero temporary
+files. Shared payment documents remain deferred for transaction-scope review;
+they are not promoted to lot prices merely because their source dossiers were
+copied.
+
+A subsequent copied-dossier audit corrected the transaction-scope assumption:
+the directory containing a payment document is not necessarily the complete
+acquisition boundary. Payment documents establish amounts; copied source
+dossiers establish candidate relationships; conversation and listing content
+decide which related gear actually belongs to one transaction. The audit
+hashed 144 non-noise files in the fifteen candidate dossiers and searched both
+configured roots for exact copies, excluding generated thumbnails, AppleDouble
+files, bookmarks, and seller-profile documents.
+
+The Tyan dossier occurs under the board, two Athlon MP processors, a RAM set,
+and two coolers. Transaction content and collector confirmation identify the
+gifted lot as the board, processors, and RAM only. The original board
+`price: 10 EUR` was therefore replaced with `lot-price: 10 EUR`, and that lot
+price was added to the other three known members. The coolers retain no price.
+
+The Terratec folder contains two separate source dossiers. Its first dossier is
+copied to the Matrox Millennium II folder, and the conversation proves a
+100 EUR delivered lot containing the two cards and two ten-packs of Philips
+96-TPI disks. The Matrox retains `lot-price: 100 EUR`; the Terratec initially
+received the same value. The two packs were
+subsequently found in the collector's separately organized floppy archive as
+Retro IDs 200455 and 200456. Their copied conversations have the same SHA-256
+hash as the card dossier, so both received `lot-price: 100 EUR`; their legacy
+`Kleinanzeigen` directories were normalized to `kleinanzeigen.de`, and their
+new `retro.md` files also record the canonical source. The second Terratec
+dossier records the later gifted diskette and its 3 EUR postage. After initially
+removing that amount from the card, the diskette was found as FD207 among the
+same gear entry's disk images. An intermediate representation restored a
+separate 3 EUR price alongside the 100 EUR lot price. The collector subsequently
+consolidated that briefly as `lot-price: 103 EUR`, but this incorrectly changed
+the transaction amount shared by the other lot members. The final metadata
+therefore restores `lot-price: 100 EUR`, omits a separate `price`, and retains a
+German Markdown note explaining that FD207 was gifted later for 3 EUR postage.
+
+One additional copied dossier links the priced sealed Siedler II folder to
+`Software/Spiele NIB/Die Siedler 2 Gold Edition`. Both conversations describe
+the same single purchase, not a lot. The price remains only on the former
+folder, while the duplicate archive representation is deliberately left for
+the collector to resolve. The other twelve initially priced parents have no
+exact non-noise dossier-content link to another gear folder in the two
+reachable roots. After the collector's final adjustment, those roots contain
+fourteen `price` facts including the pre-existing one and six `lot-price`
+facts. The separate
+floppy archive contributes the final two known members of the Matrox/Terratec
+lot, bringing the three-root total to eight `lot-price` facts. All correction
+writes have exact path-level entries in the applicable root's
+`codex-journal.md`.
+
+The explicit Kleinanzeigen migration was subsequently completed across the
+entire third mounted collection root rather than being scoped to the initial
+sealed-diskette crawl. A read-only census found that all 116 exact source
+dossiers in that root currently reside within the diskette subtree: 114 still
+used the legacy `Kleinanzeigen` name, while the two previously linked lot
+members already used `kleinanzeigen.de` and had canonical metadata. A guarded
+preflight found no target collisions, nested candidates, or existing
+`retro.md` files beside the remaining 114 legacy dossiers. The migration
+created 114 minimal front matters containing `source: kleinanzeigen.de`,
+renamed those 114 exact dossier directories, and appended an individual
+human-readable creation and rename entry for every parent to that archive's
+`codex-journal.md`. Incidental `[Kleinanzeigen]` text in sale and history
+folders was deliberately left unchanged.
+
+An independent three-root verification now finds 533 exact canonical dossiers
+plus two intentional numbered dossiers in the IBM-compatible root, 345 exact
+canonical dossiers in the manufacturer-organized root, and 116 exact canonical
+dossiers in the third root. All 996 dossiers have a sibling `retro.md` with the
+canonical source value, and no exact legacy `Kleinanzeigen` source directory
+remains. A full rebuild of the private diskette cache planned 225 crawl regions,
+stored 116 source clues, and resolved 270 `MysteryGear` artifacts, 216 with
+Retro IDs and 54 without; uniqueness validation passed. The source metadata
+causes two previously clue-less dossier parents to become fallback gear, the
+known and accepted consequence of treating explicit source metadata as a fact.
+Only aggregate results were recorded here; private roots, paths, IDs, and cache
+contents remain outside the repository.
+
+The initial diskette-only runtime root was then retired as the active boundary
+on 2026-08-01. It had served as a safe first probe, but excluding the other
+nine top-level areas of `Sammeln & Altes` would make those objects invisible to
+the cache and to archive-wide validation. A read-only census showed that the
+whole parent contains 1,650 directories and 16,371 files, only 116 directories
+more than the diskette subtree. There is consequently no practical performance
+reason to preserve the narrower boundary.
+
+A new private runtime scope named `sammeln-und-altes` now configures the whole
+parent as one archive root. Its jars, roots file, and JSON repository remain on
+the container's configuration volume, outside both the collection and this
+repository. The diskette-only configuration and cache were retained unchanged
+for comparison rather than overwritten or deleted. A fresh full-parent crawl
+planned 285 approximate regions and resolved 297 `MysteryGear` artifacts: 237
+with Retro IDs, 60 without, and 20 with conventional images. Compared with the
+diskette cache, the expanded root exposes 27 additional artifacts, comprising
+21 with Retro IDs and six without, plus five additional image-bearing
+artifacts. Duplicate-ID validation passed. Cache-only retrieval reproduced the
+same 297-artifact result without filesystem crawling. The transition wrote no
+collection content and therefore required no archive-journal entry.
+
+Kleinanzeigen price mining was subsequently completed for all transactions
+that the archived evidence supports without guesswork. The 116 source dossiers
+contain 368 PDFs representing 167 distinct documents by SHA-256 hash. Their
+exact copies group the dossiers into 53 acquisition components. Text extraction
+was available for every distinct PDF; visually checking the relevant
+conversation, listing, and payment layouts resolved cases where plain text
+alone did not distinguish an offer, an accepted payment, shipping, or buyer
+protection. Prices now mean the total amount actually paid, including shipping
+and buyer-protection fees when the evidence records them.
+
+Exact dossier-file hashes were also compared across the other two mounted
+roots. This confirmed two previously unmodelled four-object lots spanning
+archive roots, with transaction totals of 71.95 EUR and 85.50 EUR. Seller
+profiles and other generic repeated documents were excluded from transaction
+linking, and a shared file was never by itself treated as sufficient evidence
+for propagating a lot price.
+
+The guarded update wrote 108 metadata files: 104 in the third archive root and
+four cross-root lot members in the IBM-compatible archive. The additions
+comprise 17 `price` facts and 91 `lot-price` facts. Together with the two
+previously established 100 EUR lot members, the third root now has confident
+prices for 106 of its 116 Kleinanzeigen dossiers: 17 `price`, 89 `lot-price`,
+and none containing both. Ten dossiers remain deliberately unpriced. Six have
+a known initial payment but an unknown later re-shipping charge; two contain a
+one-euro contradiction between the seller's written arithmetic and its stated
+total; one has only an asking price; and one gives a per-pack price without a
+recoverable purchased quantity. Garbage-in/garbage-out therefore wins over
+inventing precision.
+
+Every changed metadata file has an individual plain-language entry in its
+archive's `codex-journal.md`. Private recovery copies and the detailed audit
+plan remain outside the repository. A fresh full rebuild of the third root
+again resolved 297 artifacts (237 with Retro IDs and 60 without), passed
+duplicate-ID validation, and stored exactly 17 `price` and 89 `lot-price`
+clues. An isolated full rebuild of the IBM-compatible root resolved 2,203
+artifacts (1,609 with Retro IDs and 594 without), passed duplicate-ID
+validation, and confirmed both newly linked four-object lots. Only these
+aggregate results are recorded here; document contents, paths, item names, IDs,
+and cache data remain private.
+
+A unified three-root acquisition sweep then replaced the earlier habit of
+analysing each archive branch in isolation. The scope contains 996 canonical
+source directories under 995 source-bearing parents: one parent deliberately
+retains two numbered dossiers. The evidence census covers 39,839 source-folder
+files. After generated thumbnails, AppleDouble records, bookmarks, and seller
+profiles are excluded, the relevant corpus contains 3,293 PDFs and 9,116
+images. Exact hashes reduce these to 619 distinct transaction/listing PDFs and
+1,901 distinct images. All relevant PDFs produced non-empty extracted text
+without an extraction error.
+
+The unified boundary immediately found sixteen Retro IDs that collide only
+when all three roots are considered together. Their 32 occurrences had passed
+the prior independent-root validations. The combined clue archive was still
+stored successfully before resolution stopped at uniqueness validation, so it
+remains usable for clue-level analysis, but these collisions must be corrected
+before one model can resolve the three roots as a single collection. They also
+make clear that a `lot` relation must never be written from an ID set whose
+members are not archive-wide unique.
+
+Acquisition evidence now uses three identity levels. Exact file hashes remain
+the strongest copy marker. Images are additionally decoded, EXIF-oriented, and
+pixel-hashed so metadata-only differences cannot hide a copied lot photograph;
+the current corpus contains no cross-dossier link missed by the exact image
+hashes. Conversation PDFs are additionally compared by normalized extracted
+text. That recovered one definite two-member lot whose PDFs differed as files
+but contained identical text. Similar-but-not-identical conversation text is
+retained only as seller-history evidence: evolving conversations frequently
+contain later acquisitions and must not merge transaction membership by
+similarity alone.
+
+The read-only dry run reconstructs 63 already recorded transactions from 30
+`price` facts and 99 recurring `lot-price` facts; the latter represent 33 lots.
+It proposes 134 further transactions covering 441 metadata targets: 59
+individual prices and 75 lots. Payment documents support 26 of those
+transactions, copied conversations support 50, and single-parent conversations
+support 58. No proposed target receives two competing price facts. Combining
+existing and proposed evidence would describe 197 transactions through 570
+price metadata occurrences.
+
+Sixty-seven existing or proposed lots currently have complete, archive-wide
+unambiguous Retro-ID sets and can therefore receive the planned symmetric
+`lot` relation. Other recurring lot prices remain valid even when a member has
+not yet received an ID; only the relationship list is deferred. One proposed
+transaction touches a currently duplicated ID, but its lot relationship is not
+otherwise complete and remains blocked.
+
+The review also disproved a naive platform-payment shortcut. A displayed
+"paid" total can later be refunded and replaced by a direct payment; an item
+can be added before dispatch; or a later purchase can continue in the same
+seller conversation. The transaction amount therefore remains the amount
+actually paid after refunds and additions, while platform state, receipts,
+conversation chronology, and membership evidence must corroborate it. Twelve
+shared-dossier candidates and eleven single-parent candidates retain clear or
+near-clear amounts but uncertain membership or target placement. Another 34
+candidates remain unresolved, three are outgoing sales rather than acquisition
+prices, one supplied only a scan after somebody else bought the item, and one
+is a donation/exchange without a purchase price. This is the cataloguing-audit
+output, not a reason to manufacture facts.
+
+This entire unified sweep remained read only. No `retro.md`, path, or archive
+journal was changed. Detailed evidence, item paths, identifier values,
+transaction text, and the dry-run decision manifest remain private and outside
+the repository. The consolidated 251-KiB decision record is stored as
+`kleinanzeigen-price-sweep.json` on the private RetroCrawler configuration
+volume.
+
+Subsequent collector-assisted review classified all 86 single-conversation
+candidates, leaving no case in the private human-review queue. The final case
+also confirmed that an exact copied dossier archive can be an explicit lot
+marker when its identity is corroborated by the conversation and payments. Its
+net acquisition total consists of two payments less a later refund. A guarded
+batch added canonical source and lot-price metadata to all 20 linked Gear
+folders, creating eleven `retro.md` files and extending nine existing ones; the
+refunded defective member also received a short explanatory note. Only 19 of
+the 20 members currently have Retro IDs, so the valid recurring lot price was
+recorded while the incomplete `lot` relation was deliberately withheld. Every
+write was verified and recorded individually in the archive journal. The
+updated private decision record is installed with private file permissions.
+
+The separately decided automatic tranche was then materialized in the archive.
+It comprises 89 transactions and 511 intended price occurrences. Thirty-six
+occurrences already matched their decision, so the guarded batch changed 475
+metadata files: one new `retro.md` and 474 extensions of existing files. It
+added 260 individually journalled entries in the IBM-compatible root and 215
+in the manufacturer root. A complete post-write comparison found all 511
+occurrences matching, both journal sections complete, and no staging or backup
+files left behind. The private manifest now marks these automatic decisions as
+applied.
+
+Application state remains deliberately separate from review state. A follow-up
+audit initially found that only three of the 67 collector-reviewed transactions
+had been materialized even though all were decided. The remaining 64 were then
+applied in one guarded batch, adding 97 price occurrences through 28 new
+`retro.md` files and 69 extensions. All 97 changes were individually recorded
+in the appropriate archive journal.
+
+The completed application audit covers 156 decided transactions: 61 individual
+prices and 95 lot prices, recurring across 630 Gear folders. All 630 folders now
+match the private manifest, comprising 355 occurrences in the IBM-compatible
+root and 275 in the manufacturer root. The two application batches made 572
+actual metadata changes; the other 58 occurrences already matched. No proposed
+decision or staging file remains, and the private manifest is marked `applied`.
+
+Fresh root-specific model crawls verified the result. The IBM-compatible crawl
+resolved 2,204 artifacts and passed Retro-ID uniqueness validation. The
+manufacturer crawl parsed and resolved all 1,133 artifacts, including the new
+money facts, before its final validation reported five pre-existing duplicate
+Retro IDs with ten occurrences. The price migration did not touch those path
+identifiers; they remain a separate archive-quality matter. The disposable
+verification caches and private duplicate report were removed afterward.
+
+Kleinanzeigen lot membership is now a separate collection-owned fact rather
+than being conflated with `lot-price`. `MyGear` exposes `lot` as a
+`Set<RetroId>`. In `retro.md`, a comma followed by whitespace separates values,
+mirroring the bracket-path grammar; a comma without following whitespace stays
+inside the same raw value. Each eligible member stores the complete sorted ID
+set for its lot, including its own ID, so the relationship is symmetric and
+self-contained on every member. The shared model remains independent of this
+personal cataloguing policy.
+
+The completed price evidence describes 128 lots. A live safety classification
+admitted 76 whose members all have present and archive-wide unique Retro IDs,
+covering 314 Gear folders: 128 in the IBM-compatible root, 125 in the
+manufacturer root, and 61 in the third root. All 314 received an identical
+full membership set for their respective lot and an individual journal entry.
+Forty-eight lots remain deliberately price-only because at least one member
+lacks a Retro ID; four more remain price-only because a member ID is currently
+duplicated. No speculative or partial relationship was written.
+
+The private manifest records an applied or blocked membership status on every
+lot plus an aggregate applied lot state. A byte-level post-write audit found
+all 314 eligible folders matching and no staging files. The lot-aware adapter
+passed the 152-test focused reactor build, and the complete eight-module
+155-test reactor also passed. Fresh crawls resolved exactly 128
+lot-linked Gear in the IBM-compatible root and 61 in the third root, both with
+clean identity validation. The manufacturer cache contained all expected 125
+lot clues and resolved all 1,133 artifacts before reaching its five known
+duplicate-ID failures. The verified adapter jar was installed in both existing
+confined crawl runtimes, and all disposable verification caches were removed.
+
+The equivalent eBay migration completed on 2026-08-02 across the same three
+archive roots. A unified census admitted 1,330 genuine source dossiers: 1,329
+German-service dossiers now use the canonical directory and source value
+`ebay.de`, while the one genuine UK-service dossier uses `ebay.co.uk`. Seven
+source-like naming outliers were admitted from their dossier structure and
+evidence. Contextual eBay references and one nested browser-resource folder
+were not reclassified as acquisition sources.
+
+The eBay dossiers contain 45,738 files. Of 5,110 files carrying a PDF suffix,
+969 are generated PNG resources below hidden folders. Every one of the 4,141
+genuine visible PDFs yielded text, representing 1,628 distinct documents by
+SHA-256 hash. Modern order summaries expose order number, item subtotal,
+shipping, paid total, and refunds directly. Exact document copies and shared
+order numbers establish lot components; generic seller material, listing
+recommendations, and similar-but-distinct pages do not. Sixteen combined
+acquisitions contain multiple distinct orders, but every order dossier is
+copied across the identical Gear member set, so their paid totals can be added
+without merging unrelated purchases. Refund layouts use paid amount less total
+refund, corroborated by visual inspection of the corresponding order summary.
+
+The evidence supports 483 priced acquisitions over 1,192 Gear folders. There
+are 319 individual `price` facts and 164 acquisition lots whose total recurs as
+873 `lot-price` facts. By root, the resulting eBay facts comprise 146
+individual prices, 535 lot prices, and 341 lot memberships in the
+IBM-compatible archive; 162, 243, and 57 respectively in the manufacturer
+archive; and 11, 95, and 90 in the third archive. Another 138 singleton
+dossiers deliberately remain without a price because the archived material
+does not establish a complete amount
+actually paid; listing or accepted-offer evidence without the final shipping
+or checkout total is not treated as sufficient.
+
+Of the 164 eBay lots, 105 have complete archive-wide unique Retro-ID sets.
+Their 488 Gear members received the same complete sorted `lot` relation on
+every member. The other 59 lots remain price-only because at least one of their
+385 represented Gear lacks an unambiguous Retro ID. None of the complete eBay
+lots intersects the known duplicate-ID set.
+
+The guarded application created 1,324 `retro.md` files and extended six,
+renamed all 1,330 admitted source dossiers, and recorded every operation in the
+appropriate archive journal. The first post-write audit caught one nested
+browser-resource directory that had initially matched the exact source name.
+Its original name was restored, the metadata created for it was removed, and
+the affected outer Gear was corrected from `lot-price` to `price`; all three
+corrections were appended to the journal rather than hiding the audit trail.
+A subsequent byte-level audit found zero stale source paths, missing canonical
+targets, metadata mismatches, or staging files. The applied private decision
+manifest remains outside the repository.
+
+The complete eight-module reactor passed all 160 tests after the migration.
+Fresh source crawls then resolved 2,273 Gear with 469 lot memberships in the
+IBM-compatible root, 1,202 Gear with 205 lot memberships in the manufacturer
+root, and 299 Gear with 153 lot memberships in the third root. All three passed
+Retro-ID uniqueness validation. The membership totals exactly reproduce the
+previously recorded Kleinanzeigen relations plus the new eBay relations.
+
+The direct-seller sweep for EMS completed on 2026-08-02 as a distinct
+acquisition source rather than as eBay material. The seller's eBay presence
+does not change the provenance of purchases made outside that marketplace.
+The canonical dossier and source value is therefore `ems-online-shop`. A live
+census admitted 169 genuine direct-acquisition dossiers: 167 in the
+IBM-compatible root and two in the manufacturer root. Of these, 166 already
+used the canonical spelling and three `ems-onlineshop` variants were renamed.
+One exact-name directory nested in an existing eBay dossier and one broader
+browser-resource name beside a canonical dossier were deliberately left
+unchanged.
+
+The admitted dossiers contain 866 visible evidence files. Their 230 PDF
+occurrences reduce to only six distinct invoices by SHA-256; 2,214 hidden
+browser-resource files were excluded from evidence signatures. Text extraction
+and cropped visual checks both confirmed the six explicit `Gesamt EUR` rows.
+Exact invoice occurrence sets establish five acquisition lots: a 91-member lot
+costing 1,000 EUR; a 53-member lot whose two identically propagated invoices
+sum to 756.98 EUR; an eleven-member lot costing 264.90 EUR; an eleven-member lot
+whose two identically propagated invoices sum to 705 EUR; and a three-member
+unpriced lot whose copied dossier contains no payment evidence.
+
+None of the 169 represented Gear currently exposes a Retro ID. The sweep
+therefore records the five discovered lot boundaries privately but writes no
+partial or invented `lot` relation. It created 169 minimal `retro.md` files:
+166 contain `source: ems-online-shop` and the appropriate `lot-price`, while
+three contain only the source. No individual `price` was inferred. The guarded
+application re-hashed every visible evidence tree before writing, normalized
+the three compact folder names, and appended 172 exact operation entries to
+the applicable archive journals. A frozen private application manifest stayed
+outside the repository.
+
+An independent post-write audit matched all 169 metadata files byte for byte,
+reproduced every evidence-tree hash, found all 169 creation and three rename
+journal entries, and confirmed that both excluded browser-resource directories
+were unchanged. No staging files remained in the archives. The complete
+eight-module reactor passed all 171 tests. Fresh disposable crawls then resolved
+2,275 Gear with 469 lot memberships in the IBM-compatible root, 1,204 Gear with
+205 lot memberships in the manufacturer root, and 299 Gear with 153 lot
+memberships in the third root. All three passed Retro-ID uniqueness validation;
+the unchanged membership totals confirm that the EMS lots remain intentionally
+blocked pending IDs.
+
 Archive file clues are now portable across deployment-specific mount points.
 `FileNameClueFinder` receives paths relative to the configured archive root and
 provides stable slash-separated serialization for caches. File-content finders
@@ -2204,6 +2643,282 @@ Partial archive re-indexing was verified on 2026-07-29:
 - a private live subtree rebuild crawled 71 approximate regions, stowed the
   merged archive, resolved all 2,193 artifacts, and reproduced the unchanged
   duplicate-ID validation result.
+
+## First Sealed-Diskette Collection Crawl
+
+The collection distinguishes two superficially similar kinds of floppy media:
+
+- The dedicated diskette collection contains collectible blank-media products,
+  principally sealed packs. A pack is independent physical `Gear` and normally
+  receives its own 2-series Retro ID. Two identical packs remain two Gear
+  objects.
+- An `FD` identifier belongs to commercially written media associated with
+  some other Gear, such as a boxed game or hardware driver disk. It does not
+  establish an independent Gear boundary and is not an alternative Retro ID.
+
+This distinction is a model invariant: an identifier pattern alone must never
+cause a folder or artifact to become Gear.
+
+The first live crawl of the sealed-diskette root ran on 2026-08-01 through the
+confined, non-root NAS container. The parent share was available to the
+container, but the runtime root selected only the diskette subtree. A portable
+Alpine-compatible Java 21 runtime, the current RetroCrawler jars, root
+configuration, and private JSON repository live on the container's persistent
+configuration volume, outside both the collection and this repository. The
+source archive was read only and no collection journal entry was required.
+
+Direct NAS-local traversal made the complete run very fast. Planning produced
+225 approximate regions; extraction visited 1,534 directory nodes, stowed a
+version-2 clue archive, and resolved all 268 artifacts in a few seconds. The
+same private archive was then retrieved and resolved cache-only, reproducing
+the result without another filesystem crawl. The current model reported:
+
+- 268 `MysteryGear` objects and no specialized diskette type yet;
+- 216 Gear with Retro IDs and 52 discovered artifacts without one;
+- 216 distinct Retro IDs, no duplicates, and no artifact with multiple ID
+  candidates;
+- 15 artifacts with a conventional front image, three with a conventional
+  back image, no descriptions, and no floppy-image files;
+- 24 probable metadata artifacts admitted by bracketed names below acquisition
+  or disposition folders. They comprise seven person/reference folders,
+  fifteen tagged folders below marketplace folders, and two sale-detail
+  folders. This is the already accepted fallback-gear fallout, not evidence
+  that hierarchy should become a gear matcher.
+
+After excluding those 24 probable metadata artifacts, 28 discovered folders
+remain without a Retro ID. They include grouping/container folders, numbered
+members of larger boxes, disposition records, two strongly gear-like entries,
+and a few collection-edge objects. Their status cannot be inferred safely from
+the cache and remains a collector review task rather than an automatic repair.
+
+The raw clue vocabulary strongly supports a future portable disk-media model:
+
+- 48 and 96 tracks-per-inch observations dominate the archive;
+- single/double-sided and single/double/high/quad-density terminology occurs
+  in many compact and manufacturer-specific spellings;
+- pack quantity, packaging state, formatting state, color, rotational speed,
+  transfer frequency, sector count, bytes per sector, and nominal capacity all
+  occur as possible facts;
+- medium size is mostly organizational context and therefore must not be
+  inferred from parent folders under the collection's established rules. Only
+  explicit tags or other source evidence may produce a size fact.
+
+The crawl also exposed two adapter/model problems which must be discussed
+before adding diskette fact parsers:
+
+1. The bracket grammar treats the first token of every whitespace-containing
+   group as an explicit key. Floppy notation frequently places two values in
+   one group, so syntactically valid density/side codes and even numbers become
+   accidental keys. Person-name metadata groups exhibit the same ambiguity.
+   Core cannot repair this by consulting model-known keys without violating the
+   clue/fact boundary; either the archive syntax or the collection adapter must
+   provide an unambiguous convention.
+2. The collection key `set` currently means a RAM set. In this archive it means
+   pack quantity. Count-only values remain unresolved, while a count plus
+   capacity can accidentally satisfy `RamSetParser` even though the artifact is
+   disk media. This demonstrates that `set` is context-dependent and is too
+   broadly interpreted on `MyGear`; no diskette matcher should build on that
+   accidental fact.
+
+The first concrete grammar inconsistency was corrected on 2026-08-01. Eight
+side/density tags containing a space were normalized to the already established
+hyphenated spelling and recorded individually in the archive journal. A partial
+re-index of their stable parent planned 166 approximate regions, retained all
+268 artifacts and 216 unique Retro IDs, and completed without validation
+errors. The refreshed cache contains no accidental `2s` key and now contains
+twelve occurrences of the unambiguous standalone side/density value. Other
+grammar ambiguities, including a numeric first token and person-name metadata,
+remain deliberately unresolved.
+
+### First diskette model slice
+
+A fresh version-2 cache spanning all three configured roots was mined read-only
+on 2026-08-02. It contains 3,634 artifacts overall and 270 below the diskette
+subtree. The model investigation did not crawl or change an archive.
+
+Track density is objective measurement vocabulary, so `TrackDensity` and its
+conservative `TPI` parser live in `retro-crawler-model`. The conventional
+floppy-disk SS/DS side and SD/DD/QD/HD/ED density vocabulary is likewise
+portable. `FloppyDiskFormat` preserves a stated side count, density class, or
+both, allowing separate tags and combined spellings such as `DS-DD`, `1S-2D`,
+and `2S-HD` to retain exactly the information their source supplied.
+
+The concrete `Diskette` gear and its matching policy remain in
+`retro-crawler-mycollection`. A diskette requires both a track-density fact and
+at least one side/density-format fact from the artifact itself. Track density
+alone is deliberately insufficient because drives and other magnetic-media
+equipment can also be described in TPI. Pack quantity, packaging state,
+formatting state, color, and archive hierarchy are not used as shortcuts.
+
+The fresh cache contains 226 artifacts with a TPI clue: 211 in the diskette
+subtree and 15 elsewhere. Fifty-three artifacts have both model facts; all 53
+are in the diskette subtree. Cache-only resolution therefore produced 53
+`Diskette` objects, retained the other TPI-bearing artifacts conservatively,
+resolved all 3,634 artifacts without anonymous-parser ambiguity, and completed
+without duplicate-ID failure.
+
+Focused shared-model and collection tests cover the neutral value invariants,
+canonical and compact parser spellings, separate side/density observations,
+combined observations, positive diskette recognition, and the TPI-only
+negative case. The complete `mvn test` reactor and clean packaged reactor via
+`mvn clean install` also completed successfully.
+
+### Language and release-region ambiguity
+
+The same fresh cache contains a compact but semantically overloaded locale
+vocabulary. Anonymous observations include 239 `DE`, 26 `US`, 20 `JP`, 18
+`EN`, ten `EU`, two `ES`, and one each of `FR`, `German`, and `IT`. No explicit
+`language` or `region` key is currently present in the cache.
+
+Language and release region are separate facts. Moreover, the abbreviated
+values cannot always identify which fact was meant. `DE`, `ES`, `FR`, and `IT`
+are both ISO 639-1 language codes and ISO 3166-1 territory codes. Choosing one
+meaning from an anonymous observation would therefore invent evidence.
+
+The collection's `EU` spelling is different. It is a historical shorthand for
+Nintendo's `EUR` European release region, not the European Union code and not
+the ISO 639-1 Basque language code. Nintendo's own product material distinguishes
+[`JP`, `EUR`, and `USA` versions](https://www.nintendo.com/en-gb/Games/Nintendo-Switch-download-software/SUPER-BOMBERMAN-COLLECTION-3016670.html)
+and describes `EUR` as the European version. The collection owner confirms that
+`EU` never means a language anywhere in this archive. The personal adapter
+therefore canonicalizes `EU` to `EUR` as a region and refuses it as language
+evidence even under an explicit `language` key. The portable language parser
+continues to implement ISO 639-1 independently for consumers outside this
+collection convention.
+
+Core now retains an anonymous clue when multiple fact parsers return the same
+best confidence. It no longer fails resolution or selects a meaning by map
+iteration order. Explicitly keyed clues remain unambiguous and continue through
+their named parser normally. This is a general clue/fact rule rather than
+locale-specific behavior.
+
+Portable `LanguageCode` and `RegionCode` values and their canonical parsers
+live in `retro-crawler-model`. `RegionCode` covers ISO country codes and the
+stable `EUR` industry release-market code; it does not reinterpret `EU`. The
+personal model binds the portable types through parsers restricted to locale
+markers actually established in this collection and owns the `EU` to `EUR`
+alias. That restriction matters: treating every ISO country code as an
+anonymous release region would reinterpret technical tags such as the `AT`
+computer form factor. New collection spellings must be admitted deliberately
+as evidence appears.
+
+Cache-only resolution gives 18 gear a language fact and 56 gear a region fact,
+including all ten historical `EU` observations canonicalized as `EUR`. The
+genuinely overlapping anonymous codes remain raw clues, while synthetic tests
+prove that explicit `language: DE` and `region: DE` evidence can resolve both
+facts. All previous gear-type counts remain unchanged, all 3,634 artifacts
+resolve, and no duplicate-ID failure occurs.
+
+Focused ambiguity, canonical-parser, and collection-binding tests pass. The
+complete `mvn test` reactor and clean packaged reactor via `mvn clean install`
+also complete successfully.
+
+No private root, folder name, identifier value, or clue-cache content was
+added to the repository while recording these aggregate findings.
+
+### Nintendo Game Boy cartridge and PSP disc identifiers
+
+Nintendo Game Boy-family cartridge label codes and physical PlayStation
+Portable disc IDs are stable vendor identifiers rather than personal catalogue
+syntax, so their value types and canonical parsers belong in
+`retro-crawler-model`. The personal model only binds those neutral parsers to
+facts discovered in this collection.
+
+The community research distinguishes several Nintendo identifiers that look
+similar. The [Game Boy hardware database](https://gbhwdb.gekkio.fi/cartridges/gb.html)
+records a ROM ID separately from one or more printed release codes; its Game Boy
+Color and [Game Boy Advance](https://gbhwdb.gekkio.fi/cartridges/gba.html)
+catalogues continue the same distinction. Its downloadable data is especially
+valuable here because every release code comes from an observed physical
+cartridge, often with label, board, and ROM evidence, and the data is explicitly
+licensed under CC BY-SA 4.0.
+
+The supplied workbook was inspected as a possible seed. It contains one
+structured table with 1,049 classic Game Boy title rows, developer and publisher
+columns, three broad-market release columns, and two personal collection
+columns. It contains no cartridge label code, ROM ID, or formula. It therefore
+remains a useful title/release checklist but was not converted into code mappings
+by guessing.
+
+The Game Boy hardware database export retrieved on 2026-08-02 contains 792
+physical observations. Deduplicating identical code/ROM/title associations
+produces 626 associations for 611 printed label codes and 537 ROM IDs. The label
+codes include 390 ordinary `DMG`, 88 `CGB`, and 129 `AGB` prefixes. They also
+prove that a simple grammar is not sufficient:
+
+- 47 early Game Boy labels use a legacy three-character form without a separate
+  distribution segment;
+- genuine photographed labels include two distributor-prefixed `DIS-CGB` codes,
+  the platform-prefix misprints `AGP` and `DNG`, and one unseparated
+  `DMG-401CHN` form;
+- 52 observed label codes include a revision suffix; and
+- 12 label codes map to more than one ROM ID/title association, because a
+  printed label did not always change with the ROM revision.
+
+`NintendoGameBoyCartridgeCode` therefore preserves the normalized printed value
+as its identity and exposes platform, game, distribution, and revision only as
+best-effort views. `NintendoGameBoyRomId` models the related mask-ROM identifier
+separately. Some legacy label codes are structurally indistinguishable from ROM
+IDs, so the clue's context remains part of the evidence rather than being
+invented by the value type.
+
+`NintendoGameBoyCartridgeCatalog` loads a tab-separated classpath resource and
+supports lookup by printed code, ROM ID, exact case-insensitive title, release
+region, or explicitly stated game language. A lookup returns a list because the
+observed mapping is genuinely one-to-many. The catalogue entries retain the
+source title and additionally model its No-Intro metadata as neutral shared
+types: a set of `RegionCode` release markets and a list of `LanguageCode` sets.
+The outer language list is significant because No-Intro uses `+` to separate
+the language sets of individual games on a compilation cartridge.
+
+All 626 associations have a release-region flag. `Europe` becomes the shared
+unambiguous industry market code `EUR`, while `World` is expanded
+to the three major release markets `JP`, `US`, and `EUR`. Of the 626
+associations, 117 explicitly state languages and three have separate language
+sets for multiple games. An absent language flag remains unstated rather than
+being guessed: under the No-Intro naming convention, monolingual games commonly
+omit the filename language flag. Region therefore must not be used to infer game
+language.
+
+The bundled resource records its retrieval date, source digest,
+transformations, attribution, and CC BY-SA licensing separately from the MIT
+Java source. It is a dated open catalogue, not a closed enum. Plausible codes
+missing from it remain typed facts with strong confidence; listed observations
+receive exact confidence. External catalogues can be loaded in the same format
+and unioned with the bundled snapshot.
+
+The [Game Boy Database](https://game-boy-database.com/) is a useful independent
+manual cross-check and currently describes thousands of regional versions, but
+no clear bulk-data reuse licence was found. Its records were therefore not
+copied. No-Intro is authoritative for ROM-set naming but does not establish the
+physical label code by itself.
+
+For physical PSP software, community research documents a finite ten-prefix
+matrix: `UCJS`/`ULJS`, `UCUS`/`ULUS`, `UCES`/`ULES`, `UCKS`/`ULKS`, and
+`UCAS`/`ULAS`. The `C`/`L` position distinguishes Sony Computer Entertainment
+and licensed publishing classes, while the following position identifies the
+Japanese, American, European, Korean, or Asian market. This mapping is recorded
+by the [community prefix table](https://consolemods.org/wiki/AV%3ASony_model_prefixes#PlayStation_Portable)
+and corroborated by the physical-disc records in
+[Redump](https://redump.org/discs/system/psp/). `PlayStationPortableDiscId`
+combines that typed prefix with the five-digit disc number, accepts compact,
+hyphenated, or space-separated observations, and emits a canonical hyphenated
+form. Digital `NP...` identifiers and non-PSP-specific PlayStation serials are
+outside this type.
+
+Cache-only resolution now gives 311 gear a Nintendo cartridge label code and 61
+gear a physical PSP disc ID. The broader unknown-code rule formalizes one more
+plausible observation; five incomplete or non-code `DMG`-prefixed observations
+remain clues. Other PlayStation serial families remain untouched; their text
+alone does not prove that the artifact is PSP software. All 3,634 artifacts
+still resolve after the catalogue metadata enrichment, existing gear-type counts
+are unchanged, and no duplicate-ID failure occurs. This check reused the fresh
+private clue cache and did not crawl or modify the source archive.
+
+Focused catalogue-resource, one-to-many lookup, structured release-region,
+multi-game language-set, shared-value, parser, prefix-matrix, and
+collection-resolution tests pass. The complete `mvn test` reactor and clean
+packaged reactor via `mvn clean install` also complete successfully.
 
 ## Out of Scope for the Initial Slice
 

@@ -18,6 +18,7 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.FixedStepProgressMonitor;
 import com.retrocrawler.core.progress.ProgressSnapshot;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.MyGear;
 
 /**
@@ -84,11 +85,22 @@ public final class MyCollectionSmokeCrawl {
 		final long withDescription = gear.stream().filter(value -> value.getDescription().isPresent()).count();
 		final long withImages = gear.stream().filter(MyCollectionSmokeCrawl::hasImage).count();
 		final long withFloppyImages = gear.stream().filter(value -> !value.getFloppyImages().isEmpty()).count();
+		final long withLanguages = gear.stream().filter(value -> !value.getLanguages().isEmpty()).count();
+		final long withLotMembership = gear.stream().filter(value -> !value.getLot().isEmpty()).count();
+		final long withNintendoGameBoyCartridgeCodes = gear.stream()
+				.filter(value -> !value.getNintendoGameBoyCartridgeCodes().isEmpty()).count();
+		final long withPlayStationPortableDiscIds = gear.stream()
+				.filter(value -> !value.getPlayStationPortableDiscIds().isEmpty()).count();
+		final long withRegions = gear.stream().filter(value -> !value.getRegions().isEmpty()).count();
 		final long onlyImages = gear.stream().filter(MyCollectionSmokeCrawl::hasOnlyImages).count();
 
 		System.out.println("RC_RESULT\tgear=" + gear.size() + "\ttypes=" + types + "\tretroIds=" + withRetroId
 				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
-				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\timagesOnly=" + onlyImages);
+				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages
+				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
+				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
+				+ "\tpspDiscIds=" + withPlayStationPortableDiscIds
+				+ "\tlotMemberships=" + withLotMembership + "\timagesOnly=" + onlyImages);
 	}
 
 	private static Path writeDuplicateReport(final Path cacheDirectory, final DuplicateRetroIdException failure)
@@ -128,11 +140,16 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
-		return gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty() && gear.getTitle().isEmpty()
+		return hasNoDisketteFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
+				&& gear.getTitle().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
+				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty()
 				&& gear.getDestiny().isEmpty() && gear.getFccId().isEmpty() && gear.getHealth().isEmpty()
 				&& gear.getMacAddress().isEmpty() && gear.getSerialNumber().isEmpty()
-				&& gear.getPrice().isEmpty() && gear.getLotPrice().isEmpty() && gear.getSource().isEmpty()
+				&& gear.getNintendoGameBoyCartridgeCodes().isEmpty()
+				&& gear.getPlayStationPortableDiscIds().isEmpty()
+				&& gear.getPrice().isEmpty() && gear.getLot().isEmpty() && gear.getLotPrice().isEmpty()
+				&& gear.getSource().isEmpty()
 				&& gear.getTested().isEmpty()
 				&& gear.getFloppyImages().isEmpty() && gear.getFloppyImageIds().isEmpty()
 				&& gear.getMemoryAccessTimes().isEmpty()
@@ -141,6 +158,11 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getScanIds().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
+	}
+
+	private static boolean hasNoDisketteFacts(final MyGear gear) {
+		return !(gear instanceof final Diskette diskette) || diskette.getTrackDensities().isEmpty()
+				&& diskette.getFloppyDiskFormats().isEmpty();
 	}
 
 	private static final class CompactProgressPrinter extends FixedStepProgressMonitor {

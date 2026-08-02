@@ -12,6 +12,8 @@ import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
+import com.retrocrawler.model.locale.LanguageCode;
+import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.mycollection.catalog.Destiny;
@@ -92,5 +94,24 @@ class CollectionFactParsersTest {
 				parser.parse("20 usd").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("20 EURO").getConfidence());
 		assertEquals(Confidence.NONE, parser.parse("-20 EUR").getConfidence());
+	}
+
+	@Test
+	void limitsAnonymousLocaleParsingToEstablishedCollectionMarkers() {
+		final CollectionLanguageCodeParser language = new CollectionLanguageCodeParser();
+		final CollectionRegionCodeParser region = new CollectionRegionCodeParser();
+
+		assertEquals(new LanguageCode("en"), language.parse("EN").getValue().orElseThrow());
+		assertEquals(new RegionCode("US"), region.parse("US").getValue().orElseThrow());
+		assertEquals(new RegionCode("EUR"), region.parse("EU").getValue().orElseThrow());
+		assertEquals(new RegionCode("EUR"), region.parse("EUR").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, language.parse("SD").getConfidence());
+		assertEquals(Confidence.NONE, language.parse("EU").getConfidence());
+		assertEquals(Confidence.NONE, region.parse("AT").getConfidence());
+
+		for (final String code : new String[] { "DE", "ES", "FR", "IT" }) {
+			assertEquals(Confidence.EXACT, language.parse(code).getConfidence());
+			assertEquals(Confidence.EXACT, region.parse(code).getConfidence());
+		}
 	}
 }

@@ -37,18 +37,28 @@ import com.retrocrawler.model.hardware.MemoryFeature;
 import com.retrocrawler.model.hardware.MemoryFormFactor;
 import com.retrocrawler.model.hardware.MemoryStandard;
 import com.retrocrawler.model.hardware.VideoConnector;
-import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.MacAddress;
+import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
+import com.retrocrawler.model.identifier.NintendoGameBoyPlatform;
+import com.retrocrawler.model.identifier.PlayStationPortableDiscId;
+import com.retrocrawler.model.identifier.PlayStationPortableDiscPrefix;
 import com.retrocrawler.model.identifier.TheRetroWebCategory;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
+import com.retrocrawler.model.locale.LanguageCode;
+import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Power;
+import com.retrocrawler.model.measurement.TrackDensity;
+import com.retrocrawler.model.storage.FloppyDiskFormat;
+import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
+import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
@@ -57,6 +67,8 @@ import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.gear.PowerSupply;
 import com.retrocrawler.mycollection.memory.RamSet;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
+
+import de.creativecouple.validation.isbn.ISBN;
 
 class MyCollectionModelTest {
 
@@ -158,6 +170,30 @@ class MyCollectionModelTest {
 	}
 
 	@Test
+	void recognizesDiskettesOnlyFromCombinedLocalTechnicalEvidence() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("First disk [48TPI] [DS] [HD] [200024]"));
+		Files.createDirectories(archiveRoot.resolve("Second disk [96TPI] [2S-HD] [200025]"));
+		Files.createDirectories(archiveRoot.resolve("Drive with track density only [96TPI] [200026]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final Diskette first = assertInstanceOf(Diskette.class,
+				gear(gear, "First disk [48TPI] [DS] [HD] [200024]"));
+		assertEquals(Set.of(new TrackDensity(48)), first.getTrackDensities());
+		assertEquals(Set.of(FloppyDiskFormat.sides(Sides.DOUBLE), FloppyDiskFormat.density(Density.HIGH)),
+				first.getFloppyDiskFormats());
+
+		final Diskette second = assertInstanceOf(Diskette.class,
+				gear(gear, "Second disk [96TPI] [2S-HD] [200025]"));
+		assertEquals(Set.of(new TrackDensity(96)), second.getTrackDensities());
+		assertEquals(Set.of(FloppyDiskFormat.of(Sides.DOUBLE, Density.HIGH)),
+				second.getFloppyDiskFormats());
+
+		assertInstanceOf(MysteryGear.class,
+				gear(gear, "Drive with track density only [96TPI] [200026]"));
+	}
+
+	@Test
 	void treatsScanIdsAsReusableReferencesRatherThanGearIdentity() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("First scanned manual [101534] [200030]"));
 		Files.createDirectories(archiveRoot.resolve("Second scanned manual [101534] [200031]"));
@@ -189,7 +225,59 @@ class MyCollectionModelTest {
 				"Network manual [MAC 00-00-C0-0D-66-AB] [ISBN 978-0-306-40615-7]");
 
 		assertEquals(Optional.of(new MacAddress("00:00:C0:0D:66:AB")), gear.getMacAddress());
-		assertEquals(Optional.of(new ISBN("9780306406157")), gear.getIsbn());
+		assertEquals(Optional.of(ISBN.valueOf("978-0-306-40615-7")), gear.getIsbn());
+	}
+
+	@Test
+	void resolvesGameBoyCartridgeCodesAndPspDiscIdsFromAnonymousClues() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Game Boy release [DMG-A1-EUR] [200037]"));
+		Files.createDirectories(archiveRoot.resolve("PSP release [ULES-01234] [200038]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final MyGear gameBoy = gear(gear, "Game Boy release [DMG-A1-EUR] [200037]");
+		assertEquals(Set.of(new NintendoGameBoyCartridgeCode(
+				NintendoGameBoyPlatform.GAME_BOY, "A1", "EUR")),
+				gameBoy.getNintendoGameBoyCartridgeCodes());
+
+		final MyGear psp = gear(gear, "PSP release [ULES-01234] [200038]");
+		assertEquals(Set.of(new PlayStationPortableDiscId(
+				PlayStationPortableDiscPrefix.ULES, "01234")), psp.getPlayStationPortableDiscIds());
+	}
+
+	@Test
+	void resolvesUnambiguousLocaleCodesAndPreservesAmbiguousAnonymousCodes() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Unambiguous locale [EN] [US] [200032]"));
+		Files.createDirectories(archiveRoot.resolve("European release [EU] [200035]"));
+		Files.createDirectories(archiveRoot.resolve("Rejected language alias [language EU] [200036]"));
+		Files.createDirectories(archiveRoot.resolve("Ambiguous locale [DE] [200033]"));
+		Files.createDirectories(
+				archiveRoot.resolve("Explicit locale [language DE] [region DE] [200034]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final MyGear unambiguous = gear(gear, "Unambiguous locale [EN] [US] [200032]");
+		assertEquals(Set.of(new LanguageCode("en")), unambiguous.getLanguages());
+		assertEquals(Set.of(new RegionCode("US")), unambiguous.getRegions());
+
+		final MyGear european = gear(gear, "European release [EU] [200035]");
+		assertTrue(european.getLanguages().isEmpty());
+		assertEquals(Set.of(new RegionCode("EUR")), european.getRegions());
+
+		final MyGear rejectedLanguage = gear(gear, "Rejected language alias [language EU] [200036]");
+		assertTrue(rejectedLanguage.getLanguages().isEmpty());
+		assertTrue(rejectedLanguage.getAttributes().get(AttributeNames.LANGUAGE) instanceof Clue);
+
+		final MyGear ambiguous = gear(gear, "Ambiguous locale [DE] [200033]");
+		assertTrue(ambiguous.getLanguages().isEmpty());
+		assertTrue(ambiguous.getRegions().isEmpty());
+		assertTrue(ambiguous.getAttributes().values().stream()
+				.filter(Clue.class::isInstance).map(Clue.class::cast)
+				.anyMatch(clue -> clue.isAnonymous() && clue.getValue().equals(Set.of("DE"))));
+
+		final MyGear explicit = gear(gear, "Explicit locale [language DE] [region DE] [200034]");
+		assertEquals(Set.of(new LanguageCode("de")), explicit.getLanguages());
+		assertEquals(Set.of(new RegionCode("DE")), explicit.getRegions());
 	}
 
 	@Test
@@ -269,11 +357,12 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void resolvesAnOpenSourceAndLotPriceWithoutPretendingItIsAnItemPrice() throws IOException {
+	void resolvesAnOpenSourceLotMembershipAndLotPriceWithoutPretendingItIsAnItemPrice() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Lot member [200009]"));
 		Files.writeString(folder.resolve("retro.md"), """
 				---
 				source: future-market.example
+				lot: 200009, 200010
 				lot-price: 100
 				---
 				""");
@@ -284,6 +373,7 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of("future-market.example"), gear.getSource());
 		assertEquals(Optional.of(new Money(new BigDecimal("100"), Currency.getInstance("EUR"))),
 				gear.getLotPrice());
+		assertEquals(Set.of(new RetroId(200009), new RetroId(200010)), gear.getLot());
 		assertEquals(Optional.empty(), gear.getPrice());
 	}
 

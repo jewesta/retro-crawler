@@ -26,12 +26,17 @@ import com.retrocrawler.model.hardware.MemoryStandard;
 import com.retrocrawler.model.hardware.MemoryStandardParser;
 import com.retrocrawler.model.hardware.VideoConnector;
 import com.retrocrawler.model.hardware.VideoConnectorParser;
-import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.ISBNParser;
 import com.retrocrawler.model.identifier.MacAddress;
 import com.retrocrawler.model.identifier.MacAddressParser;
+import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
+import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCodeParser;
+import com.retrocrawler.model.identifier.PlayStationPortableDiscId;
+import com.retrocrawler.model.identifier.PlayStationPortableDiscIdParser;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
+import com.retrocrawler.model.locale.LanguageCode;
+import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Power;
@@ -42,6 +47,8 @@ import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.ScanId;
 import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
+import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
 import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
@@ -50,6 +57,8 @@ import com.retrocrawler.mycollection.facts.RetroIdParser;
 import com.retrocrawler.mycollection.facts.ScanIdParser;
 import com.retrocrawler.mycollection.facts.TestedParser;
 import com.retrocrawler.mycollection.memory.RamSet;
+
+import de.creativecouple.validation.isbn.ISBN;
 
 public abstract class MyGear {
 
@@ -106,6 +115,9 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.PRICE, parser = MoneyParser.class, optional = true)
 	private Money price;
 
+	@RetroFact(key = AttributeNames.LOT, parser = RetroIdParser.class, optional = true)
+	private Set<RetroId> lot = Set.of();
+
 	@RetroFact(key = AttributeNames.LOT_PRICE, parser = MoneyParser.class, optional = true)
 	private Money lotPrice;
 
@@ -127,8 +139,24 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.ISBN, parser = ISBNParser.class, optional = true)
 	private ISBN isbn;
 
+	@RetroFact(key = AttributeNames.LANGUAGE, parser = CollectionLanguageCodeParser.class, strict = false,
+			optional = true)
+	private Set<LanguageCode> languages = Set.of();
+
+	@RetroFact(key = AttributeNames.REGION, parser = CollectionRegionCodeParser.class, strict = false,
+			optional = true)
+	private Set<RegionCode> regions = Set.of();
+
 	@RetroFact(key = AttributeNames.MAC_ADDRESS, parser = MacAddressParser.class, optional = true)
 	private MacAddress macAddress;
+
+	@RetroFact(key = AttributeNames.NINTENDO_GAME_BOY_CARTRIDGE_CODE,
+			parser = NintendoGameBoyCartridgeCodeParser.class, strict = false, optional = true)
+	private Set<NintendoGameBoyCartridgeCode> nintendoGameBoyCartridgeCodes = Set.of();
+
+	@RetroFact(key = AttributeNames.PSP_DISC_ID, parser = PlayStationPortableDiscIdParser.class,
+			strict = false, optional = true)
+	private Set<PlayStationPortableDiscId> playStationPortableDiscIds = Set.of();
 
 	@RetroFact(key = AttributeNames.SERIAL_NUMBER, parser = StringParser.class, optional = true)
 	private String serialNumber;
@@ -219,6 +247,10 @@ public abstract class MyGear {
 		return Optional.ofNullable(price);
 	}
 
+	public Set<RetroId> getLot() {
+		return Set.copyOf(lot);
+	}
+
 	public Optional<Money> getLotPrice() {
 		return Optional.ofNullable(lotPrice);
 	}
@@ -247,8 +279,24 @@ public abstract class MyGear {
 		return Optional.ofNullable(isbn);
 	}
 
+	public Set<LanguageCode> getLanguages() {
+		return Set.copyOf(languages);
+	}
+
+	public Set<RegionCode> getRegions() {
+		return Set.copyOf(regions);
+	}
+
 	public Optional<MacAddress> getMacAddress() {
 		return Optional.ofNullable(macAddress);
+	}
+
+	public Set<NintendoGameBoyCartridgeCode> getNintendoGameBoyCartridgeCodes() {
+		return Set.copyOf(nintendoGameBoyCartridgeCodes);
+	}
+
+	public Set<PlayStationPortableDiscId> getPlayStationPortableDiscIds() {
+		return Set.copyOf(playStationPortableDiscIds);
 	}
 
 	public Optional<String> getSerialNumber() {

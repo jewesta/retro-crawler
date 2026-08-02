@@ -16,6 +16,8 @@ public final class AttributeNames {
 
 	public static final String FLOPPY_IMAGES = "floppyImages";
 
+	public static final String FLOPPY_DISK_FORMAT = "floppyDiskFormat";
+
 	public static final String IMAGE_ANGLED = "imageAngled";
 
 	public static final String IMAGE_BACK = "imageBack";
@@ -24,9 +26,15 @@ public final class AttributeNames {
 
 	public static final String ISBN = "isbn";
 
+	public static final String LANGUAGE = "language";
+
+	public static final String LOT = "lot";
+
 	public static final String LOT_PRICE = "lot-price";
 
 	public static final String MAC_ADDRESS = "mac";
+
+	public static final String NINTENDO_GAME_BOY_CARTRIDGE_CODE = "nintendoGameBoyCartridgeCode";
 
 	public static final String HEALTH = "health";
 
@@ -42,11 +50,15 @@ public final class AttributeNames {
 
 	public static final String POWER = "power";
 
+	public static final String PSP_DISC_ID = "pspDiscId";
+
 	public static final String PRICE = "price";
 
 	public static final String RAM_SET = "set";
 
 	public static final String RETRO_ID = "id";
+
+	public static final String REGION = "region";
 
 	public static final String SCAN_ID = "scanId";
 
@@ -59,6 +71,8 @@ public final class AttributeNames {
 	public static final String TESTED = "tested";
 
 	public static final String TITLE = "title";
+
+	public static final String TRACK_DENSITY = "trackDensity";
 
 	public static final String VIDEO_CONNECTOR = "videoConnector";
 

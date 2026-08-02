@@ -73,7 +73,12 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		}
 
 		final String value = line.substring(colon + 1).trim();
-		valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(value);
+		final Set<String> values = valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>());
+		if (AttributeNames.LOT.equalsIgnoreCase(key)) {
+			java.util.Arrays.stream(value.split(",\\s+", -1)).map(String::trim).forEach(values::add);
+		} else {
+			values.add(value);
+		}
 	}
 
 	private static Set<Clue> clues(final Map<String, Set<String>> valuesByKey, final String rawBody) {

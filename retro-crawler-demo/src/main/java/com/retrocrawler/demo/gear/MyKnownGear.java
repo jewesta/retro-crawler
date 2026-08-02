@@ -12,7 +12,6 @@ import com.retrocrawler.demo.catalog.DemoId;
 import com.retrocrawler.demo.facts.DemoIdParser;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.hardware.ExpansionBusParser;
-import com.retrocrawler.model.identifier.ISBN;
 import com.retrocrawler.model.identifier.ISBNParser;
 import com.retrocrawler.model.identifier.MacAddress;
 import com.retrocrawler.model.identifier.MacAddressParser;
@@ -20,6 +19,8 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
+
+import de.creativecouple.validation.isbn.ISBN;
 
 @RetroGear(MyKnownGearMatcher.class)
 public class MyKnownGear extends MyRetroGear {
