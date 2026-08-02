@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
@@ -123,5 +125,18 @@ class CollectionFactParsersTest {
 		assertEquals(new ScreenSize(BigDecimal.valueOf(19)), parser.parse("19″").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("1,8″").getConfidence());
 		assertEquals(Confidence.NONE, parser.parse("24″").getConfidence());
+	}
+
+	@Test
+	void adaptsCollectionColorLanguageWithoutTreatingTransparencyAsAColor() {
+		final CollectionColorParser parser = new CollectionColorParser();
+
+		assertEquals(Color.BLACK, parser.parse("schwarz").getValue().orElseThrow());
+		assertEquals(Color.GREEN, parser.parse("grün").getValue().orElseThrow());
+		assertEquals(Color.PURPLE, parser.parse("lila").getValue().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß-pink").getValue().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß/pink").getValue().orElseThrow());
+		assertEquals(Color.WHITE, parser.parse("white").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("transparent").getConfidence());
 	}
 }

@@ -2975,6 +2975,35 @@ Focused shared-model and collection-resolution tests cover the new invariants,
 canonical spellings, confidence ordering, current-year boundary, document
 namespace, and interaction between the competing inch-based parsers.
 
+### Named colors
+
+Physical color is portable collection vocabulary, so `Color` and its canonical
+English `ColorParser` live in `retro-crawler-model`; no RGB value is invented
+for a named observation. The personal adapter maps the established German
+spellings to that vocabulary. Slash- and hyphen-separated combinations such as
+`weiß/pink` and `weiß-pink` produce the constituent `WHITE` and `PINK` values;
+the generic `MULTICOLORED` remains for observations such as `mehrfarbig` which
+do not state their components. Color is a set on `MyGear`, allowing independently
+observed colors to coexist while the raw source clue preserves its wording.
+Core fact resolution supports this generically by flattening a parser's
+collection result into collection-valued fact fields; the same result remains
+invalid for scalar fields.
+
+Each individually renderable color exposes an optional, stable CSS-compatible
+sRGB hexadecimal code. `MULTICOLORED` has no single code, and the shared model
+does not depend on AWT, JavaFX, or another UI toolkit.
+
+Transparency deliberately remains outside this type because it is an optical
+property rather than a color. Unknown color names likewise remain clues under
+the existing non-strict binding and can extend the vocabulary later without a
+recrawl.
+
+Cache-only resolution of the fresh 3,634-artifact archive recognizes color on
+71 gear, covering all 71 current observations and normalizing the 16 raw
+spellings to 13 named values. It introduces no anonymous-parser ambiguity and
+does not change any gear-type count. The earlier figure of 59 was therefore an
+older or narrower mining count, not the coverage of the fresh cache.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.

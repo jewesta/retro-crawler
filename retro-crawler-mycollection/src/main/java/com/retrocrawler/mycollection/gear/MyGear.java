@@ -12,6 +12,7 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
+import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ComputerFormFactorParser;
@@ -57,6 +58,7 @@ import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.facts.CollectionColorParser;
 import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
 import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
 import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
@@ -86,6 +88,9 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
 	private DataCapacity capacity;
+
+	@RetroFact(key = AttributeNames.COLOR, parser = CollectionColorParser.class, strict = false, optional = true)
+	private Set<Color> colors = Set.of();
 
 	@RetroFact(key = AttributeNames.FLOPPY_DISK_FORM_FACTOR, parser = FloppyDiskFormFactorParser.class,
 			strict = false, optional = true)
@@ -231,6 +236,10 @@ public abstract class MyGear {
 
 	public Optional<DataCapacity> getCapacity() {
 		return Optional.ofNullable(capacity);
+	}
+
+	public Set<Color> getColors() {
+		return Set.copyOf(colors);
 	}
 
 	public Set<FloppyDiskFormFactor> getFloppyDiskFormFactors() {

@@ -2,6 +2,7 @@ package com.retrocrawler.core.gear;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -73,15 +74,26 @@ public class FactFinder {
 					.orElseThrow(() -> new IllegalStateException("Parser " + parser.getClass().getSimpleName()
 							+ " returned confidence " + rated.getConfidence() + " but no value."));
 
-			final Class<?> parsedType = parsed.getClass();
-			if (commonType == null) {
-				commonType = parsedType;
-			} else if (parsedType != commonType) {
-				// Mixed runtime types are not allowed in a single Fact value set.
+			final Collection<?> parsedValues = parsed instanceof final Collection<?> collection
+					? collection
+					: List.of(parsed);
+			if (parsedValues.isEmpty() || parsedValues.size() > 1 && !acceptsMultipleValues()) {
 				return Optional.empty();
 			}
 
-			values.add(parsed);
+			for (final Object parsedValue : parsedValues) {
+				if (parsedValue == null) {
+					return Optional.empty();
+				}
+				final Class<?> parsedType = parsedValue.getClass();
+				if (commonType == null) {
+					commonType = parsedType;
+				} else if (parsedType != commonType) {
+					// Mixed runtime types are not allowed in a single Fact value set.
+					return Optional.empty();
+				}
+				values.add(parsedValue);
+			}
 
 			// Aggregate confidence: keep the weakest (worst) one.
 			if (rated.getConfidence().compareTo(overall) > 0) {

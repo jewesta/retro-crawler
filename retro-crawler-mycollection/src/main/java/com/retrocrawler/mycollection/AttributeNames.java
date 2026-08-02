@@ -6,6 +6,8 @@ public final class AttributeNames {
 
 	public static final String CAPACITY = "capacity";
 
+	public static final String COLOR = "color";
+
 	public static final String DESC = "desc";
 
 	public static final String DESTINY = "dest";

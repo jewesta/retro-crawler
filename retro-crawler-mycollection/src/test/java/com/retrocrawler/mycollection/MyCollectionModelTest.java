@@ -30,6 +30,7 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
@@ -215,6 +216,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve(
 				"Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]"));
 		Files.createDirectories(archiveRoot.resolve("Hard drive [2,5″] [19″]"));
+		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß-pink]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 		final MyGear floppy = gear(gear,
@@ -231,6 +233,9 @@ class MyCollectionModelTest {
 		final MyGear hardDrive = gear(gear, "Hard drive [2,5″] [19″]");
 		assertEquals(Set.of(HardDiskDriveFormFactor.INCH_2_5), hardDrive.getHardDiskDriveFormFactors());
 		assertEquals(Set.of(new ScreenSize(BigDecimal.valueOf(19))), hardDrive.getScreenSizes());
+
+		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß-pink]");
+		assertEquals(Set.of(Color.BLACK, Color.WHITE, Color.PINK), colored.getColors());
 	}
 
 	@Test
