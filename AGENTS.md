@@ -75,7 +75,8 @@ These instructions apply to the entire repository.
 - `retro-crawler-demo`: sample archive types, clue finders, and demo data.
 - `retro-crawler-app`: Vaadin demonstration application.
 - `retro-crawler-cli`: command-line demonstration application.
-- `retro-crawler-doc`: documentation support and examples.
+- `retro-crawler-tools`: project-specific documentation and build plumbing.
+- `retro-crawler-tools/documentation`: documentation support and examples.
 
 The application and CLI are examples rather than stable public APIs. The Vaadin
 application remains a valuable visual browser, demonstration, and integration
@@ -94,11 +95,14 @@ adapters should likewise remain outside `retro-crawler-core`.
 ## Build and Verification
 
 - The project targets Java 21 and is built as a Maven multi-module reactor.
-- `tools/prettify-java/formatting-rules.xml` is the canonical Java formatting
-  profile and can also be imported into Eclipse or STS.
-- Use `run/prettify-java.sh --apply <java-file>...` (or the matching `.bat`
-  launcher) to clean up and format concrete Java files. Use `--assert` for a
-  check-only run; omitting file paths selects all tracked Java sources.
+- The canonical formatter is `prettify` from the separately checked-out
+  `jewesta/devtools` repository. Its `prettify/formatting-rules.xml` profile can
+  also be imported into Eclipse or STS.
+- Use `run/prettify.sh --apply <java-file>...` (or the matching `.bat` launcher)
+  to clean up and format concrete Java files. Use `--assert` for a check-only
+  run; omitting file paths selects all tracked Java sources. The launcher finds
+  devtools through `WESTARPS_DEVTOOLS_HOME`, local Git configuration
+  `westarps.devtools.path`, or the conventional sibling `../devtools` checkout.
 - Run `mvn test` from the repository root for the normal test suite.
 - Run `mvn clean install` when changes must be verified across packaged module
   boundaries.

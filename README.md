@@ -1,4 +1,4 @@
-## ![RetroCrawler AI Slop Logo](retro-crawler-doc/src/main/resources/images/retro_crawler_ai_slop_logo.png)
+## ![RetroCrawler AI Slop Logo](retro-crawler-tools/documentation/src/main/resources/images/retro_crawler_ai_slop_logo.png)
 
 **RetroCrawler** is a Java framework for *structurally crawling* directory-based archives and turning them into typed domain objects so you can manage your stash of retro gear.
 
@@ -236,25 +236,34 @@ nested equal or weighted windows with `splitIntoEqualParts(...)` and
 
 ## Java cleanup and formatting
 
-RetroCrawler has a headless Java prettifier under `tools/prettify-java`. It
-first applies a conservative OpenRewrite cleanup, including import sorting and
+RetroCrawler uses the headless Java formatter from the separate
+[Westarps devtools](https://github.com/jewesta/devtools) repository. It first
+applies a conservative OpenRewrite cleanup, including import sorting and
 unused-import removal, and then formats the result with Eclipse JDT. The
-canonical `tools/prettify-java/formatting-rules.xml` profile can also be
+canonical `prettify/formatting-rules.xml` profile in devtools can also be
 imported directly into Eclipse or STS.
+
+By default, the launcher expects `devtools` beside `retro-crawler`. Override
+the location with `WESTARPS_DEVTOOLS_HOME` or with repository-local Git
+configuration:
+
+```sh
+git config --local westarps.devtools.path /path/to/devtools
+```
 
 Check all tracked Java sources without writing changes:
 
 ```sh
-run/prettify-java.sh --assert
+run/prettify.sh --assert
 ```
 
 Clean up and format particular files:
 
 ```sh
-run/prettify-java.sh --apply path/to/First.java path/to/Second.java
+run/prettify.sh --apply path/to/First.java path/to/Second.java
 ```
 
-The matching `run/prettify-java.bat` launcher provides the same interface on
+The matching `run/prettify.bat` launcher provides the same interface on
 Windows. Maven preparation is enabled by default so OpenRewrite can resolve
 types correctly; `--no-prepare` skips that build when the reactor outputs are
 already current.
@@ -264,7 +273,7 @@ already current.
 ## Demo App
 
 Since RetroCrawler is a library, we provide a demo app based on the Vaadin UI framework so you can see how all comes together. You can use this as a starting point for building your own gui. But please note that compared to `retro-crawler-core` keeping `retro-crawler-app` stable is not a priority. Anything might change any time.
-![RetroCrawler Demo App](retro-crawler-doc/src/main/resources/images/retro_crawler_demo_app.png)
+![RetroCrawler Demo App](retro-crawler-tools/documentation/src/main/resources/images/retro_crawler_demo_app.png)
 You can run the demo app via a provided shell script (macOS) or batch file (Windows). CD into `/run` located in the root of the repository. Then run the script. This should build and install RetroCrawler and launch the Vaadin app. Once it runs you can access it via `localhost:8080`. The demo scenario is called "Retro PC" and the archive (data folder) it is based on is located at `/retro-crawler-app/archives/retro_pc`. RetroCrawler will create a folder `retro-crawler-app/cache` where the JSON cache file is located. This folder is on the Git ignore list.
 
 #### macOS

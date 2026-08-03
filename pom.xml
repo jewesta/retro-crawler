@@ -13,12 +13,11 @@
 	<modules>
 		<module>retro-crawler-core</module>
 		<module>retro-crawler-model</module>
-		<module>retro-crawler-doc</module>
+		<module>retro-crawler-tools</module>
 		<module>retro-crawler-demo</module>
 		<module>retro-crawler-mycollection</module>
 		<module>retro-crawler-app</module>
 		<module>retro-crawler-cli</module>
-		<module>tools/prettify-java</module>
 	</modules>
 
 	<properties>
@@ -27,9 +26,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<classgraph.version>4.8.184</classgraph.version>
-		<eclipse.jdt.core.version>3.45.0</eclipse.jdt.core.version>
-		<rewrite.version>8.85.0</rewrite.version>
-		<rewrite-static-analysis.version>2.37.0</rewrite-static-analysis.version>
 		<slf4j.version>2.0.13</slf4j.version>
 	</properties>
 
