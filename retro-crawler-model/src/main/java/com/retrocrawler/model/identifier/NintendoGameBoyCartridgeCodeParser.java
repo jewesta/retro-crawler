@@ -1,22 +1,31 @@
 package com.retrocrawler.model.identifier;
 
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
+import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
 
-public final class NintendoGameBoyCartridgeCodeParser implements FactParser {
+public final class NintendoGameBoyCartridgeCodeParser
+		extends AbstractCatalogFactParser<NintendoGameBoyCartridgeCatalogKey> {
 
-	private final NintendoGameBoyCartridgeCatalog catalog;
+	private final NintendoGameBoyCartridgeCatalog cartridgeCatalog;
 
 	public NintendoGameBoyCartridgeCodeParser() {
 		this(NintendoGameBoyCartridgeCatalog.bundled());
 	}
 
+	public NintendoGameBoyCartridgeCodeParser(final CatalogLoader catalogs) {
+		super(catalogs, NintendoGameBoyCartridgeCatalogKey.class,
+				NintendoGameBoyCartridgeCatalog.DEFAULT_CATALOG_FILE);
+		cartridgeCatalog = NintendoGameBoyCartridgeCatalog.from(catalog());
+	}
+
 	public NintendoGameBoyCartridgeCodeParser(final NintendoGameBoyCartridgeCatalog catalog) {
-		this.catalog = Objects.requireNonNull(catalog, "catalog");
+		super(Objects.requireNonNull(catalog, "catalog").catalog());
+		cartridgeCatalog = catalog;
 	}
 
 	@Override
@@ -31,7 +40,7 @@ public final class NintendoGameBoyCartridgeCodeParser implements FactParser {
 			if (!hasPlausiblePlatformMarker(code.segments())) {
 				return noMatch();
 			}
-			return catalog.contains(code) ? RatedFact.exact(code) : RatedFact.strong(code);
+			return cartridgeCatalog.contains(code) ? RatedFact.exact(code) : RatedFact.strong(code);
 		} catch (final IllegalArgumentException e) {
 			return noMatch();
 		}

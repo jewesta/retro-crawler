@@ -11,7 +11,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.ArchivePath;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -61,9 +61,9 @@ class ArchivePathClueFinderTest {
 	}
 
 	@Test
-	void createsTreeOnlyConfigurationFromArchiveAnnotation() {
-		final RetroArchive.LookAt lookAt = TreeConfiguredArchive.class.getAnnotation(RetroArchive.class).findClues();
-		final ArchivePathClueFinder finder = ArchivePathClueFinder.of(lookAt);
+	void createsTreeOnlyConfigurationFromClueAnnotation() {
+		final RetroClues configuration = TreeConfiguredArchive.class.getAnnotation(RetroClues.class);
+		final ArchivePathClueFinder finder = ArchivePathClueFinder.of(configuration);
 		final ArchiveFolderView view = new ArchiveFolderView() {
 
 			@Override
@@ -149,8 +149,7 @@ class ArchivePathClueFinderTest {
 		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
 	}
 
-	@RetroArchive(id = "tree_configured", locations = "/not/read",
-			findClues = @RetroArchive.LookAt(trees = ConfiguredTreeClueFinder.class))
+	@RetroClues(fromFolderTrees = ConfiguredTreeClueFinder.class)
 	private static final class TreeConfiguredArchive {
 	}
 

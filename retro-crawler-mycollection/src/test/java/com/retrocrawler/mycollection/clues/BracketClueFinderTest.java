@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.mycollection.AttributeNames;
 
-class BracketPathClueFinderTest {
+class BracketClueFinderTest {
 
-	private final BracketPathClueFinder finder = new BracketPathClueFinder();
+	private final BracketClueFinder finder = new BracketClueFinder();
 
 	@Test
-	void ignoresPathsWithoutBracketTags() {
+	void ignoresFolderNamesWithoutBracketTags() {
 		assertTrue(finder.find("Grouping folder").isEmpty());
 	}
 

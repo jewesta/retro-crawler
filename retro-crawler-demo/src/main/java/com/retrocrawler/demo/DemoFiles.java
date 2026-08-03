@@ -34,7 +34,7 @@ public final class DemoFiles {
 	 * Demo contract:
 	 * <ul>
 	 * <li>{@code annotatedLocation} is the location configured in
-	 * {@code @RetroArchive}, e.g. {@code Path.of("archives/retro_pc")}</li>
+	 * {@code @RetroCollection}, e.g. {@code Path.of("archives/retro_pc")}</li>
 	 * <li>If the folder exists locally: do nothing</li>
 	 * <li>Otherwise: attempt to copy it from classpath at
 	 * {@code "/" + annotatedLocation}</li>

@@ -634,7 +634,7 @@ The reconnaissance supports several existing design choices:
 
 ### 1. Runtime Archive Locations
 
-`@RetroArchive.locations` currently embeds source paths in annotation metadata
+`@RetroCollection.locations` currently embeds source paths in annotation metadata
 and requires at least one location during model construction.
 
 Personal archive paths are deployment configuration, not model vocabulary. The
@@ -851,7 +851,7 @@ The four agreed steps were implemented on 2026-07-26.
 
 ### Runtime Archive Locations
 
-`@RetroArchive.locations` now defaults to an empty array. Existing
+`@RetroCollection.locations` now defaults to an empty array. Existing
 `Model.from(...)` calls still use and require annotation locations. New
 overloads accept an `ArchiveRoots` interface for package discovery, explicit
 model types, or a `TypeSource`; those runtime roots override annotation
@@ -871,7 +871,7 @@ supplied by custom implementations.
 The descriptor makes an immutable defensive copy and does not require the
 paths to exist during model construction.
 
-`MyCollectionArchive` consequently contains archive identity and clue-finder
+`MyCollection` consequently contains collection identity and clue-finder
 configuration but no private filesystem paths.
 
 This milestone implements the framework API, not a persistent local
@@ -902,7 +902,7 @@ The initial model contains:
   `MysteryGear`.
 - Shared `ExpansionBus` vocabulary with AGP, EISA, ISA, PCI, and VLB.
 - A value-equal 2-series `RetroId` and exact parser.
-- `BracketPathClueFinder`, which ignores paths without an opening bracket,
+- `BracketClueFinder`, which ignores folder names without an opening bracket,
   retains title text before, between, and after groups, parses named and
   anonymous groups, ignores syntactically empty groups, and preserves unknown,
   reserved-key, and unmatched groups as clues rather than silently discarding
@@ -1618,7 +1618,7 @@ letting metadata folders remain inspectable to arbitrary depth.
 
 The new views are crawl-time objects and do not alter the repository JSON
 format, `Artifact`, resolution, or facts. Tree finders are configured through
-`@RetroArchive.LookAt(trees = ...)`; a tree finder alone may establish an
+`@RetroClues(fromFolderTrees = ...)`; a tree finder alone may establish an
 artifact. Existing finders remain valid without modification.
 
 Direct entries are classified once into an internal `FolderListing` containing
@@ -2427,7 +2427,7 @@ Focused missing-value clue verification completed on 2026-07-29:
 - `JsonFileRepositoryTest` proves that a missing-value clue is stored using the
   established empty-array representation in an archive marked as version 1 and
   survives a JSON repository round trip.
-- `BracketPathClueFinderTest` proves that `[]` contributes neither a clue nor a
+- `BracketClueFinderTest` proves that `[]` contributes neither a clue nor a
   derived title while malformed nonempty syntax remains traceable.
 - `MyCollectionModelTest` proves that `[SN]` establishes titled `MysteryGear`
   with no serial-number fact and a retained missing-value clue, while an
@@ -2436,7 +2436,7 @@ Focused missing-value clue verification completed on 2026-07-29:
 The focused reactor command completed successfully:
 
 `mvn -pl retro-crawler-mycollection -am
--Dtest=CacheModelEvolutionTest,ClueClassifierTest,FactFinderTest,JsonFileRepositoryTest,BracketPathClueFinderTest,MyCollectionModelTest
+-Dtest=CacheModelEvolutionTest,ClueClassifierTest,FactFinderTest,JsonFileRepositoryTest,BracketClueFinderTest,MyCollectionModelTest
 -Dsurefire.failIfNoSpecifiedTests=false test`
 
 The full reactor `mvn test` and clean packaged reactor `mvn clean install` also
@@ -2484,7 +2484,7 @@ Completed on 2026-07-26:
   -Dtest=ArchiveRootsTest,ModelTest,RetroIdValidationTest test`
 - Focused collection-model tests through the reactor:
   `mvn -pl retro-crawler-mycollection -am
-  -Dtest=MyCollectionModelTest,BracketPathClueFinderTest
+  -Dtest=MyCollectionModelTest,BracketClueFinderTest
   -Dsurefire.failIfNoSpecifiedTests=false test`
 - Full reactor: `mvn test`
 - Clean packaged reactor and module boundaries: `mvn clean install`
@@ -2575,7 +2575,7 @@ values and 18 occurrences. The full reactor `mvn test` and
 `mvn clean install` completed successfully after updating stale-report cleanup.
 
 The first fact-mining slice was verified on 2026-07-27 with 19 focused
-`BracketPathClueFinderTest`, `CollectionFactParsersTest`, and
+`BracketClueFinderTest`, `CollectionFactParsersTest`, and
 `MyCollectionModelTest` tests. They cover decimal commas, whitespace-delimited
 lists, uniform key normalization, exact typed parsing, derived RAM-set totals,
 end-to-end fact injection, and legitimate reuse of a The Retro Web reference

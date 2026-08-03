@@ -9,20 +9,20 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
 /**
  * Reads the collection's bracket language while retaining unknown or malformed
  * groups as anonymous clues.
  */
-public final class BracketPathClueFinder implements PathNameClueFinder {
+public final class BracketClueFinder implements FolderNameClueFinder {
 
 	@Override
-	public Set<Clue> find(final String pathName) {
-		Objects.requireNonNull(pathName, "pathName");
+	public Set<Clue> find(final String folderName) {
+		Objects.requireNonNull(folderName, "folderName");
 
-		final int firstOpeningBracket = pathName.indexOf('[');
+		final int firstOpeningBracket = folderName.indexOf('[');
 		if (firstOpeningBracket < 0) {
 			return Set.of();
 		}
@@ -31,23 +31,23 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 		final List<String> titleParts = new java.util.ArrayList<>();
 		int cursor = 0;
 
-		while (cursor < pathName.length()) {
-			final int openingBracket = pathName.indexOf('[', cursor);
+		while (cursor < folderName.length()) {
+			final int openingBracket = folderName.indexOf('[', cursor);
 			if (openingBracket < 0) {
-				addTitlePart(titleParts, pathName.substring(cursor));
+				addTitlePart(titleParts, folderName.substring(cursor));
 				break;
 			}
 
-			addTitlePart(titleParts, pathName.substring(cursor, openingBracket));
+			addTitlePart(titleParts, folderName.substring(cursor, openingBracket));
 
-			final int closingBracket = pathName.indexOf(']', openingBracket + 1);
+			final int closingBracket = folderName.indexOf(']', openingBracket + 1);
 			if (closingBracket < 0) {
-				clues.add(Clue.of(pathName.substring(openingBracket).trim()));
-				cursor = pathName.length();
+				clues.add(Clue.of(folderName.substring(openingBracket).trim()));
+				cursor = folderName.length();
 				break;
 			}
 
-			final String group = pathName.substring(openingBracket + 1, closingBracket);
+			final String group = folderName.substring(openingBracket + 1, closingBracket);
 			parseGroup(group).ifPresent(clues::add);
 			cursor = closingBracket + 1;
 		}
@@ -108,5 +108,4 @@ public final class BracketPathClueFinder implements PathNameClueFinder {
 		return Arrays.stream(rawValues.split(",\\s+", -1)).map(String::trim)
 				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 	}
-
 }

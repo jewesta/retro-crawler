@@ -7,10 +7,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.demo.AttributeNames;
 
-public class SquareBracketsClueFinder implements PathNameClueFinder {
+public class SquareBracketsClueFinder implements FolderNameClueFinder {
 
 	public static final String OPENING_BRACKETS = "[";
 

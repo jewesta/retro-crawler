@@ -3,9 +3,9 @@ package com.retrocrawler.demo;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 
-public class SquareBracketsClueFinderThrows implements PathNameClueFinder {
+public class SquareBracketsClueFinderThrows implements FolderNameClueFinder {
 
 	public static final String OPENING_BRACKETS = "[";
 

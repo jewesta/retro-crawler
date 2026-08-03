@@ -19,7 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
@@ -29,7 +30,7 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -77,8 +78,8 @@ class CacheModelEvolutionTest {
 		assertTrue(artifact.getClues().stream().noneMatch(clue -> "sn".equals(clue.getKey())));
 	}
 
-	@RetroArchive(id = "cache_model_evolution",
-			findClues = @RetroArchive.LookAt(pathName = TestClueFinder.class))
+	@RetroCollection(id = "cache_model_evolution")
+	@RetroClues(fromFolderName = TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
@@ -108,11 +109,11 @@ class CacheModelEvolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements PathNameClueFinder {
+	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
-			return "serial-pending".equals(pathName) ? Set.of(Clue.of("SN")) : Set.of();
+		public Set<Clue> find(final String folderName) {
+			return "serial-pending".equals(folderName) ? Set.of(Clue.of("SN")) : Set.of();
 		}
 	}
 

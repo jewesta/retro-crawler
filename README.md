@@ -4,7 +4,7 @@
 
 If you are like us then you have your collection organized as files and folders. This is simple, pragmatic and backup-friendly. Because of this, RetroCrawler is designed specifically for collections that were **not originally structured as databases** — such as retro computer hardware documentation (pictures, manuals, drivers), software archives, ROM libraries or document repositories.
 
-RetroCrawler does not require specific schemas, metadata files, or folder layouts.  
+RetroCrawler does not require specific schemas, metadata files, or folder layouts.
 Instead, you can use your own personal already existing folder structure, provide context via `ClueFinder`s, `FactParser`s and `GearMatcher`s and ReroCrawler **infers structure from context** using a two-phase pipeline.
 
 ---
@@ -65,18 +65,27 @@ Unknown or unparseable clues are preserved and may be accessed explicitly.
 
 ## Configuration via Annotations
 
-RetroCrawler's archive and gear model can be configured via annotations:
+RetroCrawler's collection and gear model can be configured via annotations:
 
-- `@RetroArchive`  
-  Declares archive locations and clue-finder configuration.
+- `@RetroCollection`
+  Declares the collection identity, source locations, and optional working
+  directory. Exactly one collection is present in a model.
 
-- `@RetroGear`  
+- `@RetroClues`
+  Declares which folder names, file names, file contents, and folder trees
+  produce crawl-time clues.
+
+- `@RetroGear`
   Declares a gear type and its matcher.
 
-- `@RetroFact`  
+- `@RetroFact`
   Declares how a field is populated from a clue.
 
-- `@RetroAnyAttribute`  
+- `@RetroFactParser`
+  Optionally overrides collection-specific configuration for a fact parser.
+  It does not select or instantiate that parser.
+
+- `@RetroAnyAttribute`
   Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
 
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
@@ -92,6 +101,27 @@ Model model = Model.from("com.example.collection");
 ```
 
 Applications that need deterministic or custom discovery can instead provide a `Set<Class<?>>` or `TypeSource`.
+
+Deployment-specific settings can override annotation defaults while the model
+is built:
+
+```java
+Model model = Model.builder()
+        .typesFrom("com.example.collection")
+        .locations(Path.of("my-collection"))
+        .workingDirectory(Path.of("retro-work"))
+        .factParser(MyCatalogParser.class,
+                configuration -> configuration.catalogFile("my-catalog.tsv"))
+        .build();
+```
+
+External parser catalogs resolve below the working directory's `catalogs`
+folder. Configuring a parser does not manifest it: a catalog is loaded only
+when a discovered field-level `@RetroFact` actually selects that parser.
+
+Catalogs use one strict UTF-8 TSV format. Any number of blank or `#` comment
+lines are allowed. The first data line contains enum constant names as headers;
+all keys must occur exactly once, while their order is arbitrary.
 
 ---
 

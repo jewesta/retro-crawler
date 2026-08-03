@@ -17,7 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveRoots;
@@ -25,7 +26,7 @@ import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Confidence;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.RatedFact;
@@ -64,8 +65,8 @@ class ContextualFactResolutionTest {
 		assertEquals("generic-length", mystery.genericMeasurement());
 	}
 
-	@RetroArchive(id = "contextual_fact_resolution",
-			findClues = @RetroArchive.LookAt(pathName = TestClueFinder.class))
+	@RetroCollection(id = "contextual_fact_resolution")
+	@RetroClues(fromFolderName = TestClueFinder.class)
 	public static final class TestArchive {
 	}
 
@@ -113,14 +114,14 @@ class ContextualFactResolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements PathNameClueFinder {
+	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
-			if ("typed".equals(pathName)) {
+		public Set<Clue> find(final String folderName) {
+			if ("typed".equals(folderName)) {
 				return Set.of(Clue.of("HDD"), Clue.of("2.5\""));
 			}
-			if ("unknown".equals(pathName)) {
+			if ("unknown".equals(folderName)) {
 				return Set.of(Clue.of("2.5\""));
 			}
 			return Set.of();

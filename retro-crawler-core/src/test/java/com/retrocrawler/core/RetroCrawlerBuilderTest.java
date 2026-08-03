@@ -15,7 +15,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
@@ -25,7 +26,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.progress.ProgressState;
@@ -143,8 +144,8 @@ class RetroCrawlerBuilderTest {
 		assertEquals("Crawl planning is already configured.", failure.getMessage());
 	}
 
-	@RetroArchive(id = "factory_test", locations = "/this/path/must/not/be/crawled",
-			findClues = @RetroArchive.LookAt(pathName = EmptyClueFinder.class))
+	@RetroCollection(id = "factory_test", locations = "/this/path/must/not/be/crawled")
+	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class TestArchiveConfiguration {
 	}
 
@@ -158,10 +159,10 @@ class RetroCrawlerBuilderTest {
 		}
 	}
 
-	public static class EmptyClueFinder implements PathNameClueFinder {
+	public static class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
+		public Set<Clue> find(final String folderName) {
 			return Set.of();
 		}
 	}

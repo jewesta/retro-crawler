@@ -16,14 +16,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
@@ -53,8 +54,8 @@ class AnonymousClueAmbiguityTest {
 				.anyMatch(clue -> clue.isAnonymous() && clue.getValue().equals(Set.of("overlap"))));
 	}
 
-	@RetroArchive(id = "anonymous_ambiguity",
-			findClues = @RetroArchive.LookAt(pathName = AmbiguousClueFinder.class))
+	@RetroCollection(id = "anonymous_ambiguity")
+	@RetroClues(fromFolderName = AmbiguousClueFinder.class)
 	public static final class AmbiguousArchive {
 
 		private AmbiguousArchive() {
@@ -77,11 +78,11 @@ class AnonymousClueAmbiguityTest {
 		}
 	}
 
-	public static final class AmbiguousClueFinder implements PathNameClueFinder {
+	public static final class AmbiguousClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
-			return "ambiguous".equals(pathName) ? Set.of(Clue.of("overlap")) : Set.of();
+		public Set<Clue> find(final String folderName) {
+			return "ambiguous".equals(folderName) ? Set.of(Clue.of("overlap")) : Set.of();
 		}
 	}
 

@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
@@ -29,7 +30,7 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressSnapshot;
@@ -95,8 +96,8 @@ class RetroIdValidationTest {
 		return RetroCrawler.builder().model(model).repository(new MemoryRepository()).build();
 	}
 
-	@RetroArchive(id = "retro_id_validation",
-			findClues = @RetroArchive.LookAt(pathName = TestClueFinder.class))
+	@RetroCollection(id = "retro_id_validation")
+	@RetroClues(fromFolderName = TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
@@ -117,14 +118,14 @@ class RetroIdValidationTest {
 		}
 	}
 
-	public static final class TestClueFinder implements PathNameClueFinder {
+	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
-			if (pathName.startsWith("id-")) {
-				return Set.of(Clue.of("catalogId", pathName.substring("id-".length())));
+		public Set<Clue> find(final String folderName) {
+			if (folderName.startsWith("id-")) {
+				return Set.of(Clue.of("catalogId", folderName.substring("id-".length())));
 			}
-			if (pathName.equals("gear-without-id")) {
+			if (folderName.equals("gear-without-id")) {
 				return Set.of(Clue.of("tag", "gear"));
 			}
 			return Set.of();

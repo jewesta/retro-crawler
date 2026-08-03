@@ -1,6 +1,11 @@
 package com.retrocrawler.model.identifier;
 
-import java.io.BufferedReader;
+import static com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCatalogKey.cartridge_code;
+import static com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCatalogKey.game_languages;
+import static com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCatalogKey.release_regions;
+import static com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCatalogKey.rom_id;
+import static com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCatalogKey.title;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,25 +22,25 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.retrocrawler.core.catalog.Catalog;
+import com.retrocrawler.core.catalog.Catalog.Row;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 
 /**
- * A resource-backed snapshot of observed Nintendo Game Boy-family cartridge
- * label codes.
+ * Typed indexes over a standard catalog of observed Nintendo Game Boy-family
+ * cartridge label codes.
  *
  * <p>
- * The bundled catalogue is not a validity authority. An absent code can be a
- * new observation, a typo, or a gap in the snapshot. The catalogue only
- * answers what its dated sources currently know.
+ * The bundled catalog is not a validity authority. An absent code can be a new
+ * observation, a typo, or a gap in the snapshot. The catalog only answers what
+ * its dated sources currently know.
  */
 public final class NintendoGameBoyCartridgeCatalog {
 
-	private static final String RESOURCE =
-			"/com/retrocrawler/model/identifier/nintendo-game-boy-cartridge-catalog.tsv";
-	private static final String HEADER =
-			"cartridge_code\trom_id\ttitle\trelease_regions\tgame_languages";
+	static final String DEFAULT_CATALOG_FILE = "nintendo-game-boy-cartridge-catalog.tsv";
 
+	private final Catalog<NintendoGameBoyCartridgeCatalogKey> catalog;
 	private final List<NintendoGameBoyCartridgeCatalogEntry> entries;
 	private final Map<NintendoGameBoyCartridgeCode, List<NintendoGameBoyCartridgeCatalogEntry>> byCode;
 	private final Map<NintendoGameBoyRomId, List<NintendoGameBoyCartridgeCatalogEntry>> byRomId;
@@ -44,8 +49,11 @@ public final class NintendoGameBoyCartridgeCatalog {
 	private final Map<LanguageCode, List<NintendoGameBoyCartridgeCatalogEntry>> byGameLanguage;
 	private final Set<NintendoGameBoyCartridgeCode> codes;
 
-	private NintendoGameBoyCartridgeCatalog(final List<NintendoGameBoyCartridgeCatalogEntry> sourceEntries) {
-		entries = List.copyOf(new LinkedHashSet<>(sourceEntries));
+	private NintendoGameBoyCartridgeCatalog(final Catalog<NintendoGameBoyCartridgeCatalogKey> catalog) {
+		this.catalog = Objects.requireNonNull(catalog, "catalog");
+		final List<NintendoGameBoyCartridgeCatalogEntry> parsed = catalog.rows().stream()
+				.map(NintendoGameBoyCartridgeCatalog::parseEntry).toList();
+		entries = List.copyOf(new LinkedHashSet<>(parsed));
 		byCode = immutableIndex(entries, NintendoGameBoyCartridgeCatalogEntry::cartridgeCode);
 		byRomId = immutableIndex(entries, NintendoGameBoyCartridgeCatalogEntry::romId);
 		byTitle = immutableIndex(entries, entry -> normalizeTitle(entry.title()));
@@ -59,42 +67,20 @@ public final class NintendoGameBoyCartridgeCatalog {
 	}
 
 	/**
-	 * Reads the same tab-separated format as the bundled resource. The caller
+	 * Reads the same standard TSV format as the bundled resource. The caller
 	 * retains ownership of the reader.
 	 */
 	public static NintendoGameBoyCartridgeCatalog read(final Reader source) {
-		Objects.requireNonNull(source, "source");
-		final BufferedReader reader = source instanceof final BufferedReader buffered
-				? buffered
-				: new BufferedReader(source);
-		final List<NintendoGameBoyCartridgeCatalogEntry> entries = new ArrayList<>();
-		String line;
-		boolean headerSeen = false;
-		int lineNumber = 0;
-		try {
-			while ((line = reader.readLine()) != null) {
-				lineNumber++;
-				if (line.isBlank() || line.startsWith("#")) {
-					continue;
-				}
-				if (!headerSeen) {
-					if (!HEADER.equals(line)) {
-						throw new IllegalArgumentException("Unexpected cartridge catalogue header on line "
-								+ lineNumber + ": " + line);
-					}
-					headerSeen = true;
-					continue;
-				}
-				entries.add(parseEntry(line, lineNumber));
-			}
-		} catch (final IOException e) {
-			throw new UncheckedIOException("Could not read the Game Boy cartridge catalogue.", e);
-		}
+		return from(Catalog.read(NintendoGameBoyCartridgeCatalogKey.class, source));
+	}
 
-		if (!headerSeen) {
-			throw new IllegalArgumentException("The cartridge catalogue has no header.");
-		}
-		return new NintendoGameBoyCartridgeCatalog(entries);
+	static NintendoGameBoyCartridgeCatalog from(
+			final Catalog<NintendoGameBoyCartridgeCatalogKey> catalog) {
+		return new NintendoGameBoyCartridgeCatalog(catalog);
+	}
+
+	Catalog<NintendoGameBoyCartridgeCatalogKey> catalog() {
+		return catalog;
 	}
 
 	public List<NintendoGameBoyCartridgeCatalogEntry> entries() {
@@ -117,8 +103,8 @@ public final class NintendoGameBoyCartridgeCatalog {
 		return byRomId.getOrDefault(Objects.requireNonNull(romId, "romId"), List.of());
 	}
 
-	public List<NintendoGameBoyCartridgeCatalogEntry> findByTitle(final String title) {
-		return byTitle.getOrDefault(normalizeTitle(title), List.of());
+	public List<NintendoGameBoyCartridgeCatalogEntry> findByTitle(final String query) {
+		return byTitle.getOrDefault(normalizeTitle(query), List.of());
 	}
 
 	public List<NintendoGameBoyCartridgeCatalogEntry> findByReleaseRegion(final RegionCode region) {
@@ -130,28 +116,24 @@ public final class NintendoGameBoyCartridgeCatalog {
 	}
 
 	/**
-	 * Creates a catalogue union, keeping the receiver's order and adding only new
-	 * associations from the supplement.
+	 * Creates a catalog union, keeping the receiver's order and adding the
+	 * supplement's rows. Duplicate typed entries are collapsed by this view.
 	 */
 	public NintendoGameBoyCartridgeCatalog plus(final NintendoGameBoyCartridgeCatalog supplement) {
 		Objects.requireNonNull(supplement, "supplement");
-		final List<NintendoGameBoyCartridgeCatalogEntry> combined = new ArrayList<>(entries);
-		combined.addAll(supplement.entries);
-		return new NintendoGameBoyCartridgeCatalog(combined);
+		return from(catalog.plus(supplement.catalog));
 	}
 
-	private static NintendoGameBoyCartridgeCatalogEntry parseEntry(final String line, final int lineNumber) {
-		final String[] columns = line.split("\t", -1);
-		if (columns.length != 5) {
-			throw new IllegalArgumentException(
-					"Expected five cartridge catalogue columns on line " + lineNumber + ".");
-		}
-		final NintendoGameBoyRomId romId = NintendoGameBoyRomId.parse(columns[1])
+	private static NintendoGameBoyCartridgeCatalogEntry parseEntry(
+			final Row<NintendoGameBoyCartridgeCatalogKey> row) {
+		final int lineNumber = row.lineNumber();
+		final NintendoGameBoyRomId romId = NintendoGameBoyRomId.parse(row.get(rom_id))
 				.orElseThrow(() -> new IllegalArgumentException(
-						"Invalid Game Boy ROM ID on catalogue line " + lineNumber + ": " + columns[1]));
+						"Invalid Game Boy ROM ID on catalog line " + lineNumber + ": " + row.get(rom_id)));
 		return new NintendoGameBoyCartridgeCatalogEntry(
-				new NintendoGameBoyCartridgeCode(columns[0]), romId, columns[2],
-				parseRegions(columns[3], lineNumber), parseGameLanguageSets(columns[4], lineNumber));
+				new NintendoGameBoyCartridgeCode(row.get(cartridge_code)), romId, row.get(title),
+				parseRegions(row.get(release_regions), lineNumber),
+				parseGameLanguageSets(row.get(game_languages), lineNumber));
 	}
 
 	private static Set<RegionCode> parseRegions(final String value, final int lineNumber) {
@@ -161,7 +143,7 @@ public final class NintendoGameBoyCartridgeCatalog {
 				regions.add(new RegionCode(code));
 			} catch (final IllegalArgumentException e) {
 				throw new IllegalArgumentException(
-						"Invalid release region on catalogue line " + lineNumber + ": " + code, e);
+						"Invalid release region on catalog line " + lineNumber + ": " + code, e);
 			}
 		}
 		return regions;
@@ -179,7 +161,7 @@ public final class NintendoGameBoyCartridgeCatalog {
 					languages.add(new LanguageCode(code));
 				} catch (final IllegalArgumentException e) {
 					throw new IllegalArgumentException(
-							"Invalid game language on catalogue line " + lineNumber + ": " + code, e);
+							"Invalid game language on catalog line " + lineNumber + ": " + code, e);
 				}
 			}
 			games.add(languages);
@@ -187,10 +169,10 @@ public final class NintendoGameBoyCartridgeCatalog {
 		return games;
 	}
 
-	private static String normalizeTitle(final String title) {
-		final String normalized = Objects.requireNonNull(title, "title").trim().toLowerCase(Locale.ROOT);
+	private static String normalizeTitle(final String value) {
+		final String normalized = Objects.requireNonNull(value, "value").trim().toLowerCase(Locale.ROOT);
 		if (normalized.isEmpty()) {
-			throw new IllegalArgumentException("A catalogue title lookup must not be blank.");
+			throw new IllegalArgumentException("A catalog title lookup must not be blank.");
 		}
 		return normalized;
 	}
@@ -226,13 +208,15 @@ public final class NintendoGameBoyCartridgeCatalog {
 		private static final NintendoGameBoyCartridgeCatalog INSTANCE = load();
 
 		private static NintendoGameBoyCartridgeCatalog load() {
-			try (InputStream input = NintendoGameBoyCartridgeCatalog.class.getResourceAsStream(RESOURCE)) {
+			try (InputStream input = NintendoGameBoyCartridgeCatalog.class
+					.getResourceAsStream(DEFAULT_CATALOG_FILE)) {
 				if (input == null) {
-					throw new IllegalStateException("Missing bundled Game Boy cartridge catalogue: " + RESOURCE);
+					throw new IllegalStateException(
+							"Missing bundled Game Boy cartridge catalog: " + DEFAULT_CATALOG_FILE);
 				}
 				return read(new InputStreamReader(input, StandardCharsets.UTF_8));
 			} catch (final IOException e) {
-				throw new UncheckedIOException("Could not close the bundled Game Boy cartridge catalogue.", e);
+				throw new UncheckedIOException("Could not close the bundled Game Boy cartridge catalog.", e);
 			}
 		}
 	}

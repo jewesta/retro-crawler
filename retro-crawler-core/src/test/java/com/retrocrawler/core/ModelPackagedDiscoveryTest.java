@@ -54,11 +54,11 @@ class ModelPackagedDiscoveryTest {
 		Files.writeString(archiveSource, """
 				package com.retrocrawler.packagedfixture;
 
-				@com.retrocrawler.core.annotation.RetroArchive(
+				@com.retrocrawler.core.annotation.RetroCollection(
 						id = "packaged_model",
-						locations = "/unused",
-						findClues = @com.retrocrawler.core.annotation.RetroArchive.LookAt(
-								pathName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class))
+						locations = "/unused")
+				@com.retrocrawler.core.annotation.RetroClues(
+						fromFolderName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class)
 				public class PackagedArchive {
 				}
 				""");
