@@ -167,3 +167,36 @@ data were added.
 - `mvn test`: all eight reactor modules passed after the API migration.
 - `mvn clean install`: all eight modules compiled, tested, packaged, and
   installed successfully from a clean build.
+
+## Manufacturer Catalog Follow-up
+
+The first private catalog candidate is a manufacturer directory. Its standard
+model keeps the manufacturer identity readable while retaining a typed external
+reference needed by consumers:
+
+- `Manufacturer` contains a usual name, an optional full corporate name, and an
+  optional `TheRetroWebReference` restricted to the manufacturer category.
+- The strict catalog schema contains `name`, `full_name`, and `trw_id`; the ID
+  cell may be empty. This is a typed schema field rather than arbitrary custom
+  metadata.
+- A resolved manufacturer therefore retains enough information for a UI to
+  render the numeric TRW deep link through `TheRetroWebReference.lookupUri()`.
+- Logo paths and source URLs remain in private acquisition provenance. Unlike
+  the stable TRW identifier, they describe local files or acquisition context.
+- `ManufacturerParser` matches short and full names exactly while ignoring case
+  and surrounding whitespace. If one observed name maps to several catalog
+  entries, resolution remains explicitly ambiguous instead of choosing a row.
+- The bundled catalog contains one independently sourced ASUS identity. The
+  substantial TRW-derived snapshot remains a local override and is not added to
+  the repository.
+
+The private snapshot was transformed into the strict schema with its TRW IDs
+but without its logo column. All 2,913 rows load successfully; ASUS resolves
+uniquely with a linkable reference, while the two distinct `Umax` rows preserve
+their shared short-name ambiguity.
+
+Follow-up verification:
+
+- `mvn -pl retro-crawler-model -am test`: 124 core and 61 model tests passed.
+- `mvn test`: all eight reactor modules passed.
+- `mvn clean install`: all eight reactor modules packaged and installed successfully.
