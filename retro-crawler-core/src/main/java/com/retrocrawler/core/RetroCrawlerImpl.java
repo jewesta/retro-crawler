@@ -20,6 +20,7 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
+import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressStage;
@@ -131,10 +132,10 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	/**
-	 * Emits a compressed gear tree: - If node resolves to gear of the desired type:
-	 * emit factory node and pass it to children as parent - If node does not
-	 * resolve or type does not match: emit nothing, keep same parent for children
-	 * (lifting)
+	 * Emits a compressed gear tree: - If node resolves to gear of the desired
+	 * type: emit factory node and pass it to children as parent - If node does
+	 * not resolve or type does not match: emit nothing, keep same parent for
+	 * children (lifting)
 	 */
 	private <R, N, G> void emitCompressed(final ResolvedArchiveNode node, final N parent,
 			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Progressor progressor) {
@@ -198,9 +199,8 @@ public class RetroCrawlerImpl implements RetroCrawler {
 
 		private void complete(final Path sourcePath) {
 			completed++;
-			progressor.advanceTo(completed,
-					"Resolved artifact " + completed + " of " + total + ": "
-							+ PathNames.abbreviatePathName(sourcePath.toString()));
+			progressor.advanceTo(completed, "Resolved artifact " + completed + " of " + total + ": "
+					+ PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
 
@@ -215,9 +215,8 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		private final Map<Object, List<String>> occurrences = new LinkedHashMap<>();
 
 		private void register(final GearResolution resolution, final Path sourcePath) {
-			resolution.retroId()
-					.ifPresent(id -> occurrences.computeIfAbsent(id, ignored -> new ArrayList<>())
-							.add(sourcePath.toString()));
+			resolution.retroId().ifPresent(
+					id -> occurrences.computeIfAbsent(id, ignored -> new ArrayList<>()).add(sourcePath.toString()));
 		}
 
 		private void assertUnique() {

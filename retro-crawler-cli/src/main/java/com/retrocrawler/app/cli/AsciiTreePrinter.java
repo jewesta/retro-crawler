@@ -2,9 +2,9 @@ package com.retrocrawler.app.cli;
 
 import java.util.Objects;
 
-import com.retrocrawler.core.GearArchive;
-import com.retrocrawler.core.GearBucket;
-import com.retrocrawler.core.GearNode;
+import com.retrocrawler.core.stash.GearBucket;
+import com.retrocrawler.core.stash.GearNode;
+import com.retrocrawler.core.stash.Stash;
 
 final class AsciiTreePrinter {
 
@@ -12,9 +12,9 @@ final class AsciiTreePrinter {
 		// static utility class
 	}
 
-	static <G> void printArchive(final GearArchive<G> archive) {
-		Objects.requireNonNull(archive, "archive");
-		for (final GearBucket<G> bucket : archive.buckets()) {
+	static <G> void printStash(final Stash<G> stash) {
+		Objects.requireNonNull(stash, "stash");
+		for (final GearBucket<G> bucket : stash.buckets()) {
 			System.out.println(String.valueOf(bucket.bucket()));
 			final var roots = bucket.roots();
 			for (int i = 0; i < roots.size(); i++) {

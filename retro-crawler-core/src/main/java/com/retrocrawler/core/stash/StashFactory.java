@@ -1,13 +1,13 @@
-package com.retrocrawler.core;
+package com.retrocrawler.core.stash;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.gear.GearTreeFactory;
 
-public final class GearArchiveFactory<G>
-		implements GearTreeFactory<GearArchive<G>, GearArchiveFactory.MutableNode<G>, G> {
+public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFactory.MutableNode<G>, G> {
 
 	private final Class<G> gearType;
 
@@ -15,7 +15,7 @@ public final class GearArchiveFactory<G>
 
 	private BucketBuild<G> currentBucket;
 
-	public GearArchiveFactory(final Class<G> gearType) {
+	public StashFactory(final Class<G> gearType) {
 		this.gearType = Objects.requireNonNull(gearType, "gearType");
 	}
 
@@ -66,7 +66,7 @@ public final class GearArchiveFactory<G>
 	}
 
 	@Override
-	public GearArchive<G> build() {
+	public Stash<G> build() {
 		if (currentBucket != null) {
 			throw new IllegalStateException("build called while a bucket is still open.");
 		}
@@ -77,7 +77,7 @@ public final class GearArchiveFactory<G>
 			resultBuckets.add(new GearBucket<>(bucketBuild.bucket, roots));
 		}
 
-		return new GearArchive<>(resultBuckets);
+		return new Stash<>(resultBuckets);
 	}
 
 	private static <G> List<GearNode<G>> toImmutableNodes(final List<MutableNode<G>> nodes) {

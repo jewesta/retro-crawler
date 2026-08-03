@@ -1,4 +1,4 @@
-package com.retrocrawler.core;
+package com.retrocrawler.core.stash;
 
 import java.util.List;
 import java.util.Objects;

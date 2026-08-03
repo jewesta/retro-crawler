@@ -3294,6 +3294,31 @@ reports no duplicate Retro ID, preserves every Gear-type count, and exposes all
 validation and no source folder was modified. Focused model and collection
 tests pass, as does the complete eight-module `mvn clean install` reactor.
 
+### Stash vocabulary and reusable statistics
+
+The resolved hierarchical result is now a `Stash<G>`, because a stash is what
+a retro collector actually has: Gear gathered together and ready to explore.
+The former `GearArchive` name obscured the lifecycle boundary with the
+model-independent `Archive` of cached clues. `RetroCrawler.crawlStash(...)` and
+`StashFactory` carry the new vocabulary through the public API. `Stash`, its
+`GearBucket` and `GearNode` structure, factory, and statistics now live in the
+dedicated `com.retrocrawler.core.stash` package. This establishes the natural
+home for later structured exploration. The generic `GearTreeFactory` extension
+point and `FlatListFactory` live alongside resolution vocabulary in
+`com.retrocrawler.core.gear`, while `StashFactory` remains the stash-specific
+implementation. A `Stash` remains a derived runtime view rather than the
+collection's source of truth; its current bucketed tree is a foundation for,
+but not an implementation of, the later Issue 22 query layer.
+
+The former CLI-local `ArchiveStats` mixed a reusable structural calculation
+with terminal presentation. Core now exposes immutable `StashStats`, including
+long-valued bucket, root, node, and leaf counts, maximum tree depth, and counts
+keyed by the actual Gear classes. The CLI retains only `StashStatsPrinter`, so
+simple type names and `System.out` remain presentation choices outside core.
+Focused core and CLI reactor tests pass, including empty and nested stash
+statistics and two distinct Gear classes with the same simple name. The full
+seven-module `mvn test` reactor also passes.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.

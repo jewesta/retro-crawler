@@ -1,4 +1,4 @@
-package com.retrocrawler.core;
+package com.retrocrawler.core.gear;
 
 import java.util.ArrayList;
 import java.util.List;

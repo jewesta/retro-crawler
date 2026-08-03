@@ -31,6 +31,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
+import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressSnapshot;

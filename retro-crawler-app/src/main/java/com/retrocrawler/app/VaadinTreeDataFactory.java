@@ -1,7 +1,7 @@
 package com.retrocrawler.app;
 
-import com.retrocrawler.core.GearTreeFactory;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 
