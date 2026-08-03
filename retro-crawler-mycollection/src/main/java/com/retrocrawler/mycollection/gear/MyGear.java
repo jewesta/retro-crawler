@@ -14,6 +14,9 @@ import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
+import com.retrocrawler.model.condition.DamageKind;
+import com.retrocrawler.model.condition.FunctionalCondition;
+import com.retrocrawler.model.condition.ItemCondition;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ComputerFormFactorParser;
 import com.retrocrawler.model.hardware.ExpansionBus;
@@ -59,7 +62,10 @@ import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.facts.CollectionColorParser;
+import com.retrocrawler.mycollection.facts.CollectionDamageKindParser;
+import com.retrocrawler.mycollection.facts.CollectionFunctionalConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
+import com.retrocrawler.mycollection.facts.CollectionItemConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
 import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
 import com.retrocrawler.mycollection.facts.CollectionScreenSizeParser;
@@ -91,6 +97,14 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.COLOR, parser = CollectionColorParser.class, strict = false, optional = true)
 	private Set<Color> colors = Set.of();
+
+	@RetroFact(key = AttributeNames.CONDITION, parser = CollectionItemConditionParser.class,
+			strict = false, optional = true)
+	private ItemCondition condition;
+
+	@RetroFact(key = AttributeNames.DAMAGE, parser = CollectionDamageKindParser.class,
+			strict = false, optional = true)
+	private Set<DamageKind> damageKinds = Set.of();
 
 	@RetroFact(key = AttributeNames.FLOPPY_DISK_FORM_FACTOR, parser = FloppyDiskFormFactorParser.class,
 			strict = false, optional = true)
@@ -144,8 +158,9 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FCC_ID, optional = true)
 	private String fccId;
 
-	@RetroFact(key = AttributeNames.HEALTH, optional = true)
-	private String health;
+	@RetroFact(key = AttributeNames.HEALTH, parser = CollectionFunctionalConditionParser.class,
+			strict = false, optional = true)
+	private FunctionalCondition health;
 
 	@RetroFact(key = AttributeNames.PRICE, parser = MoneyParser.class, optional = true)
 	private Money price;
@@ -242,6 +257,14 @@ public abstract class MyGear {
 		return Set.copyOf(colors);
 	}
 
+	public Optional<ItemCondition> getCondition() {
+		return Optional.ofNullable(condition);
+	}
+
+	public Set<DamageKind> getDamageKinds() {
+		return Set.copyOf(damageKinds);
+	}
+
 	public Set<FloppyDiskFormFactor> getFloppyDiskFormFactors() {
 		return Set.copyOf(floppyDiskFormFactors);
 	}
@@ -302,7 +325,7 @@ public abstract class MyGear {
 		return Optional.ofNullable(fccId);
 	}
 
-	public Optional<String> getHealth() {
+	public Optional<FunctionalCondition> getHealth() {
 		return Optional.ofNullable(health);
 	}
 

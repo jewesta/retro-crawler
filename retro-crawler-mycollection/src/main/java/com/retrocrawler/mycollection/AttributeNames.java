@@ -8,6 +8,10 @@ public final class AttributeNames {
 
 	public static final String COLOR = "color";
 
+	public static final String CONDITION = "condition";
+
+	public static final String DAMAGE = "damage";
+
 	public static final String DESC = "desc";
 
 	public static final String DESTINY = "dest";

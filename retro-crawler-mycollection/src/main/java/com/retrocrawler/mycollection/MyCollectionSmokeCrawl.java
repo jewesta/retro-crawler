@@ -84,6 +84,9 @@ public final class MyCollectionSmokeCrawl {
 		final long withRetroId = gear.stream().filter(value -> value.getRetroId().isPresent()).count();
 		final long withDescription = gear.stream().filter(value -> value.getDescription().isPresent()).count();
 		final long withColors = gear.stream().filter(value -> !value.getColors().isEmpty()).count();
+		final long withCondition = gear.stream().filter(value -> value.getCondition().isPresent()).count();
+		final long withDamage = gear.stream().filter(value -> !value.getDamageKinds().isEmpty()).count();
+		final long withHealth = gear.stream().filter(value -> value.getHealth().isPresent()).count();
 		final long withImages = gear.stream().filter(MyCollectionSmokeCrawl::hasImage).count();
 		final long withFloppyImages = gear.stream().filter(value -> !value.getFloppyImages().isEmpty()).count();
 		final long withLanguages = gear.stream().filter(value -> !value.getLanguages().isEmpty()).count();
@@ -100,6 +103,7 @@ public final class MyCollectionSmokeCrawl {
 		System.out.println("RC_RESULT\tgear=" + gear.size() + "\ttypes=" + types + "\tretroIds=" + withRetroId
 				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
 				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\tcolors=" + withColors
+				+ "\tconditions=" + withCondition + "\thealth=" + withHealth + "\tdamage=" + withDamage
 				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
 				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
 				+ "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
@@ -145,7 +149,8 @@ public final class MyCollectionSmokeCrawl {
 
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
 		return hasNoDisketteFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
-				&& gear.getTitle().isEmpty() && gear.getColors().isEmpty()
+				&& gear.getTitle().isEmpty() && gear.getColors().isEmpty() && gear.getCondition().isEmpty()
+				&& gear.getDamageKinds().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
 				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty()
 				&& gear.getDestiny().isEmpty() && gear.getFccId().isEmpty() && gear.getHealth().isEmpty()

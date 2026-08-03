@@ -32,6 +32,9 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
+import com.retrocrawler.model.condition.DamageKind;
+import com.retrocrawler.model.condition.FunctionalCondition;
+import com.retrocrawler.model.condition.ItemCondition;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.hardware.MemoryAccessTime;
@@ -239,6 +242,33 @@ class MyCollectionModelTest {
 	}
 
 	@Test
+	void resolvesIndependentConditionHealthAndDamageFacts() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("New object [Neu]"));
+		Files.createDirectories(archiveRoot.resolve("Used object [gebraucht]"));
+		Files.createDirectories(archiveRoot.resolve("Refurbished object [refurbished]"));
+		Files.createDirectories(archiveRoot.resolve("Damaged object [beschädigt]"));
+		Files.createDirectories(archiveRoot.resolve("Faulty object [defekt] [Akkuschaden]"));
+		Files.createDirectories(archiveRoot.resolve("Partially faulty object [teildefekt] [Bruch]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		assertEquals(Optional.of(ItemCondition.NEW), gear(gear, "New object [Neu]").getCondition());
+		assertEquals(Optional.of(ItemCondition.USED), gear(gear, "Used object [gebraucht]").getCondition());
+		assertEquals(Optional.of(ItemCondition.REFURBISHED),
+				gear(gear, "Refurbished object [refurbished]").getCondition());
+		assertEquals(Optional.of(ItemCondition.DAMAGED),
+				gear(gear, "Damaged object [beschädigt]").getCondition());
+
+		final MyGear faulty = gear(gear, "Faulty object [defekt] [Akkuschaden]");
+		assertEquals(Optional.of(FunctionalCondition.DEFECTIVE), faulty.getHealth());
+		assertEquals(Set.of(DamageKind.BATTERY_DAMAGE), faulty.getDamageKinds());
+
+		final MyGear partiallyFaulty = gear(gear, "Partially faulty object [teildefekt] [Bruch]");
+		assertEquals(Optional.of(FunctionalCondition.PARTIALLY_DEFECTIVE), partiallyFaulty.getHealth());
+		assertEquals(Set.of(DamageKind.BREAKAGE), partiallyFaulty.getDamageKinds());
+	}
+
+	@Test
 	void permitsTheSameRetroWebEntryForDifferentPhysicalGear() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("First board [200010] [trw 10510]"));
 		Files.createDirectories(archiveRoot.resolve("Second board [200011] [TRW 10510]"));
@@ -356,7 +386,7 @@ class MyCollectionModelTest {
 		assertEquals(Optional.empty(), gear.getLotPrice());
 		assertEquals(Optional.of("kleinanzeigen.de"), gear.getSource());
 		assertEquals(Optional.of("TEST-FCC-123"), gear.getFccId());
-		assertEquals(Optional.of("defekt"), gear.getHealth());
+		assertEquals(Optional.of(FunctionalCondition.DEFECTIVE), gear.getHealth());
 		assertEquals(Optional.of(Tested.POST), gear.getTested());
 		assertEquals(Optional.of(angled), gear.getAngledImage());
 		assertEquals(Optional.of(front), gear.getFrontImage());

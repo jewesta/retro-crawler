@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
+import com.retrocrawler.model.condition.DamageKind;
+import com.retrocrawler.model.condition.FunctionalCondition;
+import com.retrocrawler.model.condition.ItemCondition;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.locale.LanguageCode;
@@ -83,6 +86,36 @@ class CollectionFactParsersTest {
 		assertEquals(Tested.BOOT, new TestedParser().parse("boot").getValue().orElseThrow());
 		assertEquals(Tested.FULL, new TestedParser().parse("full").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, new TestedParser().parse("bios").getConfidence());
+	}
+
+	@Test
+	void keepsItemConditionFunctionalHealthAndSpecificDamageIndependent() {
+		final CollectionItemConditionParser itemCondition = new CollectionItemConditionParser();
+		final CollectionFunctionalConditionParser functionalCondition =
+				new CollectionFunctionalConditionParser();
+		final CollectionDamageKindParser damage = new CollectionDamageKindParser();
+
+		assertEquals(ItemCondition.NEW, itemCondition.parse("Neu").getValue().orElseThrow());
+		assertEquals(ItemCondition.USED, itemCondition.parse("gebraucht").getValue().orElseThrow());
+		assertEquals(ItemCondition.REFURBISHED,
+				itemCondition.parse("refurbished").getValue().orElseThrow());
+		assertEquals(ItemCondition.DAMAGED,
+				itemCondition.parse("beschädigt").getValue().orElseThrow());
+
+		assertEquals(FunctionalCondition.WORKING,
+				functionalCondition.parse("working").getValue().orElseThrow());
+		assertEquals(FunctionalCondition.PARTIALLY_DEFECTIVE,
+				functionalCondition.parse("teildefekt").getValue().orElseThrow());
+		assertEquals(FunctionalCondition.DEFECTIVE,
+				functionalCondition.parse("defekt").getValue().orElseThrow());
+
+		assertEquals(DamageKind.BATTERY_DAMAGE,
+				damage.parse("Akkuschaden").getValue().orElseThrow());
+		assertEquals(DamageKind.BREAKAGE, damage.parse("Bruch").getValue().orElseThrow());
+
+		assertEquals(Confidence.NONE, itemCondition.parse("defekt").getConfidence());
+		assertEquals(Confidence.NONE, functionalCondition.parse("beschädigt").getConfidence());
+		assertEquals(Confidence.NONE, damage.parse("beschädigt").getConfidence());
 	}
 
 	@Test

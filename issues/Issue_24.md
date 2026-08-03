@@ -1346,8 +1346,8 @@ The shared-model inclusion rule is:
 
 This includes formal standards such as ISBN, industry vocabulary such as ISA
 and PCI, and durable community reference systems such as The Retro Web. It
-excludes personal identity schemes, subjective condition, workflow state,
-collection clue syntax, matchers, and concrete fallback gear.
+excludes personal identity schemes, subjective condition grading, workflow
+state, collection clue syntax, matchers, and concrete fallback gear.
 
 The initial package structure is deliberately organized by what a fact is,
 rather than every collection domain in which it may be used:
@@ -3003,6 +3003,52 @@ Cache-only resolution of the fresh 3,634-artifact archive recognizes color on
 spellings to 13 named values. It introduces no anonymous-parser ambiguity and
 does not change any gear-type count. The earlier figure of 59 was therefore an
 older or narrower mining count, not the coverage of the fresh cache.
+
+### Orthogonal condition facts
+
+The 59 observations initially grouped as "condition" occur on 57 gear and do
+not form one scale. They comprise four broad item states (`neu` in two case
+variants, `gebraucht`, `refurbished`, and `beschädigt`), two functional-health
+states (`defekt` and `teildefekt`), and two specific damage kinds
+(`Akkuschaden` and `Bruch`). The two gear which state both `defekt` and
+`Akkuschaden` demonstrate that functional health and a damage diagnosis can
+coexist. They must not compete for one scalar field or become unrelated members
+of a catch-all `Set<Condition>`.
+
+The shared model therefore contains three independent, non-ordered
+vocabularies and canonical English parsers:
+
+- `ItemCondition` uses the portable
+  [Schema.org OfferItemCondition](https://schema.org/OfferItemCondition)
+  categories `NEW`, `USED`, `REFURBISHED`, and `DAMAGED`;
+- `FunctionalCondition` records `WORKING`, `PARTIALLY_DEFECTIVE`, or
+  `DEFECTIVE` without inferring that a defective item is completely
+  inoperative; and
+- `DamageKind` currently records the specifically observed `BATTERY_DAMAGE`
+  and `BREAKAGE`, and is set-valued because distinct damage kinds may truly
+  coexist.
+
+Collection adapters map the established German words onto those portable
+values. `MyGear.condition` and the now-typed existing `health` fact are scalar;
+`damageKinds` is a set. The parsers claim disjoint anonymous vocabularies, so
+one raw clue still produces one typed fact with its own provenance. Specific
+damage is not simultaneously converted into the broader `DAMAGED` item state;
+that presentation-level conclusion can be derived without creating an
+anonymous-parser ambiguity.
+
+No condition is inferred from `sealed`, `OVP`, `NOS`, completeness, repair
+history, or other orthogonal observations. There is likewise no quality order,
+grade, or percentage scale; the lone `60%` marker remains anonymous as agreed.
+A component-specific keyed observation such as a defective pin is not promoted
+to the health of the complete gear.
+
+Resolution against the available 3,634-artifact cache produces broad item
+condition on 15 gear, functional health on 42, and specific damage on three,
+without changing any gear-type count or causing anonymous ambiguity. That
+cache still predates three already-applied source corrections and consequently
+retains composite `defekt`/`entsorgt` clues. They correctly remain unresolved
+because one anonymous clue expresses two fact keys; a future crawl will see the
+separated destiny and keyed health evidence from the source archive.
 
 ## Out of Scope for the Initial Slice
 
