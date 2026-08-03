@@ -32,6 +32,8 @@ public final class AttributeNames {
 
 	public static final String FLOPPY_DISK_FORM_FACTOR = "floppyDiskFormFactor";
 
+	public static final String GEAR_KIND = "gearKind";
+
 	public static final String IMAGE_ANGLED = "imageAngled";
 
 	public static final String IMAGE_BACK = "imageBack";
@@ -41,6 +43,8 @@ public final class AttributeNames {
 	public static final String ISBN = "isbn";
 
 	public static final String LANGUAGE = "language";
+
+	public static final String LENGTH = "length";
 
 	public static final String LOT = "lot";
 

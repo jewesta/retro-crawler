@@ -23,11 +23,19 @@ public class FactFinder {
 
 	private final boolean strict;
 
+	private final boolean contextual;
+
 	public FactFinder(final String key, final FactParser parser, final Class<?> fieldType, final boolean strict) {
+		this(key, parser, fieldType, strict, false);
+	}
+
+	public FactFinder(final String key, final FactParser parser, final Class<?> fieldType, final boolean strict,
+			final boolean contextual) {
 		this.key = Objects.requireNonNull(key, "key");
 		this.parser = Objects.requireNonNull(parser, "parser");
 		this.fieldType = Objects.requireNonNull(fieldType, "fieldType");
 		this.strict = strict;
+		this.contextual = contextual;
 	}
 
 	public String getKey() {
@@ -44,6 +52,10 @@ public class FactFinder {
 
 	public boolean isStrict() {
 		return strict;
+	}
+
+	public boolean isContextual() {
+		return contextual;
 	}
 
 	public Optional<Fact> find(final Clue clue) {

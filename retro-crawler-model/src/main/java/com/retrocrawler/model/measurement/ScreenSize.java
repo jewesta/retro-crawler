@@ -18,4 +18,8 @@ public record ScreenSize(BigDecimal diagonalInches) {
 	public String toString() {
 		return diagonalInches.toPlainString() + '"';
 	}
+
+	public Length diagonal() {
+		return new Length(diagonalInches, Length.Unit.INCH);
+	}
 }

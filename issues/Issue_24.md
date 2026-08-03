@@ -2957,12 +2957,10 @@ reused rather than duplicated as a floppy-only quantity.
 
 The workbook called `2,5″` a hard-drive capacity, but the unit and every folder
 context establish a form factor instead. The portable hard-drive parser covers
-the conventional values; the collection adapter currently admits only the
-observed 2.5-inch value for anonymous matching. This prevents the collection's
-3.5- and 5.25-inch floppy tags from becoming ambiguous with hard-drive form
-factors while leaving the neutral parser reusable. The same adapter discipline
-limits anonymous screen-size matching to the observed 19-inch spelling, so a
-new small inch-based form factor remains a clue until deliberately admitted.
+the conventional values. Anonymous inch observations are no longer assigned to
+competing storage and display roles globally; the later physical-dimensions
+slice formalizes them first as neutral lengths and lets an independently chosen
+Gear type supply their contextual role.
 
 Source corrections supply the evidence the canonical parsers require: missing
 inch marks and the `3,25` typo were corrected, unprefixed versions gained `v`,
@@ -3173,6 +3171,56 @@ normalizations and resolved with the freshly built model. All 3,778 artifacts
 resolved without a duplicate-ID failure, and all 99 temporal observations
 produced a `DateMarking` fact. The complete eight-module `mvn clean install`
 reactor also passes.
+
+### Physical lengths and type-scoped meaning
+
+A fresh read-only crawl on 2026-08-03 contains 40 anonymous metric length
+observations, rather than the earlier working count of 37. The difference is
+three `200mm` cable observations omitted by the earlier mining pass. The 40
+comprise 29 cable lengths, four nominal fan or cooler sizes, and seven connector
+pitch observations. The same cache contains 106 simple inch-qualified
+observations using a straight quote, the Unicode double-prime, or the
+collection's legacy private-use inch glyph. Compound keyed disk-format
+observations remain outside scalar length parsing.
+
+Unit choice does not determine semantic role. `50cm`, `500mm`, `2m`, and
+`2,5″` are all first represented by the shared, role-neutral `Length` value in
+`retro-crawler-model`. It retains the observed unit, converts exactly through
+millimetres, and compares equivalent lengths across millimetres, centimetres,
+metres, and inches. `LengthParser` accepts English canonical unit spellings and
+decimal point or comma without deciding whether the quantity is a cable
+length, connector pitch, screen diagonal, or storage form factor. The personal
+adapter only translates the archive's legacy private-use inch glyph.
+
+Short tags still need to become more specific after Gear detection. Core
+resolution therefore has two explicit interpretation phases:
+
+1. Globally reusable and explicitly keyed facts are resolved from the original
+   clues and supplied to every Gear matcher. Contextual anonymous parsers are
+   excluded, so they cannot select the Gear type whose meaning they require.
+2. After one specialist wins, resolution rebuilds the final attributes from the
+   unchanged original clues and enables only contextual facts declared by that
+   Gear type. At equal confidence, the selected type's contextual meaning
+   supersedes the generic fact, producing one final fact with the original clue
+   as provenance.
+
+Thus `[HDD] [2,5″]` first yields the collection-specific
+`GearKind.HARD_DISK_DRIVE` plus a generic `Length`. The independent type hint
+selects `HardDiskDrive`; its contextual parser then produces
+`HardDiskDriveFormFactor.INCH_2_5`, and the final Gear does not also retain a
+generic length for the same clue. Without `[HDD]`, `[2,5″]` stays a `Length`
+on `MysteryGear`. Diskettes follow the same rule: their existing independent
+track-density and disk-format evidence selects `Diskette`, after which an inch
+observation may become `FloppyDiskFormFactor`. Screen size remains strict and
+must be explicitly keyed until a display Gear type supplies an equivalent
+context.
+
+The cache-only integration check reused the 11:52 fresh cache while it was less
+than one hour old. All 3,778 artifacts resolved, no duplicate Retro ID was
+reported, specialist counts were unchanged, and 129 Gear expose a generic
+`Length`. The current archive contains no explicit `HDD` type marker, so it
+correctly produces no `HardDiskDrive` Gear yet. This phase changed neither the
+cached `Artifact` clues nor any source folder.
 
 ## Out of Scope for the Initial Slice
 

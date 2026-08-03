@@ -42,6 +42,17 @@ public @interface RetroFact {
 	 */
 	boolean strict() default true;
 
+	/**
+	 * Defers lenient interpretation of anonymous clues until the declaring Gear
+	 * type has been selected. Explicitly keyed clues remain available during the
+	 * initial detection phase.
+	 * <p>
+	 * This is useful when the same short observation has a different meaning for
+	 * different kinds of Gear, such as {@code 2.5"} on a hard-disk drive versus a
+	 * display. Contextual facts must also set {@link #strict()} to {@code false}.
+	 */
+	boolean contextual() default false;
+
 	Class<? extends FactParser> parser() default AutoDetectParser.class;
 
 }

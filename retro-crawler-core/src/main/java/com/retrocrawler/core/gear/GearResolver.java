@@ -28,14 +28,18 @@ public class GearResolver {
 
 	private final ClueClassifier clueClassifier;
 
+	private final Map<Class<?>, Set<String>> contextualFactKeys;
+
 	// package-private: only factories construct this
-	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders) {
+	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders,
+			final Map<Class<?>, Set<String>> contextualFactKeys) {
 		this.gearSpecialists = Objects.requireNonNull(specialists, "specialists");
 		this.factFinders = Objects.requireNonNull(factFinders, "factFinders");
+		this.contextualFactKeys = Objects.requireNonNull(contextualFactKeys, "contextualFactKeys");
 		this.clueClassifier = new ClueClassifier(factFinders.keySet());
 	}
 
-	private record BestAnonymousMatch(String key, Confidence confidence, boolean ambiguous) {
+	private record BestAnonymousMatch(String key, Confidence confidence, boolean contextual, boolean ambiguous) {
 	}
 
 	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue,
@@ -59,11 +63,11 @@ public class GearResolver {
 
 	@SuppressWarnings({ Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE })
 	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue,
-			final FactParseContext parseContext) {
+			final FactParseContext parseContext, final Set<String> allowedContextualKeys) {
 		final Set<String> raws = clue.getValue();
 		String resolvedKey = null;
 		for (final String raw : raws) {
-			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext);
+			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext, allowedContextualKeys);
 			if (best == null || best.confidence() == Confidence.NONE || best.ambiguous()) {
 				putAnonymousClueIfUseful(resolved, clue);
 				return;
@@ -129,10 +133,11 @@ public class GearResolver {
 		}
 	}
 
-	private BestAnonymousMatch findBestAnonymousMatch(final String raw, final FactParseContext parseContext) {
+	private BestAnonymousMatch findBestAnonymousMatch(final String raw, final FactParseContext parseContext,
+			final Set<String> allowedContextualKeys) {
 		BestAnonymousMatch best = null;
 		for (final FactFinder finder : factFinders.values()) {
-			if (finder.isStrict()) {
+			if (finder.isStrict() || finder.isContextual() && !allowedContextualKeys.contains(finder.getKey())) {
 				continue;
 			}
 			best = considerAnonymousCandidate(best, finder, raw, parseContext);
@@ -149,7 +154,8 @@ public class GearResolver {
 			return bestSoFar;
 		}
 
-		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.getKey(), confidence, false);
+		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.getKey(), confidence,
+				finder.isContextual(), false);
 
 		if (bestSoFar == null) {
 			return candidate;
@@ -160,13 +166,16 @@ public class GearResolver {
 		}
 
 		if (confidence == bestSoFar.confidence()) {
+			if (candidate.contextual() != bestSoFar.contextual()) {
+				return candidate.contextual() ? candidate : bestSoFar;
+			}
 			/*
 			 * Equal candidates mean that the model cannot identify what the anonymous
 			 * observation says. Keep that evidence as a clue instead of choosing by map
 			 * iteration order or failing resolution. An explicitly keyed clue remains
 			 * unambiguous and is handled by handleKnownKeyClue(...).
 			 */
-			return new BestAnonymousMatch(bestSoFar.key(), confidence, true);
+			return new BestAnonymousMatch(bestSoFar.key(), confidence, bestSoFar.contextual(), true);
 		}
 
 		return bestSoFar;
@@ -198,18 +207,8 @@ public class GearResolver {
 		 * possible into facts. Attributes that cannot be turned into facts remain as
 		 * clues.
 		 */
-		final RetroAttributes attributes = new RetroAttributes();
 		final Set<Clue> clues = clueClassifier.classify(artifact.getClues());
-		for (final Clue clue : clues) {
-			if (!clue.isAnonymous()) {
-				handleKnownKeyClue(attributes, clue, parseContext);
-			}
-		}
-		for (final Clue clue : clues) {
-			if (clue.isAnonymous()) {
-				handleAnonymousClue(attributes, clue, parseContext);
-			}
-		}
+		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of());
 
 		/*
 		 * Now that we have identified as many facts as possible, we try to find out
@@ -221,7 +220,7 @@ public class GearResolver {
 		Confidence bestConfidence = Confidence.NONE;
 		for (final GearSpecialist specialist : gearSpecialists.values()) {
 			final Class<?> gearType = specialist.getGearDefinition().getType();
-			final GearContext context = new GearContext(gearType, artifact, attributes);
+			final GearContext context = new GearContext(gearType, artifact, detectionAttributes);
 			final Confidence confidence = specialist.matches(context);
 
 			// The user might try to be clever and return null instead of a confidence
@@ -254,6 +253,8 @@ public class GearResolver {
 		}
 
 		final Class<?> bestType = best.getGearDefinition().getType();
+		final Set<String> selectedContextualKeys = contextualFactKeys.getOrDefault(bestType, Set.of());
+		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys);
 		final GearContext context = new GearContext(bestType, artifact, attributes);
 		/*
 		 * The gear specialist is asked to build a gear. Since it was confident it could
@@ -265,6 +266,22 @@ public class GearResolver {
 		final Object newGear = best.create(context);
 		final Optional<Object> retroId = retroId(best.getGearDefinition(), attributes);
 		return Optional.of(new GearResolution(newGear, retroId));
+	}
+
+	private RetroAttributes resolveAttributes(final Set<Clue> clues, final FactParseContext parseContext,
+			final Set<String> allowedContextualKeys) {
+		final RetroAttributes attributes = new RetroAttributes();
+		for (final Clue clue : clues) {
+			if (!clue.isAnonymous()) {
+				handleKnownKeyClue(attributes, clue, parseContext);
+			}
+		}
+		for (final Clue clue : clues) {
+			if (clue.isAnonymous()) {
+				handleAnonymousClue(attributes, clue, parseContext, allowedContextualKeys);
+			}
+		}
+		return attributes;
 	}
 
 	private static Optional<Object> retroId(final GearDescriptor descriptor, final RetroAttributes attributes) {

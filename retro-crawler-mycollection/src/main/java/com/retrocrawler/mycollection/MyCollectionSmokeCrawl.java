@@ -19,6 +19,7 @@ import com.retrocrawler.core.progress.FixedStepProgressMonitor;
 import com.retrocrawler.core.progress.ProgressSnapshot;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.mycollection.gear.Diskette;
+import com.retrocrawler.mycollection.gear.HardDiskDrive;
 import com.retrocrawler.mycollection.gear.MyGear;
 
 /**
@@ -95,6 +96,7 @@ public final class MyCollectionSmokeCrawl {
 		final long withImages = gear.stream().filter(MyCollectionSmokeCrawl::hasImage).count();
 		final long withFloppyImages = gear.stream().filter(value -> !value.getFloppyImages().isEmpty()).count();
 		final long withLanguages = gear.stream().filter(value -> !value.getLanguages().isEmpty()).count();
+		final long withLengths = gear.stream().filter(value -> value.getLength().isPresent()).count();
 		final long withLotMembership = gear.stream().filter(value -> !value.getLot().isEmpty()).count();
 		final long withNintendoGameBoyCartridgeCodes = gear.stream()
 				.filter(value -> !value.getNintendoGameBoyCartridgeCodes().isEmpty()).count();
@@ -113,6 +115,7 @@ public final class MyCollectionSmokeCrawl {
 				+ "\tdateMarkings=" + withDateMarkings
 				+ "\toriginalPackaging=" + withOriginalPackaging + "\tsealStates=" + withSealState
 				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
+				+ "\tlengths=" + withLengths
 				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
 				+ "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
 				+ "\tpspDiscIds=" + withPlayStationPortableDiscIds
@@ -156,10 +159,11 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
-		return hasNoDisketteFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
+		return hasNoTypeSpecificFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
 				&& gear.getTitle().isEmpty() && gear.getColors().isEmpty() && gear.getChipDesignations().isEmpty()
 				&& gear.getCondition().isEmpty()
 				&& gear.getDamageKinds().isEmpty() && gear.getDateMarking().isEmpty()
+				&& gear.getGearKind().isEmpty() && gear.getLength().isEmpty()
 				&& gear.getPackagingOrigin().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
 				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty()
@@ -177,15 +181,19 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
 				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getDocumentIds().isEmpty()
 				&& gear.getSealState().isEmpty()
-				&& gear.getFloppyDiskFormFactors().isEmpty() && gear.getHardDiskDriveFormFactors().isEmpty()
-				&& gear.getScreenSizes().isEmpty() && gear.getVersion().isEmpty()
+				&& gear.getScreenSize().isEmpty() && gear.getVersion().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
 	}
 
-	private static boolean hasNoDisketteFacts(final MyGear gear) {
-		return !(gear instanceof final Diskette diskette) || diskette.getTrackDensities().isEmpty()
-				&& diskette.getFloppyDiskFormats().isEmpty();
+	private static boolean hasNoTypeSpecificFacts(final MyGear gear) {
+		final boolean noDisketteFacts = !(gear instanceof final Diskette diskette)
+				|| diskette.getTrackDensities().isEmpty()
+						&& diskette.getFloppyDiskFormats().isEmpty()
+						&& diskette.getFormFactor().isEmpty();
+		final boolean noHardDiskDriveFacts = !(gear instanceof final HardDiskDrive hardDiskDrive)
+				|| hardDiskDrive.getFormFactor().isEmpty();
+		return noDisketteFacts && noHardDiskDriveFacts;
 	}
 
 	private static final class CompactProgressPrinter extends FixedStepProgressMonitor {

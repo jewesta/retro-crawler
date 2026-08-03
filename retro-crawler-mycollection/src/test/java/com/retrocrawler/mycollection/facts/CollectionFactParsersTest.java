@@ -23,7 +23,8 @@ import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
-import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.measurement.Length;
+import com.retrocrawler.model.measurement.Length.Unit;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.temporal.DateMarking;
@@ -194,12 +195,13 @@ class CollectionFactParsersTest {
 	}
 
 	@Test
-	void limitsAnonymousScreenSizesToEstablishedCollectionEvidence() {
-		final CollectionScreenSizeParser parser = new CollectionScreenSizeParser();
+	void adaptsTheLegacyInchGlyphWithoutChangingTheSharedLengthMeaning() {
+		final CollectionLengthParser parser = new CollectionLengthParser();
 
-		assertEquals(new ScreenSize(BigDecimal.valueOf(19)), parser.parse("19″").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("1,8″").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("24″").getConfidence());
+		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
+				parser.parse("2,5\uF020").getValue().orElseThrow());
+		assertEquals(new Length(BigDecimal.valueOf(50), Unit.CENTIMETER),
+				parser.parse("50cm").getValue().orElseThrow());
 	}
 
 	@Test

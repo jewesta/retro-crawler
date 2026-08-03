@@ -48,16 +48,15 @@ import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
+import com.retrocrawler.model.measurement.Length;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.PowerParser;
 import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.measurement.ScreenSizeParser;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.software.Version;
 import com.retrocrawler.model.software.VersionParser;
-import com.retrocrawler.model.storage.FloppyDiskFormFactor;
-import com.retrocrawler.model.storage.FloppyDiskFormFactorParser;
-import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
 import com.retrocrawler.model.temporal.DateMarking;
 import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.Destiny;
@@ -69,16 +68,16 @@ import com.retrocrawler.mycollection.facts.CollectionColorParser;
 import com.retrocrawler.mycollection.facts.CollectionDamageKindParser;
 import com.retrocrawler.mycollection.facts.CollectionDateMarkingParser;
 import com.retrocrawler.mycollection.facts.CollectionFunctionalConditionParser;
-import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
 import com.retrocrawler.mycollection.facts.CollectionItemConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
+import com.retrocrawler.mycollection.facts.CollectionLengthParser;
 import com.retrocrawler.mycollection.facts.CollectionPackagingOriginParser;
 import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
-import com.retrocrawler.mycollection.facts.CollectionScreenSizeParser;
 import com.retrocrawler.mycollection.facts.CollectionSealStateParser;
 import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
+import com.retrocrawler.mycollection.facts.GearKindParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
 import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
@@ -120,13 +119,11 @@ public abstract class MyGear {
 			strict = false, optional = true)
 	private DateMarking dateMarking;
 
-	@RetroFact(key = AttributeNames.FLOPPY_DISK_FORM_FACTOR, parser = FloppyDiskFormFactorParser.class,
-			strict = false, optional = true)
-	private Set<FloppyDiskFormFactor> floppyDiskFormFactors = Set.of();
+	@RetroFact(key = AttributeNames.GEAR_KIND, parser = GearKindParser.class, strict = false, optional = true)
+	private GearKind gearKind;
 
-	@RetroFact(key = AttributeNames.HARD_DISK_DRIVE_FORM_FACTOR,
-			parser = CollectionHardDiskDriveFormFactorParser.class, strict = false, optional = true)
-	private Set<HardDiskDriveFormFactor> hardDiskDriveFormFactors = Set.of();
+	@RetroFact(key = AttributeNames.LENGTH, parser = CollectionLengthParser.class, strict = false, optional = true)
+	private Length length;
 
 	@RetroFact(key = AttributeNames.MEMORY_ACCESS_TIME, parser = MemoryAccessTimeParser.class, strict = false,
 			optional = true)
@@ -154,9 +151,9 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.POWER, parser = PowerParser.class, strict = false, optional = true)
 	private Power power;
 
-	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = CollectionScreenSizeParser.class, strict = false,
+	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = ScreenSizeParser.class,
 			optional = true)
-	private Set<ScreenSize> screenSizes = Set.of();
+	private ScreenSize screenSize;
 
 	@RetroFact(key = AttributeNames.SEAL_STATE, parser = CollectionSealStateParser.class,
 			strict = false, optional = true)
@@ -292,12 +289,12 @@ public abstract class MyGear {
 		return Optional.ofNullable(dateMarking);
 	}
 
-	public Set<FloppyDiskFormFactor> getFloppyDiskFormFactors() {
-		return Set.copyOf(floppyDiskFormFactors);
+	public Optional<GearKind> getGearKind() {
+		return Optional.ofNullable(gearKind);
 	}
 
-	public Set<HardDiskDriveFormFactor> getHardDiskDriveFormFactors() {
-		return Set.copyOf(hardDiskDriveFormFactors);
+	public Optional<Length> getLength() {
+		return Optional.ofNullable(length);
 	}
 
 	public Set<MemoryAccessTime> getMemoryAccessTimes() {
@@ -332,8 +329,8 @@ public abstract class MyGear {
 		return Optional.ofNullable(power);
 	}
 
-	public Set<ScreenSize> getScreenSizes() {
-		return Set.copyOf(screenSizes);
+	public Optional<ScreenSize> getScreenSize() {
+		return Optional.ofNullable(screenSize);
 	}
 
 	public Optional<SealState> getSealState() {

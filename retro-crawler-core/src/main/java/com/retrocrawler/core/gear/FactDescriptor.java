@@ -19,14 +19,21 @@ public class FactDescriptor {
 
 	private final boolean strict;
 
+	private final boolean contextual;
+
 	private final Class<? extends FactParser> parser;
 
 	public FactDescriptor(final RetroFact annotation, final Field field) {
+		Objects.requireNonNull(annotation, "annotation");
 		this.field = Objects.requireNonNull(field, "field");
 		this.optional = annotation.optional();
-		Objects.requireNonNull(annotation, "annotation");
 		this.key = effectiveKey(field, annotation.key());
 		this.strict = annotation.strict();
+		this.contextual = annotation.contextual();
+		if (strict && contextual) {
+			throw new IllegalArgumentException("Contextual fact '" + key
+					+ "' must be lenient because contextual parsing only applies to anonymous clues: " + field);
+		}
 		@SuppressWarnings("unchecked")
 		final Class<? extends FactParser> p = (Class<? extends FactParser>) (Class<?>) annotation.parser();
 		this.parser = Objects.requireNonNull(p, "parser");
@@ -46,6 +53,10 @@ public class FactDescriptor {
 
 	public boolean isStrict() {
 		return strict;
+	}
+
+	public boolean isContextual() {
+		return contextual;
 	}
 
 	public Class<? extends FactParser> getParser() {

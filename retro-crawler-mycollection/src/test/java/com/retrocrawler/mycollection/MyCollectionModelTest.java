@@ -57,9 +57,10 @@ import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
+import com.retrocrawler.model.measurement.Length;
+import com.retrocrawler.model.measurement.Length.Unit;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.TrackDensity;
-import com.retrocrawler.model.measurement.ScreenSize;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.software.Version;
@@ -77,6 +78,7 @@ import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
+import com.retrocrawler.mycollection.gear.HardDiskDrive;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
@@ -188,14 +190,16 @@ class MyCollectionModelTest {
 
 	@Test
 	void recognizesDiskettesOnlyFromCombinedLocalTechnicalEvidence() throws IOException {
-		Files.createDirectories(archiveRoot.resolve("First disk [48TPI] [DS] [HD] [200024]"));
+		Files.createDirectories(archiveRoot.resolve("First disk [3,5\"] [48TPI] [DS] [HD] [200024]"));
 		Files.createDirectories(archiveRoot.resolve("Second disk [96TPI] [2S-HD] [200025]"));
 		Files.createDirectories(archiveRoot.resolve("Drive with track density only [96TPI] [200026]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final Diskette first = assertInstanceOf(Diskette.class,
-				gear(gear, "First disk [48TPI] [DS] [HD] [200024]"));
+				gear(gear, "First disk [3,5\"] [48TPI] [DS] [HD] [200024]"));
+		assertEquals(Optional.of(FloppyDiskFormFactor.INCH_3_5), first.getFormFactor());
+		assertEquals(Optional.empty(), first.getLength());
 		assertEquals(Set.of(new TrackDensity(48)), first.getTrackDensities());
 		assertEquals(Set.of(FloppyDiskFormat.sides(Sides.DOUBLE), FloppyDiskFormat.density(Density.HIGH)),
 				first.getFloppyDiskFormats());
@@ -222,16 +226,18 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void resolvesTheNewTypedFolderVocabularyWithoutStealingMoreSpecificFormFactors() throws IOException {
+	void resolvesMeasurementsGenericallyUntilTheGearTypeSuppliesTheirMeaning() throws IOException {
 		Files.createDirectories(archiveRoot.resolve(
 				"Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]"));
-		Files.createDirectories(archiveRoot.resolve("Hard drive [2,5″] [19″]"));
+		Files.createDirectories(archiveRoot.resolve("Hard drive [HDD] [2,5″]"));
+		Files.createDirectories(archiveRoot.resolve("Measured object [19″]"));
 		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß-pink]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 		final MyGear floppy = gear(gear,
 				"Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
-		assertEquals(Set.of(FloppyDiskFormFactor.INCH_3_5), floppy.getFloppyDiskFormFactors());
+		assertInstanceOf(MysteryGear.class, floppy);
+		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), Unit.INCH)), floppy.getLength());
 		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), DataCapacity.Unit.MB)),
 				floppy.getCapacity());
 		assertEquals(Set.of(Year.of(1989)), floppy.getYears());
@@ -240,9 +246,14 @@ class MyCollectionModelTest {
 				floppy.getSegaGameGearCartridgeCodes());
 		assertEquals(Set.of(new DocumentId(101534)), floppy.getDocumentIds());
 
-		final MyGear hardDrive = gear(gear, "Hard drive [2,5″] [19″]");
-		assertEquals(Set.of(HardDiskDriveFormFactor.INCH_2_5), hardDrive.getHardDiskDriveFormFactors());
-		assertEquals(Set.of(new ScreenSize(BigDecimal.valueOf(19))), hardDrive.getScreenSizes());
+		final HardDiskDrive hardDrive = assertInstanceOf(HardDiskDrive.class,
+				gear(gear, "Hard drive [HDD] [2,5″]"));
+		assertEquals(Optional.of(HardDiskDriveFormFactor.INCH_2_5), hardDrive.getFormFactor());
+		assertEquals(Optional.empty(), hardDrive.getLength());
+
+		final MyGear measured = gear(gear, "Measured object [19″]");
+		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), Unit.INCH)), measured.getLength());
+		assertEquals(Optional.empty(), measured.getScreenSize());
 
 		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß-pink]");
 		assertEquals(Set.of(Color.BLACK, Color.WHITE, Color.PINK), colored.getColors());

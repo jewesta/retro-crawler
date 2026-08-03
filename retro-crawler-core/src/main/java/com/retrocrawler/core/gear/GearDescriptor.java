@@ -194,9 +194,10 @@ public class GearDescriptor implements Descriptor {
 		final FactDescriptor fb = b;
 
 		final boolean sameStrict = fa.isStrict() == fb.isStrict();
+		final boolean sameContextual = fa.isContextual() == fb.isContextual();
 		final boolean sameParser = fa.getParser().equals(fb.getParser());
 
-		if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameParser) {
+		if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameContextual && sameParser) {
 			return;
 		}
 
@@ -205,6 +206,7 @@ public class GearDescriptor implements Descriptor {
 		final StringBuilder details = new StringBuilder();
 		details.append("optional=").append(fa.isOptional()).append(" vs ").append(fb.isOptional());
 		details.append(", strict=").append(fa.isStrict()).append(" vs ").append(fb.isStrict());
+		details.append(", contextual=").append(fa.isContextual()).append(" vs ").append(fb.isContextual());
 		details.append(", parser=").append(TypeName.full(fa.getParser())).append(" vs ")
 				.append(TypeName.full(fb.getParser()));
 		details.append(", fieldType=").append(TypeName.full(fa.getField().getType())).append(" vs ")

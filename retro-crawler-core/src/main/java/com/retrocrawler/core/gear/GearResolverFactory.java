@@ -3,6 +3,7 @@ package com.retrocrawler.core.gear;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -52,14 +53,19 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		// Collect all known attribute definitions and ensure no contradictions.
 		final Map<String, FactDescriptor> attributes = new HashMap<>();
 		final Map<String, Class<?>> declaringTypes = new HashMap<>();
+		final Map<Class<?>, Set<String>> contextualFactKeys = new HashMap<>();
 
 		for (final GearSpecialist specialist : specialists.values()) {
 			final GearDescriptor definition = specialist.getGearDefinition();
 			final Class<?> type = definition.getType();
+			final Set<String> contextualKeys = new HashSet<>();
 
 			for (final Entry<String, FactDescriptor> entry : definition.getAttributes().entrySet()) {
 				final String key = entry.getKey();
 				final FactDescriptor incoming = entry.getValue();
+				if (incoming.isContextual()) {
+					contextualKeys.add(key);
+				}
 
 				final FactDescriptor existing = attributes.putIfAbsent(key, incoming);
 				if (existing == null) {
@@ -69,6 +75,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 					GearDescriptor.assertNonContradictingAttribute(firstType, type, key, existing, incoming);
 				}
 			}
+			contextualFactKeys.put(type, Set.copyOf(contextualKeys));
 		}
 
 		// Build FactFinders (one per key) for FactDefinition only.
@@ -97,10 +104,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final Class<?> fieldType = factDef.getField().getType();
 			final boolean strict = factDef.isStrict();
 
-			factFinders.put(key, new FactFinder(key, parser, fieldType, strict));
+			factFinders.put(key, new FactFinder(key, parser, fieldType, strict, factDef.isContextual()));
 		}
 
-		return new GearResolver(specialists, Map.copyOf(factFinders));
+		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys));
 	}
 
 	// TODO turn into configurable factory so users can supply their own default
