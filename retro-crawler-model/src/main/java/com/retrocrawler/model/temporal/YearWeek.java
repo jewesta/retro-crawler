@@ -11,8 +11,7 @@ public record YearWeek(int weekBasedYear, int week) {
 
 	public YearWeek {
 		Year.of(weekBasedYear);
-		final int maximumWeek = LocalDate.of(weekBasedYear, 12, 28)
-				.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+		final int maximumWeek = LocalDate.of(weekBasedYear, 12, 28).get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
 		if (week < 1 || week > maximumWeek) {
 			throw new IllegalArgumentException(
 					"ISO week must be between 1 and " + maximumWeek + " for " + weekBasedYear + ": " + week);
@@ -24,8 +23,7 @@ public record YearWeek(int weekBasedYear, int week) {
 	}
 
 	public LocalDate firstDay() {
-		return LocalDate.of(weekBasedYear, 1, 4)
-				.with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week)
+		return LocalDate.of(weekBasedYear, 1, 4).with(IsoFields.WEEK_OF_WEEK_BASED_YEAR, week)
 				.with(ChronoField.DAY_OF_WEEK, 1);
 	}
 

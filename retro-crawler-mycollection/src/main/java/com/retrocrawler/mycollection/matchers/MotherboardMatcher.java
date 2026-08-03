@@ -12,8 +12,8 @@ public final class MotherboardMatcher implements GearMatcher {
 	@Override
 	public Confidence matches(final GearContext context) {
 		final boolean hasExpansionBus = context.facts(AttributeNames.BUS, ExpansionBus.class).isPresent();
-		final boolean hasComputerForm = context
-				.facts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class).isPresent();
+		final boolean hasComputerForm = context.facts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class)
+				.isPresent();
 		return hasExpansionBus && hasComputerForm ? Confidence.STRONG : Confidence.NONE;
 	}
 }

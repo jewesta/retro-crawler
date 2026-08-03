@@ -21,6 +21,7 @@ public final class RegionCodeParser implements FactParser {
 	}
 
 	private static RatedFact noMatch() {
-		return RatedFact.none("Expected an ISO 3166-1 alpha-2 region code or a supported industry release-market code.");
+		return RatedFact
+				.none("Expected an ISO 3166-1 alpha-2 region code or a supported industry release-market code.");
 	}
 }

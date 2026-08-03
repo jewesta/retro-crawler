@@ -35,7 +35,7 @@ public record CrawlPlanning(int targetRegions, int maximumDepth, int maximumAnal
 	}
 
 	public static CrawlPlanning defaults() {
-		return new CrawlPlanning(DEFAULT_TARGET_REGIONS, DEFAULT_MAXIMUM_DEPTH,
-				DEFAULT_MAXIMUM_ANALYZED_DIRECTORIES, DEFAULT_MAXIMUM_DURATION);
+		return new CrawlPlanning(DEFAULT_TARGET_REGIONS, DEFAULT_MAXIMUM_DEPTH, DEFAULT_MAXIMUM_ANALYZED_DIRECTORIES,
+				DEFAULT_MAXIMUM_DURATION);
 	}
 }

@@ -107,16 +107,15 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.COLOR, parser = CollectionColorParser.class, strict = false, optional = true)
 	private Set<Color> colors = Set.of();
 
-	@RetroFact(key = AttributeNames.CONDITION, parser = CollectionItemConditionParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.CONDITION, parser = CollectionItemConditionParser.class, strict = false,
+			optional = true)
 	private ItemCondition condition;
 
-	@RetroFact(key = AttributeNames.DAMAGE, parser = CollectionDamageKindParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.DAMAGE, parser = CollectionDamageKindParser.class, strict = false, optional = true)
 	private Set<DamageKind> damageKinds = Set.of();
 
-	@RetroFact(key = AttributeNames.DATE_MARKING, parser = CollectionDateMarkingParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.DATE_MARKING, parser = CollectionDateMarkingParser.class, strict = false,
+			optional = true)
 	private DateMarking dateMarking;
 
 	@RetroFact(key = AttributeNames.GEAR_KIND, parser = GearKindParser.class, strict = false, optional = true)
@@ -140,23 +139,22 @@ public abstract class MyGear {
 			optional = true)
 	private Set<MemoryStandard> memoryStandards = Set.of();
 
-	@RetroFact(key = AttributeNames.PACKAGING_ORIGIN, parser = CollectionPackagingOriginParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.PACKAGING_ORIGIN, parser = CollectionPackagingOriginParser.class, strict = false,
+			optional = true)
 	private PackagingOrigin packagingOrigin;
 
-	@RetroFact(key = AttributeNames.COMPUTER_FORM_FACTOR, parser = ComputerFormFactorParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.COMPUTER_FORM_FACTOR, parser = ComputerFormFactorParser.class, strict = false,
+			optional = true)
 	private Set<ComputerFormFactor> computerFormFactors = Set.of();
 
 	@RetroFact(key = AttributeNames.POWER, parser = PowerParser.class, strict = false, optional = true)
 	private Power power;
 
-	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = ScreenSizeParser.class,
-			optional = true)
+	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = ScreenSizeParser.class, optional = true)
 	private ScreenSize screenSize;
 
-	@RetroFact(key = AttributeNames.SEAL_STATE, parser = CollectionSealStateParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.SEAL_STATE, parser = CollectionSealStateParser.class, strict = false,
+			optional = true)
 	private SealState sealState;
 
 	@RetroFact(key = AttributeNames.VERSION, parser = VersionParser.class, strict = false, optional = true)
@@ -174,8 +172,8 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FCC_ID, optional = true)
 	private String fccId;
 
-	@RetroFact(key = AttributeNames.HEALTH, parser = CollectionFunctionalConditionParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.HEALTH, parser = CollectionFunctionalConditionParser.class, strict = false,
+			optional = true)
 	private FunctionalCondition health;
 
 	@RetroFact(key = AttributeNames.PRICE, parser = MoneyParser.class, optional = true)
@@ -209,23 +207,22 @@ public abstract class MyGear {
 			optional = true)
 	private Set<LanguageCode> languages = Set.of();
 
-	@RetroFact(key = AttributeNames.REGION, parser = CollectionRegionCodeParser.class, strict = false,
-			optional = true)
+	@RetroFact(key = AttributeNames.REGION, parser = CollectionRegionCodeParser.class, strict = false, optional = true)
 	private Set<RegionCode> regions = Set.of();
 
 	@RetroFact(key = AttributeNames.MAC_ADDRESS, parser = MacAddressParser.class, optional = true)
 	private MacAddress macAddress;
 
-	@RetroFact(key = AttributeNames.NINTENDO_GAME_BOY_CARTRIDGE_CODE,
-			parser = NintendoGameBoyCartridgeCodeParser.class, strict = false, optional = true)
+	@RetroFact(key = AttributeNames.NINTENDO_GAME_BOY_CARTRIDGE_CODE, parser = NintendoGameBoyCartridgeCodeParser.class,
+			strict = false, optional = true)
 	private Set<NintendoGameBoyCartridgeCode> nintendoGameBoyCartridgeCodes = Set.of();
 
-	@RetroFact(key = AttributeNames.PSP_DISC_ID, parser = PlayStationPortableDiscIdParser.class,
-			strict = false, optional = true)
+	@RetroFact(key = AttributeNames.PSP_DISC_ID, parser = PlayStationPortableDiscIdParser.class, strict = false,
+			optional = true)
 	private Set<PlayStationPortableDiscId> playStationPortableDiscIds = Set.of();
 
-	@RetroFact(key = AttributeNames.SEGA_GAME_GEAR_CARTRIDGE_CODE,
-			parser = SegaGameGearCartridgeCodeParser.class, optional = true)
+	@RetroFact(key = AttributeNames.SEGA_GAME_GEAR_CARTRIDGE_CODE, parser = SegaGameGearCartridgeCodeParser.class,
+			optional = true)
 	private Set<SegaGameGearCartridgeCode> segaGameGearCartridgeCodes = Set.of();
 
 	@RetroFact(key = AttributeNames.SERIAL_NUMBER, parser = StringParser.class, optional = true)

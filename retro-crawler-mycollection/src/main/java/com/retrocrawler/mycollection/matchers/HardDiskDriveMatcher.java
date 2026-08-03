@@ -10,9 +10,7 @@ public final class HardDiskDriveMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		return context.fact(AttributeNames.GEAR_KIND, GearKind.class)
-				.filter(GearKind.HARD_DISK_DRIVE::equals)
-				.map(ignored -> Confidence.EXACT)
-				.orElse(Confidence.NONE);
+		return context.fact(AttributeNames.GEAR_KIND, GearKind.class).filter(GearKind.HARD_DISK_DRIVE::equals)
+				.map(ignored -> Confidence.EXACT).orElse(Confidence.NONE);
 	}
 }

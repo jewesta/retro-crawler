@@ -117,9 +117,9 @@ public class JsonFileRepository implements Repository {
 						"Expected archive id '" + id + "' but retrieved '" + archive.id() + "' from: " + jsonPath);
 			}
 			if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(archive.version())) {
-				throw new RepositoryException("Stored archive at " + jsonPath + " uses cache version "
-						+ archive.version() + " but this crawler requires "
-						+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
+				throw new RepositoryException(
+						"Stored archive at " + jsonPath + " uses cache version " + archive.version()
+								+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 			}
 			return Optional.of(archive);
 		} catch (final IOException e) {

@@ -20,7 +20,8 @@ public record ArchivePath(Path root, Path path, List<Path> children) {
 	}
 
 	/**
-	 * Compatibility constructor for inspecting one folder as its own archive root.
+	 * Compatibility constructor for inspecting one folder as its own archive
+	 * root.
 	 */
 	public ArchivePath(final Path path, final List<Path> children) {
 		this(path, path, children);
@@ -30,7 +31,8 @@ public record ArchivePath(Path root, Path path, List<Path> children) {
 		Objects.requireNonNull(child, "child");
 		final Path relative = root.normalize().relativize(child.normalize());
 		if (relative.startsWith("..")) {
-			throw new IllegalArgumentException("Expected archive entry '" + child + "' to be below root '" + root + "'.");
+			throw new IllegalArgumentException(
+					"Expected archive entry '" + child + "' to be below root '" + root + "'.");
 		}
 		return relative;
 	}

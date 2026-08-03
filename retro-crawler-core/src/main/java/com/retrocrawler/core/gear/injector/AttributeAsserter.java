@@ -11,7 +11,8 @@ final class AttributeAsserter {
 		// static utility class
 	}
 
-	public static void assertMissingAllowed(final Class<?> gearType, final FactDescriptor descriptor, final String key) {
+	public static void assertMissingAllowed(final Class<?> gearType, final FactDescriptor descriptor,
+			final String key) {
 
 		final Field field = descriptor.field();
 

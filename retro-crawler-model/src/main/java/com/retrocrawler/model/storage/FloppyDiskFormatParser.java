@@ -21,8 +21,7 @@ public final class FloppyDiskFormatParser implements FactParser {
 			return noMatch();
 		}
 
-		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT)
-				.replaceAll("[\\s_\\-/]+", "");
+		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT).replaceAll("[\\s_\\-/]+", "");
 		final FloppyDiskFormat standalone = standalone(normalized);
 		if (standalone != null) {
 			return RatedFact.exact(standalone);
@@ -35,8 +34,8 @@ public final class FloppyDiskFormatParser implements FactParser {
 
 		final Matcher numericAndNamed = NUMERIC_AND_NAMED.matcher(normalized);
 		if (numericAndNamed.matches()) {
-			return RatedFact.exact(
-					FloppyDiskFormat.of(sides(numericAndNamed.group(1)), density(numericAndNamed.group(2))));
+			return RatedFact
+					.exact(FloppyDiskFormat.of(sides(numericAndNamed.group(1)), density(numericAndNamed.group(2))));
 		}
 
 		final Matcher named = NAMED_COMBINED.matcher(normalized);

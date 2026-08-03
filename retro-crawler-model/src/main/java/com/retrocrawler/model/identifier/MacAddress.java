@@ -10,18 +10,14 @@ import java.util.stream.IntStream;
 public record MacAddress(String value) {
 
 	public MacAddress {
-		final String compact = Objects.requireNonNull(value, "value")
-				.trim()
-				.replace(":", "")
-				.replace("-", "")
+		final String compact = Objects.requireNonNull(value, "value").trim().replace(":", "").replace("-", "")
 				.replace(".", "");
 		if (!compact.matches("(?i)[0-9a-f]{12}")) {
 			throw new IllegalArgumentException("Expected a 48-bit MAC address: " + value);
 		}
 
 		final String upper = compact.toUpperCase(Locale.ROOT);
-		value = IntStream.range(0, 6)
-				.mapToObj(index -> upper.substring(index * 2, index * 2 + 2))
+		value = IntStream.range(0, 6).mapToObj(index -> upper.substring(index * 2, index * 2 + 2))
 				.collect(java.util.stream.Collectors.joining(":"));
 	}
 

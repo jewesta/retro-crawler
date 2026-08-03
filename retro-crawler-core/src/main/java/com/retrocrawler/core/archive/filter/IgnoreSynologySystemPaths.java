@@ -8,9 +8,7 @@ import java.util.Set;
  */
 public final class IgnoreSynologySystemPaths implements ArchivePathFilter {
 
-	private static final Set<String> NAMES = Set.of(
-			"#recycle",
-			"@eadir");
+	private static final Set<String> NAMES = Set.of("#recycle", "@eadir");
 
 	@Override
 	public boolean accept(final Path path) {

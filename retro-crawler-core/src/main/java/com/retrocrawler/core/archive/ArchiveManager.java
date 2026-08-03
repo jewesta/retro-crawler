@@ -34,8 +34,7 @@ public class ArchiveManager {
 
 	private final ArchiveDigger digger;
 
-	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger,
-			final Repository repository) {
+	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.digger = Objects.requireNonNull(digger, "digger");
 		this.repository = Objects.requireNonNull(repository, "repository");
@@ -43,7 +42,8 @@ public class ArchiveManager {
 
 	private Archive fromFileSystem(final Progressor progressor) throws IOException {
 		final Collection<Path> rootPaths = descriptor.paths();
-		final List<ArchiveDigTarget> targets = rootPaths.stream().map(path -> new ArchiveDigTarget(path, path)).toList();
+		final List<ArchiveDigTarget> targets = rootPaths.stream().map(path -> new ArchiveDigTarget(path, path))
+				.toList();
 		final ArchiveDigPlan plan = digger.plan(targets, progressor);
 		final List<Bucket> buckets = new ArrayList<>();
 		for (final Path rootPath : rootPaths) {
@@ -128,9 +128,8 @@ public class ArchiveManager {
 
 	private Archive bindToConfiguredRoots(final Archive stored) {
 		if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(stored.version())) {
-			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version "
-					+ stored.version() + " but this crawler requires "
-					+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
+			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version " + stored.version()
+					+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 		}
 		final List<Path> configuredRoots = List.copyOf(descriptor.paths());
 		final List<Bucket> storedBuckets = stored.buckets();
@@ -162,9 +161,9 @@ public class ArchiveManager {
 			final List<ConfiguredRoot> matchingRoots = configuredRoots.stream()
 					.filter(root -> requestedPath.startsWith(root.normalized())).toList();
 			if (matchingRoots.size() != 1) {
-				throw new IllegalArgumentException(matchingRoots.isEmpty()
-						? "Archive subtree is not below a configured root: " + requestedPath
-						: "Archive subtree belongs to more than one configured root: " + requestedPath);
+				throw new IllegalArgumentException(
+						matchingRoots.isEmpty() ? "Archive subtree is not below a configured root: " + requestedPath
+								: "Archive subtree belongs to more than one configured root: " + requestedPath);
 			}
 
 			final ConfiguredRoot configuredRoot = matchingRoots.getFirst();
@@ -176,8 +175,8 @@ public class ArchiveManager {
 			final int bucketIndex = findBucket(stored, configuredRoot.normalized());
 			final List<String> relativeFolders = relativeFolders(configuredRoot.normalized(), requestedPath);
 			requireStoredSubtree(stored.buckets().get(bucketIndex).root(), relativeFolders, requestedPath);
-			result.add(new LocatedSubtree(bucketIndex,
-					new ArchiveDigTarget(configuredRoot.normalized(), requestedPath), relativeFolders));
+			result.add(new LocatedSubtree(bucketIndex, new ArchiveDigTarget(configuredRoot.normalized(), requestedPath),
+					relativeFolders));
 		}
 		return result;
 	}
@@ -228,10 +227,9 @@ public class ArchiveManager {
 			final Path requestedPath) {
 		ArchiveNode current = root;
 		for (final String folder : relativeFolders) {
-			current = child(current, folder)
-					.orElseThrow(() -> new IllegalArgumentException(
-							"Archive subtree is not present in the stored clue archive; re-index its parent instead: "
-									+ requestedPath));
+			current = child(current, folder).orElseThrow(() -> new IllegalArgumentException(
+					"Archive subtree is not present in the stored clue archive; re-index its parent instead: "
+							+ requestedPath));
 		}
 	}
 

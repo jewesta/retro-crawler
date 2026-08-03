@@ -15,8 +15,7 @@ import com.retrocrawler.model.locale.RegionCodeParser;
  */
 public final class CollectionRegionCodeParser implements FactParser {
 
-	private static final Set<String> OBSERVED_REGION_MARKERS = Set.of(
-			"DE", "ES", "EU", "EUR", "FR", "IT", "JP", "US");
+	private static final Set<String> OBSERVED_REGION_MARKERS = Set.of("DE", "ES", "EU", "EUR", "FR", "IT", "JP", "US");
 
 	private final RegionCodeParser delegate = new RegionCodeParser();
 

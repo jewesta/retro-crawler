@@ -10,14 +10,13 @@ import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class FloppyDiskFormFactorParser implements FactParser {
 
-	private static final Pattern DECIMAL_INCHES = Pattern.compile(
-			"^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
+	private static final Pattern DECIMAL_INCHES = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact>map(RatedFact::exact)
-				.orElseGet(() -> RatedFact.none("Expected a recognized nominal floppy-disk form factor with an inch unit."));
+		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+				() -> RatedFact.none("Expected a recognized nominal floppy-disk form factor with an inch unit."));
 	}
 
 	public static Optional<FloppyDiskFormFactor> parseValue(final String rawValue) {

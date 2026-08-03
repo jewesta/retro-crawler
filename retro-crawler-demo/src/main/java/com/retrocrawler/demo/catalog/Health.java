@@ -2,6 +2,10 @@ package com.retrocrawler.demo.catalog;
 
 public enum Health {
 
-	unknown, working, repair, critical, dead;
+	unknown,
+	working,
+	repair,
+	critical,
+	dead
 
 }

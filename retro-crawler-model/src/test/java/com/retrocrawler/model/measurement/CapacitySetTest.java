@@ -28,7 +28,8 @@ class CapacitySetTest {
 		final CapacitySetParser parser = new CapacitySetParser();
 
 		for (final String invalid : new String[] {
-				"5 x", "Set A", "2 x 4 x 256kb plus Parity", "? x 100MB", "1 x 16MB" }) {
+				"5 x", "Set A", "2 x 4 x 256kb plus Parity", "? x 100MB", "1 x 16MB"
+		}) {
 			assertEquals(Confidence.NONE, parser.parse(invalid).confidence(), invalid);
 		}
 		assertThrows(IllegalArgumentException.class,

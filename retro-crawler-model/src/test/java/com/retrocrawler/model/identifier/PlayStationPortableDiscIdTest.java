@@ -13,8 +13,8 @@ class PlayStationPortableDiscIdTest {
 
 	@Test
 	void normalizesKnownPhysicalDiscIdSpellings() {
-		final PlayStationPortableDiscId european = new PlayStationPortableDiscId(
-				PlayStationPortableDiscPrefix.ULES, "01234");
+		final PlayStationPortableDiscId european = new PlayStationPortableDiscId(PlayStationPortableDiscPrefix.ULES,
+				"01234");
 
 		assertEquals(european, parser.parse("ules-01234").value().orElseThrow());
 		assertEquals(european, parser.parse("ULES 01234").value().orElseThrow());
@@ -28,14 +28,11 @@ class PlayStationPortableDiscIdTest {
 	@Test
 	void coversTheKnownPhysicalPrefixMatrixAndRejectsOtherPlayStationIds() {
 		assertEquals(10, PlayStationPortableDiscPrefix.values().length);
-		assertEquals(PlayStationPortableMarket.JAPAN,
-				parsed("UCJS-00001").prefix().market());
+		assertEquals(PlayStationPortableMarket.JAPAN, parsed("UCJS-00001").prefix().market());
 		assertEquals(PlayStationPortablePublishingClass.SONY_COMPUTER_ENTERTAINMENT,
 				parsed("UCUS-00001").prefix().publishingClass());
-		assertEquals(PlayStationPortableMarket.KOREA,
-				parsed("ULKS-00001").prefix().market());
-		assertEquals(PlayStationPortableMarket.ASIA,
-				parsed("UCAS-00001").prefix().market());
+		assertEquals(PlayStationPortableMarket.KOREA, parsed("ULKS-00001").prefix().market());
+		assertEquals(PlayStationPortableMarket.ASIA, parsed("UCAS-00001").prefix().market());
 
 		assertEquals(Confidence.NONE, parser.parse("CUSA-00001").confidence());
 		assertEquals(Confidence.NONE, parser.parse("ULES-1234").confidence());

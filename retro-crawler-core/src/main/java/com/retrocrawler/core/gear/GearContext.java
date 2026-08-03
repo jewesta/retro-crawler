@@ -28,8 +28,8 @@ public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes 
 	/**
 	 * Convenience method for matchers that expect exactly one value.
 	 * <p>
-	 * If the fact contains multiple values or the value is not assignable to the
-	 * requested type, {@link Optional#empty()} is returned.
+	 * If the fact contains multiple values or the value is not assignable to
+	 * the requested type, {@link Optional#empty()} is returned.
 	 */
 	public <T> Optional<T> fact(final String key, final Class<T> type) {
 		Objects.requireNonNull(key, "key");

@@ -7,8 +7,8 @@ import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.condition.ItemConditionParser;
 
 /**
- * Maps the collection's German condition markers to the portable item
- * condition vocabulary.
+ * Maps the collection's German condition markers to the portable item condition
+ * vocabulary.
  */
 public final class CollectionItemConditionParser implements FactParser {
 

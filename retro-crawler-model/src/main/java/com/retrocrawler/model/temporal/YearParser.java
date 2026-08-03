@@ -8,7 +8,9 @@ import java.util.Objects;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-/** Parses plausible four-digit years without treating future numbers as dates. */
+/**
+ * Parses plausible four-digit years without treating future numbers as dates.
+ */
 public final class YearParser implements FactParser {
 
 	public static final Year MINIMUM_YEAR = Year.of(1950);

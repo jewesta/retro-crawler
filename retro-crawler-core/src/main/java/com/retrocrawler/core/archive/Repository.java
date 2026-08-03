@@ -15,7 +15,8 @@ public interface Repository {
 	/**
 	 * Stores the given archive, replacing an archive with the same id.
 	 *
-	 * @throws RepositoryException if the archive cannot be stored
+	 * @throws RepositoryException
+	 *             if the archive cannot be stored
 	 */
 	void stowaway(Archive archive);
 
@@ -23,7 +24,8 @@ public interface Repository {
 	 * Retrieves the archive with the given id.
 	 *
 	 * @return the archive, or an empty optional if no such archive is stored
-	 * @throws RepositoryException if stored data exists but cannot be retrieved
+	 * @throws RepositoryException
+	 *             if stored data exists but cannot be retrieved
 	 */
 	Optional<Archive> retrieve(ArchiveId id);
 

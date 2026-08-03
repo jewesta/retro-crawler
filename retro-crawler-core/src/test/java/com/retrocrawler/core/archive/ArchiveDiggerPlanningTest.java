@@ -75,8 +75,7 @@ class ArchiveDiggerPlanningTest {
 		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
 		assertEquals(List.of("known"), archive.children().stream().map(ArchiveNode::folder).toList());
-		assertFalse(archive.children().stream()
-				.anyMatch(node -> "created-after-planning".equals(node.folder())));
+		assertFalse(archive.children().stream().anyMatch(node -> "created-after-planning".equals(node.folder())));
 	}
 
 	@Test
@@ -96,8 +95,8 @@ class ArchiveDiggerPlanningTest {
 	private ArchiveDigger digger(final CrawlPlanning planning) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("planning_test"), "Planning test",
 				List.of(root));
-		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
-				folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of());
+		final ArchivePathClueFinder clues = new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)),
+				List.of(), List.of());
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), planning);
 	}
 

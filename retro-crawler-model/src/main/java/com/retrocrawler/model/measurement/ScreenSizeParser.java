@@ -9,8 +9,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class ScreenSizeParser implements FactParser {
 
-	private static final Pattern SCREEN_SIZE = Pattern.compile(
-			"^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
+	private static final Pattern SCREEN_SIZE = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
@@ -25,9 +24,9 @@ public final class ScreenSizeParser implements FactParser {
 		try {
 			final BigDecimal inches = new BigDecimal(matcher.group(1).replace(',', '.'));
 			/*
-			 * A unit-qualified length is strong evidence, but an anonymous clue does not
-			 * prove that the length describes a screen. More specific form-factor parsers
-			 * can therefore win with exact confidence.
+			 * A unit-qualified length is strong evidence, but an anonymous clue
+			 * does not prove that the length describes a screen. More specific
+			 * form-factor parsers can therefore win with exact confidence.
 			 */
 			return RatedFact.strong(new ScreenSize(inches));
 		} catch (final IllegalArgumentException e) {

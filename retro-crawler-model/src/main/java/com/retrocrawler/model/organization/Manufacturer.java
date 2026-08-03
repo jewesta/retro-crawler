@@ -10,18 +10,20 @@ import com.retrocrawler.model.identifier.TheRetroWebReference;
  * A manufacturer identity with optional external reference enrichment supplied
  * by the selected catalog.
  *
- * @param name the usual short or trading name
- * @param fullName the full corporate name, when known
- * @param theRetroWebReference a linkable The Retro Web manufacturer reference,
- *        when supplied by the selected catalog
+ * @param name
+ *            the usual short or trading name
+ * @param fullName
+ *            the full corporate name, when known
+ * @param theRetroWebReference
+ *            a linkable The Retro Web manufacturer reference, when supplied by
+ *            the selected catalog
  */
 public record Manufacturer(String name, Optional<String> fullName,
 		Optional<TheRetroWebReference> theRetroWebReference) {
 
 	public Manufacturer {
 		name = requireName(name, "name");
-		fullName = Objects.requireNonNull(fullName, "fullName")
-					.map(value -> requireName(value, "fullName"));
+		fullName = Objects.requireNonNull(fullName, "fullName").map(value -> requireName(value, "fullName"));
 		theRetroWebReference = Objects.requireNonNull(theRetroWebReference, "theRetroWebReference");
 		theRetroWebReference.ifPresent(reference -> {
 			if (reference.category() != TheRetroWebCategory.MANUFACTURER) {
@@ -35,8 +37,7 @@ public record Manufacturer(String name, Optional<String> fullName,
 		this(name, Optional.ofNullable(fullName), Optional.empty());
 	}
 
-	public Manufacturer(final String name, final String fullName,
-			final TheRetroWebReference theRetroWebReference) {
+	public Manufacturer(final String name, final String fullName, final TheRetroWebReference theRetroWebReference) {
 		this(name, Optional.ofNullable(fullName), Optional.ofNullable(theRetroWebReference));
 	}
 

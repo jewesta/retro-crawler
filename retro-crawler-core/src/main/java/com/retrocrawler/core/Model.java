@@ -56,15 +56,16 @@ public final class Model implements ArchiveDefinition {
 	}
 
 	/**
-	 * Starts annotation-derived model construction with optional runtime overrides.
+	 * Starts annotation-derived model construction with optional runtime
+	 * overrides.
 	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	/**
-	 * Discovers and reflects on RetroCrawler-annotated types in the given package
-	 * and its subpackages.
+	 * Discovers and reflects on RetroCrawler-annotated types in the given
+	 * package and its subpackages.
 	 */
 	public static Model from(final String basePackage) {
 		return builder().typesFrom(basePackage).build();
@@ -86,15 +87,16 @@ public final class Model implements ArchiveDefinition {
 	}
 
 	/**
-	 * Reflects on caller-supplied model types while supplying collection locations
-	 * as runtime deployment configuration.
+	 * Reflects on caller-supplied model types while supplying collection
+	 * locations as runtime deployment configuration.
 	 */
 	public static Model from(final Set<Class<?>> types, final ArchiveRoots archiveRoots) {
 		return builder().typesFrom(types).locations(archiveRoots).build();
 	}
 
 	/**
-	 * Reflects on the types supplied by an application-specific discovery source.
+	 * Reflects on the types supplied by an application-specific discovery
+	 * source.
 	 */
 	public static Model from(final TypeSource source) {
 		return builder().typesFrom(source).build();
@@ -153,7 +155,7 @@ public final class Model implements ArchiveDefinition {
 		final Path workingDirectory = runtimeWorkingDirectory == null ? annotationWorkingDirectory(collection)
 				: runtimeWorkingDirectory;
 		final List<ArchivePathFilter> pathFilters = runtimePathFilters == null
-				? Arrays.stream(collection.pathFilters()).<ArchivePathFilter>map(Reflection::newInstance).toList()
+				? Arrays.stream(collection.pathFilters()).<ArchivePathFilter> map(Reflection::newInstance).toList()
 				: runtimePathFilters;
 		final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations = effectiveParserConfigurations(
 				declaration.type(), runtimeParserConfigurations);
@@ -266,21 +268,24 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
-		 * Overrides the collection locations declared by {@link RetroCollection}.
+		 * Overrides the collection locations declared by
+		 * {@link RetroCollection}.
 		 */
 		public Builder locations(final Path... rootPaths) {
 			return locations(ArchiveRoots.from(rootPaths));
 		}
 
 		/**
-		 * Overrides the collection locations declared by {@link RetroCollection}.
+		 * Overrides the collection locations declared by
+		 * {@link RetroCollection}.
 		 */
 		public Builder locations(final Collection<Path> rootPaths) {
 			return locations(ArchiveRoots.from(rootPaths));
 		}
 
 		/**
-		 * Overrides the collection locations declared by {@link RetroCollection}.
+		 * Overrides the collection locations declared by
+		 * {@link RetroCollection}.
 		 */
 		public Builder locations(final ArchiveRoots roots) {
 			archiveRoots = Objects.requireNonNull(roots, "roots");
@@ -297,7 +302,8 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
-		 * Overrides the archive path filters declared by {@link RetroCollection}.
+		 * Overrides the archive path filters declared by
+		 * {@link RetroCollection}.
 		 */
 		public Builder pathFilters(final ArchivePathFilter... filters) {
 			Objects.requireNonNull(filters, "filters");
@@ -305,7 +311,8 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
-		 * Overrides the archive path filters declared by {@link RetroCollection}.
+		 * Overrides the archive path filters declared by
+		 * {@link RetroCollection}.
 		 */
 		public Builder pathFilters(final Collection<? extends ArchivePathFilter> filters) {
 			Objects.requireNonNull(filters, "filters");
@@ -316,8 +323,8 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
-		 * Overrides standard configuration for a parser if that parser is selected by a
-		 * discovered fact declaration.
+		 * Overrides standard configuration for a parser if that parser is
+		 * selected by a discovered fact declaration.
 		 */
 		public Builder factParser(final Class<? extends FactParser> parser,
 				final Consumer<FactParserConfiguration.Builder> customizer) {
@@ -332,8 +339,8 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
-		 * Validates the combined annotation and runtime configuration and creates an
-		 * immutable model.
+		 * Validates the combined annotation and runtime configuration and
+		 * creates an immutable model.
 		 */
 		public Model build() {
 			if (types == null) {

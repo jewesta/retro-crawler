@@ -44,11 +44,11 @@ final class DefaultCatalogLoader implements CatalogLoader {
 				return Catalog.read(keyType, new InputStreamReader(input, StandardCharsets.UTF_8));
 			}
 		} catch (final IOException e) {
-			throw new UncheckedIOException("Could not close bundled catalog '" + defaultCatalogFile
-					+ "' for parser " + parserType.getName() + ".", e);
+			throw new UncheckedIOException("Could not close bundled catalog '" + defaultCatalogFile + "' for parser "
+					+ parserType.getName() + ".", e);
 		} catch (final IllegalArgumentException e) {
-			throw new IllegalArgumentException("Invalid bundled catalog '" + defaultCatalogFile
-					+ "' for parser " + parserType.getName() + ".", e);
+			throw new IllegalArgumentException(
+					"Invalid bundled catalog '" + defaultCatalogFile + "' for parser " + parserType.getName() + ".", e);
 		}
 
 		return loadExternal(keyType, defaultCatalogFile, false);
@@ -66,8 +66,7 @@ final class DefaultCatalogLoader implements CatalogLoader {
 		final Path catalogRoot = workingDirectory.toAbsolutePath().normalize().resolve(CATALOG_DIRECTORY);
 		final Path source = catalogRoot.resolve(relative).normalize();
 		if (!source.startsWith(catalogRoot)) {
-			throw new IllegalArgumentException("Catalog file escapes the collection catalog directory: "
-					+ catalogFile);
+			throw new IllegalArgumentException("Catalog file escapes the collection catalog directory: " + catalogFile);
 		}
 		if (!Files.isRegularFile(source)) {
 			throw new IllegalStateException("Catalog file for parser " + parserType.getName()
@@ -77,11 +76,11 @@ final class DefaultCatalogLoader implements CatalogLoader {
 		try (Reader reader = Files.newBufferedReader(source, StandardCharsets.UTF_8)) {
 			return Catalog.read(keyType, reader);
 		} catch (final IOException e) {
-			throw new UncheckedIOException("Could not read catalog file for parser " + parserType.getName()
-					+ ": " + source, e);
+			throw new UncheckedIOException(
+					"Could not read catalog file for parser " + parserType.getName() + ": " + source, e);
 		} catch (final IllegalArgumentException e) {
-			throw new IllegalArgumentException("Invalid catalog file for parser " + parserType.getName()
-					+ ": " + source, e);
+			throw new IllegalArgumentException(
+					"Invalid catalog file for parser " + parserType.getName() + ": " + source, e);
 		}
 	}
 

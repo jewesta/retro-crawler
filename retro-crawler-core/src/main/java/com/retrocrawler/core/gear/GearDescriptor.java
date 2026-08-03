@@ -129,7 +129,8 @@ public class GearDescriptor implements Descriptor {
 
 				if (fact == null) {
 					/*
-					 * Standalone @RetroId is allowed, but it is not an attribute.
+					 * Standalone @RetroId is allowed, but it is not an
+					 * attribute.
 					 */
 					continue;
 				}
@@ -232,8 +233,8 @@ public class GearDescriptor implements Descriptor {
 		}
 		/*
 		 * Note: Due to type erasure we cannot reliably enforce Map<String,
-		 * RetroAttribute> at runtime. We at least ensure it is a Map and let the
-		 * assignment logic validate key/value types.
+		 * RetroAttribute> at runtime. We at least ensure it is a Map and let
+		 * the assignment logic validate key/value types.
 		 */
 	}
 }

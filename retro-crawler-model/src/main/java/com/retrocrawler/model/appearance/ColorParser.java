@@ -40,8 +40,7 @@ public final class ColorParser implements FactParser {
 	}
 
 	private static Color parseSingle(final String rawValue) {
-		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT)
-				.replaceAll("[\\s_-]+", "");
+		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT).replaceAll("[\\s_-]+", "");
 		return switch (normalized) {
 		case "BEIGE" -> Color.BEIGE;
 		case "BLACK" -> Color.BLACK;

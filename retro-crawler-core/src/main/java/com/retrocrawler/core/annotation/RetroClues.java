@@ -25,8 +25,8 @@ public @interface RetroClues {
 	Class<? extends FileContentClueFinder>[] fromFileContents() default {};
 
 	/**
-	 * Post-order finders that may inspect non-artifact folder subtrees through a
-	 * transient archive view.
+	 * Post-order finders that may inspect non-artifact folder subtrees through
+	 * a transient archive view.
 	 */
 	Class<? extends TreeClueFinder>[] fromFolderTrees() default {};
 }

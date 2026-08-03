@@ -14,8 +14,8 @@ public abstract class AbstractCatalogFactParser<K extends Enum<K>> implements Ca
 
 	protected AbstractCatalogFactParser(final CatalogLoader catalogs, final Class<K> keyType,
 			final String defaultCatalogFile) {
-		this(Objects.requireNonNull(catalogs, "catalogs").load(
-				Objects.requireNonNull(keyType, "keyType"), requireFileName(defaultCatalogFile)));
+		this(Objects.requireNonNull(catalogs, "catalogs").load(Objects.requireNonNull(keyType, "keyType"),
+				requireFileName(defaultCatalogFile)));
 	}
 
 	protected AbstractCatalogFactParser(final Catalog<K> catalog) {

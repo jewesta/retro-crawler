@@ -48,8 +48,7 @@ class ContextualFactResolutionTest {
 
 		final Model model = Model.from(Set.of(TestArchive.class, HardDrive.class, Mystery.class),
 				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model)
-				.repository(new InMemoryRepository()).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository()).build();
 
 		final List<BaseGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(), BaseGear.class);
 
@@ -89,8 +88,8 @@ class ContextualFactResolutionTest {
 	@RetroGear(HardDriveMatcher.class)
 	public static final class HardDrive extends BaseGear {
 
-		@RetroFact(key = "hardDriveFormFactor", parser = HardDriveFormFactorParser.class,
-				strict = false, contextual = true)
+		@RetroFact(key = "hardDriveFormFactor", parser = HardDriveFormFactorParser.class, strict = false,
+				contextual = true)
 		private Fact formFactor;
 
 		public HardDrive() {
@@ -108,8 +107,7 @@ class ContextualFactResolutionTest {
 
 		@Override
 		public Confidence matches(final GearContext context) {
-			return context.fact("kind", String.class).filter("hard-drive"::equals).isPresent()
-					? Confidence.EXACT
+			return context.fact("kind", String.class).filter("hard-drive"::equals).isPresent() ? Confidence.EXACT
 					: Confidence.NONE;
 		}
 	}

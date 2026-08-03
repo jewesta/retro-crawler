@@ -19,13 +19,13 @@ class CatalogTest {
 	@Test
 	void readsCommentsArbitraryHeaderOrderAndTrailingEmptyCells() {
 		final Catalog<Key> catalog = Catalog.read(Key.class, new StringReader("""
-				# source
+			# source
 
-				third\tfirst\tsecond
-				last\tone\t
-				  # another comment
-				three\ttwo\tmiddle
-				"""));
+			third\tfirst\tsecond
+			last\tone\t
+			  # another comment
+			three\ttwo\tmiddle
+			"""));
 
 		assertEquals(2, catalog.rows().size());
 		assertEquals("one", catalog.rows().getFirst().get(Key.first));
@@ -53,16 +53,13 @@ class CatalogTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> Catalog.read(Key.class, new StringReader("first\tsecond\tthird\none\ttwo\n")));
 		assertThrows(IllegalArgumentException.class,
-				() -> Catalog.read(Key.class,
-						new StringReader("first\tsecond\tthird\none\ttwo\tthree\tfour\n")));
+				() -> Catalog.read(Key.class, new StringReader("first\tsecond\tthird\none\ttwo\tthree\tfour\n")));
 	}
 
 	@Test
 	void combinesOnlyCatalogsWithTheSameKeyType() {
-		final Catalog<Key> first = Catalog.read(Key.class,
-				new StringReader("first\tsecond\tthird\n1\t2\t3\n"));
-		final Catalog<Key> second = Catalog.read(Key.class,
-				new StringReader("third\tsecond\tfirst\n6\t5\t4\n"));
+		final Catalog<Key> first = Catalog.read(Key.class, new StringReader("first\tsecond\tthird\n1\t2\t3\n"));
+		final Catalog<Key> second = Catalog.read(Key.class, new StringReader("third\tsecond\tfirst\n6\t5\t4\n"));
 
 		assertEquals(2, first.plus(second).rows().size());
 		assertEquals("4", first.plus(second).rows().get(1).get(Key.first));

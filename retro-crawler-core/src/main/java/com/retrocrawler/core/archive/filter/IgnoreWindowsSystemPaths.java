@@ -8,12 +8,8 @@ import java.util.Set;
  */
 public final class IgnoreWindowsSystemPaths implements ArchivePathFilter {
 
-	private static final Set<String> NAMES = Set.of(
-			"$recycle.bin",
-			"desktop.ini",
-			"ehthumbs.db",
-			"system volume information",
-			"thumbs.db");
+	private static final Set<String> NAMES = Set.of("$recycle.bin", "desktop.ini", "ehthumbs.db",
+			"system volume information", "thumbs.db");
 
 	@Override
 	public boolean accept(final Path path) {

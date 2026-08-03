@@ -36,12 +36,9 @@ class ArchiveDiggerPathFilterTest {
 		Files.createDirectories(root.resolve(".@__thumb/cache"));
 		Files.createDirectories(root.resolve("@Recycle/deleted"));
 
-		final ArchiveDefinition archive = definition(
-				new IgnoreDotPaths(),
-				new IgnoreWindowsSystemPaths(),
+		final ArchiveDefinition archive = definition(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
 				new IgnoreQNAPSystemPaths());
-		final ArchiveDigger digger = new ArchiveDigger(archive,
-				new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
+		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
 		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
 		final ArchiveNode result = digger.dig(root, plan, progressor);
@@ -55,11 +52,9 @@ class ArchiveDiggerPathFilterTest {
 	void acceptsEveryPathWhenNoFiltersAreConfigured() throws IOException {
 		Files.createDirectory(root.resolve(".archive-metadata"));
 
-		final ArchiveNode archive = new ArchiveDigger(definition())
-				.dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(definition()).dig(root, new Progressor());
 
-		assertEquals(List.of(".archive-metadata"),
-				archive.children().stream().map(ArchiveNode::folder).toList());
+		assertEquals(List.of(".archive-metadata"), archive.children().stream().map(ArchiveNode::folder).toList());
 	}
 
 	@Test
@@ -83,15 +78,13 @@ class ArchiveDiggerPathFilterTest {
 	}
 
 	private static ArchivePathClueFinder clueFinder() {
-		final FileNameClueFinder files = paths -> Set.of(Clue.of("files",
-				Set.copyOf(paths.stream().map(Path::getFileName).map(Path::toString).toList())));
+		final FileNameClueFinder files = paths -> Set
+				.of(Clue.of("files", Set.copyOf(paths.stream().map(Path::getFileName).map(Path::toString).toList())));
 		return new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of(files));
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {
-		return node.artifact().clues().stream()
-				.filter(candidate -> key.equals(candidate.key()))
-				.findFirst()
+		return node.artifact().clues().stream().filter(candidate -> key.equals(candidate.key())).findFirst()
 				.orElseThrow();
 	}
 }

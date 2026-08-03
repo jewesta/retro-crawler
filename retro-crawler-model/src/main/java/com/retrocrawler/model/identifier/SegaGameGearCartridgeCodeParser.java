@@ -12,8 +12,7 @@ public final class SegaGameGearCartridgeCodeParser implements FactParser {
 		if (rawValue == null) {
 			return noMatch();
 		}
-		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT)
-				.replaceFirst("^GG[\\s-]*", "");
+		final String normalized = rawValue.trim().toUpperCase(Locale.ROOT).replaceFirst("^GG[\\s-]*", "");
 		if (!normalized.matches("\\d{4}")) {
 			return noMatch();
 		}

@@ -18,8 +18,7 @@ public final class NintendoGameBoyCartridgeCodeParser
 	}
 
 	public NintendoGameBoyCartridgeCodeParser(final CatalogLoader catalogs) {
-		super(catalogs, NintendoGameBoyCartridgeCatalogKey.class,
-				NintendoGameBoyCartridgeCatalog.DEFAULT_CATALOG_FILE);
+		super(catalogs, NintendoGameBoyCartridgeCatalogKey.class, NintendoGameBoyCartridgeCatalog.DEFAULT_CATALOG_FILE);
 		cartridgeCatalog = NintendoGameBoyCartridgeCatalog.from(catalog());
 	}
 

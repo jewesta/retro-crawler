@@ -9,19 +9,29 @@ import java.util.OptionalDouble;
  * Immutable view of an operation's current progress.
  *
  * <p>
- * Adapted from progressor code developed by Relimit GmbH. Used in
- * RetroCrawler with permission.
+ * Adapted from progressor code developed by Relimit GmbH. Used in RetroCrawler
+ * with permission.
  *
- * @param id              stable ID of the root progressor
- * @param stage           current operation stage
- * @param message         human-readable status
- * @param completed       completed stage work units, or {@code -1}
- * @param total           total stage work units, or {@code -1}
- * @param accuracy        accuracy of the stage work units
- * @param state           operation state
- * @param overallFraction position in the root progressor, from zero to one
- * @param elapsed         elapsed time in the current stage
- * @param remaining       estimated remaining time in the current stage
+ * @param id
+ *            stable ID of the root progressor
+ * @param stage
+ *            current operation stage
+ * @param message
+ *            human-readable status
+ * @param completed
+ *            completed stage work units, or {@code -1}
+ * @param total
+ *            total stage work units, or {@code -1}
+ * @param accuracy
+ *            accuracy of the stage work units
+ * @param state
+ *            operation state
+ * @param overallFraction
+ *            position in the root progressor, from zero to one
+ * @param elapsed
+ *            elapsed time in the current stage
+ * @param remaining
+ *            estimated remaining time in the current stage
  */
 public record ProgressSnapshot(String id, ProgressStage stage, String message, long completed, long total,
 		ProgressAccuracy accuracy, ProgressState state, double overallFraction, Duration elapsed,
@@ -40,8 +50,7 @@ public record ProgressSnapshot(String id, ProgressStage stage, String message, l
 			throw new IllegalArgumentException("Overall progress fraction must be between zero and one.");
 		}
 
-		final boolean indeterminate = completed == -1 && total == -1
-				&& accuracy == ProgressAccuracy.INDETERMINATE;
+		final boolean indeterminate = completed == -1 && total == -1 && accuracy == ProgressAccuracy.INDETERMINATE;
 		final boolean determinate = completed >= 0 && total >= 0 && completed <= total
 				&& accuracy != ProgressAccuracy.INDETERMINATE;
 		if (!indeterminate && !determinate) {

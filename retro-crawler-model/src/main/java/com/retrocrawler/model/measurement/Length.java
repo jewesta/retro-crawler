@@ -22,8 +22,7 @@ public record Length(BigDecimal amount, Unit unit) {
 
 	public BigDecimal amountIn(final Unit targetUnit) {
 		Objects.requireNonNull(targetUnit, "targetUnit");
-		return inMillimeters().divide(targetUnit.millimetersPerUnit(), MathContext.DECIMAL128)
-				.stripTrailingZeros();
+		return inMillimeters().divide(targetUnit.millimetersPerUnit(), MathContext.DECIMAL128).stripTrailingZeros();
 	}
 
 	public boolean sameLengthAs(final Length other) {

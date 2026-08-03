@@ -12,8 +12,8 @@ import java.util.OptionalDouble;
  * zero and the configured maximum, inclusive.
  *
  * <p>
- * Adapted from progressor code developed by Relimit GmbH. Used in
- * RetroCrawler with permission.
+ * Adapted from progressor code developed by Relimit GmbH. Used in RetroCrawler
+ * with permission.
  */
 public abstract class FixedStepProgressMonitor implements ProgressMonitor {
 

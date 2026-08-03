@@ -13,13 +13,12 @@ import com.retrocrawler.model.measurement.Length.Unit;
 /** Parses metric and imperial scalar lengths without assigning them a role. */
 public final class LengthParser implements FactParser {
 
-	private static final Pattern LENGTH = Pattern.compile(
-			"^(\\d+(?:[,.]\\d+)?)\\s*(mm|cm|m|\"|″|in(?:ch(?:es)?)?)$",
+	private static final Pattern LENGTH = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(mm|cm|m|\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact>map(RatedFact::exact)
+		return parseValue(rawValue).<RatedFact> map(RatedFact::exact)
 				.orElseGet(() -> RatedFact.none("Expected a positive metric or imperial length with a unit."));
 	}
 

@@ -10,28 +10,22 @@ class InternalClueKeysTest {
 
 	@Test
 	void exposesStableReservedKeys() {
-		assertAll(
-				() -> assertEquals("@id", InternalClueKeys.ID),
+		assertAll(() -> assertEquals("@id", InternalClueKeys.ID),
 				() -> assertEquals("@folder", InternalClueKeys.FOLDER),
 				() -> assertEquals("@type", InternalClueKeys.TYPE));
 	}
 
 	@Test
 	void preventsFindersFromCreatingReservedClues() {
-		assertAll(
-				() -> assertThrows(IllegalArgumentException.class,
-						() -> Clue.of(InternalClueKeys.ID, "artifact-id")),
+		assertAll(() -> assertThrows(IllegalArgumentException.class, () -> Clue.of(InternalClueKeys.ID, "artifact-id")),
 				() -> assertThrows(IllegalArgumentException.class,
 						() -> Clue.of(InternalClueKeys.FOLDER, "artifact-folder")),
-				() -> assertThrows(IllegalArgumentException.class,
-						() -> Clue.of(InternalClueKeys.TYPE, "clue-type")));
+				() -> assertThrows(IllegalArgumentException.class, () -> Clue.of(InternalClueKeys.TYPE, "clue-type")));
 	}
 
 	@Test
 	void permitsSyntheticCluesButKeepsTypeForSerialization() {
-		assertAll(
-				() -> assertEquals(InternalClueKeys.ID,
-						Clue.internal(InternalClueKeys.ID, "artifact-id").key()),
+		assertAll(() -> assertEquals(InternalClueKeys.ID, Clue.internal(InternalClueKeys.ID, "artifact-id").key()),
 				() -> assertEquals(InternalClueKeys.FOLDER,
 						Clue.internal(InternalClueKeys.FOLDER, "artifact-folder").key()),
 				() -> assertThrows(IllegalArgumentException.class,

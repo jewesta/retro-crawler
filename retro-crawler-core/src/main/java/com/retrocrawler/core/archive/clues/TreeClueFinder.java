@@ -8,8 +8,8 @@ import java.util.Set;
  * <p>
  * A tree finder may navigate metadata folders and inspect file content through
  * {@link ArchiveFileView#peek(java.util.function.Function)}. It cannot cross a
- * child artifact boundary or traverse the filesystem directly through this
- * API. Every returned clue belongs to the current folder being examined.
+ * child artifact boundary or traverse the filesystem directly through this API.
+ * Every returned clue belongs to the current folder being examined.
  */
 public interface TreeClueFinder extends ClueFinder {
 

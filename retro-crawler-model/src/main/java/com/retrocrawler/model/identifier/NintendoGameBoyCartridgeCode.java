@@ -1,7 +1,7 @@
 package com.retrocrawler.model.identifier;
 
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -11,16 +11,16 @@ import java.util.regex.Pattern;
  * A code printed on a Nintendo Game Boy-family cartridge label.
  *
  * <p>
- * Most labels use a structured {@code DMG}, {@code CGB}, or {@code AGB}
- * prefix, but observed genuine cartridges also contain legacy forms,
- * distributor prefixes, and printing mistakes. The complete canonical text is
- * therefore the identity of this value. Structured accessors are best-effort
- * views and catalogue membership is deliberately separate.
+ * Most labels use a structured {@code DMG}, {@code CGB}, or {@code AGB} prefix,
+ * but observed genuine cartridges also contain legacy forms, distributor
+ * prefixes, and printing mistakes. The complete canonical text is therefore the
+ * identity of this value. Structured accessors are best-effort views and
+ * catalogue membership is deliberately separate.
  *
  * <p>
- * This is distinct from the related {@link NintendoGameBoyRomId} printed on
- * the mask ROM. Some legacy label codes are structurally indistinguishable
- * from ROM IDs, so callers must retain the observation's context.
+ * This is distinct from the related {@link NintendoGameBoyRomId} printed on the
+ * mask ROM. Some legacy label codes are structurally indistinguishable from ROM
+ * IDs, so callers must retain the observation's context.
  */
 public record NintendoGameBoyCartridgeCode(String value) {
 
@@ -48,8 +48,8 @@ public record NintendoGameBoyCartridgeCode(String value) {
 	}
 
 	/**
-	 * Returns the platform explicitly present in the first or second segment.
-	 * A catalogue entry can still establish the platform for a label whose
+	 * Returns the platform explicitly present in the first or second segment. A
+	 * catalogue entry can still establish the platform for a label whose
 	 * printed platform prefix is misspelled.
 	 */
 	public Optional<NintendoGameBoyPlatform> platform() {
@@ -66,8 +66,7 @@ public record NintendoGameBoyCartridgeCode(String value) {
 	public Optional<String> gameCode() {
 		final int platformIndex = platformIndex();
 		final List<String> segments = segments();
-		return platformIndex >= 0 && platformIndex + 1 < segments.size()
-				? Optional.of(segments.get(platformIndex + 1))
+		return platformIndex >= 0 && platformIndex + 1 < segments.size() ? Optional.of(segments.get(platformIndex + 1))
 				: Optional.empty();
 	}
 
@@ -85,9 +84,7 @@ public record NintendoGameBoyCartridgeCode(String value) {
 	public OptionalInt revision() {
 		final List<String> segments = segments();
 		final String candidate = segments.getLast();
-		return candidate.matches("[1-9]")
-				? OptionalInt.of(Integer.parseInt(candidate))
-				: OptionalInt.empty();
+		return candidate.matches("[1-9]") ? OptionalInt.of(Integer.parseInt(candidate)) : OptionalInt.empty();
 	}
 
 	@Override
@@ -117,8 +114,7 @@ public record NintendoGameBoyCartridgeCode(String value) {
 			throw new IllegalArgumentException("Unsupported Game Boy game code: " + normalizedGameCode);
 		}
 		if (!normalizedDistributionCode.matches("[A-Z0-9]{3,4}")) {
-			throw new IllegalArgumentException(
-					"Unsupported Game Boy distribution code: " + normalizedDistributionCode);
+			throw new IllegalArgumentException("Unsupported Game Boy distribution code: " + normalizedDistributionCode);
 		}
 		if (revision.isPresent() && (revision.getAsInt() < 1 || revision.getAsInt() > 9)) {
 			throw new IllegalArgumentException("Game Boy label revision must be between 1 and 9.");

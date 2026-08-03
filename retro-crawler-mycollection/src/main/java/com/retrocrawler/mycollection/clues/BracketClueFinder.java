@@ -88,8 +88,9 @@ public final class BracketClueFinder implements FolderNameClueFinder {
 			return Optional.of(Clue.of(possibleKey.toLowerCase(Locale.ROOT), splitValues(rawValues)));
 		} catch (final IllegalArgumentException e) {
 			/*
-			 * Reserved or otherwise invalid keys are still valuable observations. Keep
-			 * the complete group as an anonymous clue rather than losing it.
+			 * Reserved or otherwise invalid keys are still valuable
+			 * observations. Keep the complete group as an anonymous clue rather
+			 * than losing it.
 			 */
 			return Optional.of(Clue.of(group));
 		}

@@ -38,12 +38,9 @@ class CollectionFactParsersTest {
 	void adaptsGermanCalendarWeeksWithoutMakingMonthsAmbiguous() {
 		final CollectionDateMarkingParser parser = new CollectionDateMarkingParser();
 
-		assertEquals(DateMarking.of(YearMonth.of(1994, 5)),
-				parser.parse("1994-05").value().orElseThrow());
-		assertEquals(DateMarking.of(new YearWeek(1994, 31)),
-				parser.parse("1994-KW31").value().orElseThrow());
-		assertEquals(DateMarking.of(LocalDate.of(1994, 2, 22)),
-				parser.parse("1994-02-22").value().orElseThrow());
+		assertEquals(DateMarking.of(YearMonth.of(1994, 5)), parser.parse("1994-05").value().orElseThrow());
+		assertEquals(DateMarking.of(new YearWeek(1994, 31)), parser.parse("1994-KW31").value().orElseThrow());
+		assertEquals(DateMarking.of(LocalDate.of(1994, 2, 22)), parser.parse("1994-02-22").value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("KW31 1994").confidence());
 		assertEquals(Confidence.NONE, parser.parse("02-22-1994").confidence());
 	}
@@ -74,18 +71,16 @@ class CollectionFactParsersTest {
 	@Test
 	void comparesEquivalentCapacitiesAcrossUnits() {
 		final DataCapacity oneGigabyte = new DataCapacity(BigDecimal.ONE, DataCapacity.Unit.GB);
-		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512),
-				DataCapacity.Unit.MB).multiply(2);
+		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512), DataCapacity.Unit.MB)
+				.multiply(2);
 
 		assertTrue(oneGigabyte.sameSizeAs(twoTimes512Megabytes));
 	}
 
 	@Test
 	void parsesTheCollectionLifecycleVocabulary() {
-		assertEquals(Destiny.VERSCHENKT,
-				new DestinyParser().parse("verschenkt").value().orElseThrow());
-		assertEquals(Destiny.ENTSORGT,
-				new DestinyParser().parse("ENTSORGT").value().orElseThrow());
+		assertEquals(Destiny.VERSCHENKT, new DestinyParser().parse("verschenkt").value().orElseThrow());
+		assertEquals(Destiny.ENTSORGT, new DestinyParser().parse("ENTSORGT").value().orElseThrow());
 		assertEquals(Confidence.NONE, new DestinyParser().parse("weitergegeben").confidence());
 
 		assertEquals(Tested.POST, new TestedParser().parse("post").value().orElseThrow());
@@ -97,26 +92,20 @@ class CollectionFactParsersTest {
 	@Test
 	void keepsItemConditionFunctionalHealthAndSpecificDamageIndependent() {
 		final CollectionItemConditionParser itemCondition = new CollectionItemConditionParser();
-		final CollectionFunctionalConditionParser functionalCondition =
-				new CollectionFunctionalConditionParser();
+		final CollectionFunctionalConditionParser functionalCondition = new CollectionFunctionalConditionParser();
 		final CollectionDamageKindParser damage = new CollectionDamageKindParser();
 
 		assertEquals(ItemCondition.NEW, itemCondition.parse("Neu").value().orElseThrow());
 		assertEquals(ItemCondition.USED, itemCondition.parse("gebraucht").value().orElseThrow());
-		assertEquals(ItemCondition.REFURBISHED,
-				itemCondition.parse("refurbished").value().orElseThrow());
-		assertEquals(ItemCondition.DAMAGED,
-				itemCondition.parse("beschädigt").value().orElseThrow());
+		assertEquals(ItemCondition.REFURBISHED, itemCondition.parse("refurbished").value().orElseThrow());
+		assertEquals(ItemCondition.DAMAGED, itemCondition.parse("beschädigt").value().orElseThrow());
 
-		assertEquals(FunctionalCondition.WORKING,
-				functionalCondition.parse("working").value().orElseThrow());
+		assertEquals(FunctionalCondition.WORKING, functionalCondition.parse("working").value().orElseThrow());
 		assertEquals(FunctionalCondition.PARTIALLY_DEFECTIVE,
 				functionalCondition.parse("teildefekt").value().orElseThrow());
-		assertEquals(FunctionalCondition.DEFECTIVE,
-				functionalCondition.parse("defekt").value().orElseThrow());
+		assertEquals(FunctionalCondition.DEFECTIVE, functionalCondition.parse("defekt").value().orElseThrow());
 
-		assertEquals(DamageKind.BATTERY_DAMAGE,
-				damage.parse("Akkuschaden").value().orElseThrow());
+		assertEquals(DamageKind.BATTERY_DAMAGE, damage.parse("Akkuschaden").value().orElseThrow());
 		assertEquals(DamageKind.BREAKAGE, damage.parse("Bruch").value().orElseThrow());
 
 		assertEquals(Confidence.NONE, itemCondition.parse("defekt").confidence());
@@ -129,16 +118,16 @@ class CollectionFactParsersTest {
 		final CollectionPackagingOriginParser packagingOrigin = new CollectionPackagingOriginParser();
 		final CollectionSealStateParser sealState = new CollectionSealStateParser();
 
-		assertEquals(PackagingOrigin.ORIGINAL,
-				packagingOrigin.parse("OVP").value().orElseThrow());
-		assertEquals(PackagingOrigin.ORIGINAL,
-				packagingOrigin.parse("original packaging").value().orElseThrow());
+		assertEquals(PackagingOrigin.ORIGINAL, packagingOrigin.parse("OVP").value().orElseThrow());
+		assertEquals(PackagingOrigin.ORIGINAL, packagingOrigin.parse("original packaging").value().orElseThrow());
 		assertEquals(SealState.SEALED, sealState.parse("sealed").value().orElseThrow());
 		assertEquals(SealState.SEALED, sealState.parse("versiegelt").value().orElseThrow());
 		assertEquals(SealState.OPENED, sealState.parse("geöffnet").value().orElseThrow());
 		assertEquals(SealState.OPENED, sealState.parse("opened").value().orElseThrow());
 
-		for (final String unrelated : new String[] { "CIB", "NIB", "NOS", "lose" }) {
+		for (final String unrelated : new String[] {
+				"CIB", "NIB", "NOS", "lose"
+		}) {
 			assertEquals(Confidence.NONE, packagingOrigin.parse(unrelated).confidence());
 			assertEquals(Confidence.NONE, sealState.parse(unrelated).confidence());
 		}
@@ -173,7 +162,9 @@ class CollectionFactParsersTest {
 		assertEquals(Confidence.NONE, language.parse("EU").confidence());
 		assertEquals(Confidence.NONE, region.parse("AT").confidence());
 
-		for (final String code : new String[] { "DE", "ES", "FR", "IT" }) {
+		for (final String code : new String[] {
+				"DE", "ES", "FR", "IT"
+		}) {
 			assertEquals(Confidence.EXACT, language.parse(code).confidence());
 			assertEquals(Confidence.EXACT, region.parse(code).confidence());
 		}
@@ -183,10 +174,8 @@ class CollectionFactParsersTest {
 	void adaptsTheLegacyInchGlyphWithoutChangingTheSharedLengthMeaning() {
 		final CollectionLengthParser parser = new CollectionLengthParser();
 
-		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
-				parser.parse("2,5\uF020").value().orElseThrow());
-		assertEquals(new Length(BigDecimal.valueOf(50), Unit.CENTIMETER),
-				parser.parse("50cm").value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH), parser.parse("2,5\uF020").value().orElseThrow());
+		assertEquals(new Length(BigDecimal.valueOf(50), Unit.CENTIMETER), parser.parse("50cm").value().orElseThrow());
 	}
 
 	@Test

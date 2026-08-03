@@ -11,10 +11,9 @@ public final class DisketteMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		final boolean hasTrackDensity = context.facts(AttributeNames.TRACK_DENSITY, TrackDensity.class)
+		final boolean hasTrackDensity = context.facts(AttributeNames.TRACK_DENSITY, TrackDensity.class).isPresent();
+		final boolean hasFloppyDiskFormat = context.facts(AttributeNames.FLOPPY_DISK_FORMAT, FloppyDiskFormat.class)
 				.isPresent();
-		final boolean hasFloppyDiskFormat = context
-				.facts(AttributeNames.FLOPPY_DISK_FORMAT, FloppyDiskFormat.class).isPresent();
 		return hasTrackDensity && hasFloppyDiskFormat ? Confidence.STRONG : Confidence.NONE;
 	}
 }

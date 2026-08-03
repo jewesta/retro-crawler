@@ -17,7 +17,6 @@ public final class CollectionDateMarkingParser implements FactParser {
 	}
 
 	private static String canonical(final String rawValue) {
-		return rawValue.trim().toUpperCase(Locale.ROOT)
-				.replaceFirst("^(\\d{4})-KW(\\d{2})$", "$1-W$2");
+		return rawValue.trim().toUpperCase(Locale.ROOT).replaceFirst("^(\\d{4})-KW(\\d{2})$", "$1-W$2");
 	}
 }

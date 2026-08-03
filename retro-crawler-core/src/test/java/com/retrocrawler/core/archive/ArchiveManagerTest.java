@@ -146,8 +146,7 @@ class ArchiveManagerTest {
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 
-		assertThrows(ProgressCancelledException.class,
-				() -> manager.archive(cancellingProgressor, ReindexScope.all()));
+		assertThrows(ProgressCancelledException.class, () -> manager.archive(cancellingProgressor, ReindexScope.all()));
 		assertEquals(0, repository.stowawayCount);
 	}
 
@@ -213,8 +212,7 @@ class ArchiveManagerTest {
 		final Path firstRenamed = Files.move(firstOld, first.resolve("renamed"));
 		Files.move(secondOld, second.resolve("renamed"));
 
-		final Archive refreshed = manager.archive(new Progressor(),
-				ReindexScope.subtrees(first, firstRenamed, second));
+		final Archive refreshed = manager.archive(new Progressor(), ReindexScope.subtrees(first, firstRenamed, second));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "second")));
@@ -287,8 +285,8 @@ class ArchiveManagerTest {
 	}
 
 	private static String technicalId(final ArchiveNode node) {
-		return node.artifact().clues().stream().filter(clue -> InternalClueKeys.ID.equals(clue.key()))
-				.findFirst().orElseThrow().value().iterator().next();
+		return node.artifact().clues().stream().filter(clue -> InternalClueKeys.ID.equals(clue.key())).findFirst()
+				.orElseThrow().value().iterator().next();
 	}
 
 	private ArchiveDescriptor descriptor(final Path archiveDirectory) {
@@ -301,8 +299,8 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
-				folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of());
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)),
+				List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository);
 	}

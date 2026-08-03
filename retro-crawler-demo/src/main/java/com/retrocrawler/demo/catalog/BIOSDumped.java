@@ -11,6 +11,6 @@ public enum BIOSDumped {
 	// Dump failed
 	failed,
 	// We have a helaty dump
-	success;
+	success
 
 }

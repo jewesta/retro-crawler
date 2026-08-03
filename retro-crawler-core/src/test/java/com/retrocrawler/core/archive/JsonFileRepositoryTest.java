@@ -81,8 +81,7 @@ class JsonFileRepositoryTest {
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
 		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
-		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root()
-				.artifact();
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
 		assertEquals(2, json.path("version").asInt());

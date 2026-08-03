@@ -78,8 +78,8 @@ public class SquareBracketsClueFinder implements FolderNameClueFinder {
 		}
 
 		/*
-		 * See if there is a title. By convention, everything before the first attribute
-		 * in [] is the title.
+		 * See if there is a title. By convention, everything before the first
+		 * attribute in [] is the title.
 		 */
 		final int indexOfFirstAttribute = folderName.indexOf(SquareBracketsClueFinder.OPENING_BRACKETS);
 		if (indexOfFirstAttribute == -1) {

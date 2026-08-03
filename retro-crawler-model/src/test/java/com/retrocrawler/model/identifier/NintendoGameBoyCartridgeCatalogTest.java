@@ -24,10 +24,8 @@ class NintendoGameBoyCartridgeCatalogTest {
 		assertEquals(626, catalog.entries().size());
 		assertEquals(611, catalog.codes().size());
 		assertTrue(catalog.entries().stream().allMatch(entry -> !entry.releaseRegions().isEmpty()));
-		assertEquals(117, catalog.entries().stream()
-				.filter(entry -> !entry.gameLanguageSets().isEmpty()).count());
-		assertEquals(3, catalog.entries().stream()
-				.filter(entry -> entry.gameLanguageSets().size() > 1).count());
+		assertEquals(117, catalog.entries().stream().filter(entry -> !entry.gameLanguageSets().isEmpty()).count());
+		assertEquals(3, catalog.entries().stream().filter(entry -> entry.gameLanguageSets().size() > 1).count());
 		assertTrue(catalog.contains(new NintendoGameBoyCartridgeCode("DIS-CGB-ADME-USA")));
 		assertTrue(catalog.contains(new NintendoGameBoyCartridgeCode("AGP-BPPP-EUR")));
 		assertTrue(catalog.contains(new NintendoGameBoyCartridgeCode("DNG-NE-USA")));
@@ -40,8 +38,8 @@ class NintendoGameBoyCartridgeCatalogTest {
 
 	@Test
 	void keepsOneToManyLabelCodeMappings() {
-		final List<NintendoGameBoyCartridgeCatalogEntry> releases =
-				catalog.findByCode(new NintendoGameBoyCartridgeCode("AGB-AXPE-USA"));
+		final List<NintendoGameBoyCartridgeCatalogEntry> releases = catalog
+				.findByCode(new NintendoGameBoyCartridgeCode("AGB-AXPE-USA"));
 		assertEquals(3, releases.size());
 		assertEquals(List.of(0, 1, 2), releases.stream().map(entry -> entry.romId().revision()).toList());
 	}
@@ -57,16 +55,13 @@ class NintendoGameBoyCartridgeCatalogTest {
 	@Test
 	void modelsReleaseRegionsAndExplicitGameLanguages() {
 		final NintendoGameBoyCartridgeCatalogEntry castlevania = catalog
-				.findByCode(new NintendoGameBoyCartridgeCode("AGB-A2CP-EUR"))
-				.getFirst();
+				.findByCode(new NintendoGameBoyCartridgeCode("AGB-A2CP-EUR")).getFirst();
 		assertEquals(Set.of(new RegionCode("EUR")), castlevania.releaseRegions());
-		assertEquals(List.of(Set.of(
-				new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"))),
+		assertEquals(List.of(Set.of(new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"))),
 				castlevania.gameLanguageSets());
 
 		final NintendoGameBoyCartridgeCatalogEntry worldRelease = catalog
-				.findByCode(new NintendoGameBoyCartridgeCode("DMG-MLA"))
-				.getFirst();
+				.findByCode(new NintendoGameBoyCartridgeCode("DMG-MLA")).getFirst();
 		assertEquals(Set.of(new RegionCode("JP"), new RegionCode("US"), new RegionCode("EUR")),
 				worldRelease.releaseRegions());
 		assertTrue(worldRelease.gameLanguageSets().isEmpty());
@@ -78,36 +73,30 @@ class NintendoGameBoyCartridgeCatalogTest {
 	@Test
 	void preservesSeparateLanguageSetsForCompilationCartridges() {
 		final NintendoGameBoyCartridgeCatalogEntry compilation = catalog
-				.findByCode(new NintendoGameBoyCartridgeCode("AGB-B2BP-EUR"))
-				.getFirst();
+				.findByCode(new NintendoGameBoyCartridgeCode("AGB-B2BP-EUR")).getFirst();
 
 		assertEquals(2, compilation.gameLanguageSets().size());
-		assertEquals(Set.of(
-				new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"),
+		assertEquals(Set.of(new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"),
 				new LanguageCode("es"), new LanguageCode("it"), new LanguageCode("nl")),
 				compilation.gameLanguageSets().get(0));
-		assertEquals(Set.of(
-				new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"),
-				new LanguageCode("es"), new LanguageCode("nl")),
-				compilation.gameLanguageSets().get(1));
+		assertEquals(Set.of(new LanguageCode("en"), new LanguageCode("fr"), new LanguageCode("de"),
+				new LanguageCode("es"), new LanguageCode("nl")), compilation.gameLanguageSets().get(1));
 	}
 
 	@Test
 	void readsExternalCataloguesAndValidatesTheirSchema() {
 		final String data = """
-				# source metadata
-				cartridge_code\trom_id\ttitle\trelease_regions\tgame_languages
-				DMG-F4-USA-1\tDMG-F4E-0\t4-in-1 Fun Pak (USA, Europe)\tUS,EUR\t
-				""";
-		final NintendoGameBoyCartridgeCatalog external =
-				NintendoGameBoyCartridgeCatalog.read(new StringReader(data));
+			# source metadata
+			cartridge_code\trom_id\ttitle\trelease_regions\tgame_languages
+			DMG-F4-USA-1\tDMG-F4E-0\t4-in-1 Fun Pak (USA, Europe)\tUS,EUR\t
+			""";
+		final NintendoGameBoyCartridgeCatalog external = NintendoGameBoyCartridgeCatalog.read(new StringReader(data));
 		assertEquals(1, external.entries().size());
 		assertEquals(626, catalog.plus(external).entries().size());
-		assertThrows(UnsupportedOperationException.class,
-				() -> external.entries().add(external.entries().getFirst()));
+		assertThrows(UnsupportedOperationException.class, () -> external.entries().add(external.entries().getFirst()));
 
-		assertThrows(IllegalArgumentException.class, () -> NintendoGameBoyCartridgeCatalog.read(
-				new StringReader("wrong\theader\n")));
+		assertThrows(IllegalArgumentException.class,
+				() -> NintendoGameBoyCartridgeCatalog.read(new StringReader("wrong\theader\n")));
 	}
 
 	@Test

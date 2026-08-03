@@ -24,12 +24,9 @@ class DateMarkingParserTest {
 
 		assertEquals(DateMarking.of(Year.of(1994)), parser.parse("1994").value().orElseThrow());
 		assertEquals(Confidence.STRONG, parser.parse("1994").confidence());
-		assertEquals(DateMarking.of(YearMonth.of(1994, 5)),
-				parser.parse("1994-05").value().orElseThrow());
-		assertEquals(DateMarking.of(LocalDate.of(1994, 5, 12)),
-				parser.parse("1994-05-12").value().orElseThrow());
-		assertEquals(DateMarking.of(new YearWeek(1994, 5)),
-				parser.parse("1994-W05").value().orElseThrow());
+		assertEquals(DateMarking.of(YearMonth.of(1994, 5)), parser.parse("1994-05").value().orElseThrow());
+		assertEquals(DateMarking.of(LocalDate.of(1994, 5, 12)), parser.parse("1994-05-12").value().orElseThrow());
+		assertEquals(DateMarking.of(new YearWeek(1994, 5)), parser.parse("1994-W05").value().orElseThrow());
 		assertEquals(DateMarking.Precision.MONTH,
 				((DateMarking) parser.parse("1994-05").value().orElseThrow()).precision());
 		assertEquals(DateMarking.Precision.WEEK,
@@ -43,8 +40,17 @@ class DateMarkingParserTest {
 		assertEquals("1994-05", parser.parse("1994-05").value().orElseThrow().toString());
 		assertEquals("1994-W05", parser.parse("1994-W05").value().orElseThrow().toString());
 		for (final String invalid : new String[] {
-				"1994-KW05", "KW05 1994", "05-12-1994", "1994-13", "1994-02-29",
-				"1949", "2027", "2026-09", "2026-08-03", "2026-W32" }) {
+				"1994-KW05",
+				"KW05 1994",
+				"05-12-1994",
+				"1994-13",
+				"1994-02-29",
+				"1949",
+				"2027",
+				"2026-09",
+				"2026-08-03",
+				"2026-W32"
+		}) {
 			assertEquals(Confidence.NONE, parser.parse(invalid).confidence(), invalid);
 		}
 	}

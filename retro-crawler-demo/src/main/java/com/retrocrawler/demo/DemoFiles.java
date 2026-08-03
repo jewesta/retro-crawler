@@ -84,8 +84,8 @@ public final class DemoFiles {
 
 		if (Files.isDirectory(targetRoot)) {
 			/*
-			 * The target directory exists: Assume that all the files have already been
-			 * copied and just return the directory.
+			 * The target directory exists: Assume that all the files have
+			 * already been copied and just return the directory.
 			 */
 			return targetRoot;
 		}

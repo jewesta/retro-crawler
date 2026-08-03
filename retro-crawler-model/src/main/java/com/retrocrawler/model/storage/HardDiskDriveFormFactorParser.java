@@ -10,14 +10,13 @@ import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class HardDiskDriveFormFactorParser implements FactParser {
 
-	private static final Pattern FORM_FACTOR = Pattern.compile(
-			"^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
+	private static final Pattern FORM_FACTOR = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact>map(RatedFact::exact)
-				.orElseGet(() -> RatedFact.none("Expected a recognized hard-disk-drive form factor with an inch unit."));
+		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+				() -> RatedFact.none("Expected a recognized hard-disk-drive form factor with an inch unit."));
 	}
 
 	public static Optional<HardDiskDriveFormFactor> parseValue(final String rawValue) {

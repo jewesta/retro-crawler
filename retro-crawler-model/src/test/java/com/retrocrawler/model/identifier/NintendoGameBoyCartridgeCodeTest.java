@@ -15,17 +15,13 @@ class NintendoGameBoyCartridgeCodeTest {
 
 	@Test
 	void parsesStandardKnownLabelCodes() {
-		assertEquals(new NintendoGameBoyCartridgeCode(
-				NintendoGameBoyPlatform.GAME_BOY, "F4", "USA", OptionalInt.of(1)),
+		assertEquals(new NintendoGameBoyCartridgeCode(NintendoGameBoyPlatform.GAME_BOY, "F4", "USA", OptionalInt.of(1)),
 				parser.parse("dmg-f4-usa-1").value().orElseThrow());
-		assertEquals(new NintendoGameBoyCartridgeCode(
-				NintendoGameBoyPlatform.GAME_BOY_COLOR, "BMVJ", "JPN"),
+		assertEquals(new NintendoGameBoyCartridgeCode(NintendoGameBoyPlatform.GAME_BOY_COLOR, "BMVJ", "JPN"),
 				parser.parse("CGB-BMVJ-JPN").value().orElseThrow());
-		assertEquals(new NintendoGameBoyCartridgeCode(
-				NintendoGameBoyPlatform.GAME_BOY_ADVANCE, "A2CP", "EUR"),
+		assertEquals(new NintendoGameBoyCartridgeCode(NintendoGameBoyPlatform.GAME_BOY_ADVANCE, "A2CP", "EUR"),
 				parser.parse("AGB-A2CP-EUR").value().orElseThrow());
-		assertEquals(new NintendoGameBoyCartridgeCode(
-				NintendoGameBoyPlatform.GAME_BOY, "AB", "NNOE"),
+		assertEquals(new NintendoGameBoyCartridgeCode(NintendoGameBoyPlatform.GAME_BOY, "AB", "NNOE"),
 				parser.parse("DMG-AB-NNOE").value().orElseThrow());
 
 		assertEquals("DMG-F4-USA-1", parser.parse("dmg-f4-usa-1").value().orElseThrow().toString());

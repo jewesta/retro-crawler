@@ -11,9 +11,8 @@ import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class LanguageCodeParser implements FactParser {
 
-	private static final Map<String, String> ENGLISH_NAMES = Arrays.stream(Locale.getISOLanguages())
-			.collect(Collectors.toUnmodifiableMap(LanguageCodeParser::englishName, Function.identity(),
-					(first, ignored) -> first));
+	private static final Map<String, String> ENGLISH_NAMES = Arrays.stream(Locale.getISOLanguages()).collect(Collectors
+			.toUnmodifiableMap(LanguageCodeParser::englishName, Function.identity(), (first, ignored) -> first));
 
 	@Override
 	public RatedFact parse(final String rawValue) {

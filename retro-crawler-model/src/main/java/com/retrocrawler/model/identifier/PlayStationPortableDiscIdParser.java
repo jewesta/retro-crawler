@@ -23,7 +23,7 @@ public final class PlayStationPortableDiscIdParser implements FactParser {
 		}
 
 		return PlayStationPortableDiscPrefix.fromCode(matcher.group(1))
-				.<RatedFact>map(prefix -> RatedFact.exact(new PlayStationPortableDiscId(prefix, matcher.group(2))))
+				.<RatedFact> map(prefix -> RatedFact.exact(new PlayStationPortableDiscId(prefix, matcher.group(2))))
 				.orElseGet(PlayStationPortableDiscIdParser::noMatch);
 	}
 

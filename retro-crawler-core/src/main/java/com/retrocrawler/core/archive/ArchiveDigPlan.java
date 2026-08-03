@@ -53,8 +53,7 @@ final class ArchiveDigPlan {
 
 	void reportCurrent(final Path path, final boolean insideRegion, final Progressor progressor) {
 		final long current = Math.min(completedRegions + 1, totalRegions());
-		final String prefix = insideRegion
-				? "Crawling archive region " + current + " of " + totalRegions() + ": "
+		final String prefix = insideRegion ? "Crawling archive region " + current + " of " + totalRegions() + ": "
 				: "Crawling archive structure: ";
 		final String message = prefix + PathNames.abbreviatePathName(path.toString());
 		if (!progressStarted) {
@@ -67,8 +66,7 @@ final class ArchiveDigPlan {
 
 	void completeRegion(final Path path, final Progressor progressor) {
 		completedRegions++;
-		progressor.advanceTo(completedRegions,
-				"Completed archive region " + completedRegions + " of " + totalRegions() + ": "
-						+ PathNames.abbreviatePathName(path.toString()));
+		progressor.advanceTo(completedRegions, "Completed archive region " + completedRegions + " of " + totalRegions()
+				+ ": " + PathNames.abbreviatePathName(path.toString()));
 	}
 }

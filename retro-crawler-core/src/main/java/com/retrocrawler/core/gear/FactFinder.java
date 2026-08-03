@@ -86,8 +86,7 @@ public class FactFinder {
 					.orElseThrow(() -> new IllegalStateException("Parser " + parser.getClass().getSimpleName()
 							+ " returned confidence " + rated.confidence() + " but no value."));
 
-			final Collection<?> parsedValues = parsed instanceof final Collection<?> collection
-					? collection
+			final Collection<?> parsedValues = parsed instanceof final Collection<?> collection ? collection
 					: List.of(parsed);
 			if (parsedValues.isEmpty() || parsedValues.size() > 1 && !acceptsMultipleValues()) {
 				return Optional.empty();

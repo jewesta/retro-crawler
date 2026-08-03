@@ -13,12 +13,10 @@ class HardwareParsersTest {
 	void preservesExplicitChipDesignationsWithoutAssumingAPartNumberSyntax() {
 		final ChipDesignationParser parser = new ChipDesignationParser();
 
-		assertEquals(new ChipDesignation("RC42-A"),
-				parser.parse(" RC42-A ").value().orElseThrow());
+		assertEquals(new ChipDesignation("RC42-A"), parser.parse(" RC42-A ").value().orElseThrow());
 		assertEquals(new ChipDesignation("Example Semiconductor 42"),
 				parser.parse("Example Semiconductor 42").value().orElseThrow());
-		assertEquals(new ChipDesignation("mixed Case 7"),
-				parser.parse("mixed Case 7").value().orElseThrow());
+		assertEquals(new ChipDesignation("mixed Case 7"), parser.parse("mixed Case 7").value().orElseThrow());
 		assertEquals("mixed Case 7", new ChipDesignation(" mixed Case 7 ").toString());
 		assertEquals(Confidence.NONE, parser.parse("  ").confidence());
 		assertEquals(Confidence.NONE, parser.parse(null).confidence());
@@ -63,8 +61,7 @@ class HardwareParsersTest {
 		assertEquals(MemoryFeature.EXTENDED_DATA_OUT, memoryFeature.parse("EDO").value().orElseThrow());
 		assertEquals(MemoryFeature.FAST_PAGE_MODE, memoryFeature.parse("FPM").value().orElseThrow());
 		assertEquals(Confidence.NONE, memoryFeature.parse("EDOFPM").confidence());
-		assertEquals(ComputerFormFactor.MICRO_ATX,
-				computerForm.parse("microATX").value().orElseThrow());
+		assertEquals(ComputerFormFactor.MICRO_ATX, computerForm.parse("microATX").value().orElseThrow());
 		assertEquals(VideoConnector.S_VIDEO, videoConnector.parse("S-Video").value().orElseThrow());
 		assertEquals(VideoConnector.DISPLAY_PORT, videoConnector.parse("DP").value().orElseThrow());
 	}

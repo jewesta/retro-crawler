@@ -22,9 +22,9 @@ final class RetroAttributeAdapter {
 		final Class<?> fieldType = field.getType();
 
 		/*
-		 * Is the target field of type RetroAttribute? In that case the intent is for it
-		 * to receive the attribute object itself (e.g. a Fact or a Clue), not its
-		 * value.
+		 * Is the target field of type RetroAttribute? In that case the intent
+		 * is for it to receive the attribute object itself (e.g. a Fact or a
+		 * Clue), not its value.
 		 */
 		if (RetroAttribute.class.isAssignableFrom(fieldType)) {
 			assertAssignableSingle(gearType, field, attribute, key);
@@ -32,10 +32,10 @@ final class RetroAttributeAdapter {
 		}
 
 		/*
-		 * The target is an arbitrary type, not RetroAttribute. The intent is for it to
-		 * receive the attribute value only. Since values can be single-valued or
-		 * multi-valued, and may be of arbitrary element type, we need to adapt them to
-		 * the declared field type if possible.
+		 * The target is an arbitrary type, not RetroAttribute. The intent is
+		 * for it to receive the attribute value only. Since values can be
+		 * single-valued or multi-valued, and may be of arbitrary element type,
+		 * we need to adapt them to the declared field type if possible.
 		 */
 		final Set<? extends Object> values = requireNonEmpty(gearType, key, attribute.value());
 
@@ -98,7 +98,8 @@ final class RetroAttributeAdapter {
 	}
 
 	/**
-	 * Materializes a collection value suitable for assignment to the given field.
+	 * Materializes a collection value suitable for assignment to the given
+	 * field.
 	 * <p>
 	 * Supported target field types:
 	 * <ul>
@@ -111,7 +112,9 @@ final class RetroAttributeAdapter {
 	 * </ul>
 	 * Other collection interfaces are rejected explicitly.
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({
+			"unchecked", "rawtypes"
+	})
 	private static Collection<?> materializeCollectionForField(final Field field, final Set<? extends Object> values) {
 		final Class<?> fieldType = field.getType();
 
@@ -141,10 +144,10 @@ final class RetroAttributeAdapter {
 		}
 
 		/*
-		 * If the target field type is an interface then we only support the three most
-		 * common types: Collection, List and Set. Other collection interfaces (e.g.
-		 * Queue, Deque, SortedSet) are rejected explicitly to avoid ambiguous
-		 * semantics.
+		 * If the target field type is an interface then we only support the
+		 * three most common types: Collection, List and Set. Other collection
+		 * interfaces (e.g. Queue, Deque, SortedSet) are rejected explicitly to
+		 * avoid ambiguous semantics.
 		 */
 		if (fieldType.isInterface()) {
 			if (List.class.isAssignableFrom(fieldType)) {

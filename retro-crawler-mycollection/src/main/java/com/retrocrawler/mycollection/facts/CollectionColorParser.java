@@ -9,8 +9,8 @@ import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.appearance.ColorParser;
 
 /**
- * Adapts established German and compound color markers from this collection
- * to the portable named-color vocabulary.
+ * Adapts established German and compound color markers from this collection to
+ * the portable named-color vocabulary.
  */
 public final class CollectionColorParser implements FactParser {
 

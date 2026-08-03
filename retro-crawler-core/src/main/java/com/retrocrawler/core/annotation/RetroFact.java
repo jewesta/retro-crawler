@@ -24,8 +24,8 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public @interface RetroFact {
 
 	/**
-	 * Can be used to rename the key that is used to get a value for the annotated
-	 * field. Default key is name of field.
+	 * Can be used to rename the key that is used to get a value for the
+	 * annotated field. Default key is name of field.
 	 */
 	String key() default "";
 
@@ -36,20 +36,21 @@ public @interface RetroFact {
 	boolean optional() default true;
 
 	/**
-	 * In strict mode a value is only assigned if the key matches a clue. In lenient
-	 * mode retro crawler might assign the value of an anonymous clue if the data
-	 * types match.
+	 * In strict mode a value is only assigned if the key matches a clue. In
+	 * lenient mode retro crawler might assign the value of an anonymous clue if
+	 * the data types match.
 	 */
 	boolean strict() default true;
 
 	/**
 	 * Defers lenient interpretation of anonymous clues until the declaring Gear
-	 * type has been selected. Explicitly keyed clues remain available during the
-	 * initial detection phase.
+	 * type has been selected. Explicitly keyed clues remain available during
+	 * the initial detection phase.
 	 * <p>
-	 * This is useful when the same short observation has a different meaning for
-	 * different kinds of Gear, such as {@code 2.5"} on a hard-disk drive versus a
-	 * display. Contextual facts must also set {@link #strict()} to {@code false}.
+	 * This is useful when the same short observation has a different meaning
+	 * for different kinds of Gear, such as {@code 2.5"} on a hard-disk drive
+	 * versus a display. Contextual facts must also set {@link #strict()} to
+	 * {@code false}.
 	 */
 	boolean contextual() default false;
 

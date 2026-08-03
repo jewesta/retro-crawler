@@ -34,14 +34,13 @@ public class ArchivePathClueFinder {
 
 	public ArchivePathClueFinder(final FolderNameClueFinder folderNameClueFinder,
 			final List<FileContentClueFinder> fileContentClueFinders,
-			final List<FileNameClueFinder> fileNameClueFinders,
-			final List<TreeClueFinder> treeClueFinders) {
+			final List<FileNameClueFinder> fileNameClueFinders, final List<TreeClueFinder> treeClueFinders) {
 		this.folderNameClueFinder = folderNameClueFinder;
 		this.fileContentClueFinders = Objects.requireNonNullElse(fileContentClueFinders, List.of());
 		this.fileNameClueFinders = Objects.requireNonNullElse(fileNameClueFinders, List.of());
 		this.treeClueFinders = Objects.requireNonNullElse(treeClueFinders, List.of());
-		if (folderNameClueFinder == null && this.fileContentClueFinders.isEmpty()
-				&& this.fileNameClueFinders.isEmpty() && this.treeClueFinders.isEmpty()) {
+		if (folderNameClueFinder == null && this.fileContentClueFinders.isEmpty() && this.fileNameClueFinders.isEmpty()
+				&& this.treeClueFinders.isEmpty()) {
 			throw new IllegalArgumentException("Require at least one clue finder.");
 		}
 	}
@@ -88,8 +87,8 @@ public class ArchivePathClueFinder {
 	}
 
 	/**
-	 * Runs local clue finders with a caller-supplied classification of the current
-	 * folder's direct files.
+	 * Runs local clue finders with a caller-supplied classification of the
+	 * current folder's direct files.
 	 */
 	public Set<Clue> find(final ArchivePath node, final List<Path> files, final Progressor progressor) {
 		Objects.requireNonNull(node, "node");
@@ -106,8 +105,8 @@ public class ArchivePathClueFinder {
 			return clues;
 		}
 		/*
-		 * For all file content clue finders we check for each file if the finder is
-		 * compatible and if yes invoke the search.
+		 * For all file content clue finders we check for each file if the
+		 * finder is compatible and if yes invoke the search.
 		 */
 		if (!fileContentClueFinders.isEmpty()) {
 			for (final Path file : files) {
@@ -122,8 +121,8 @@ public class ArchivePathClueFinder {
 			}
 		}
 		/*
-		 * For the file name clue finders it is the other way around: Each finder we
-		 * invoke with the total list of available files.
+		 * For the file name clue finders it is the other way around: Each
+		 * finder we invoke with the total list of available files.
 		 */
 		final List<Path> relativeFiles = files.stream().map(node::relative).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
@@ -134,11 +133,10 @@ public class ArchivePathClueFinder {
 	}
 
 	/**
-	 * Enriches clues already found locally with observations from the configured
-	 * post-order tree finders.
+	 * Enriches clues already found locally with observations from the
+	 * configured post-order tree finders.
 	 */
-	public Set<Clue> enrich(final Set<Clue> localClues, final ArchiveFolderView folder,
-			final Progressor progressor) {
+	public Set<Clue> enrich(final Set<Clue> localClues, final ArchiveFolderView folder, final Progressor progressor) {
 		Objects.requireNonNull(localClues, "localClues");
 		Objects.requireNonNull(folder, "folder");
 		Set<Clue> clues = merge(new HashSet<>(), localClues);

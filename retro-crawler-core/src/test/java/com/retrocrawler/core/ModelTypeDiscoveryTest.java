@@ -34,8 +34,7 @@ class ModelTypeDiscoveryTest {
 
 	@Test
 	void rejectsBlankBasePackage() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.from("  "));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.from("  "));
 
 		assertEquals("basePackage must not be blank.", failure.getMessage());
 	}

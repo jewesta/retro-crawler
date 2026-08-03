@@ -21,10 +21,10 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
@@ -53,8 +53,7 @@ public class ArchiveDigger {
 	public ArchiveDigger(final ArchiveDefinition archive, final CrawlPlanning planning) {
 		Objects.requireNonNull(archive, "archive");
 		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
-		this.clueFinder = Objects.requireNonNull(archive.archivePathClueFinder(),
-				"archive.archivePathClueFinder()");
+		this.clueFinder = Objects.requireNonNull(archive.archivePathClueFinder(), "archive.archivePathClueFinder()");
 		this.planning = Objects.requireNonNull(planning, "planning");
 		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
 	}
@@ -143,8 +142,8 @@ public class ArchiveDigger {
 
 	private List<Path> list(final Path path) throws IOException {
 		/*
-		 * Need a try-with to close the stream or else the JVM will sooner or later
-		 * crash with a java.io.IOException: Too many open files.
+		 * Need a try-with to close the stream or else the JVM will sooner or
+		 * later crash with a java.io.IOException: Too many open files.
 		 */
 		try (Stream<Path> files = Files.list(path)) {
 			final Stream<Path> accepted = pathFilters.isEmpty() ? files : files.filter(this::accept);
@@ -194,15 +193,16 @@ public class ArchiveDigger {
 	}
 
 	/**
-	 * @param root    Guaranteed to be a folder (not a file)
-	 * @param path    Guaranteed to be a folder (not a file)
+	 * @param root
+	 *            Guaranteed to be a folder (not a file)
+	 * @param path
+	 *            Guaranteed to be a folder (not a file)
 	 * @param progressor
 	 * @return
 	 * @throws IOException
 	 */
 	private DigResult digFolder(final Path root, final Path path, final ArchiveDigPlan plan,
-			final Progressor progressor,
-			final boolean parentInsideRegion) throws IOException {
+			final Progressor progressor, final boolean parentInsideRegion) throws IOException {
 		final String pathName;
 		if (path.equals(root)) {
 			// A bucket supplies the runtime root; the cached tree begins at archive ".".
@@ -253,16 +253,12 @@ public class ArchiveDigger {
 		return new DigResult(result, folderView);
 	}
 
-	private static ArchiveFolderView folderView(final Path path, final List<Path> files,
-			final List<DigResult> children, final Progressor progressor) {
+	private static ArchiveFolderView folderView(final Path path, final List<Path> files, final List<DigResult> children,
+			final Progressor progressor) {
 		final List<ArchiveFolderView> metadataFolders = children.stream()
-				.filter(child -> child.node().artifact() == null)
-				.map(DigResult::folderView)
-				.toList();
-		final List<ArchiveFileView> fileViews = files.stream()
-				.map(file -> new DefaultArchiveFileView(file, progressor))
-				.map(ArchiveFileView.class::cast)
-				.toList();
+				.filter(child -> child.node().artifact() == null).map(DigResult::folderView).toList();
+		final List<ArchiveFileView> fileViews = files.stream().map(file -> new DefaultArchiveFileView(file, progressor))
+				.map(ArchiveFileView.class::cast).toList();
 		return new DefaultArchiveFolderView(folderName(path), metadataFolders, fileViews);
 	}
 
@@ -274,8 +270,8 @@ public class ArchiveDigger {
 	private record DigResult(ArchiveNode node, ArchiveFolderView folderView) {
 	}
 
-	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders,
-			List<ArchiveFileView> files) implements ArchiveFolderView {
+	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders, List<ArchiveFileView> files)
+			implements ArchiveFolderView {
 
 		private DefaultArchiveFolderView {
 			Objects.requireNonNull(name, "name");

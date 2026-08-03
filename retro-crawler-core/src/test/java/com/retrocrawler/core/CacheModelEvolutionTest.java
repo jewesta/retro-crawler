@@ -73,8 +73,7 @@ class CacheModelEvolutionTest {
 
 	private static void assertRawAnonymousSerialMarker(final Archive archive) {
 		final Artifact artifact = archive.buckets().getFirst().root().children().getFirst().artifact();
-		assertTrue(artifact.clues().stream()
-				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("SN"))));
+		assertTrue(artifact.clues().stream().anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("SN"))));
 		assertTrue(artifact.clues().stream().noneMatch(clue -> "sn".equals(clue.key())));
 	}
 

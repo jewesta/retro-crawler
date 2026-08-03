@@ -9,9 +9,9 @@ import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 
 /**
- * One observed association between a printed cartridge code, a ROM ID, a
- * title, its release markets, and any game languages explicitly stated by the
- * source. A cartridge code can have more than one such association.
+ * One observed association between a printed cartridge code, a ROM ID, a title,
+ * its release markets, and any game languages explicitly stated by the source.
+ * A cartridge code can have more than one such association.
  *
  * <p>
  * The outer {@code gameLanguageSets} list preserves the boundary between games
@@ -33,15 +33,13 @@ public record NintendoGameBoyCartridgeCatalogEntry(NintendoGameBoyCartridgeCode 
 		if (releaseRegions.isEmpty()) {
 			throw new IllegalArgumentException("A cartridge catalogue entry must have a release region.");
 		}
-		gameLanguageSets = Objects.requireNonNull(gameLanguageSets, "gameLanguageSets").stream()
-				.map(languages -> {
-					final Set<LanguageCode> immutable = immutableSet(languages, "gameLanguageSets element");
-					if (immutable.isEmpty()) {
-						throw new IllegalArgumentException("A stated game-language set must not be empty.");
-					}
-					return immutable;
-				})
-				.toList();
+		gameLanguageSets = Objects.requireNonNull(gameLanguageSets, "gameLanguageSets").stream().map(languages -> {
+			final Set<LanguageCode> immutable = immutableSet(languages, "gameLanguageSets element");
+			if (immutable.isEmpty()) {
+				throw new IllegalArgumentException("A stated game-language set must not be empty.");
+			}
+			return immutable;
+		}).toList();
 	}
 
 	/**

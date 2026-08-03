@@ -11,8 +11,8 @@ import com.retrocrawler.core.util.RetroAttribute;
  * <p>
  * A clue retains the raw string values and any key explicitly observed by its
  * finder. It may be cached as part of an {@link Artifact}; only later gear
- * resolution may interpret it as a typed
- * {@link com.retrocrawler.core.gear.Fact Fact}.
+ * resolution may interpret it as a typed {@link com.retrocrawler.core.gear.Fact
+ * Fact}.
  */
 public class Clue implements RetroAttribute {
 
@@ -48,9 +48,9 @@ public class Clue implements RetroAttribute {
 	}
 
 	/**
-	 * A missing-value clue records that a known key was deliberately observed even
-	 * though no value was supplied. It can establish an artifact and retain source
-	 * intent, but cannot be resolved into a fact.
+	 * A missing-value clue records that a known key was deliberately observed
+	 * even though no value was supplied. It can establish an artifact and
+	 * retain source intent, but cannot be resolved into a fact.
 	 */
 	public boolean isMissingValue() {
 		return !isAnonymous() && value.isEmpty();
@@ -91,8 +91,8 @@ public class Clue implements RetroAttribute {
 
 	public static Clue internal(final String key, final String value) {
 		if (!key.startsWith(InternalClueKeys.PREFIX)) {
-			throw new IllegalArgumentException("Expected internal key starting with '"
-					+ InternalClueKeys.PREFIX + "' but got: '" + key + "'.");
+			throw new IllegalArgumentException(
+					"Expected internal key starting with '" + InternalClueKeys.PREFIX + "' but got: '" + key + "'.");
 		}
 		if (key.equals(InternalClueKeys.TYPE)) {
 			throw new IllegalArgumentException(

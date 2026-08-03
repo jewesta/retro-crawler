@@ -7,10 +7,13 @@ public enum DemoGearType {
 	// Graphics card
 	gpu,
 	// CPUs
-	cpu, fpu,
+	cpu,
+	fpu,
 	// RAM
 	ram,
 	// Controller
-	fddctrl, hddctrl, multiio;
+	fddctrl,
+	hddctrl,
+	multiio
 
 }

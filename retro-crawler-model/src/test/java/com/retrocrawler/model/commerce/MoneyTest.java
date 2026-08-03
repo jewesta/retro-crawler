@@ -13,8 +13,7 @@ class MoneyTest {
 
 	@Test
 	void representsEquivalentAmountsCanonically() {
-		assertEquals(new Money(new BigDecimal("100"), EUR),
-				new Money(new BigDecimal("100.00"), EUR));
+		assertEquals(new Money(new BigDecimal("100"), EUR), new Money(new BigDecimal("100.00"), EUR));
 		assertEquals("100 EUR", new Money(new BigDecimal("100.00"), EUR).toString());
 	}
 

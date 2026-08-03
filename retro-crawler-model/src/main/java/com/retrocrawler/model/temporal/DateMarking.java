@@ -9,8 +9,8 @@ import java.util.Objects;
  * A role-neutral calendar marking which retains the precision stated by its
  * source.
  * <p>
- * A marking does not by itself claim to be a manufacture, release,
- * publication, acquisition, or lifecycle-event date.
+ * A marking does not by itself claim to be a manufacture, release, publication,
+ * acquisition, or lifecycle-event date.
  */
 public sealed interface DateMarking {
 

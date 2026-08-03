@@ -34,8 +34,7 @@ public final class MoneyParser implements FactParser {
 		final String rawCurrency = matcher.group(2);
 		final Currency currency;
 		try {
-			currency = rawCurrency == null
-					? DEFAULT_CURRENCY
+			currency = rawCurrency == null ? DEFAULT_CURRENCY
 					: Currency.getInstance(rawCurrency.toUpperCase(Locale.ROOT));
 		} catch (final IllegalArgumentException e) {
 			return RatedFact.none("Unknown currency code: " + rawCurrency);

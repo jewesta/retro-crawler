@@ -21,13 +21,9 @@ class CrawlPlanningTest {
 
 	@Test
 	void rejectsUnboundedOrMeaninglessValues() {
-		assertThrows(IllegalArgumentException.class,
-				() -> new CrawlPlanning(0, 1, 1, Duration.ofSeconds(1)));
-		assertThrows(IllegalArgumentException.class,
-				() -> new CrawlPlanning(1, -1, 1, Duration.ofSeconds(1)));
-		assertThrows(IllegalArgumentException.class,
-				() -> new CrawlPlanning(1, 1, 0, Duration.ofSeconds(1)));
-		assertThrows(IllegalArgumentException.class,
-				() -> new CrawlPlanning(1, 1, 1, Duration.ZERO));
+		assertThrows(IllegalArgumentException.class, () -> new CrawlPlanning(0, 1, 1, Duration.ofSeconds(1)));
+		assertThrows(IllegalArgumentException.class, () -> new CrawlPlanning(1, -1, 1, Duration.ofSeconds(1)));
+		assertThrows(IllegalArgumentException.class, () -> new CrawlPlanning(1, 1, 0, Duration.ofSeconds(1)));
+		assertThrows(IllegalArgumentException.class, () -> new CrawlPlanning(1, 1, 1, Duration.ZERO));
 	}
 }

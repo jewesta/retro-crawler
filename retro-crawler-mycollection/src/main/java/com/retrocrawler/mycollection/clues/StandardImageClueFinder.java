@@ -16,10 +16,8 @@ import com.retrocrawler.mycollection.AttributeNames;
  */
 public final class StandardImageClueFinder implements FileNameClueFinder {
 
-	private static final Map<String, String> KEYS_BY_FILE_NAME = Map.of(
-			"angled.jpeg", AttributeNames.IMAGE_ANGLED,
-			"front.jpeg", AttributeNames.IMAGE_FRONT,
-			"back.jpeg", AttributeNames.IMAGE_BACK);
+	private static final Map<String, String> KEYS_BY_FILE_NAME = Map.of("angled.jpeg", AttributeNames.IMAGE_ANGLED,
+			"front.jpeg", AttributeNames.IMAGE_FRONT, "back.jpeg", AttributeNames.IMAGE_BACK);
 
 	@Override
 	public Set<Clue> find(final Collection<Path> files) {

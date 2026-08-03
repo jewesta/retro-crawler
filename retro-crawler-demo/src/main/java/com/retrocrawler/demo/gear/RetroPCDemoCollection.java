@@ -11,14 +11,13 @@ import com.retrocrawler.demo.clues.ImageClueFinder;
 import com.retrocrawler.demo.clues.SquareBracketsClueFinder;
 
 @RetroCollection(id = "retro_pc_demo", name = "Retro PC (Demo)",
-		locations = DemoFiles.DEMO_ARCHIVE_PARENT + "/retro_pc",
-		pathFilters = {
+		locations = DemoFiles.DEMO_ARCHIVE_PARENT + "/retro_pc", pathFilters = {
 				IgnoreDotPaths.class,
 				IgnoreWindowsSystemPaths.class,
 				IgnoreMacSystemPaths.class,
-				IgnoreLinuxSystemPaths.class })
-@RetroClues(fromFolderName = SquareBracketsClueFinder.class,
-		fromFileNames = ImageClueFinder.class)
+				IgnoreLinuxSystemPaths.class
+		})
+@RetroClues(fromFolderName = SquareBracketsClueFinder.class, fromFileNames = ImageClueFinder.class)
 public final class RetroPCDemoCollection {
 
 	private RetroPCDemoCollection() {

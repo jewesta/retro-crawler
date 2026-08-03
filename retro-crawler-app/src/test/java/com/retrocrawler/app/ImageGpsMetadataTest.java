@@ -48,8 +48,8 @@ class ImageGpsMetadataTest {
 			return gps != null && gps.getGeoLocation() != null;
 		} catch (final Exception e) {
 			/*
-			 * If the file cannot be parsed, we assume it is not a valid JPEG and therefore
-			 * ignore it.
+			 * If the file cannot be parsed, we assume it is not a valid JPEG
+			 * and therefore ignore it.
 			 */
 			return false;
 		}

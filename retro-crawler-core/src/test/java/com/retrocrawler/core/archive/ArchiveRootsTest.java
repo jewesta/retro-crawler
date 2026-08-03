@@ -25,8 +25,7 @@ class ArchiveRootsTest {
 		final ArchiveRoots roots = ArchiveRoots.from(first, second);
 
 		assertEquals(List.of(first, second), roots.paths());
-		assertThrows(UnsupportedOperationException.class,
-				() -> roots.paths().add(Path.of("/archive/third")));
+		assertThrows(UnsupportedOperationException.class, () -> roots.paths().add(Path.of("/archive/third")));
 	}
 
 	@Test

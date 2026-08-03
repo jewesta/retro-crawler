@@ -34,15 +34,15 @@ class CollectionFileClueFindersTest {
 	void importsFlatFrontMatterAndTheMarkdownBody() {
 		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
 		final String markdown = """
-				---
-				price: 120 EUR
-				lot: 200001, 200002,200003
-				fcc: 123
-				health: defekt
-				tested: post
-				---
-				Gerät läuft wieder.
-				""";
+			---
+			price: 120 EUR
+			lot: 200001, 200002,200003
+			fcc: 123
+			health: defekt
+			tested: post
+			---
+			Gerät läuft wieder.
+			""";
 
 		final Set<Clue> clues = finder.find(input(markdown));
 
@@ -68,19 +68,13 @@ class CollectionFileClueFindersTest {
 		final StandardImageClueFinder finder = new StandardImageClueFinder();
 		final Path folder = Path.of("gear");
 
-		final Set<Clue> clues = finder.find(List.of(
-				folder.resolve("ANGLED.JPEG"),
-				folder.resolve("front.jpeg"),
-				folder.resolve("back.jpeg"),
-				folder.resolve("front.jpg"),
-				folder.resolve("overview.jpeg")));
+		final Set<Clue> clues = finder.find(List.of(folder.resolve("ANGLED.JPEG"), folder.resolve("front.jpeg"),
+				folder.resolve("back.jpeg"), folder.resolve("front.jpg"), folder.resolve("overview.jpeg")));
 
 		assertEquals(Set.of(folder.resolve("ANGLED.JPEG").toString()),
 				clue(clues, AttributeNames.IMAGE_ANGLED).value());
-		assertEquals(Set.of(folder.resolve("front.jpeg").toString()),
-				clue(clues, AttributeNames.IMAGE_FRONT).value());
-		assertEquals(Set.of(folder.resolve("back.jpeg").toString()),
-				clue(clues, AttributeNames.IMAGE_BACK).value());
+		assertEquals(Set.of(folder.resolve("front.jpeg").toString()), clue(clues, AttributeNames.IMAGE_FRONT).value());
+		assertEquals(Set.of(folder.resolve("back.jpeg").toString()), clue(clues, AttributeNames.IMAGE_BACK).value());
 		assertEquals(3, clues.size());
 	}
 
@@ -89,14 +83,12 @@ class CollectionFileClueFindersTest {
 		final FloppyImageClueFinder finder = new FloppyImageClueFinder();
 		final Path folder = Path.of("gear");
 
-		final Set<Clue> clues = finder.find(List.of(
-				folder.resolve("FD-0007.img"),
-				folder.resolve("fd-0008 Boot disk.ima"),
-				folder.resolve("Copy of FD-0009.img")));
+		final Set<Clue> clues = finder.find(List.of(folder.resolve("FD-0007.img"),
+				folder.resolve("fd-0008 Boot disk.ima"), folder.resolve("Copy of FD-0009.img")));
 
 		assertEquals(Set.of("FD-0007", "FD-0008"), clue(clues, AttributeNames.FLOPPY_IMAGE_ID).value());
-		assertEquals(Set.of(folder.resolve("FD-0007.img").toString(),
-				folder.resolve("fd-0008 Boot disk.ima").toString()),
+		assertEquals(
+				Set.of(folder.resolve("FD-0007.img").toString(), folder.resolve("fd-0008 Boot disk.ima").toString()),
 				clue(clues, AttributeNames.FLOPPY_IMAGES).value());
 	}
 

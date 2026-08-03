@@ -50,8 +50,8 @@ class ArchiveDiggerTreeClueFinderTest {
 			return originClues(folder);
 		};
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
-				name -> "Child artifact".equals(name) ? Set.of(Clue.of("kind", "part")) : Set.of(),
-				List.of(), List.of(), List.of(treeFinder));
+				name -> "Child artifact".equals(name) ? Set.of(Clue.of("kind", "part")) : Set.of(), List.of(),
+				List.of(), List.of(treeFinder));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
 
 		final ArchiveNode archive = digger.dig(root, new Progressor());
@@ -71,15 +71,13 @@ class ArchiveDiggerTreeClueFinderTest {
 	@Test
 	void treeFinderAloneCanEstablishAnArtifact() throws IOException {
 		Files.createDirectory(root.resolve("Kleinanzeigen"));
-		final TreeClueFinder treeFinder = folder -> folder.folders().stream()
-				.anyMatch(child -> "Kleinanzeigen".equals(child.name()))
-						? Set.of(Clue.of("origin", "Kleinanzeigen"))
-						: Set.of();
+		final TreeClueFinder treeFinder = folder -> folder.folders().stream().anyMatch(
+				child -> "Kleinanzeigen".equals(child.name())) ? Set.of(Clue.of("origin", "Kleinanzeigen")) : Set.of();
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(null, List.of(), List.of(),
 				List.of(treeFinder));
 
-		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder))
-				.dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder)).dig(root,
+				new Progressor());
 
 		assertNotNull(archive.artifact());
 		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
@@ -114,16 +112,12 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	private static ArchiveNode child(final ArchiveNode parent, final String folder) {
-		return parent.children().stream()
-				.filter(candidate -> folder.equals(candidate.folder()))
-				.findFirst()
+		return parent.children().stream().filter(candidate -> folder.equals(candidate.folder())).findFirst()
 				.orElseThrow();
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {
-		return node.artifact().clues().stream()
-				.filter(candidate -> key.equals(candidate.key()))
-				.findFirst()
+		return node.artifact().clues().stream().filter(candidate -> key.equals(candidate.key())).findFirst()
 				.orElseThrow();
 	}
 }

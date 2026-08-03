@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 public record LanguageCode(String code) {
 
 	private static final Set<String> ISO_639_1 = Arrays.stream(Locale.getISOLanguages())
-			.map(value -> value.toLowerCase(Locale.ROOT))
-			.collect(Collectors.toUnmodifiableSet());
+			.map(value -> value.toLowerCase(Locale.ROOT)).collect(Collectors.toUnmodifiableSet());
 
 	public LanguageCode {
 		code = Objects.requireNonNull(code, "code").trim().toLowerCase(Locale.ROOT);

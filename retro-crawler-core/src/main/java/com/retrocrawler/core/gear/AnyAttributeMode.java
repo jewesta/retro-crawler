@@ -12,7 +12,8 @@ public enum AnyAttributeMode {
 	UNASSIGNED_ONLY,
 
 	/**
-	 * All facts and all clues, regardless of whether they were assigned to fields.
+	 * All facts and all clues, regardless of whether they were assigned to
+	 * fields.
 	 */
 	ALL_FACTS_AND_CLUES,
 

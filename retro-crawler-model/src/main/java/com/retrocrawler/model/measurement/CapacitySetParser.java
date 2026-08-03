@@ -7,20 +7,20 @@ import java.util.regex.Pattern;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-/** Parses uniform capacity sets in either count-first or capacity-first order. */
+/**
+ * Parses uniform capacity sets in either count-first or capacity-first order.
+ */
 public final class CapacitySetParser implements FactParser {
 
-	private static final Pattern COUNT_FIRST = Pattern.compile("^(\\d+)\\s*[x×]\\s*(.+)$",
-			Pattern.CASE_INSENSITIVE);
+	private static final Pattern COUNT_FIRST = Pattern.compile("^(\\d+)\\s*[x×]\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 
 	private static final Pattern CAPACITY_FIRST = Pattern.compile("^(.+?)\\s*[x×]\\s*(\\d+)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact>map(RatedFact::exact)
-				.orElseGet(() -> RatedFact.none(
-						"Expected '<member count> x <capacity per member>' or the reverse order."));
+		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+				() -> RatedFact.none("Expected '<member count> x <capacity per member>' or the reverse order."));
 	}
 
 	public static Optional<CapacitySet> parseValue(final String rawValue) {
@@ -44,8 +44,7 @@ public final class CapacitySetParser implements FactParser {
 	private static Optional<CapacitySet> capacitySet(final String rawMemberCount, final String rawCapacity) {
 		try {
 			final int memberCount = Integer.parseInt(rawMemberCount);
-			return DataCapacityParser.parseValue(rawCapacity)
-					.map(capacity -> new CapacitySet(memberCount, capacity));
+			return DataCapacityParser.parseValue(rawCapacity).map(capacity -> new CapacitySet(memberCount, capacity));
 		} catch (final IllegalArgumentException e) {
 			return Optional.empty();
 		}

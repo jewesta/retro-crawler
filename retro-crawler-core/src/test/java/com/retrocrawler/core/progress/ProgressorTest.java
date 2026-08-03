@@ -69,8 +69,7 @@ class ProgressorTest {
 		final Progressor[] secondHalf = halves[1].splitInRelationTo(1, 3);
 
 		halves[0].begin(ProgressStage.of("FIRST"), "First.", 10, ProgressAccuracy.EXACT)
-				.advanceTo(5, "Half of the first half.")
-				.complete("First done.");
+				.advanceTo(5, "Half of the first half.").complete("First done.");
 		assertEquals(0.5, root.snapshot().overallFraction());
 		assertEquals(ProgressState.RUNNING, root.snapshot().state());
 		assertEquals(ProgressStage.of("FIRST"), root.snapshot().stage());
@@ -88,8 +87,7 @@ class ProgressorTest {
 	void rootCancellationRetainsTheActiveChildStage() {
 		final Progressor root = new Progressor();
 		final Progressor child = root.splitIntoEqualParts(2)[0];
-		child.begin(ProgressStage.of("CHILD"), "Working.", 4, ProgressAccuracy.EXACT)
-				.advanceTo(1, "One done.");
+		child.begin(ProgressStage.of("CHILD"), "Working.", 4, ProgressAccuracy.EXACT).advanceTo(1, "One done.");
 
 		root.cancel("Stopping.");
 
@@ -118,18 +116,14 @@ class ProgressorTest {
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing.");
 		progressor.complete("Done.");
 
-		assertEquals(List.of(
-				"CRAWLING:0:RUNNING",
-				"CRAWLING:1:RUNNING",
-				"STOWING:-1:RUNNING",
-				"STOWING:-1:COMPLETE"), observations);
+		assertEquals(List.of("CRAWLING:0:RUNNING", "CRAWLING:1:RUNNING", "STOWING:-1:RUNNING", "STOWING:-1:COMPLETE"),
+				observations);
 	}
 
 	@Test
 	void reportsCompleteAndFailedTerminalStates() {
 		final Progressor complete = new Progressor();
-		complete.begin(ProgressStage.RESOLVING, "Resolving.", 2, ProgressAccuracy.EXACT)
-				.advanceTo(1, "One resolved.");
+		complete.begin(ProgressStage.RESOLVING, "Resolving.", 2, ProgressAccuracy.EXACT).advanceTo(1, "One resolved.");
 		complete.complete("Done.");
 
 		assertEquals(ProgressState.COMPLETE, complete.snapshot().state());

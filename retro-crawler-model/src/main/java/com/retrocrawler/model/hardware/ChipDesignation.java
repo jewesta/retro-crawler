@@ -6,8 +6,8 @@ import java.util.Objects;
  * An identifying expression used for an integrated circuit.
  * <p>
  * A designation may be a complete manufacturer part number, a family or core
- * name, a package marking, or incomplete identifying text. It deliberately
- * does not claim which of those forms the observed text represents.
+ * name, a package marking, or incomplete identifying text. It deliberately does
+ * not claim which of those forms the observed text represents.
  */
 public record ChipDesignation(String designation) {
 

@@ -8,10 +8,7 @@ import java.util.Set;
  */
 public final class IgnoreMacSystemPaths implements ArchivePathFilter {
 
-	private static final Set<String> NAMES = Set.of(
-			".ds_store",
-			"__macosx",
-			"icon\r");
+	private static final Set<String> NAMES = Set.of(".ds_store", "__macosx", "icon\r");
 
 	@Override
 	public boolean accept(final Path path) {

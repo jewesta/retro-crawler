@@ -55,13 +55,15 @@ public class GearResolver {
 		if (finder == null) {
 			attribute = clue;
 		} else {
-			attribute = finder.find(clue, parseContext).<RetroAttribute>map(Function.identity()).orElse(clue);
+			attribute = finder.find(clue, parseContext).<RetroAttribute> map(Function.identity()).orElse(clue);
 		}
 
 		resolved.put(attribute);
 	}
 
-	@SuppressWarnings({ Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE })
+	@SuppressWarnings({
+			Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE
+	})
 	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue,
 			final FactParseContext parseContext, final Set<String> allowedContextualKeys) {
 		final Set<String> raws = clue.value();
@@ -124,7 +126,7 @@ public class GearResolver {
 			return;
 		}
 
-		resolved.replace(combinedFact.<RetroAttribute>map(Function.identity()).orElse(combined));
+		resolved.replace(combinedFact.<RetroAttribute> map(Function.identity()).orElse(combined));
 	}
 
 	private void putAnonymousClueIfUseful(final RetroAttributes resolved, final Clue clue) {
@@ -154,8 +156,8 @@ public class GearResolver {
 			return bestSoFar;
 		}
 
-		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.key(), confidence,
-				finder.isContextual(), false);
+		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.key(), confidence, finder.isContextual(),
+				false);
 
 		if (bestSoFar == null) {
 			return candidate;
@@ -170,10 +172,11 @@ public class GearResolver {
 				return candidate.contextual() ? candidate : bestSoFar;
 			}
 			/*
-			 * Equal candidates mean that the model cannot identify what the anonymous
-			 * observation says. Keep that evidence as a clue instead of choosing by map
-			 * iteration order or failing resolution. An explicitly keyed clue remains
-			 * unambiguous and is handled by handleKnownKeyClue(...).
+			 * Equal candidates mean that the model cannot identify what the
+			 * anonymous observation says. Keep that evidence as a clue instead
+			 * of choosing by map iteration order or failing resolution. An
+			 * explicitly keyed clue remains unambiguous and is handled by
+			 * handleKnownKeyClue(...).
 			 */
 			return new BestAnonymousMatch(bestSoFar.key(), confidence, bestSoFar.contextual(), true);
 		}
@@ -196,25 +199,25 @@ public class GearResolver {
 	}
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact,
-			final FactParseContext parseContext) {
+	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final FactParseContext parseContext) {
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(parseContext, "parseContext");
 
 		/*
-		 * We are now looking at the given artifact and we want to turn it into a new
-		 * retro gear (if possible). To do this we first try to turn as many clues as
-		 * possible into facts. Attributes that cannot be turned into facts remain as
-		 * clues.
+		 * We are now looking at the given artifact and we want to turn it into
+		 * a new retro gear (if possible). To do this we first try to turn as
+		 * many clues as possible into facts. Attributes that cannot be turned
+		 * into facts remain as clues.
 		 */
 		final Set<Clue> clues = clueClassifier.classify(artifact.clues());
 		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of());
 
 		/*
-		 * Now that we have identified as many facts as possible, we try to find out
-		 * what kind of retro gear best fits the artifact. To do this we ask all gear
-		 * specialists how confident they are that the artifact could represent their
-		 * gear type. The "winner" (highest confidence) will later be built.
+		 * Now that we have identified as many facts as possible, we try to find
+		 * out what kind of retro gear best fits the artifact. To do this we ask
+		 * all gear specialists how confident they are that the artifact could
+		 * represent their gear type. The "winner" (highest confidence) will
+		 * later be built.
 		 */
 		GearSpecialist best = null;
 		Confidence bestConfidence = Confidence.NONE;
@@ -232,13 +235,13 @@ public class GearResolver {
 			}
 
 			/*
-			 * Note: Should there be more than one experts with the same (best) confidence
-			 * we currently let the first expert win. This is because throwing would be
-			 * overly harsh: It would mean that a single ambiguous artifact could stop the
-			 * whole pipeline.
+			 * Note: Should there be more than one experts with the same (best)
+			 * confidence we currently let the first expert win. This is because
+			 * throwing would be overly harsh: It would mean that a single
+			 * ambiguous artifact could stop the whole pipeline.
 			 * 
-			 * TODO: Find a way to inject the confidence level into gear and/or give the
-			 * user more control in draw situations
+			 * TODO: Find a way to inject the confidence level into gear and/or
+			 * give the user more control in draw situations
 			 * https://github.com/jewesta/retro-crawler/issues/12
 			 */
 			if (best == null || confidence.isHigherThan(bestConfidence)) {
@@ -257,11 +260,12 @@ public class GearResolver {
 		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys);
 		final GearContext context = new GearContext(bestType, artifact, attributes);
 		/*
-		 * The gear specialist is asked to build a gear. Since it was confident it could
-		 * do that we expect it to return a non-null value. Building might still throw,
-		 * though. For example in case of problems with type matching / annotations /
-		 * missing no-arg constructor etc. -- but that would be a fundamental problem
-		 * with the gear declaration the user would have to fix.
+		 * The gear specialist is asked to build a gear. Since it was confident
+		 * it could do that we expect it to return a non-null value. Building
+		 * might still throw, though. For example in case of problems with type
+		 * matching / annotations / missing no-arg constructor etc. -- but that
+		 * would be a fundamental problem with the gear declaration the user
+		 * would have to fix.
 		 */
 		final Object newGear = best.create(context);
 		final Optional<Object> retroId = retroId(best.gearDefinition(), attributes);

@@ -22,8 +22,8 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 	public GearSpecialist(final GearDescriptor descriptor) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		/*
-		 * Order is important! The AnyAttributeInjector must come last because it
-		 * (potentially) injects what the other injectors skipped.
+		 * Order is important! The AnyAttributeInjector must come last because
+		 * it (potentially) injects what the other injectors skipped.
 		 */
 		this.injectors = List.of(new DeclaredFactsInjector(adapter), new StandaloneIdInjector(adapter),
 				new AnyAttributeInjector());

@@ -36,9 +36,9 @@ public class RetroAttributes {
 
 	private void registerAnonymousSource(final RetroAttribute attribute, final String key) {
 		/*
-		 * Clues can be turned from anonymous to known. Make a note of the initial
-		 * anonymous key so we can identify former anonymous clues as already added as a
-		 * fact.
+		 * Clues can be turned from anonymous to known. Make a note of the
+		 * initial anonymous key so we can identify former anonymous clues as
+		 * already added as a fact.
 		 */
 		if (attribute instanceof final Fact fact) {
 			final Clue source = fact.source();

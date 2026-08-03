@@ -59,8 +59,7 @@ class ModelCatalogConfigurationTest {
 
 		Model.builder().typesFrom(Set.of(AnnotatedCollection.class, CatalogGear.class))
 				.workingDirectory(temporaryDirectory)
-				.factParser(TestCatalogParser.class, configuration -> configuration.catalogFile("builder.tsv"))
-				.build();
+				.factParser(TestCatalogParser.class, configuration -> configuration.catalogFile("builder.tsv")).build();
 
 		assertEquals("from builder", TestCatalogParser.loadedValue);
 	}
@@ -93,12 +92,10 @@ class ModelCatalogConfigurationTest {
 
 	@Test
 	void rejectsCatalogPathsThatEscapeTheCatalogDirectory() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.builder().typesFrom(Set.of(AnnotatedCollection.class, CatalogGear.class))
-						.workingDirectory(temporaryDirectory)
-						.factParser(TestCatalogParser.class,
-								configuration -> configuration.catalogFile("../outside.tsv"))
-						.build());
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.builder()
+				.typesFrom(Set.of(AnnotatedCollection.class, CatalogGear.class)).workingDirectory(temporaryDirectory)
+				.factParser(TestCatalogParser.class, configuration -> configuration.catalogFile("../outside.tsv"))
+				.build());
 
 		assertTrue(failure.getMessage().contains("relative path"));
 	}
@@ -107,8 +104,7 @@ class ModelCatalogConfigurationTest {
 	void rejectsCatalogConfigurationForAUsedPlainFactParser() {
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
 				() -> Model.builder().typesFrom(Set.of(DefaultConfiguredCollection.class, PlainParserGear.class))
-						.factParser(StringParser.class,
-								configuration -> configuration.catalogFile("not-supported.tsv"))
+						.factParser(StringParser.class, configuration -> configuration.catalogFile("not-supported.tsv"))
 						.build());
 
 		assertTrue(failure.getMessage().contains("does not implement CatalogFactParser"));

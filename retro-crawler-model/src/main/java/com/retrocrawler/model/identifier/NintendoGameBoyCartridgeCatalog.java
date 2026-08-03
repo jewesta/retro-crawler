@@ -74,8 +74,7 @@ public final class NintendoGameBoyCartridgeCatalog {
 		return from(Catalog.read(NintendoGameBoyCartridgeCatalogKey.class, source));
 	}
 
-	static NintendoGameBoyCartridgeCatalog from(
-			final Catalog<NintendoGameBoyCartridgeCatalogKey> catalog) {
+	static NintendoGameBoyCartridgeCatalog from(final Catalog<NintendoGameBoyCartridgeCatalogKey> catalog) {
 		return new NintendoGameBoyCartridgeCatalog(catalog);
 	}
 
@@ -124,15 +123,13 @@ public final class NintendoGameBoyCartridgeCatalog {
 		return from(catalog.plus(supplement.catalog));
 	}
 
-	private static NintendoGameBoyCartridgeCatalogEntry parseEntry(
-			final Row<NintendoGameBoyCartridgeCatalogKey> row) {
+	private static NintendoGameBoyCartridgeCatalogEntry parseEntry(final Row<NintendoGameBoyCartridgeCatalogKey> row) {
 		final int lineNumber = row.lineNumber();
 		final NintendoGameBoyRomId romId = NintendoGameBoyRomId.parse(row.get(rom_id))
 				.orElseThrow(() -> new IllegalArgumentException(
 						"Invalid Game Boy ROM ID on catalog line " + lineNumber + ": " + row.get(rom_id)));
-		return new NintendoGameBoyCartridgeCatalogEntry(
-				new NintendoGameBoyCartridgeCode(row.get(cartridge_code)), romId, row.get(title),
-				parseRegions(row.get(release_regions), lineNumber),
+		return new NintendoGameBoyCartridgeCatalogEntry(new NintendoGameBoyCartridgeCode(row.get(cartridge_code)),
+				romId, row.get(title), parseRegions(row.get(release_regions), lineNumber),
 				parseGameLanguageSets(row.get(game_languages), lineNumber));
 	}
 
@@ -142,8 +139,8 @@ public final class NintendoGameBoyCartridgeCatalog {
 			try {
 				regions.add(new RegionCode(code));
 			} catch (final IllegalArgumentException e) {
-				throw new IllegalArgumentException(
-						"Invalid release region on catalog line " + lineNumber + ": " + code, e);
+				throw new IllegalArgumentException("Invalid release region on catalog line " + lineNumber + ": " + code,
+						e);
 			}
 		}
 		return regions;
@@ -208,8 +205,7 @@ public final class NintendoGameBoyCartridgeCatalog {
 		private static final NintendoGameBoyCartridgeCatalog INSTANCE = load();
 
 		private static NintendoGameBoyCartridgeCatalog load() {
-			try (InputStream input = NintendoGameBoyCartridgeCatalog.class
-					.getResourceAsStream(DEFAULT_CATALOG_FILE)) {
+			try (InputStream input = NintendoGameBoyCartridgeCatalog.class.getResourceAsStream(DEFAULT_CATALOG_FILE)) {
 				if (input == null) {
 					throw new IllegalStateException(
 							"Missing bundled Game Boy cartridge catalog: " + DEFAULT_CATALOG_FILE);

@@ -25,8 +25,8 @@ class DataCapacityTest {
 	@Test
 	void comparesEquivalentCapacitiesAcrossUnits() {
 		final DataCapacity oneGigabyte = new DataCapacity(BigDecimal.ONE, DataCapacity.Unit.GB);
-		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512),
-				DataCapacity.Unit.MB).multiply(2);
+		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512), DataCapacity.Unit.MB)
+				.multiply(2);
 
 		assertTrue(oneGigabyte.sameSizeAs(twoTimes512Megabytes));
 	}

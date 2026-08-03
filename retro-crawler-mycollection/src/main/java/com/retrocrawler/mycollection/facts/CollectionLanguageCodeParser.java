@@ -15,8 +15,7 @@ import com.retrocrawler.model.locale.LanguageCodeParser;
  */
 public final class CollectionLanguageCodeParser implements FactParser {
 
-	private static final Set<String> OBSERVED_LANGUAGE_MARKERS = Set.of(
-			"DE", "EN", "ES", "FR", "GERMAN", "IT");
+	private static final Set<String> OBSERVED_LANGUAGE_MARKERS = Set.of("DE", "EN", "ES", "FR", "GERMAN", "IT");
 
 	private final LanguageCodeParser delegate = new LanguageCodeParser();
 

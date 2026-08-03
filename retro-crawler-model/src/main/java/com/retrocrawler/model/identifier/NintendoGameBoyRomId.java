@@ -35,8 +35,8 @@ public record NintendoGameBoyRomId(NintendoGameBoyPlatform platform, String game
 		}
 		try {
 			final NintendoGameBoyPlatform platform = NintendoGameBoyPlatform.fromCode(matcher.group(1)).orElseThrow();
-			return Optional.of(new NintendoGameBoyRomId(
-					platform, matcher.group(2), Integer.parseInt(matcher.group(3))));
+			return Optional
+					.of(new NintendoGameBoyRomId(platform, matcher.group(2), Integer.parseInt(matcher.group(3))));
 		} catch (final IllegalArgumentException e) {
 			return Optional.empty();
 		}

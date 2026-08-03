@@ -47,10 +47,9 @@ class BracketClueFinderTest {
 	void distinguishesDecimalCommasFromListSeparators() {
 		final Set<Clue> clues = finder.find("Memory [3,5] [ISA, PCI] [Alias one, two] [Set 2 x 1,125MB]");
 
-		assertTrue(clues.stream().filter(Clue::isAnonymous)
-				.anyMatch(value -> value.value().equals(Set.of("3,5"))));
-		assertTrue(clues.stream().filter(Clue::isAnonymous)
-				.anyMatch(value -> value.value().equals(Set.of("ISA", "PCI"))));
+		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().equals(Set.of("3,5"))));
+		assertTrue(
+				clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().equals(Set.of("ISA", "PCI"))));
 		assertEquals(Set.of("one", "two"), clue(clues, "alias").value());
 		assertEquals(Set.of("2 x 1,125MB"), clue(clues, AttributeNames.CAPACITY_SET).value());
 	}
@@ -64,8 +63,7 @@ class BracketClueFinderTest {
 	void retainsMalformedGroups() {
 		final Set<Clue> clues = finder.find("Board [unfinished");
 
-		assertTrue(clues.stream().filter(Clue::isAnonymous)
-				.anyMatch(value -> value.value().contains("[unfinished")));
+		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().contains("[unfinished")));
 		assertEquals(Set.of("Board"), clue(clues, AttributeNames.TITLE).value());
 	}
 

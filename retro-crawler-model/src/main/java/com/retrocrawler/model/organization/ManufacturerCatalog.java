@@ -26,12 +26,11 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
 
 /**
- * Typed manufacturer identities and exact name lookups over a standard
- * catalog.
+ * Typed manufacturer identities and exact name lookups over a standard catalog.
  *
  * <p>
- * A name can deliberately resolve to more than one manufacturer. Consumers
- * must not silently choose between ambiguous catalog entries.
+ * A name can deliberately resolve to more than one manufacturer. Consumers must
+ * not silently choose between ambiguous catalog entries.
  */
 public final class ManufacturerCatalog {
 
@@ -43,8 +42,8 @@ public final class ManufacturerCatalog {
 
 	private ManufacturerCatalog(final Catalog<ManufacturerCatalogKey> catalog) {
 		this.catalog = Objects.requireNonNull(catalog, "catalog");
-		entries = List.copyOf(new LinkedHashSet<>(catalog.rows().stream()
-				.map(ManufacturerCatalog::parseEntry).toList()));
+		entries = List
+				.copyOf(new LinkedHashSet<>(catalog.rows().stream().map(ManufacturerCatalog::parseEntry).toList()));
 		byName = indexNames(entries);
 	}
 
@@ -86,15 +85,13 @@ public final class ManufacturerCatalog {
 				parseTheRetroWebReference(row));
 	}
 
-	private static Optional<TheRetroWebReference> parseTheRetroWebReference(
-			final Row<ManufacturerCatalogKey> row) {
+	private static Optional<TheRetroWebReference> parseTheRetroWebReference(final Row<ManufacturerCatalogKey> row) {
 		final String rawId = row.get(trw_id).trim();
 		if (rawId.isEmpty()) {
 			return Optional.empty();
 		}
 		try {
-			return Optional.of(TheRetroWebCategory.MANUFACTURER.reference(
-					new TheRetroWebId(Integer.parseInt(rawId))));
+			return Optional.of(TheRetroWebCategory.MANUFACTURER.reference(new TheRetroWebId(Integer.parseInt(rawId))));
 		} catch (final IllegalArgumentException e) {
 			throw new IllegalArgumentException(
 					"Invalid The Retro Web manufacturer ID on catalog line " + row.lineNumber() + ": " + rawId, e);
@@ -107,8 +104,7 @@ public final class ManufacturerCatalog {
 			mutable.computeIfAbsent(normalizeName(manufacturer.name()), ignored -> new LinkedHashSet<>())
 					.add(manufacturer);
 			manufacturer.fullName().ifPresent(value -> mutable
-					.computeIfAbsent(normalizeName(value), ignored -> new LinkedHashSet<>())
-					.add(manufacturer));
+					.computeIfAbsent(normalizeName(value), ignored -> new LinkedHashSet<>()).add(manufacturer));
 		}
 
 		final Map<String, List<Manufacturer>> immutable = new LinkedHashMap<>();
@@ -131,8 +127,7 @@ public final class ManufacturerCatalog {
 		private static ManufacturerCatalog load() {
 			try (InputStream input = ManufacturerCatalog.class.getResourceAsStream(DEFAULT_CATALOG_FILE)) {
 				if (input == null) {
-					throw new IllegalStateException("Missing bundled manufacturer catalog: "
-							+ DEFAULT_CATALOG_FILE);
+					throw new IllegalStateException("Missing bundled manufacturer catalog: " + DEFAULT_CATALOG_FILE);
 				}
 				return read(new InputStreamReader(input, StandardCharsets.UTF_8));
 			} catch (final IOException e) {

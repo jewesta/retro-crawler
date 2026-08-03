@@ -175,14 +175,14 @@ class ModelTest {
 	public static class RuntimeConfiguredArchive {
 	}
 
-	@RetroCollection(id = "filtered_archive", locations = "/not/read",
-			pathFilters = { IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class })
+	@RetroCollection(id = "filtered_archive", locations = "/not/read", pathFilters = {
+			IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class
+	})
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class FilteredArchive {
 	}
 
-	@RetroCollection(id = "working_directory", locations = "/not/read",
-			workingDirectory = "annotation-work")
+	@RetroCollection(id = "working_directory", locations = "/not/read", workingDirectory = "annotation-work")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class WorkingDirectoryCollection {
 	}

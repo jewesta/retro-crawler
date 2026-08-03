@@ -18,8 +18,8 @@ import java.util.function.Consumer;
  * work units and accuracy.
  *
  * <p>
- * Adapted from progressor code developed by Relimit GmbH. Used in
- * RetroCrawler with permission.
+ * Adapted from progressor code developed by Relimit GmbH. Used in RetroCrawler
+ * with permission.
  */
 public final class Progressor {
 
@@ -215,9 +215,7 @@ public final class Progressor {
 		for (int index = 0; index < weights.length; index++) {
 			final double share = weights[index] / totalWeight;
 			final double childOffset = offset + window * localOffset;
-			final double childWindow = index == weights.length - 1
-					? offset + window - childOffset
-					: window * share;
+			final double childWindow = index == weights.length - 1 ? offset + window - childOffset : window * share;
 			result[index] = new Progressor(root, childOffset, childWindow);
 			localOffset += share;
 		}
@@ -298,8 +296,8 @@ public final class Progressor {
 			root.fraction = clamp(rootFraction);
 			final Duration elapsed = Duration.ofNanos(Math.max(0, System.nanoTime() - startedNanos));
 			final Optional<Duration> remaining = estimateRemaining(elapsed);
-			next = new ProgressSnapshot(root.id, stage, message, completed, total, accuracy, state,
-					root.fraction, elapsed, remaining);
+			next = new ProgressSnapshot(root.id, stage, message, completed, total, accuracy, state, root.fraction,
+					elapsed, remaining);
 			root.snapshot = next;
 		}
 		notifyMonitors(next);
@@ -313,11 +311,9 @@ public final class Progressor {
 				return;
 			}
 			final ProgressSnapshot current = root.snapshot;
-			final long terminalCompleted = finishUnits && current.isDeterminate()
-					? current.total()
+			final long terminalCompleted = finishUnits && current.isDeterminate() ? current.total()
 					: current.completed();
-			final Duration elapsed = Duration.ofNanos(
-					Math.max(0, System.nanoTime() - root.activeStageStartedNanos));
+			final Duration elapsed = Duration.ofNanos(Math.max(0, System.nanoTime() - root.activeStageStartedNanos));
 			root.fraction = clamp(rootFraction);
 			next = new ProgressSnapshot(root.id, current.stage(), terminalMessage, terminalCompleted, current.total(),
 					current.accuracy(), state, root.fraction, elapsed, Optional.empty());
@@ -373,8 +369,8 @@ public final class Progressor {
 
 		private Root(final String id) {
 			this.id = id;
-			this.snapshot = new ProgressSnapshot(id, ProgressStage.IDLE, "", -1, -1,
-					ProgressAccuracy.INDETERMINATE, ProgressState.RUNNING, 0, Duration.ZERO, Optional.empty());
+			this.snapshot = new ProgressSnapshot(id, ProgressStage.IDLE, "", -1, -1, ProgressAccuracy.INDETERMINATE,
+					ProgressState.RUNNING, 0, Duration.ZERO, Optional.empty());
 		}
 	}
 }

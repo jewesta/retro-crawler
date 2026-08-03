@@ -51,12 +51,8 @@ class SystemPathFiltersTest {
 
 	@Test
 	void admitsOrdinaryArchiveEntries() {
-		final List<ArchivePathFilter> filters = List.of(
-				new IgnoreDotPaths(),
-				new IgnoreWindowsSystemPaths(),
-				new IgnoreMacSystemPaths(),
-				new IgnoreLinuxSystemPaths(),
-				new IgnoreQNAPSystemPaths(),
+		final List<ArchivePathFilter> filters = List.of(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
+				new IgnoreMacSystemPaths(), new IgnoreLinuxSystemPaths(), new IgnoreQNAPSystemPaths(),
 				new IgnoreSynologySystemPaths());
 
 		for (final ArchivePathFilter filter : filters) {

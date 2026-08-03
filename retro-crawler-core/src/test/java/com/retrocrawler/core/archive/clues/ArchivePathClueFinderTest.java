@@ -25,9 +25,7 @@ class ArchivePathClueFinderTest {
 	@Test
 	void collapsesCorroboratingCluesFromDifferentFinders() throws IOException {
 		final Path file = Files.createFile(folder.resolve("evidence.txt"));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(
-				name -> Set.of(Clue.of("bus", "AGP")),
-				List.of(),
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(name -> Set.of(Clue.of("bus", "AGP")), List.of(),
 				List.of(files -> Set.of(Clue.of("bus", "AGP"))));
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
@@ -38,9 +36,7 @@ class ArchivePathClueFinderTest {
 	@Test
 	void retainsConflictingValuesUnderTheirSemanticKey() throws IOException {
 		final Path file = Files.createFile(folder.resolve("evidence.txt"));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(
-				name -> Set.of(Clue.of("bus", "AGP")),
-				List.of(),
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(name -> Set.of(Clue.of("bus", "AGP")), List.of(),
 				List.of(files -> Set.of(Clue.of("bus", "PCI"))));
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
@@ -51,9 +47,7 @@ class ArchivePathClueFinderTest {
 	@Test
 	void alsoMergesRepeatedKeysReturnedByOneFinder() {
 		final ArchivePathClueFinder finder = new ArchivePathClueFinder(
-				name -> Set.of(Clue.of("bus", "AGP"), Clue.of("bus", "PCI")),
-				List.of(),
-				List.of());
+				name -> Set.of(Clue.of("bus", "AGP"), Clue.of("bus", "PCI")), List.of(), List.of());
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), SILENT_PROGRESSOR);
 
@@ -138,11 +132,9 @@ class ArchivePathClueFinderTest {
 		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(),
 				List.of(files -> Set.of(Clue.of("image", files.iterator().next().toString()))));
 
-		final Set<Clue> clues = finder.find(new ArchivePath(folder, gearFolder, List.of(image)),
-				SILENT_PROGRESSOR);
+		final Set<Clue> clues = finder.find(new ArchivePath(folder, gearFolder, List.of(image)), SILENT_PROGRESSOR);
 
-		assertEquals(Set.of(Path.of("shelf", "gear", "front.jpeg").toString()),
-				clue(clues, "image").value());
+		assertEquals(Set.of(Path.of("shelf", "gear", "front.jpeg").toString()), clue(clues, "image").value());
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {

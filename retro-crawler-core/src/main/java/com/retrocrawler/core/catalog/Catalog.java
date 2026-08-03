@@ -37,8 +37,8 @@ public final class Catalog<K extends Enum<K>> {
 		Objects.requireNonNull(source, "source");
 		final K[] constants = keyType.getEnumConstants();
 		if (constants == null || constants.length == 0) {
-			throw new IllegalArgumentException("Catalog key type must declare at least one enum constant: "
-					+ keyType.getName());
+			throw new IllegalArgumentException(
+					"Catalog key type must declare at least one enum constant: " + keyType.getName());
 		}
 
 		final Map<String, K> keysByName = new LinkedHashMap<>();
@@ -46,8 +46,7 @@ public final class Catalog<K extends Enum<K>> {
 			keysByName.put(key.name(), key);
 		}
 
-		final BufferedReader reader = source instanceof final BufferedReader buffered
-				? buffered
+		final BufferedReader reader = source instanceof final BufferedReader buffered ? buffered
 				: new BufferedReader(source);
 		List<K> header = null;
 		final List<Row<K>> rows = new ArrayList<>();
@@ -90,8 +89,8 @@ public final class Catalog<K extends Enum<K>> {
 	public Catalog<K> plus(final Catalog<K> supplement) {
 		Objects.requireNonNull(supplement, "supplement");
 		if (supplement.keyType != keyType) {
-			throw new IllegalArgumentException("Cannot combine catalogs with key types " + keyType.getName()
-					+ " and " + supplement.keyType.getName() + ".");
+			throw new IllegalArgumentException("Cannot combine catalogs with key types " + keyType.getName() + " and "
+					+ supplement.keyType.getName() + ".");
 		}
 		final List<Row<K>> combined = new ArrayList<>(rows);
 		combined.addAll(supplement.rows);
@@ -102,20 +101,20 @@ public final class Catalog<K extends Enum<K>> {
 		return !line.isEmpty() && line.charAt(0) == '\ufeff' ? line.substring(1) : line;
 	}
 
-	private static <K extends Enum<K>> List<K> parseHeader(final Class<K> keyType,
-			final Map<String, K> keysByName, final String line, final int lineNumber) {
+	private static <K extends Enum<K>> List<K> parseHeader(final Class<K> keyType, final Map<String, K> keysByName,
+			final String line, final int lineNumber) {
 		final String[] cells = line.split("\t", -1);
 		final List<K> header = new ArrayList<>(cells.length);
 		final Set<K> found = new LinkedHashSet<>();
 		for (final String cell : cells) {
 			final K key = keysByName.get(cell);
 			if (key == null) {
-				throw new IllegalArgumentException("Unknown catalog header key '" + cell + "' on line "
-						+ lineNumber + " for " + keyType.getName() + ".");
+				throw new IllegalArgumentException("Unknown catalog header key '" + cell + "' on line " + lineNumber
+						+ " for " + keyType.getName() + ".");
 			}
 			if (!found.add(key)) {
-				throw new IllegalArgumentException("Duplicate catalog header key '" + cell + "' on line "
-						+ lineNumber + " for " + keyType.getName() + ".");
+				throw new IllegalArgumentException("Duplicate catalog header key '" + cell + "' on line " + lineNumber
+						+ " for " + keyType.getName() + ".");
 			}
 			header.add(key);
 		}
@@ -123,15 +122,15 @@ public final class Catalog<K extends Enum<K>> {
 		final Set<K> missing = new LinkedHashSet<>(keysByName.values());
 		missing.removeAll(found);
 		if (!missing.isEmpty()) {
-			throw new IllegalArgumentException("Missing catalog header keys "
-					+ missing.stream().map(Enum::name).toList() + " on line " + lineNumber + " for "
-					+ keyType.getName() + ".");
+			throw new IllegalArgumentException(
+					"Missing catalog header keys " + missing.stream().map(Enum::name).toList() + " on line "
+							+ lineNumber + " for " + keyType.getName() + ".");
 		}
 		return List.copyOf(header);
 	}
 
-	private static <K extends Enum<K>> Row<K> parseRow(final Class<K> keyType, final List<K> header,
-			final String line, final int lineNumber) {
+	private static <K extends Enum<K>> Row<K> parseRow(final Class<K> keyType, final List<K> header, final String line,
+			final int lineNumber) {
 		final String[] cells = line.split("\t", -1);
 		if (cells.length != header.size()) {
 			throw new IllegalArgumentException("Expected " + header.size() + " catalog columns but found "
@@ -145,7 +144,8 @@ public final class Catalog<K extends Enum<K>> {
 	}
 
 	/**
-	 * One immutable catalog row addressed by schema key rather than column order.
+	 * One immutable catalog row addressed by schema key rather than column
+	 * order.
 	 */
 	public static final class Row<K extends Enum<K>> {
 

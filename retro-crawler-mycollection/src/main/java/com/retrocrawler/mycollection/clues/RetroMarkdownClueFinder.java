@@ -86,8 +86,7 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		for (final Map.Entry<String, Set<String>> entry : valuesByKey.entrySet()) {
 			final Set<String> nonEmptyValues = entry.getValue().stream().filter(value -> !value.isEmpty())
 					.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-			clues.add(nonEmptyValues.isEmpty()
-					? Clue.missingValue(entry.getKey())
+			clues.add(nonEmptyValues.isEmpty() ? Clue.missingValue(entry.getKey())
 					: Clue.of(entry.getKey(), nonEmptyValues));
 		}
 

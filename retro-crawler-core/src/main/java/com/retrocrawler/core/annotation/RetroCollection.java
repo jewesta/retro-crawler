@@ -18,14 +18,14 @@ public @interface RetroCollection {
 	String id();
 
 	/**
-	 * An optional display name for the collection. If none is given, {@link #id()}
-	 * is used.
+	 * An optional display name for the collection. If none is given,
+	 * {@link #id()} is used.
 	 */
 	String name() default "";
 
 	/**
-	 * A collection can consist of several folders. Locations may be omitted when
-	 * they are supplied explicitly while constructing the model.
+	 * A collection can consist of several folders. Locations may be omitted
+	 * when they are supplied explicitly while constructing the model.
 	 */
 	String[] locations() default {};
 
@@ -36,8 +36,8 @@ public @interface RetroCollection {
 	Class<? extends ArchivePathFilter>[] pathFilters() default {};
 
 	/**
-	 * Optional collection-wide directory for crawler-owned files such as external
-	 * catalogs. Runtime model configuration can override this value.
+	 * Optional collection-wide directory for crawler-owned files such as
+	 * external catalogs. Runtime model configuration can override this value.
 	 */
 	String workingDirectory() default "";
 }

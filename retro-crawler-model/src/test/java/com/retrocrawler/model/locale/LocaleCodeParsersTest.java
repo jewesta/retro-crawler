@@ -37,7 +37,9 @@ class LocaleCodeParsersTest {
 		final LanguageCodeParser language = new LanguageCodeParser();
 		final RegionCodeParser region = new RegionCodeParser();
 
-		for (final String code : new String[] { "DE", "ES", "FR", "IT" }) {
+		for (final String code : new String[] {
+				"DE", "ES", "FR", "IT"
+		}) {
 			assertEquals(Confidence.EXACT, language.parse(code).confidence());
 			assertEquals(Confidence.EXACT, region.parse(code).confidence());
 		}

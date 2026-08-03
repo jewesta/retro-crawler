@@ -27,18 +27,12 @@ class FloppyDiskFormatParserTest {
 	void parsesConventionalCombinedSpellings() {
 		final FloppyDiskFormatParser parser = new FloppyDiskFormatParser();
 
-		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.SINGLE),
-				parser.parse("1S-1D").value().orElseThrow());
-		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.DOUBLE),
-				parser.parse("1S-2D").value().orElseThrow());
-		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.DOUBLE),
-				parser.parse("1S-DD").value().orElseThrow());
-		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.DOUBLE),
-				parser.parse("DS-DD").value().orElseThrow());
-		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.HIGH),
-				parser.parse("2S-HD").value().orElseThrow());
-		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.QUAD),
-				parser.parse("2S-QD").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.SINGLE), parser.parse("1S-1D").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.DOUBLE), parser.parse("1S-2D").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.SINGLE, Density.DOUBLE), parser.parse("1S-DD").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.DOUBLE), parser.parse("DS-DD").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.HIGH), parser.parse("2S-HD").value().orElseThrow());
+		assertEquals(FloppyDiskFormat.of(Sides.DOUBLE, Density.QUAD), parser.parse("2S-QD").value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("2S").confidence());
 		assertEquals(Confidence.NONE, parser.parse("HDMI").confidence());
 	}

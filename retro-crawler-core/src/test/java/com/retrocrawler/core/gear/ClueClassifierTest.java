@@ -19,8 +19,7 @@ class ClueClassifierTest {
 		final Set<Clue> clues = classifier.classify(Set.of(Clue.of("SN"), Clue.of("AGP"), Clue.of("")));
 
 		assertTrue(clue(clues, "sn").isMissingValue());
-		assertTrue(clues.stream().filter(Clue::isAnonymous)
-				.anyMatch(value -> value.value().equals(Set.of("AGP"))));
+		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().equals(Set.of("AGP"))));
 		assertFalse(clues.stream().anyMatch(value -> value.value().contains("")));
 	}
 

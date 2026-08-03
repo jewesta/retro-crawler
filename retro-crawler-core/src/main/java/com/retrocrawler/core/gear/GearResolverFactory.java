@@ -45,14 +45,12 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 		/*
 		 * Look for retro gear. Not all types are required to be annotated with
-		 * RetroGear. Some might end up in the Set because of package scanning; One
-		 * might only serve as the archive descriptor.
+		 * RetroGear. Some might end up in the Set because of package scanning;
+		 * One might only serve as the archive descriptor.
 		 */
 		final Map<Class<?>, GearSpecialist> specialists = new HashMap<>();
 		for (final Class<?> type : types) {
-			GearDescriptor.of(type).ifPresent(gd -> {
-				specialists.put(type, new GearSpecialist(gd));
-			});
+			GearDescriptor.of(type).ifPresent(gd -> specialists.put(type, new GearSpecialist(gd)));
 		}
 		if (specialists.isEmpty()) {
 			throw new IllegalArgumentException(
@@ -125,9 +123,8 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final Path workingDirectory, final FactParserConfiguration configuration) {
 		if (!CatalogFactParser.class.isAssignableFrom(parserType)) {
 			if (configuration != null && configuration.catalogFile().isPresent()) {
-				throw new IllegalArgumentException("Fact parser " + parserType.getName()
-						+ " does not implement " + CatalogFactParser.class.getSimpleName()
-						+ " and cannot use catalogFile configuration.");
+				throw new IllegalArgumentException("Fact parser " + parserType.getName() + " does not implement "
+						+ CatalogFactParser.class.getSimpleName() + " and cannot use catalogFile configuration.");
 			}
 			return Reflection.newInstance(parserType);
 		}
@@ -146,7 +143,8 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			if (cause instanceof final RuntimeException runtime) {
 				throw runtime;
 			}
-			throw new IllegalArgumentException("Cannot instantiate catalog fact parser: " + parserType.getName(), cause);
+			throw new IllegalArgumentException("Cannot instantiate catalog fact parser: " + parserType.getName(),
+					cause);
 		}
 	}
 
@@ -172,7 +170,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 
 		if (fieldType.isEnum()) {
-			@SuppressWarnings({ "unchecked", "rawtypes" })
+			@SuppressWarnings({
+					"unchecked", "rawtypes"
+			})
 			final Class<? extends Enum> enumType = (Class<? extends Enum>) fieldType;
 			return new EnumParser<>(enumType, true);
 		}

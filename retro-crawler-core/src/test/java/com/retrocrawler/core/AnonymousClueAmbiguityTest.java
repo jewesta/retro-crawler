@@ -41,17 +41,15 @@ class AnonymousClueAmbiguityTest {
 		Files.createDirectory(archiveRoot.resolve("ambiguous"));
 		final Model model = Model.from(Set.of(AmbiguousArchive.class, AmbiguousGear.class),
 				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model)
-				.repository(new InMemoryRepository()).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository()).build();
 
-		final List<AmbiguousGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(),
-				AmbiguousGear.class);
+		final List<AmbiguousGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(), AmbiguousGear.class);
 
 		assertNull(gear.getFirst().firstMeaning);
 		assertNull(gear.getFirst().secondMeaning);
-		assertTrue(gear.getFirst().attributes.values().stream()
-				.map(attribute -> assertInstanceOf(Clue.class, attribute))
-				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("overlap"))));
+		assertTrue(
+				gear.getFirst().attributes.values().stream().map(attribute -> assertInstanceOf(Clue.class, attribute))
+						.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("overlap"))));
 	}
 
 	@RetroCollection(id = "anonymous_ambiguity")
@@ -98,8 +96,7 @@ class AnonymousClueAmbiguityTest {
 
 		@Override
 		public RatedFact parse(final String rawValue) {
-			return "overlap".equals(rawValue) ? RatedFact.exact("second")
-					: RatedFact.none("Not the second meaning.");
+			return "overlap".equals(rawValue) ? RatedFact.exact("second") : RatedFact.none("Not the second meaning.");
 		}
 	}
 }

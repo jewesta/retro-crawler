@@ -115,19 +115,19 @@ public class SearchView extends HorizontalLayout {
 		super.onAttach(attachEvent);
 		contentArea.setPadding(false);
 
-//		searchTerm = new TextField("Search Term");
-//		searchButton = new Button("Search");
-//		searchButton.addClickListener(e -> {
-//			Notification.show("Hello " + searchTerm.getValue());
-//		});
-//		searchButton.addClickShortcut(Key.ENTER);
-//
-//		setMargin(true);
-//		setVerticalComponentAlignment(Alignment.END, searchTerm, searchButton);
-//
-//		searchArea.add(searchTerm, searchButton);
-//
-//		mainLayout.add(searchArea);
+		//		searchTerm = new TextField("Search Term");
+		//		searchButton = new Button("Search");
+		//		searchButton.addClickListener(e -> {
+		//			Notification.show("Hello " + searchTerm.getValue());
+		//		});
+		//		searchButton.addClickShortcut(Key.ENTER);
+		//
+		//		setMargin(true);
+		//		setVerticalComponentAlignment(Alignment.END, searchTerm, searchButton);
+		//
+		//		searchArea.add(searchTerm, searchButton);
+		//
+		//		mainLayout.add(searchArea);
 
 		treeGrid.addHierarchyColumn(p -> p.getTitle() != null ? p.getTitle() : "<unknown>").setHeader("Title")
 				.setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
@@ -135,7 +135,8 @@ public class SearchView extends HorizontalLayout {
 				.setHeader("Id").setResizable(true);
 		treeGrid.addComponentColumn(p -> p.getPicFront().map(path -> {
 			/*
-			 * The StreamResource allows for loading the image from the local file system.
+			 * The StreamResource allows for loading the image from the local
+			 * file system.
 			 */
 			final String fileName = path.getFileName().toString();
 			final StreamResource resource = new StreamResource(fileName, () -> {
@@ -224,7 +225,7 @@ public class SearchView extends HorizontalLayout {
 		final HorizontalLayout drawerHeader = createHeader();
 		final VerticalLayout drawerHeaderArea = createHeaderArea(drawerHeader);
 
-//		final TextField textField = new TextField();
+		//		final TextField textField = new TextField();
 		drawer.add(drawerHeaderArea);
 		drawer.setPadding(false);
 		// shown by selection event
@@ -278,12 +279,10 @@ public class SearchView extends HorizontalLayout {
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
-		}).thenAccept(successResult -> {
-			ui.access(() -> {
-				activeProgressor.complete(INDEX_READY);
-				setParts(successResult);
-			});
-		}).exceptionally(failureException -> {
+		}).thenAccept(successResult -> ui.access(() -> {
+			activeProgressor.complete(INDEX_READY);
+			setParts(successResult);
+		})).exceptionally(failureException -> {
 			ui.access(() -> {
 				activeProgressor.fail(INDEX_FAILED + " " + failureException.getMessage());
 				setParts(new TreeData<>());
@@ -304,7 +303,7 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	public void setParts(final TreeData<MyKnownGear> tree) {
-		final TreeDataProvider<MyKnownGear> partsProvider = new TreeDataProvider<MyKnownGear>(tree);
+		final TreeDataProvider<MyKnownGear> partsProvider = new TreeDataProvider<>(tree);
 		treeGrid.setDataProvider(partsProvider);
 		this.parts = tree;
 	}

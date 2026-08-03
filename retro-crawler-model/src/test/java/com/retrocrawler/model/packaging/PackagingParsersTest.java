@@ -12,8 +12,7 @@ class PackagingParsersTest {
 	void parsesCanonicalEnglishPackagingOrigins() {
 		final PackagingOriginParser parser = new PackagingOriginParser();
 
-		assertEquals(PackagingOrigin.ORIGINAL,
-				parser.parse(" Original Packaging ").value().orElseThrow());
+		assertEquals(PackagingOrigin.ORIGINAL, parser.parse(" Original Packaging ").value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("OVP").confidence());
 		assertEquals(Confidence.NONE, parser.parse("boxed").confidence());
 		assertEquals(Confidence.NONE, parser.parse(null).confidence());

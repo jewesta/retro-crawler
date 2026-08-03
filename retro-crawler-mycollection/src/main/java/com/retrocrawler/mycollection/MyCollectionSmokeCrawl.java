@@ -34,9 +34,8 @@ public final class MyCollectionSmokeCrawl {
 
 	public static void main(final String[] arguments) throws Exception {
 		if (arguments.length < 2) {
-			throw new IllegalArgumentException(
-					"Expected arguments: <archive-roots-file> <private-cache-directory> "
-							+ "[--reindex|--reuse-cache|--reindex-subtree <path>...]");
+			throw new IllegalArgumentException("Expected arguments: <archive-roots-file> <private-cache-directory> "
+					+ "[--reindex|--reuse-cache|--reindex-subtree <path>...]");
 		}
 
 		final ArchiveRoots roots = ArchiveRoots.load(Path.of(arguments[0]));
@@ -54,8 +53,8 @@ public final class MyCollectionSmokeCrawl {
 		} catch (final DuplicateRetroIdException failure) {
 			final Path report = writeDuplicateReport(cacheDirectory, failure);
 			final long occurrences = failure.duplicates().values().stream().mapToLong(List::size).sum();
-			System.out.println("RC_VALIDATION\tduplicateRetroIds=" + failure.duplicates().size()
-					+ "\toccurrences=" + occurrences + "\treport=" + report);
+			System.out.println("RC_VALIDATION\tduplicateRetroIds=" + failure.duplicates().size() + "\toccurrences="
+					+ occurrences + "\treport=" + report);
 			throw new IllegalStateException("Duplicate Retro IDs detected; see private report: " + report);
 		}
 	}
@@ -79,14 +78,12 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	private static void printSummary(final List<MyGear> gear) {
-		final Map<String, Long> types = gear.stream()
-				.collect(Collectors.groupingBy(value -> value.getClass().getSimpleName(), TreeMap::new,
-						Collectors.counting()));
+		final Map<String, Long> types = gear.stream().collect(
+				Collectors.groupingBy(value -> value.getClass().getSimpleName(), TreeMap::new, Collectors.counting()));
 		final long withRetroId = gear.stream().filter(value -> value.getRetroId().isPresent()).count();
 		final long withDescription = gear.stream().filter(value -> value.getDescription().isPresent()).count();
 		final long withColors = gear.stream().filter(value -> !value.getColors().isEmpty()).count();
-		final long withChipDesignations = gear.stream()
-				.filter(value -> !value.getChipDesignations().isEmpty()).count();
+		final long withChipDesignations = gear.stream().filter(value -> !value.getChipDesignations().isEmpty()).count();
 		final long withCapacitySets = gear.stream().filter(value -> value.getCapacitySet().isPresent()).count();
 		final long withCondition = gear.stream().filter(value -> value.getCondition().isPresent()).count();
 		final long withDamage = gear.stream().filter(value -> !value.getDamageKinds().isEmpty()).count();
@@ -109,29 +106,23 @@ public final class MyCollectionSmokeCrawl {
 		final long onlyImages = gear.stream().filter(MyCollectionSmokeCrawl::hasOnlyImages).count();
 
 		System.out.println("RC_RESULT\tgear=" + gear.size() + "\ttypes=" + types + "\tretroIds=" + withRetroId
-				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
-				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\tcolors=" + withColors
-				+ "\tchipDesignations=" + withChipDesignations
-				+ "\tcapacitySets=" + withCapacitySets
-				+ "\tconditions=" + withCondition + "\thealth=" + withHealth + "\tdamage=" + withDamage
-				+ "\tdateMarkings=" + withDateMarkings
-				+ "\toriginalPackaging=" + withOriginalPackaging + "\tsealStates=" + withSealState
-				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
-				+ "\tlengths=" + withLengths
-				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
-				+ "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
-				+ "\tpspDiscIds=" + withPlayStationPortableDiscIds
-				+ "\tlotMemberships=" + withLotMembership + "\timagesOnly=" + onlyImages);
+				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription + "\timages="
+				+ withImages + "\tfloppyImages=" + withFloppyImages + "\tcolors=" + withColors + "\tchipDesignations="
+				+ withChipDesignations + "\tcapacitySets=" + withCapacitySets + "\tconditions=" + withCondition
+				+ "\thealth=" + withHealth + "\tdamage=" + withDamage + "\tdateMarkings=" + withDateMarkings
+				+ "\toriginalPackaging=" + withOriginalPackaging + "\tsealStates=" + withSealState + "\tlanguages="
+				+ withLanguages + "\tregions=" + withRegions + "\tlengths=" + withLengths + "\tgameBoyCartridgeCodes="
+				+ withNintendoGameBoyCartridgeCodes + "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
+				+ "\tpspDiscIds=" + withPlayStationPortableDiscIds + "\tlotMemberships=" + withLotMembership
+				+ "\timagesOnly=" + onlyImages);
 	}
 
 	private static Path writeDuplicateReport(final Path cacheDirectory, final DuplicateRetroIdException failure)
 			throws java.io.IOException {
 		final Path report = cacheDirectory.resolve("duplicate-retro-ids.txt");
 		final long occurrences = failure.duplicates().values().stream().mapToLong(List::size).sum();
-		final StringBuilder contents = new StringBuilder()
-				.append("Duplicate Retro IDs\n")
-				.append("===================\n\n")
-				.append("Values: ").append(failure.duplicates().size()).append('\n')
+		final StringBuilder contents = new StringBuilder().append("Duplicate Retro IDs\n")
+				.append("===================\n\n").append("Values: ").append(failure.duplicates().size()).append('\n')
 				.append("Occurrences: ").append(occurrences).append("\n\n");
 
 		failure.duplicates().entrySet().stream()
@@ -152,8 +143,7 @@ public final class MyCollectionSmokeCrawl {
 	}
 
 	private static boolean hasImage(final MyGear gear) {
-		return gear.getAngledImage().isPresent() || gear.getFrontImage().isPresent()
-				|| gear.getBackImage().isPresent();
+		return gear.getAngledImage().isPresent() || gear.getFrontImage().isPresent() || gear.getBackImage().isPresent();
 	}
 
 	private static boolean hasOnlyImages(final MyGear gear) {
@@ -163,35 +153,27 @@ public final class MyCollectionSmokeCrawl {
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
 		return hasNoTypeSpecificFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
 				&& gear.getTitle().isEmpty() && gear.getColors().isEmpty() && gear.getChipDesignations().isEmpty()
-				&& gear.getCondition().isEmpty()
-				&& gear.getDamageKinds().isEmpty() && gear.getDateMarking().isEmpty()
-				&& gear.getGearKind().isEmpty() && gear.getLength().isEmpty()
-				&& gear.getPackagingOrigin().isEmpty()
+				&& gear.getCondition().isEmpty() && gear.getDamageKinds().isEmpty() && gear.getDateMarking().isEmpty()
+				&& gear.getGearKind().isEmpty() && gear.getLength().isEmpty() && gear.getPackagingOrigin().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
-				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty()
-				&& gear.getDestiny().isEmpty() && gear.getFccId().isEmpty() && gear.getHealth().isEmpty()
-				&& gear.getMacAddress().isEmpty() && gear.getSerialNumber().isEmpty()
-				&& gear.getNintendoGameBoyCartridgeCodes().isEmpty()
-				&& gear.getPlayStationPortableDiscIds().isEmpty()
-				&& gear.getSegaGameGearCartridgeCodes().isEmpty()
+				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty() && gear.getDestiny().isEmpty()
+				&& gear.getFccId().isEmpty() && gear.getHealth().isEmpty() && gear.getMacAddress().isEmpty()
+				&& gear.getSerialNumber().isEmpty() && gear.getNintendoGameBoyCartridgeCodes().isEmpty()
+				&& gear.getPlayStationPortableDiscIds().isEmpty() && gear.getSegaGameGearCartridgeCodes().isEmpty()
 				&& gear.getPrice().isEmpty() && gear.getLot().isEmpty() && gear.getLotPrice().isEmpty()
-				&& gear.getSource().isEmpty()
-				&& gear.getTested().isEmpty()
-				&& gear.getFloppyImages().isEmpty() && gear.getFloppyImageIds().isEmpty()
-				&& gear.getMemoryAccessTimes().isEmpty()
+				&& gear.getSource().isEmpty() && gear.getTested().isEmpty() && gear.getFloppyImages().isEmpty()
+				&& gear.getFloppyImageIds().isEmpty() && gear.getMemoryAccessTimes().isEmpty()
 				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()
 				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
 				&& gear.getPower().isEmpty() && gear.getCapacitySet().isEmpty() && gear.getDocumentIds().isEmpty()
-				&& gear.getSealState().isEmpty()
-				&& gear.getScreenSize().isEmpty() && gear.getVersion().isEmpty()
+				&& gear.getSealState().isEmpty() && gear.getScreenSize().isEmpty() && gear.getVersion().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
 				&& gear.getAttributes().keySet().stream().allMatch(key -> key.startsWith("@"));
 	}
 
 	private static boolean hasNoTypeSpecificFacts(final MyGear gear) {
 		final boolean noDisketteFacts = !(gear instanceof final Diskette diskette)
-				|| diskette.getTrackDensities().isEmpty()
-						&& diskette.getFloppyDiskFormats().isEmpty()
+				|| diskette.getTrackDensities().isEmpty() && diskette.getFloppyDiskFormats().isEmpty()
 						&& diskette.getFormFactor().isEmpty();
 		final boolean noHardDiskDriveFacts = !(gear instanceof final HardDiskDrive hardDiskDrive)
 				|| hardDiskDrive.getFormFactor().isEmpty();
@@ -205,15 +187,11 @@ public final class MyCollectionSmokeCrawl {
 		}
 
 		@Override
-		protected void onProgressStep(final long maximumStep, final long currentStep,
-				final ProgressSnapshot progress) {
-			final String amount = progress.isDeterminate()
-					? progress.completed() + "/" + progress.total()
-					: "-";
+		protected void onProgressStep(final long maximumStep, final long currentStep, final ProgressSnapshot progress) {
+			final String amount = progress.isDeterminate() ? progress.completed() + "/" + progress.total() : "-";
 			final String precision = progress.accuracy().toString();
 			final String message = progress.message().replace('\n', ' ').replace('\r', ' ');
-			System.out.println("RC_PROGRESS\t" + progress.stage() + "\t" + amount + "\t" + precision + "\t"
-					+ message);
+			System.out.println("RC_PROGRESS\t" + progress.stage() + "\t" + amount + "\t" + precision + "\t" + message);
 		}
 	}
 }
