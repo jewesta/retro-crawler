@@ -7,12 +7,12 @@ import java.util.regex.Pattern;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-public final class MemoryAccessTimeParser implements FactParser {
+public final class MemoryAccessTimeParser implements FactParser<MemoryAccessTime> {
 
 	private static final Pattern TIME = Pattern.compile("(?:NS\\s*(\\d+)|(\\d+)\\s*NS)");
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<MemoryAccessTime> parse(final String rawValue) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a positive memory access time in nanoseconds.");
 		}

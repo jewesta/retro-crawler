@@ -8,10 +8,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Parses canonical English functional-condition observations.
  */
-public final class FunctionalConditionParser implements FactParser {
+public final class FunctionalConditionParser implements FactParser<FunctionalCondition> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<FunctionalCondition> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -24,7 +24,7 @@ public final class FunctionalConditionParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<FunctionalCondition> noMatch() {
 		return RatedFact.none("Expected a recognized functional condition.");
 	}
 }

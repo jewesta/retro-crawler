@@ -8,10 +8,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Parses the canonical English names of broad item conditions.
  */
-public final class ItemConditionParser implements FactParser {
+public final class ItemConditionParser implements FactParser<ItemCondition> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<ItemCondition> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -25,7 +25,7 @@ public final class ItemConditionParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<ItemCondition> noMatch() {
 		return RatedFact.none("Expected a recognized item condition.");
 	}
 }

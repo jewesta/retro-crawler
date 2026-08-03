@@ -8,7 +8,7 @@ import com.retrocrawler.core.catalog.CatalogLoader;
 /**
  * Standard immutable catalog loading for catalog-backed fact parsers.
  */
-public abstract class AbstractCatalogFactParser<K extends Enum<K>> implements CatalogFactParser<K> {
+public abstract class AbstractCatalogFactParser<K extends Enum<K>, T> implements CatalogFactParser<K, T> {
 
 	private final Catalog<K> catalog;
 

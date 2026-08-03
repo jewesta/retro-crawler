@@ -10,10 +10,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
  * This permissive parser is intended for keyed clues. Consumers should not use
  * it to claim arbitrary anonymous text.
  */
-public final class ChipDesignationParser implements FactParser {
+public final class ChipDesignationParser implements FactParser<ChipDesignation> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<ChipDesignation> parse(final String rawValue) {
 		if (rawValue == null || rawValue.isBlank()) {
 			return RatedFact.none("Expected a nonblank chip designation.");
 		}

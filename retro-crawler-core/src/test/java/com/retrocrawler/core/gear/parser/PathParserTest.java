@@ -16,7 +16,7 @@ class PathParserTest {
 
 	@Test
 	void retainsARelativePathDuringDetachedResolution() {
-		final RatedFact fact = parser.parse("shelf/gear/front.jpeg");
+		final RatedFact<Path> fact = parser.parse("shelf/gear/front.jpeg");
 
 		assertEquals(Confidence.EXACT, fact.confidence());
 		assertEquals(Path.of("shelf/gear/front.jpeg"), fact.value().orElseThrow());
@@ -27,7 +27,7 @@ class PathParserTest {
 		final Path root = Path.of("/mounted/archive");
 		final FactParseContext context = FactParseContext.located(root, root.resolve("shelf/gear"));
 
-		final RatedFact fact = parser.parse("shelf/gear/front.jpeg", context);
+		final RatedFact<Path> fact = parser.parse("shelf/gear/front.jpeg", context);
 
 		assertEquals(Confidence.EXACT, fact.confidence());
 		assertEquals(root.resolve("shelf/gear/front.jpeg"), fact.value().orElseThrow());

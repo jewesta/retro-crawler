@@ -3,7 +3,6 @@ package com.retrocrawler.model.appearance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +17,12 @@ class ColorParserTest {
 		assertEquals(Color.BLACK, parser.parse("black").value().orElseThrow());
 		assertEquals(Color.GRAY, parser.parse("grey").value().orElseThrow());
 		assertEquals(Color.MULTICOLORED, parser.parse("multi-coloured").value().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white/pink").value().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white-pink").value().orElseThrow());
+	}
+
+	@Test
+	void rejectsCompoundColorObservations() {
+		assertEquals(Confidence.NONE, parser.parse("white/pink").confidence());
+		assertEquals(Confidence.NONE, parser.parse("white-pink").confidence());
 	}
 
 	@Test

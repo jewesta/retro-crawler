@@ -126,28 +126,28 @@ class ContextualFactResolutionTest {
 		}
 	}
 
-	public static final class KindParser implements FactParser {
+	public static final class KindParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return "HDD".equals(rawValue) ? RatedFact.exact("hard-drive")
 					: RatedFact.none("Expected the hard-drive type marker.");
 		}
 	}
 
-	public static final class GenericLengthParser implements FactParser {
+	public static final class GenericLengthParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return "2.5\"".equals(rawValue) ? RatedFact.exact("generic-length")
 					: RatedFact.none("Expected a generic length.");
 		}
 	}
 
-	public static final class HardDriveFormFactorParser implements FactParser {
+	public static final class HardDriveFormFactorParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return "2.5\"".equals(rawValue) ? RatedFact.exact("hard-drive-form-factor")
 					: RatedFact.none("Expected a hard-drive form factor.");
 		}

@@ -39,7 +39,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 	}
 
 	public GearResolver reflectOn(final Set<Class<?>> types, final Path workingDirectory,
-			final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> catalogConfigurations) {
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations) {
 		Objects.requireNonNull(types, "types");
 		Objects.requireNonNull(catalogConfigurations, "catalogConfigurations");
 
@@ -101,8 +101,8 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 			final FactDescriptor factDef = attrDef;
 
-			final Class<? extends FactParser> parserType = factDef.parser();
-			final FactParser parser;
+			final Class<? extends FactParser<?>> parserType = factDef.parser();
+			final FactParser<?> parser;
 
 			if (parserType.equals(AutoDetectParser.class)) {
 				parser = autoDetectParser(key, factDef);
@@ -119,7 +119,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys));
 	}
 
-	private static FactParser configuredParser(final Class<? extends FactParser> parserType,
+	private static FactParser<?> configuredParser(final Class<? extends FactParser<?>> parserType,
 			final Path workingDirectory, final FactCatalogConfiguration configuration) {
 		if (!CatalogFactParser.class.isAssignableFrom(parserType)) {
 			if (configuration != null && configuration.catalogFile().isPresent()) {
@@ -131,7 +131,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 		final CatalogLoader catalogs = new DefaultCatalogLoader(parserType, workingDirectory, configuration);
 		try {
-			final Constructor<? extends FactParser> constructor = parserType.getConstructor(CatalogLoader.class);
+			final Constructor<? extends FactParser<?>> constructor = parserType.getConstructor(CatalogLoader.class);
 			return constructor.newInstance(catalogs);
 		} catch (final NoSuchMethodException e) {
 			throw new IllegalArgumentException("Catalog fact parser " + parserType.getName()
@@ -150,7 +150,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 	// TODO turn into configurable factory so users can supply their own default
 	// parsers
-	private static FactParser autoDetectParser(final String key, final FactDescriptor attrDef) {
+	private static FactParser<?> autoDetectParser(final String key, final FactDescriptor attrDef) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(attrDef, "attrDef");
 

@@ -10,7 +10,7 @@ import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
 /**
  * Resolves exact short and full manufacturer names from a selected catalog.
  */
-public final class ManufacturerParser extends AbstractCatalogFactParser<ManufacturerCatalogKey> {
+public final class ManufacturerParser extends AbstractCatalogFactParser<ManufacturerCatalogKey, Manufacturer> {
 
 	private final ManufacturerCatalog manufacturerCatalog;
 
@@ -29,7 +29,7 @@ public final class ManufacturerParser extends AbstractCatalogFactParser<Manufact
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Manufacturer> parse(final String rawValue) {
 		if (rawValue == null || rawValue.isBlank()) {
 			return noMatch("Expected a manufacturer name present in the selected catalog.");
 		}
@@ -44,7 +44,7 @@ public final class ManufacturerParser extends AbstractCatalogFactParser<Manufact
 		return noMatch("Manufacturer name is not present in the selected catalog.");
 	}
 
-	private static RatedFact noMatch(final String explanation) {
+	private static RatedFact<Manufacturer> noMatch(final String explanation) {
 		return RatedFact.none(explanation);
 	}
 }

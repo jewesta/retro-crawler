@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import com.retrocrawler.core.gear.RatedFact;
 
-public class EnumParser<T extends Enum<T>> implements FactParser {
+public class EnumParser<T extends Enum<T>> implements FactParser<T> {
 
 	private final Class<T> enumType;
 
@@ -40,7 +40,7 @@ public class EnumParser<T extends Enum<T>> implements FactParser {
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<T> parse(final String rawValue) {
 		for (final T constant : enumType.getEnumConstants()) {
 			if (matcher.test(constant, rawValue)) {
 				return RatedFact.exact(constant);

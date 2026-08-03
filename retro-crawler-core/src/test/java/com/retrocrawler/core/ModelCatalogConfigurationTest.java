@@ -110,7 +110,7 @@ class ModelCatalogConfigurationTest {
 		value
 	}
 
-	public static final class TestCatalogParser extends AbstractCatalogFactParser<Key> {
+	public static final class TestCatalogParser extends AbstractCatalogFactParser<Key, String> {
 
 		private static String loadedValue;
 
@@ -120,7 +120,7 @@ class ModelCatalogConfigurationTest {
 		}
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return RatedFact.exact(rawValue);
 		}
 	}

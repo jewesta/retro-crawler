@@ -18,7 +18,7 @@ import com.retrocrawler.core.gear.parser.CatalogFactParser;
 @Repeatable(RetroFactCatalog.Container.class)
 public @interface RetroFactCatalog {
 
-	Class<? extends CatalogFactParser<?>> parser();
+	Class<? extends CatalogFactParser<?, ?>> parser();
 
 	/**
 	 * Catalog file relative to the collection working directory's

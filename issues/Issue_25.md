@@ -44,13 +44,39 @@ selected.
 The catalog API has therefore been made explicit while preparing this issue:
 
 - `@RetroFactCatalog` replaces the misleading `@RetroFactParser` name.
-- Its `parser` member accepts only `CatalogFactParser<?>` implementations.
+- Its `parser` member accepts only `CatalogFactParser<?, ?>` implementations.
 - `FactCatalogConfiguration` replaces `FactParserConfiguration`.
 - `Model.Builder.factCatalog(...)` replaces `factParser(...)`.
 
 These names reserve parser-default vocabulary for the extension point that
 Issue 25 will introduce and prevent catalog configuration from appearing to
 participate in parser selection.
+
+## Typed Parser Contract
+
+The parser SPI groundwork is independent of selecting default parsers and has
+been completed first:
+
+- `FactParser<T>` identifies the type of one interpreted fact value and returns
+  `RatedFact<T>`.
+- `RatedFact<T>` represents zero or one parsed value. A successful result
+  contains one `T`; a `NONE` result contains none.
+- One parser invocation interprets exactly one raw clue value. Only
+  `FactFinder` aggregates the independently parsed raw values into the final
+  `Fact` value set.
+- The `exact`, `strong`, and `weak` factories therefore accept one `T`. There
+  are no collection-valued parser-result factories. In particular, a
+  `FactParser<Color>` cannot accidentally return a `Set<Color>` and ask the
+  framework to flatten it.
+- `CatalogFactParser<K, T>` carries both its catalog-key type and parsed value
+  type.
+- Framework locations that intentionally aggregate unrelated parsers use
+  `FactParser<?>` and `RatedFact<?>`; concrete parsers retain their exact result
+  type.
+
+This phase does not change `AutoDetectParser` selection or introduce any
+default-parser configuration. It only gives that future extension point a
+typed parser contract to expose.
 
 ## Required Precedence
 
@@ -79,7 +105,16 @@ User configuration must not alter facts that select their parser explicitly.
 
 - [x] Recovered and documented the issue's original intent.
 - [x] Separated fact-catalog configuration vocabulary from parser selection.
-- [x] Restricted catalog overrides to `CatalogFactParser<?>` implementations.
+- [x] Restricted catalog overrides to `CatalogFactParser<?, ?>`
+      implementations.
+- [x] Made `FactParser<T>` and `RatedFact<T>` type-safe for one parsed value per
+      raw observation.
+- [x] Restored `FactFinder` as the sole aggregation boundary and removed
+      collection-valued parser results.
+- [x] Replaced the collection's compound color marker with separate comma-
+      delimited clue values.
+- [x] Migrated built-in, shared-model, demo, and collection parsers to typed
+      results.
 - [ ] Agree on the public default-parser selection contract.
 - [ ] Implement model-level configuration and precedence.
 - [ ] Add focused tests for replacement, fallback, generic types, and explicit
@@ -88,7 +123,9 @@ User configuration must not alter facts that select their parser explicitly.
 
 ## Verification
 
-After the catalog-boundary cleanup:
+After the typed parser-contract refactor:
 
-- `mvn -pl retro-crawler-core test`: 139 tests passed.
-- `mvn test`: all seven reactor modules passed.
+- `run/prettify.sh --apply ...`: changed Java sources processed.
+- `mvn -pl retro-crawler-core,retro-crawler-model,retro-crawler-mycollection -am test`:
+  250 tests passed.
+- `mvn clean install`: all seven reactor modules and 253 tests passed.

@@ -5,10 +5,10 @@ import java.util.Locale;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-public final class MemoryFormFactorParser implements FactParser {
+public final class MemoryFormFactorParser implements FactParser<MemoryFormFactor> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<MemoryFormFactor> parse(final String rawValue) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a recognized memory form factor.");
 		}

@@ -2,10 +2,10 @@ package com.retrocrawler.core.gear.parser;
 
 import com.retrocrawler.core.gear.RatedFact;
 
-public class IntParser implements FactParser {
+public class IntParser implements FactParser<Integer> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Integer> parse(final String rawValue) {
 		Integer integer;
 		try {
 			integer = Integer.valueOf(rawValue);

@@ -11,7 +11,7 @@ import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /** Parses role-neutral date markings in canonical ISO forms. */
-public final class DateMarkingParser implements FactParser {
+public final class DateMarkingParser implements FactParser<DateMarking> {
 
 	private final Clock clock;
 	private final YearWeekParser yearWeekParser;
@@ -26,7 +26,7 @@ public final class DateMarkingParser implements FactParser {
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<DateMarking> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -59,12 +59,12 @@ public final class DateMarkingParser implements FactParser {
 			return noMatch();
 		}
 
-		final RatedFact week = yearWeekParser.parse(value);
-		return week.value().map(parsed -> RatedFact.exact(DateMarking.of((YearWeek) parsed)))
+		final RatedFact<YearWeek> week = yearWeekParser.parse(value);
+		return week.value().map(parsed -> RatedFact.exact(DateMarking.of(parsed)))
 				.orElseGet(DateMarkingParser::noMatch);
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<DateMarking> noMatch() {
 		return RatedFact.none("Expected YYYY, YYYY-MM, YYYY-MM-DD, or YYYY-Www from 1950 through today.");
 	}
 }

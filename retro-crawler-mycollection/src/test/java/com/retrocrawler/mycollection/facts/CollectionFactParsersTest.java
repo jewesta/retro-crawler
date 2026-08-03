@@ -7,7 +7,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Currency;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -185,8 +184,8 @@ class CollectionFactParsersTest {
 		assertEquals(Color.BLACK, parser.parse("schwarz").value().orElseThrow());
 		assertEquals(Color.GREEN, parser.parse("grün").value().orElseThrow());
 		assertEquals(Color.PURPLE, parser.parse("lila").value().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß-pink").value().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß/pink").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("weiß-pink").confidence());
+		assertEquals(Confidence.NONE, parser.parse("weiß/pink").confidence());
 		assertEquals(Color.WHITE, parser.parse("white").value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("transparent").confidence());
 	}

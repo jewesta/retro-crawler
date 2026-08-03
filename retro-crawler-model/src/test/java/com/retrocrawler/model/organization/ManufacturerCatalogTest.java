@@ -51,10 +51,10 @@ class ManufacturerCatalogTest {
 		assertEquals(2, external.findByName("Umax").size());
 		assertEquals(Confidence.NONE, parser.parse("Umax").confidence());
 		assertTrue(parser.parse("Umax").explanation().orElseThrow().contains("ambiguous"));
-		final Manufacturer conQuest = (Manufacturer) parser.parse("ConQuest Entertainment a. s.").value().orElseThrow();
+		final Manufacturer conQuest = parser.parse("ConQuest Entertainment a. s.").value().orElseThrow();
 		assertEquals("ConQuest Entertainment a. s.", conQuest.fullName().orElseThrow());
 		assertEquals(new Manufacturer("Solo"), parser.parse("Solo").value().orElseThrow());
-		final Manufacturer linked = (Manufacturer) parser.parse("Umax Technologies, Inc.").value().orElseThrow();
+		final Manufacturer linked = parser.parse("Umax Technologies, Inc.").value().orElseThrow();
 		assertEquals("https://theretroweb.com/manufacturers/2573",
 				linked.theRetroWebReference().orElseThrow().lookupUri().toString());
 	}

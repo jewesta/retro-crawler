@@ -27,10 +27,8 @@ class DateMarkingParserTest {
 		assertEquals(DateMarking.of(YearMonth.of(1994, 5)), parser.parse("1994-05").value().orElseThrow());
 		assertEquals(DateMarking.of(LocalDate.of(1994, 5, 12)), parser.parse("1994-05-12").value().orElseThrow());
 		assertEquals(DateMarking.of(new YearWeek(1994, 5)), parser.parse("1994-W05").value().orElseThrow());
-		assertEquals(DateMarking.Precision.MONTH,
-				((DateMarking) parser.parse("1994-05").value().orElseThrow()).precision());
-		assertEquals(DateMarking.Precision.WEEK,
-				((DateMarking) parser.parse("1994-W05").value().orElseThrow()).precision());
+		assertEquals(DateMarking.Precision.MONTH, parser.parse("1994-05").value().orElseThrow().precision());
+		assertEquals(DateMarking.Precision.WEEK, parser.parse("1994-W05").value().orElseThrow().precision());
 	}
 
 	@Test

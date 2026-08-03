@@ -54,6 +54,6 @@ public @interface RetroFact {
 	 */
 	boolean contextual() default false;
 
-	Class<? extends FactParser> parser() default AutoDetectParser.class;
+	Class<? extends FactParser<?>> parser() default AutoDetectParser.class;
 
 }

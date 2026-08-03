@@ -135,7 +135,7 @@ public final class Model implements ArchiveDefinition {
 
 	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots,
 			final Path runtimeWorkingDirectory, final List<ArchivePathFilter> runtimePathFilters,
-			final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> runtimeCatalogConfigurations) {
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeCatalogConfigurations) {
 		Objects.requireNonNull(types, "types");
 
 		final Set<Class<?>> immutableTypes = types.stream()
@@ -157,7 +157,7 @@ public final class Model implements ArchiveDefinition {
 		final List<ArchivePathFilter> pathFilters = runtimePathFilters == null
 				? Arrays.stream(collection.pathFilters()).<ArchivePathFilter> map(Reflection::newInstance).toList()
 				: runtimePathFilters;
-		final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> catalogConfigurations = effectiveCatalogConfigurations(
+		final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = effectiveCatalogConfigurations(
 				declaration.type(), runtimeCatalogConfigurations);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
@@ -204,10 +204,10 @@ public final class Model implements ArchiveDefinition {
 		}
 	}
 
-	private static Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> effectiveCatalogConfigurations(
+	private static Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> effectiveCatalogConfigurations(
 			final Class<?> collectionType,
-			final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> runtimeConfigurations) {
-		final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> effective = new LinkedHashMap<>();
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeConfigurations) {
+		final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> effective = new LinkedHashMap<>();
 		for (final RetroFactCatalog annotation : collectionType.getAnnotationsByType(RetroFactCatalog.class)) {
 			final String catalogFile = annotation.catalogFile().trim();
 			if (catalogFile.isEmpty()) {
@@ -238,7 +238,7 @@ public final class Model implements ArchiveDefinition {
 		private ArchiveRoots archiveRoots;
 		private Path workingDirectory;
 		private List<ArchivePathFilter> pathFilters;
-		private final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> catalogConfigurations = new LinkedHashMap<>();
+		private final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = new LinkedHashMap<>();
 
 		private Builder() {
 		}
@@ -326,7 +326,7 @@ public final class Model implements ArchiveDefinition {
 		 * Overrides the catalog used by a catalog-backed parser if that parser
 		 * is selected by a discovered fact declaration.
 		 */
-		public Builder factCatalog(final Class<? extends CatalogFactParser<?>> parser,
+		public Builder factCatalog(final Class<? extends CatalogFactParser<?, ?>> parser,
 				final Consumer<FactCatalogConfiguration.Builder> customizer) {
 			Objects.requireNonNull(parser, "parser");
 			Objects.requireNonNull(customizer, "customizer");

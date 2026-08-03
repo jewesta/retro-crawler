@@ -4,18 +4,19 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.packaging.SealStateParser;
 
 /**
  * Maps the collection's German seal-state markers to the portable packaging
  * vocabulary.
  */
-public final class CollectionSealStateParser implements FactParser {
+public final class CollectionSealStateParser implements FactParser<SealState> {
 
 	private final SealStateParser delegate = new SealStateParser();
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<SealState> parse(final String rawValue) {
 		return delegate.parse(rawValue == null ? null : canonical(rawValue));
 	}
 
