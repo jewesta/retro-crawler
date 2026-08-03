@@ -9,7 +9,7 @@ public class MyKnownGearMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		if (context.getFact("id", DemoId.class).isPresent()) {
+		if (context.fact("id", DemoId.class).isPresent()) {
 			return Confidence.EXACT;
 		}
 		return Confidence.NONE;

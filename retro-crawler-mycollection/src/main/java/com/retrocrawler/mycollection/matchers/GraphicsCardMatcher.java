@@ -12,12 +12,12 @@ public final class GraphicsCardMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		final boolean hasOneExpansionBus = context.getFacts(AttributeNames.BUS, ExpansionBus.class)
+		final boolean hasOneExpansionBus = context.facts(AttributeNames.BUS, ExpansionBus.class)
 				.filter(buses -> buses.size() == 1).isPresent();
-		final boolean hasVideoConnector = context.getFacts(AttributeNames.VIDEO_CONNECTOR, VideoConnector.class)
+		final boolean hasVideoConnector = context.facts(AttributeNames.VIDEO_CONNECTOR, VideoConnector.class)
 				.isPresent();
 		final boolean hasComputerForm = context
-				.getFacts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class).isPresent();
+				.facts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class).isPresent();
 		return hasOneExpansionBus && hasVideoConnector && !hasComputerForm ? Confidence.STRONG : Confidence.NONE;
 	}
 }

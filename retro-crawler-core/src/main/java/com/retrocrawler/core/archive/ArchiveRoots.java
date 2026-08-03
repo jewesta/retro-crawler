@@ -20,7 +20,7 @@ import java.util.Objects;
 @FunctionalInterface
 public interface ArchiveRoots {
 
-	Collection<Path> getPaths();
+	Collection<Path> paths();
 
 	static ArchiveRoots from(final Path... rootPaths) {
 		Objects.requireNonNull(rootPaths, "rootPaths");

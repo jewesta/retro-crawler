@@ -105,11 +105,11 @@ public final class Model {
 		return builder().typesFrom(source).locations(archiveRoots).build();
 	}
 
-	public ArchiveDescriptor getArchiveDescriptor() {
+	public ArchiveDescriptor archiveDescriptor() {
 		return archiveDescriptor;
 	}
 
-	public Optional<Path> getWorkingDirectory() {
+	public Optional<Path> workingDirectory() {
 		return Optional.ofNullable(workingDirectory);
 	}
 
@@ -258,7 +258,7 @@ public final class Model {
 		 */
 		public Builder typesFrom(final TypeSource source) {
 			Objects.requireNonNull(source, "source");
-			return typesFrom(Objects.requireNonNull(source.getTypes(), "source.getTypes()"));
+			return typesFrom(Objects.requireNonNull(source.types(), "source.types()"));
 		}
 
 		/**

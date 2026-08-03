@@ -19,15 +19,15 @@ class LengthTest {
 		final LengthParser parser = new LengthParser();
 
 		assertEquals(new Length(new BigDecimal("1.25"), Unit.MILLIMETER),
-				parser.parse("1,25mm").getValue().orElseThrow());
+				parser.parse("1,25mm").value().orElseThrow());
 		assertEquals(new Length(new BigDecimal("50"), Unit.CENTIMETER),
-				parser.parse("50 cm").getValue().orElseThrow());
+				parser.parse("50 cm").value().orElseThrow());
 		assertEquals(new Length(new BigDecimal("2"), Unit.METER),
-				parser.parse("2m").getValue().orElseThrow());
+				parser.parse("2m").value().orElseThrow());
 		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
-				parser.parse("2,5\"").getValue().orElseThrow());
+				parser.parse("2,5\"").value().orElseThrow());
 		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
-				parser.parse("2.5 inches").getValue().orElseThrow());
+				parser.parse("2.5 inches").value().orElseThrow());
 	}
 
 	@Test
@@ -47,7 +47,7 @@ class LengthTest {
 		final LengthParser parser = new LengthParser();
 
 		for (final String invalid : new String[] { "2.5", "0mm", "-2m", "50MB" }) {
-			assertEquals(Confidence.NONE, parser.parse(invalid).getConfidence(), invalid);
+			assertEquals(Confidence.NONE, parser.parse(invalid).confidence(), invalid);
 		}
 		assertFalse(LengthParser.parseValue(null).isPresent());
 		assertThrows(IllegalArgumentException.class,

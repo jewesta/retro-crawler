@@ -34,7 +34,7 @@ class NintendoGameBoyCartridgeCatalogTest {
 
 		final NintendoGameBoyCartridgeCodeParser parser = new NintendoGameBoyCartridgeCodeParser(catalog);
 		for (final NintendoGameBoyCartridgeCode code : catalog.codes()) {
-			assertEquals(Confidence.EXACT, parser.parse(code.value()).getConfidence(), code::value);
+			assertEquals(Confidence.EXACT, parser.parse(code.value()).confidence(), code::value);
 		}
 	}
 

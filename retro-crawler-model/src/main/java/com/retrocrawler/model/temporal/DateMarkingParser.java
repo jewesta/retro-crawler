@@ -60,7 +60,7 @@ public final class DateMarkingParser implements FactParser {
 		}
 
 		final RatedFact week = yearWeekParser.parse(value);
-		return week.getValue().map(parsed -> RatedFact.exact(DateMarking.of((YearWeek) parsed)))
+		return week.value().map(parsed -> RatedFact.exact(DateMarking.of((YearWeek) parsed)))
 				.orElseGet(DateMarkingParser::noMatch);
 	}
 

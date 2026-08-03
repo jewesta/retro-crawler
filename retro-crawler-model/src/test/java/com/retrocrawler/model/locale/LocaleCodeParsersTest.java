@@ -13,10 +13,10 @@ class LocaleCodeParsersTest {
 	void parsesStandardLanguageCodesAndEnglishNames() {
 		final LanguageCodeParser parser = new LanguageCodeParser();
 
-		assertEquals(new LanguageCode("de"), parser.parse("DE").getValue().orElseThrow());
-		assertEquals(new LanguageCode("de"), parser.parse("German").getValue().orElseThrow());
-		assertEquals(new LanguageCode("en"), parser.parse("en").getValue().orElseThrow());
-		assertEquals(new LanguageCode("eu"), parser.parse("EU").getValue().orElseThrow());
+		assertEquals(new LanguageCode("de"), parser.parse("DE").value().orElseThrow());
+		assertEquals(new LanguageCode("de"), parser.parse("German").value().orElseThrow());
+		assertEquals(new LanguageCode("en"), parser.parse("en").value().orElseThrow());
+		assertEquals(new LanguageCode("eu"), parser.parse("EU").value().orElseThrow());
 		assertThrows(IllegalArgumentException.class, () -> new LanguageCode("not-a-language"));
 	}
 
@@ -24,11 +24,11 @@ class LocaleCodeParsersTest {
 	void parsesCountryAndIndustryReleaseRegions() {
 		final RegionCodeParser parser = new RegionCodeParser();
 
-		assertEquals(new RegionCode("US"), parser.parse("us").getValue().orElseThrow());
-		assertEquals(new RegionCode("JP"), parser.parse("JP").getValue().orElseThrow());
-		assertEquals(new RegionCode("EUR"), parser.parse("eur").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("EU").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("EN").getConfidence());
+		assertEquals(new RegionCode("US"), parser.parse("us").value().orElseThrow());
+		assertEquals(new RegionCode("JP"), parser.parse("JP").value().orElseThrow());
+		assertEquals(new RegionCode("EUR"), parser.parse("eur").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("EU").confidence());
+		assertEquals(Confidence.NONE, parser.parse("EN").confidence());
 		assertThrows(IllegalArgumentException.class, () -> new RegionCode("XX"));
 	}
 
@@ -38,11 +38,11 @@ class LocaleCodeParsersTest {
 		final RegionCodeParser region = new RegionCodeParser();
 
 		for (final String code : new String[] { "DE", "ES", "FR", "IT" }) {
-			assertEquals(Confidence.EXACT, language.parse(code).getConfidence());
-			assertEquals(Confidence.EXACT, region.parse(code).getConfidence());
+			assertEquals(Confidence.EXACT, language.parse(code).confidence());
+			assertEquals(Confidence.EXACT, region.parse(code).confidence());
 		}
 
-		assertEquals(Confidence.EXACT, language.parse("EU").getConfidence());
-		assertEquals(Confidence.NONE, region.parse("EU").getConfidence());
+		assertEquals(Confidence.EXACT, language.parse("EU").confidence());
+		assertEquals(Confidence.NONE, region.parse("EU").confidence());
 	}
 }

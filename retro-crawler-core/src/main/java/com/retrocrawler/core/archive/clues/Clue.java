@@ -30,12 +30,12 @@ public class Clue implements RetroAttribute {
 	}
 
 	@Override
-	public String getKey() {
+	public String key() {
 		return key;
 	}
 
 	@Override
-	public Set<String> getValue() {
+	public Set<String> value() {
 		return value;
 	}
 

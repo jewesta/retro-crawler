@@ -44,7 +44,7 @@ public class GearResolver {
 
 	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue,
 			final FactParseContext parseContext) {
-		final String key = clue.getKey();
+		final String key = clue.key();
 
 		if (resolved.containsKey(key)) {
 			return;
@@ -64,7 +64,7 @@ public class GearResolver {
 	@SuppressWarnings({ Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE })
 	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue,
 			final FactParseContext parseContext, final Set<String> allowedContextualKeys) {
-		final Set<String> raws = clue.getValue();
+		final Set<String> raws = clue.value();
 		String resolvedKey = null;
 		for (final String raw : raws) {
 			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext, allowedContextualKeys);
@@ -109,17 +109,17 @@ public class GearResolver {
 			final RetroAttribute existing, final Clue incoming, final FactFinder finder,
 			final FactParseContext parseContext) {
 
-		final Set<String> combinedValues = new HashSet<>(incoming.getValue());
+		final Set<String> combinedValues = new HashSet<>(incoming.value());
 		if (existing instanceof final Fact fact) {
-			combinedValues.addAll(fact.source().getValue());
+			combinedValues.addAll(fact.source().value());
 		} else if (existing instanceof final Clue clue) {
-			combinedValues.addAll(clue.getValue());
+			combinedValues.addAll(clue.value());
 		}
 
 		final Clue combined = Clue.of(resolvedKey, Set.copyOf(combinedValues));
 		final Optional<Fact> combinedFact = finder.find(combined, parseContext);
 		if (existing instanceof final Fact fact && combinedFact.isPresent()
-				&& fact.getValue().equals(combinedFact.get().getValue())) {
+				&& fact.value().equals(combinedFact.get().value())) {
 			// The new observation corroborates the already resolved fact.
 			return;
 		}
@@ -137,7 +137,7 @@ public class GearResolver {
 			final Set<String> allowedContextualKeys) {
 		BestAnonymousMatch best = null;
 		for (final FactFinder finder : factFinders.values()) {
-			if (finder.isStrict() || finder.isContextual() && !allowedContextualKeys.contains(finder.getKey())) {
+			if (finder.isStrict() || finder.isContextual() && !allowedContextualKeys.contains(finder.key())) {
 				continue;
 			}
 			best = considerAnonymousCandidate(best, finder, raw, parseContext);
@@ -149,12 +149,12 @@ public class GearResolver {
 			final String raw, final FactParseContext parseContext) {
 
 		final RatedFact rated = finder.parse(raw, parseContext);
-		final Confidence confidence = rated.getConfidence();
+		final Confidence confidence = rated.confidence();
 		if (confidence == Confidence.NONE) {
 			return bestSoFar;
 		}
 
-		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.getKey(), confidence,
+		final BestAnonymousMatch candidate = new BestAnonymousMatch(finder.key(), confidence,
 				finder.isContextual(), false);
 
 		if (bestSoFar == null) {
@@ -207,7 +207,7 @@ public class GearResolver {
 		 * possible into facts. Attributes that cannot be turned into facts remain as
 		 * clues.
 		 */
-		final Set<Clue> clues = clueClassifier.classify(artifact.getClues());
+		final Set<Clue> clues = clueClassifier.classify(artifact.clues());
 		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of());
 
 		/*
@@ -219,13 +219,13 @@ public class GearResolver {
 		GearSpecialist best = null;
 		Confidence bestConfidence = Confidence.NONE;
 		for (final GearSpecialist specialist : gearSpecialists.values()) {
-			final Class<?> gearType = specialist.getGearDefinition().getType();
+			final Class<?> gearType = specialist.gearDefinition().type();
 			final GearContext context = new GearContext(gearType, artifact, detectionAttributes);
 			final Confidence confidence = specialist.matches(context);
 
 			// The user might try to be clever and return null instead of a confidence
 			Objects.requireNonNull(confidence, "The " + GearMatcher.class.getSimpleName() + " of type "
-					+ specialist.getGearDefinition().getType() + " must not return null.");
+					+ specialist.gearDefinition().type() + " must not return null.");
 
 			if (confidence == Confidence.NONE) {
 				continue;
@@ -252,7 +252,7 @@ public class GearResolver {
 			return Optional.empty();
 		}
 
-		final Class<?> bestType = best.getGearDefinition().getType();
+		final Class<?> bestType = best.gearDefinition().type();
 		final Set<String> selectedContextualKeys = contextualFactKeys.getOrDefault(bestType, Set.of());
 		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys);
 		final GearContext context = new GearContext(bestType, artifact, attributes);
@@ -264,7 +264,7 @@ public class GearResolver {
 		 * with the gear declaration the user would have to fix.
 		 */
 		final Object newGear = best.create(context);
-		final Optional<Object> retroId = retroId(best.getGearDefinition(), attributes);
+		final Optional<Object> retroId = retroId(best.gearDefinition(), attributes);
 		return Optional.of(new GearResolution(newGear, retroId));
 	}
 
@@ -285,7 +285,7 @@ public class GearResolver {
 	}
 
 	private static Optional<Object> retroId(final GearDescriptor descriptor, final RetroAttributes attributes) {
-		final Optional<String> idKey = descriptor.getIdAttributeKey();
+		final Optional<String> idKey = descriptor.idAttributeKey();
 		if (idKey.isEmpty()) {
 			return Optional.empty();
 		}
@@ -295,10 +295,10 @@ public class GearResolver {
 			return Optional.empty();
 		}
 
-		final Set<? extends Object> values = attribute.getValue();
+		final Set<? extends Object> values = attribute.value();
 		if (values.size() != 1) {
 			throw new IllegalStateException("Expected exactly one @RetroId value for key '" + idKey.get() + "' on "
-					+ descriptor.getType().getName() + " but got " + values.size() + ".");
+					+ descriptor.type().getName() + " but got " + values.size() + ".");
 		}
 		return Optional.of(values.iterator().next());
 	}

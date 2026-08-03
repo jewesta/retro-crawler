@@ -4,8 +4,8 @@ import java.util.Set;
 
 public interface RetroAttribute {
 
-	String getKey();
+	String key();
 
-	Set<? extends Object> getValue();
+	Set<? extends Object> value();
 
 }

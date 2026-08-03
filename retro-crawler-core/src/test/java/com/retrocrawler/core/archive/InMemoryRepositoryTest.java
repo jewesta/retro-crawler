@@ -49,8 +49,8 @@ class InMemoryRepositoryTest {
 		repository.stowaway(first);
 		repository.stowaway(second);
 
-		assertSame(first, repository.retrieve(first.getId()).orElseThrow());
-		assertSame(second, repository.retrieve(second.getId()).orElseThrow());
+		assertSame(first, repository.retrieve(first.id()).orElseThrow());
+		assertSame(second, repository.retrieve(second.id()).orElseThrow());
 	}
 
 	private static Archive archive(final String id) {

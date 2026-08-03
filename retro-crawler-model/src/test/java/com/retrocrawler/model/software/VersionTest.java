@@ -13,10 +13,10 @@ class VersionTest {
 	void parsesVersionMarkersWithoutInventingMeaningForBareNumbers() {
 		final VersionParser parser = new VersionParser();
 
-		assertEquals(new Version("v5.0"), parser.parse("v5.0").getValue().orElseThrow());
-		assertEquals(new Version("v6.02 beta 1"), parser.parse("V6.02 beta 1").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("5.0").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("version 5").getConfidence());
+		assertEquals(new Version("v5.0"), parser.parse("v5.0").value().orElseThrow());
+		assertEquals(new Version("v6.02 beta 1"), parser.parse("V6.02 beta 1").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("5.0").confidence());
+		assertEquals(Confidence.NONE, parser.parse("version 5").confidence());
 		assertThrows(IllegalArgumentException.class, () -> new Version("vNext"));
 	}
 }

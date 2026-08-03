@@ -13,26 +13,26 @@ class PackagingParsersTest {
 		final PackagingOriginParser parser = new PackagingOriginParser();
 
 		assertEquals(PackagingOrigin.ORIGINAL,
-				parser.parse(" Original Packaging ").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("OVP").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("boxed").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+				parser.parse(" Original Packaging ").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("OVP").confidence());
+		assertEquals(Confidence.NONE, parser.parse("boxed").confidence());
+		assertEquals(Confidence.NONE, parser.parse(null).confidence());
 	}
 
 	@Test
 	void parsesCanonicalEnglishSealStates() {
 		final SealStateParser parser = new SealStateParser();
 
-		assertEquals(SealState.SEALED, parser.parse(" Sealed ").getValue().orElseThrow());
-		assertEquals(SealState.OPENED, parser.parse("OPENED").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("CIB").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("NIB").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+		assertEquals(SealState.SEALED, parser.parse(" Sealed ").value().orElseThrow());
+		assertEquals(SealState.OPENED, parser.parse("OPENED").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("CIB").confidence());
+		assertEquals(Confidence.NONE, parser.parse("NIB").confidence());
+		assertEquals(Confidence.NONE, parser.parse(null).confidence());
 	}
 
 	@Test
 	void keepsPackagingOriginAndSealStateIndependent() {
-		assertEquals(Confidence.NONE, new PackagingOriginParser().parse("sealed").getConfidence());
-		assertEquals(Confidence.NONE, new SealStateParser().parse("original packaging").getConfidence());
+		assertEquals(Confidence.NONE, new PackagingOriginParser().parse("sealed").confidence());
+		assertEquals(Confidence.NONE, new SealStateParser().parse("original packaging").confidence());
 	}
 }

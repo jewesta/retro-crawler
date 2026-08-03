@@ -65,7 +65,7 @@ class RetroIdValidationTest {
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
 				() -> crawler().crawl(SILENT_PROGRESSOR, ReindexScope.all(), factory));
 
-		final List<String> paths = failure.getDuplicates().get("200001");
+		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
 		assertTrue(paths.contains(first.toString()));
 		assertTrue(paths.contains(second.toString()));

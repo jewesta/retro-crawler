@@ -32,7 +32,7 @@ class ArchivePathClueFinderTest {
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("AGP"), clue(clues, "bus").getValue());
+		assertEquals(Set.of("AGP"), clue(clues, "bus").value());
 	}
 
 	@Test
@@ -45,7 +45,7 @@ class ArchivePathClueFinderTest {
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of(file)), SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").getValue());
+		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").value());
 	}
 
 	@Test
@@ -57,7 +57,7 @@ class ArchivePathClueFinderTest {
 
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").getValue());
+		assertEquals(Set.of("AGP", "PCI"), clue(clues, "bus").value());
 	}
 
 	@Test
@@ -85,7 +85,7 @@ class ArchivePathClueFinderTest {
 		final Set<Clue> localClues = finder.find(new ArchivePath(folder, List.of()), SILENT_PROGRESSOR);
 		final Set<Clue> clues = finder.enrich(localClues, view, SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("gear"), clue(clues, "tree").getValue());
+		assertEquals(Set.of("gear"), clue(clues, "tree").value());
 	}
 
 	@Test
@@ -112,7 +112,7 @@ class ArchivePathClueFinderTest {
 
 		final Set<Clue> clues = finder.enrich(Set.of(Clue.of("origin", "folder")), view, SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("folder", "conversation"), clue(clues, "origin").getValue());
+		assertEquals(Set.of("folder", "conversation"), clue(clues, "origin").value());
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class ArchivePathClueFinderTest {
 		final Set<Clue> clues = finder.find(new ArchivePath(folder, List.of()), List.of(classifiedFile),
 				SILENT_PROGRESSOR);
 
-		assertEquals(Set.of("classified.txt"), clue(clues, "files").getValue());
+		assertEquals(Set.of("classified.txt"), clue(clues, "files").value());
 	}
 
 	@Test
@@ -142,11 +142,11 @@ class ArchivePathClueFinderTest {
 				SILENT_PROGRESSOR);
 
 		assertEquals(Set.of(Path.of("shelf", "gear", "front.jpeg").toString()),
-				clue(clues, "image").getValue());
+				clue(clues, "image").value());
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {
-		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
+		return clues.stream().filter(candidate -> key.equals(candidate.key())).findFirst().orElseThrow();
 	}
 
 	@RetroClues(fromFolderTrees = ConfiguredTreeClueFinder.class)

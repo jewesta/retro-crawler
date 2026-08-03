@@ -43,7 +43,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public ArchiveDescriptor getArchiveDescriptor() {
+	public ArchiveDescriptor archiveDescriptor() {
 		return archiveDescriptor;
 	}
 
@@ -68,17 +68,17 @@ public class RetroCrawlerImpl implements RetroCrawler {
 			final GearTreeFactory<R, N, G> factory) throws IOException {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 
-		final Archive archive = manager.getArchive(progressor, reindexScope);
+		final Archive archive = manager.archive(progressor, reindexScope);
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
 		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
-		final long artifactCount = archive.getBuckets().stream().map(Bucket::getRoot)
+		final long artifactCount = archive.buckets().stream().map(Bucket::root)
 				.mapToLong(RetroCrawlerImpl::countArtifacts).sum();
 		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
 
-		for (final Bucket bucket : archive.getBuckets()) {
+		for (final Bucket bucket : archive.buckets()) {
 			progressor.throwIfCancelled();
-			final ArchiveNode root = bucket.getRoot();
-			final Path archiveRoot = Path.of(bucket.getBasePath());
+			final ArchiveNode root = bucket.root();
+			final Path archiveRoot = Path.of(bucket.basePath());
 			final ResolvedArchiveNode resolvedRoot = root == null ? null
 					: resolve(root, archiveRoot, archiveRoot, retroIds, resolutionProgress, progressor);
 			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
@@ -120,8 +120,8 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		if (node == null) {
 			return 0;
 		}
-		long count = node.getArtifact() == null ? 0 : 1;
-		final List<ArchiveNode> children = node.getChildren();
+		long count = node.artifact() == null ? 0 : 1;
+		final List<ArchiveNode> children = node.children();
 		if (children != null) {
 			for (final ArchiveNode child : children) {
 				count += countArtifacts(child);
@@ -162,7 +162,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path archiveRoot, final Path sourcePath,
 			final RetroIdRegistry retroIds, final ResolutionProgress progress, final Progressor progressor) {
 		progressor.throwIfCancelled();
-		final Artifact artifact = node.getArtifact();
+		final Artifact artifact = node.artifact();
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
 				: resolver.resolveWithIdentity(artifact, FactParseContext.located(archiveRoot, sourcePath));
 		resolution.ifPresent(value -> retroIds.register(value, sourcePath));
@@ -171,10 +171,10 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		}
 
 		final List<ResolvedArchiveNode> children = new ArrayList<>();
-		final List<ArchiveNode> archiveChildren = node.getChildren();
+		final List<ArchiveNode> archiveChildren = node.children();
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
-				children.add(resolve(child, archiveRoot, sourcePath.resolve(child.getFolder()), retroIds, progress,
+				children.add(resolve(child, archiveRoot, sourcePath.resolve(child.folder()), retroIds, progress,
 						progressor));
 			}
 		}

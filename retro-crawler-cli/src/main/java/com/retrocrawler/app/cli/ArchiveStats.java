@@ -26,11 +26,11 @@ final class ArchiveStats {
 		final Map<String, Integer> byType = new java.util.TreeMap<>();
 		final ArchiveStats out = new ArchiveStats(byType);
 
-		out.bucketCount = archive.getBuckets().size();
+		out.bucketCount = archive.buckets().size();
 
-		for (final GearBucket<G> bucket : archive.getBuckets()) {
-			out.rootCount += bucket.getRoots().size();
-			for (final GearNode<G> root : bucket.getRoots()) {
+		for (final GearBucket<G> bucket : archive.buckets()) {
+			out.rootCount += bucket.roots().size();
+			for (final GearNode<G> root : bucket.roots()) {
 				walk(root, 1, out, byType);
 			}
 		}
@@ -44,11 +44,11 @@ final class ArchiveStats {
 		stats.nodeCount++;
 		stats.maxDepth = Math.max(stats.maxDepth, depth);
 
-		final G gear = node.getGear();
+		final G gear = node.gear();
 		final String typeName = gear == null ? "null" : gear.getClass().getSimpleName();
 		byType.merge(typeName, 1, Integer::sum);
 
-		final var children = node.getChildren();
+		final var children = node.children();
 		if (children.isEmpty()) {
 			stats.leafCount++;
 			return;

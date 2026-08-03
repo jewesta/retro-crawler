@@ -39,22 +39,22 @@ class CollectionFactParsersTest {
 		final CollectionDateMarkingParser parser = new CollectionDateMarkingParser();
 
 		assertEquals(DateMarking.of(YearMonth.of(1994, 5)),
-				parser.parse("1994-05").getValue().orElseThrow());
+				parser.parse("1994-05").value().orElseThrow());
 		assertEquals(DateMarking.of(new YearWeek(1994, 31)),
-				parser.parse("1994-KW31").getValue().orElseThrow());
+				parser.parse("1994-KW31").value().orElseThrow());
 		assertEquals(DateMarking.of(LocalDate.of(1994, 2, 22)),
-				parser.parse("1994-02-22").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("KW31 1994").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("02-22-1994").getConfidence());
+				parser.parse("1994-02-22").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("KW31 1994").confidence());
+		assertEquals(Confidence.NONE, parser.parse("02-22-1994").confidence());
 	}
 
 	@Test
 	void parsesTheRetroWebIdsAsExternalReferences() {
 		final var fact = new TheRetroWebIdParser().parse("10510");
 
-		assertEquals(Confidence.EXACT, fact.getConfidence());
-		assertEquals(new TheRetroWebId(10510), fact.getValue().orElseThrow());
-		assertEquals(Confidence.NONE, new TheRetroWebIdParser().parse("motherboard-10510").getConfidence());
+		assertEquals(Confidence.EXACT, fact.confidence());
+		assertEquals(new TheRetroWebId(10510), fact.value().orElseThrow());
+		assertEquals(Confidence.NONE, new TheRetroWebIdParser().parse("motherboard-10510").confidence());
 	}
 
 	@Test
@@ -62,13 +62,13 @@ class CollectionFactParsersTest {
 		final DataCapacityParser parser = new DataCapacityParser();
 
 		assertEquals(new DataCapacity(new BigDecimal("1.125"), DataCapacity.Unit.MB),
-				parser.parse("1,125MB").getValue().orElseThrow());
+				parser.parse("1,125MB").value().orElseThrow());
 		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
-				parser.parse("32kb").getValue().orElseThrow());
+				parser.parse("32kb").value().orElseThrow());
 		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
-				parser.parse("32KB").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("3,5").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("3,3V").getConfidence());
+				parser.parse("32KB").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("3,5").confidence());
+		assertEquals(Confidence.NONE, parser.parse("3,3V").confidence());
 	}
 
 	@Test
@@ -83,15 +83,15 @@ class CollectionFactParsersTest {
 	@Test
 	void parsesTheCollectionLifecycleVocabulary() {
 		assertEquals(Destiny.VERSCHENKT,
-				new DestinyParser().parse("verschenkt").getValue().orElseThrow());
+				new DestinyParser().parse("verschenkt").value().orElseThrow());
 		assertEquals(Destiny.ENTSORGT,
-				new DestinyParser().parse("ENTSORGT").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, new DestinyParser().parse("weitergegeben").getConfidence());
+				new DestinyParser().parse("ENTSORGT").value().orElseThrow());
+		assertEquals(Confidence.NONE, new DestinyParser().parse("weitergegeben").confidence());
 
-		assertEquals(Tested.POST, new TestedParser().parse("post").getValue().orElseThrow());
-		assertEquals(Tested.BOOT, new TestedParser().parse("boot").getValue().orElseThrow());
-		assertEquals(Tested.FULL, new TestedParser().parse("full").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, new TestedParser().parse("bios").getConfidence());
+		assertEquals(Tested.POST, new TestedParser().parse("post").value().orElseThrow());
+		assertEquals(Tested.BOOT, new TestedParser().parse("boot").value().orElseThrow());
+		assertEquals(Tested.FULL, new TestedParser().parse("full").value().orElseThrow());
+		assertEquals(Confidence.NONE, new TestedParser().parse("bios").confidence());
 	}
 
 	@Test
@@ -101,27 +101,27 @@ class CollectionFactParsersTest {
 				new CollectionFunctionalConditionParser();
 		final CollectionDamageKindParser damage = new CollectionDamageKindParser();
 
-		assertEquals(ItemCondition.NEW, itemCondition.parse("Neu").getValue().orElseThrow());
-		assertEquals(ItemCondition.USED, itemCondition.parse("gebraucht").getValue().orElseThrow());
+		assertEquals(ItemCondition.NEW, itemCondition.parse("Neu").value().orElseThrow());
+		assertEquals(ItemCondition.USED, itemCondition.parse("gebraucht").value().orElseThrow());
 		assertEquals(ItemCondition.REFURBISHED,
-				itemCondition.parse("refurbished").getValue().orElseThrow());
+				itemCondition.parse("refurbished").value().orElseThrow());
 		assertEquals(ItemCondition.DAMAGED,
-				itemCondition.parse("beschädigt").getValue().orElseThrow());
+				itemCondition.parse("beschädigt").value().orElseThrow());
 
 		assertEquals(FunctionalCondition.WORKING,
-				functionalCondition.parse("working").getValue().orElseThrow());
+				functionalCondition.parse("working").value().orElseThrow());
 		assertEquals(FunctionalCondition.PARTIALLY_DEFECTIVE,
-				functionalCondition.parse("teildefekt").getValue().orElseThrow());
+				functionalCondition.parse("teildefekt").value().orElseThrow());
 		assertEquals(FunctionalCondition.DEFECTIVE,
-				functionalCondition.parse("defekt").getValue().orElseThrow());
+				functionalCondition.parse("defekt").value().orElseThrow());
 
 		assertEquals(DamageKind.BATTERY_DAMAGE,
-				damage.parse("Akkuschaden").getValue().orElseThrow());
-		assertEquals(DamageKind.BREAKAGE, damage.parse("Bruch").getValue().orElseThrow());
+				damage.parse("Akkuschaden").value().orElseThrow());
+		assertEquals(DamageKind.BREAKAGE, damage.parse("Bruch").value().orElseThrow());
 
-		assertEquals(Confidence.NONE, itemCondition.parse("defekt").getConfidence());
-		assertEquals(Confidence.NONE, functionalCondition.parse("beschädigt").getConfidence());
-		assertEquals(Confidence.NONE, damage.parse("beschädigt").getConfidence());
+		assertEquals(Confidence.NONE, itemCondition.parse("defekt").confidence());
+		assertEquals(Confidence.NONE, functionalCondition.parse("beschädigt").confidence());
+		assertEquals(Confidence.NONE, damage.parse("beschädigt").confidence());
 	}
 
 	@Test
@@ -130,20 +130,20 @@ class CollectionFactParsersTest {
 		final CollectionSealStateParser sealState = new CollectionSealStateParser();
 
 		assertEquals(PackagingOrigin.ORIGINAL,
-				packagingOrigin.parse("OVP").getValue().orElseThrow());
+				packagingOrigin.parse("OVP").value().orElseThrow());
 		assertEquals(PackagingOrigin.ORIGINAL,
-				packagingOrigin.parse("original packaging").getValue().orElseThrow());
-		assertEquals(SealState.SEALED, sealState.parse("sealed").getValue().orElseThrow());
-		assertEquals(SealState.SEALED, sealState.parse("versiegelt").getValue().orElseThrow());
-		assertEquals(SealState.OPENED, sealState.parse("geöffnet").getValue().orElseThrow());
-		assertEquals(SealState.OPENED, sealState.parse("opened").getValue().orElseThrow());
+				packagingOrigin.parse("original packaging").value().orElseThrow());
+		assertEquals(SealState.SEALED, sealState.parse("sealed").value().orElseThrow());
+		assertEquals(SealState.SEALED, sealState.parse("versiegelt").value().orElseThrow());
+		assertEquals(SealState.OPENED, sealState.parse("geöffnet").value().orElseThrow());
+		assertEquals(SealState.OPENED, sealState.parse("opened").value().orElseThrow());
 
 		for (final String unrelated : new String[] { "CIB", "NIB", "NOS", "lose" }) {
-			assertEquals(Confidence.NONE, packagingOrigin.parse(unrelated).getConfidence());
-			assertEquals(Confidence.NONE, sealState.parse(unrelated).getConfidence());
+			assertEquals(Confidence.NONE, packagingOrigin.parse(unrelated).confidence());
+			assertEquals(Confidence.NONE, sealState.parse(unrelated).confidence());
 		}
-		assertEquals(Confidence.NONE, packagingOrigin.parse("sealed").getConfidence());
-		assertEquals(Confidence.NONE, sealState.parse("OVP").getConfidence());
+		assertEquals(Confidence.NONE, packagingOrigin.parse("sealed").confidence());
+		assertEquals(Confidence.NONE, sealState.parse("OVP").confidence());
 	}
 
 	@Test
@@ -151,13 +151,13 @@ class CollectionFactParsersTest {
 		final MoneyParser parser = new MoneyParser();
 
 		assertEquals(new Money(new BigDecimal("12.34"), Currency.getInstance("EUR")),
-				parser.parse("12,34").getValue().orElseThrow());
+				parser.parse("12,34").value().orElseThrow());
 		assertEquals(new Money(new BigDecimal("120"), Currency.getInstance("EUR")),
-				parser.parse("120 EUR").getValue().orElseThrow());
+				parser.parse("120 EUR").value().orElseThrow());
 		assertEquals(new Money(new BigDecimal("20"), Currency.getInstance("USD")),
-				parser.parse("20 usd").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("20 EURO").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("-20 EUR").getConfidence());
+				parser.parse("20 usd").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("20 EURO").confidence());
+		assertEquals(Confidence.NONE, parser.parse("-20 EUR").confidence());
 	}
 
 	@Test
@@ -165,17 +165,17 @@ class CollectionFactParsersTest {
 		final CollectionLanguageCodeParser language = new CollectionLanguageCodeParser();
 		final CollectionRegionCodeParser region = new CollectionRegionCodeParser();
 
-		assertEquals(new LanguageCode("en"), language.parse("EN").getValue().orElseThrow());
-		assertEquals(new RegionCode("US"), region.parse("US").getValue().orElseThrow());
-		assertEquals(new RegionCode("EUR"), region.parse("EU").getValue().orElseThrow());
-		assertEquals(new RegionCode("EUR"), region.parse("EUR").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, language.parse("SD").getConfidence());
-		assertEquals(Confidence.NONE, language.parse("EU").getConfidence());
-		assertEquals(Confidence.NONE, region.parse("AT").getConfidence());
+		assertEquals(new LanguageCode("en"), language.parse("EN").value().orElseThrow());
+		assertEquals(new RegionCode("US"), region.parse("US").value().orElseThrow());
+		assertEquals(new RegionCode("EUR"), region.parse("EU").value().orElseThrow());
+		assertEquals(new RegionCode("EUR"), region.parse("EUR").value().orElseThrow());
+		assertEquals(Confidence.NONE, language.parse("SD").confidence());
+		assertEquals(Confidence.NONE, language.parse("EU").confidence());
+		assertEquals(Confidence.NONE, region.parse("AT").confidence());
 
 		for (final String code : new String[] { "DE", "ES", "FR", "IT" }) {
-			assertEquals(Confidence.EXACT, language.parse(code).getConfidence());
-			assertEquals(Confidence.EXACT, region.parse(code).getConfidence());
+			assertEquals(Confidence.EXACT, language.parse(code).confidence());
+			assertEquals(Confidence.EXACT, region.parse(code).confidence());
 		}
 	}
 
@@ -184,21 +184,21 @@ class CollectionFactParsersTest {
 		final CollectionLengthParser parser = new CollectionLengthParser();
 
 		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
-				parser.parse("2,5\uF020").getValue().orElseThrow());
+				parser.parse("2,5\uF020").value().orElseThrow());
 		assertEquals(new Length(BigDecimal.valueOf(50), Unit.CENTIMETER),
-				parser.parse("50cm").getValue().orElseThrow());
+				parser.parse("50cm").value().orElseThrow());
 	}
 
 	@Test
 	void adaptsCollectionColorLanguageWithoutTreatingTransparencyAsAColor() {
 		final CollectionColorParser parser = new CollectionColorParser();
 
-		assertEquals(Color.BLACK, parser.parse("schwarz").getValue().orElseThrow());
-		assertEquals(Color.GREEN, parser.parse("grün").getValue().orElseThrow());
-		assertEquals(Color.PURPLE, parser.parse("lila").getValue().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß-pink").getValue().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß/pink").getValue().orElseThrow());
-		assertEquals(Color.WHITE, parser.parse("white").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("transparent").getConfidence());
+		assertEquals(Color.BLACK, parser.parse("schwarz").value().orElseThrow());
+		assertEquals(Color.GREEN, parser.parse("grün").value().orElseThrow());
+		assertEquals(Color.PURPLE, parser.parse("lila").value().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß-pink").value().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("weiß/pink").value().orElseThrow());
+		assertEquals(Color.WHITE, parser.parse("white").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("transparent").confidence());
 	}
 }

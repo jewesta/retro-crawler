@@ -37,7 +37,7 @@ final class RetroAttributeAdapter {
 		 * multi-valued, and may be of arbitrary element type, we need to adapt them to
 		 * the declared field type if possible.
 		 */
-		final Set<? extends Object> values = requireNonEmpty(gearType, key, attribute.getValue());
+		final Set<? extends Object> values = requireNonEmpty(gearType, key, attribute.value());
 
 		if (isCollectionTarget(field)) {
 			return materializeCollectionForField(field, values);

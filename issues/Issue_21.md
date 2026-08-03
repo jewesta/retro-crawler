@@ -85,7 +85,7 @@ public final class Model {
 	}
 
 	public static Model from(TypeSource source) {
-		return from(source.getTypes());
+		return from(source.types());
 	}
 }
 ```

@@ -176,7 +176,7 @@ public class ArchiveDigger {
 		final Set<Clue> clues = new HashSet<>();
 
 		// The artificial id based on a hash of the relative path
-		final String archiveId = descriptor.getId().get();
+		final String archiveId = descriptor.id().value();
 		final String relative = root.relativize(path).toString().replace('\\', '/');
 		final String basis = archiveId + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
@@ -254,7 +254,7 @@ public class ArchiveDigger {
 	private static ArchiveFolderView folderView(final Path path, final List<Path> files,
 			final List<DigResult> children, final Progressor progressor) {
 		final List<ArchiveFolderView> metadataFolders = children.stream()
-				.filter(child -> child.node().getArtifact() == null)
+				.filter(child -> child.node().artifact() == null)
 				.map(DigResult::folderView)
 				.toList();
 		final List<ArchiveFileView> fileViews = files.stream()

@@ -55,19 +55,19 @@ public class ArchivePathClueFinder {
 		final Map<String, Clue> byKey = new HashMap<>();
 
 		for (final Clue clue : existing) {
-			byKey.put(clue.getKey(), clue);
+			byKey.put(clue.key(), clue);
 		}
 
 		for (final Clue clue : incoming) {
-			final Clue previous = byKey.get(clue.getKey());
+			final Clue previous = byKey.get(clue.key());
 			if (previous == null) {
-				byKey.put(clue.getKey(), clue);
+				byKey.put(clue.key(), clue);
 				continue;
 			}
 
-			final Set<String> combinedValues = new HashSet<>(previous.getValue());
-			combinedValues.addAll(clue.getValue());
-			byKey.put(clue.getKey(), new Clue(clue.getKey(), Set.copyOf(combinedValues)));
+			final Set<String> combinedValues = new HashSet<>(previous.value());
+			combinedValues.addAll(clue.value());
+			byKey.put(clue.key(), new Clue(clue.key(), Set.copyOf(combinedValues)));
 		}
 
 		return new HashSet<>(byKey.values());

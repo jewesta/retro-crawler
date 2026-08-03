@@ -58,13 +58,13 @@ class ArchiveDiggerTreeClueFinderTest {
 
 		assertEquals(root.getFileName().toString(), inspectionOrder.getLast());
 		assertEquals(List.of("Kleinanzeigen"), rootFolders);
-		assertNotNull(archive.getArtifact());
-		assertEquals(Set.of("parent-origin"), clue(archive, "origin-detail").getValue());
+		assertNotNull(archive.artifact());
+		assertEquals(Set.of("parent-origin"), clue(archive, "origin-detail").value());
 
 		final ArchiveNode child = child(archive, "Child artifact");
-		assertNotNull(child.getArtifact());
-		assertEquals(Set.of("child-origin"), clue(child, "origin-detail").getValue());
-		assertNull(child(child, "Kleinanzeigen").getArtifact());
+		assertNotNull(child.artifact());
+		assertEquals(Set.of("child-origin"), clue(child, "origin-detail").value());
+		assertNull(child(child, "Kleinanzeigen").artifact());
 		assertFalse(rootFolders.contains("Child artifact"));
 	}
 
@@ -80,9 +80,9 @@ class ArchiveDiggerTreeClueFinderTest {
 
 		final ArchiveNode archive = new ArchiveDigger(descriptor(), clueFinder).dig(root, new Progressor());
 
-		assertNotNull(archive.getArtifact());
-		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").getValue());
-		assertNull(child(archive, "Kleinanzeigen").getArtifact());
+		assertNotNull(archive.artifact());
+		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
+		assertNull(child(archive, "Kleinanzeigen").artifact());
 	}
 
 	private Set<Clue> originClues(final ArchiveFolderView folder) {
@@ -113,15 +113,15 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	private static ArchiveNode child(final ArchiveNode parent, final String folder) {
-		return parent.getChildren().stream()
-				.filter(candidate -> folder.equals(candidate.getFolder()))
+		return parent.children().stream()
+				.filter(candidate -> folder.equals(candidate.folder()))
 				.findFirst()
 				.orElseThrow();
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {
-		return node.getArtifact().getClues().stream()
-				.filter(candidate -> key.equals(candidate.getKey()))
+		return node.artifact().clues().stream()
+				.filter(candidate -> key.equals(candidate.key()))
 				.findFirst()
 				.orElseThrow();
 	}

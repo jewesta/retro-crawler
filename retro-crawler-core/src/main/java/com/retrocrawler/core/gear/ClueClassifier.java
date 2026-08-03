@@ -54,31 +54,31 @@ final class ClueClassifier {
 	}
 
 	private static void merge(final Map<String, Clue> cluesByKey, final Clue incoming) {
-		final Clue previous = cluesByKey.get(incoming.getKey());
+		final Clue previous = cluesByKey.get(incoming.key());
 		if (previous == null) {
-			cluesByKey.put(incoming.getKey(), incoming);
+			cluesByKey.put(incoming.key(), incoming);
 			return;
 		}
 
-		final Set<String> combinedValues = new LinkedHashSet<>(previous.getValue());
-		combinedValues.addAll(incoming.getValue());
-		cluesByKey.put(incoming.getKey(), Clue.of(incoming.getKey(), Set.copyOf(combinedValues)));
+		final Set<String> combinedValues = new LinkedHashSet<>(previous.value());
+		combinedValues.addAll(incoming.value());
+		cluesByKey.put(incoming.key(), Clue.of(incoming.key(), Set.copyOf(combinedValues)));
 	}
 
 	private Optional<Clue> classify(final Clue clue) {
-		if (clue.getValue().isEmpty()) {
+		if (clue.value().isEmpty()) {
 			return clue.isAnonymous() ? Optional.empty() : Optional.of(clue);
 		}
 
-		if (clue.getValue().stream().allMatch(String::isBlank)) {
-			return clue.isAnonymous() ? Optional.empty() : Optional.of(Clue.missingValue(clue.getKey()));
+		if (clue.value().stream().allMatch(String::isBlank)) {
+			return clue.isAnonymous() ? Optional.empty() : Optional.of(Clue.missingValue(clue.key()));
 		}
 
-		if (!clue.isAnonymous() || clue.getValue().size() != 1) {
+		if (!clue.isAnonymous() || clue.value().size() != 1) {
 			return Optional.of(clue);
 		}
 
-		final String candidate = clue.getValue().iterator().next().trim();
+		final String candidate = clue.value().iterator().next().trim();
 		final String knownKey = findKnownKey(candidate);
 		return knownKey == null ? Optional.of(clue) : Optional.of(Clue.missingValue(knownKey));
 	}

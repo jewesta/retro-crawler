@@ -36,7 +36,7 @@ public enum Color {
 	/**
 	 * A CSS-compatible sRGB hexadecimal value when this named color has one.
 	 */
-	public Optional<String> getColorCode() {
+	public Optional<String> colorCode() {
 		return Optional.ofNullable(colorCode);
 	}
 }

@@ -49,13 +49,13 @@ public class Artifact {
 	/**
 	 * Returns an unmodifiable view of the raw clues.
 	 */
-	public Set<Clue> getClues() {
+	public Set<Clue> clues() {
 		return Collections.unmodifiableSet(clues);
 	}
 
 	@JsonAnyGetter
 	protected Map<String, Object> jsonGetter() {
-		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::getKey, clue -> {
+		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::key, clue -> {
 			switch (clue.size()) {
 			case 0:
 				return List.of();
@@ -63,9 +63,9 @@ public class Artifact {
 				/*
 				 * This makes the JSON a bit smaller and less verbose.
 				 */
-				return clue.getValue().iterator().next();
+				return clue.value().iterator().next();
 			default:
-				return clue.getValue();
+				return clue.value();
 			}
 		}));
 	}

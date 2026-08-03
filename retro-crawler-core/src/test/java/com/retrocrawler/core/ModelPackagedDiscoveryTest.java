@@ -37,7 +37,7 @@ class ModelPackagedDiscoveryTest {
 
 			final Model model = Model.from(PACKAGE_NAME);
 
-			assertEquals("packaged_model", model.getArchiveDescriptor().getId().get());
+			assertEquals("packaged_model", model.archiveDescriptor().id().value());
 		} finally {
 			Thread.currentThread().setContextClassLoader(originalContextClassLoader);
 		}

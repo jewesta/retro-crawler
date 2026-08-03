@@ -15,23 +15,23 @@ class ColorParserTest {
 
 	@Test
 	void parsesCanonicalNamedColorsAndEnglishAliases() {
-		assertEquals(Color.BLACK, parser.parse("black").getValue().orElseThrow());
-		assertEquals(Color.GRAY, parser.parse("grey").getValue().orElseThrow());
-		assertEquals(Color.MULTICOLORED, parser.parse("multi-coloured").getValue().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white/pink").getValue().orElseThrow());
-		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white-pink").getValue().orElseThrow());
+		assertEquals(Color.BLACK, parser.parse("black").value().orElseThrow());
+		assertEquals(Color.GRAY, parser.parse("grey").value().orElseThrow());
+		assertEquals(Color.MULTICOLORED, parser.parse("multi-coloured").value().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white/pink").value().orElseThrow());
+		assertEquals(Set.of(Color.WHITE, Color.PINK), parser.parse("white-pink").value().orElseThrow());
 	}
 
 	@Test
 	void suppliesStableUiColorCodesWhereOneColorCanBeRendered() {
-		assertEquals(Optional.of("#FFFFFF"), Color.WHITE.getColorCode());
-		assertEquals(Optional.empty(), Color.MULTICOLORED.getColorCode());
+		assertEquals(Optional.of("#FFFFFF"), Color.WHITE.colorCode());
+		assertEquals(Optional.empty(), Color.MULTICOLORED.colorCode());
 	}
 
 	@Test
 	void doesNotPretendThatTransparencyOrCollectionLanguageIsAColor() {
-		assertEquals(Confidence.NONE, parser.parse("transparent").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("weiß").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("transparent").confidence());
+		assertEquals(Confidence.NONE, parser.parse("weiß").confidence());
+		assertEquals(Confidence.NONE, parser.parse(null).confidence());
 	}
 }

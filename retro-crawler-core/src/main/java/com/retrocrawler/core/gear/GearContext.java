@@ -16,7 +16,7 @@ public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes 
 		Objects.requireNonNull(attributes, "attributes");
 	}
 
-	public Optional<Fact> getFact(final String key) {
+	public Optional<Fact> fact(final String key) {
 		Objects.requireNonNull(key, "key");
 
 		if (attributes.get(key) instanceof final Fact fact) {
@@ -31,11 +31,11 @@ public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes 
 	 * If the fact contains multiple values or the value is not assignable to the
 	 * requested type, {@link Optional#empty()} is returned.
 	 */
-	public <T> Optional<T> getFact(final String key, final Class<T> type) {
+	public <T> Optional<T> fact(final String key, final Class<T> type) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(type, "type");
 
-		return getFacts(key, type).filter(values -> values.size() == 1).map(values -> values.iterator().next());
+		return facts(key, type).filter(values -> values.size() == 1).map(values -> values.iterator().next());
 	}
 
 	/**
@@ -44,7 +44,7 @@ public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes 
 	 * Returns {@link Optional#empty()} if no fact exists for the key or if any
 	 * value is not assignable to the requested type.
 	 */
-	public <T> Optional<Set<T>> getFacts(final String key, final Class<T> type) {
+	public <T> Optional<Set<T>> facts(final String key, final Class<T> type) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(type, "type");
 
@@ -53,7 +53,7 @@ public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes 
 			return Optional.empty();
 		}
 
-		final Set<Object> values = fact.getValue();
+		final Set<Object> values = fact.value();
 		if (values.isEmpty()) {
 			// Should never happen by invariant, but be defensive.
 			return Optional.empty();

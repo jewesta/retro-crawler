@@ -35,7 +35,7 @@ class ModelTest {
 	void createsModelFromExplicitTypes() {
 		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
 
-		assertEquals("model_test", model.getArchiveDescriptor().getId().get());
+		assertEquals("model_test", model.archiveDescriptor().id().value());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class ModelTest {
 
 		final Model model = Model.from(source);
 
-		assertEquals("model_test", model.getArchiveDescriptor().getId().get());
+		assertEquals("model_test", model.archiveDescriptor().id().value());
 	}
 
 	@Test
@@ -76,7 +76,7 @@ class ModelTest {
 
 		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class), ArchiveRoots.from(runtimeLocation));
 
-		assertEquals(List.of(runtimeLocation), model.getArchiveDescriptor().getPaths());
+		assertEquals(List.of(runtimeLocation), model.archiveDescriptor().paths());
 	}
 
 	@Test
@@ -87,15 +87,15 @@ class ModelTest {
 		final Model model = Model.builder().typesFrom(Set.of(WorkingDirectoryCollection.class, TestGear.class))
 				.locations(runtimeLocation).workingDirectory(runtimeWorkingDirectory).build();
 
-		assertEquals(List.of(runtimeLocation), model.getArchiveDescriptor().getPaths());
-		assertEquals(runtimeWorkingDirectory, model.getWorkingDirectory().orElseThrow());
+		assertEquals(List.of(runtimeLocation), model.archiveDescriptor().paths());
+		assertEquals(runtimeWorkingDirectory, model.workingDirectory().orElseThrow());
 	}
 
 	@Test
 	void usesAnnotationWorkingDirectoryAsPortableDefault() {
 		final Model model = Model.from(Set.of(WorkingDirectoryCollection.class, TestGear.class));
 
-		assertEquals(Path.of("annotation-work"), model.getWorkingDirectory().orElseThrow());
+		assertEquals(Path.of("annotation-work"), model.workingDirectory().orElseThrow());
 	}
 
 	@Test
@@ -105,7 +105,7 @@ class ModelTest {
 		final Model model = Model.from(Set.of(RuntimeConfiguredArchive.class, TestGear.class),
 				ArchiveRoots.from(runtimeLocation));
 
-		assertEquals(List.of(runtimeLocation), model.getArchiveDescriptor().getPaths());
+		assertEquals(List.of(runtimeLocation), model.archiveDescriptor().paths());
 	}
 
 	@Test
@@ -116,7 +116,7 @@ class ModelTest {
 
 		runtimeLocations.add(Path.of("/another/archive"));
 
-		assertEquals(List.of(Path.of("/runtime/archive")), model.getArchiveDescriptor().getPaths());
+		assertEquals(List.of(Path.of("/runtime/archive")), model.archiveDescriptor().paths());
 	}
 
 	@Test

@@ -1854,6 +1854,8 @@ filesystem changes until that root is included in a future crawl.
 - [x] Add annotation-configurable `CrawlPolicy`, use one policy for direct-entry
       exclusion and subtree pruning, and provide an opt-in policy for dot files
       and common operating-system or NAS service entries.
+- [x] Harmonize immutable framework accessors on component-style names across
+      the core API and shared model, without retaining legacy getter aliases.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
@@ -1888,6 +1890,17 @@ filesystem changes until that root is included in a future crawl.
   the bundle discoverable?
 
 ## Verification
+
+Framework accessor harmonization completed on 2026-08-03:
+
+- Immutable framework state now uses component-style accessors throughout the
+  core API and shared-model value types, without legacy aliases. Predicates
+  retain `is...` or `has...`, and keyed `get(key)` operations remain lookups.
+- `JsonFileRepositoryTest` completed all nine archive serialization tests,
+  confirming that the accessor changes did not alter the persisted JSON
+  contract.
+- The complete eight-module `mvn clean install` reactor completed 244 tests
+  with no failures.
 
 Focused crawl-policy verification completed on 2026-08-03:
 

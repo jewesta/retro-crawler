@@ -12,10 +12,10 @@ public final class MemoryModuleMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		final boolean hasCapacity = context.getFact(AttributeNames.CAPACITY, DataCapacity.class).isPresent();
-		final boolean hasModuleForm = context.getFacts(AttributeNames.MEMORY_FORM_FACTOR, MemoryFormFactor.class)
+		final boolean hasCapacity = context.fact(AttributeNames.CAPACITY, DataCapacity.class).isPresent();
+		final boolean hasModuleForm = context.facts(AttributeNames.MEMORY_FORM_FACTOR, MemoryFormFactor.class)
 				.isPresent();
-		final boolean hasMemoryStandard = context.getFacts(AttributeNames.MEMORY_STANDARD, MemoryStandard.class)
+		final boolean hasMemoryStandard = context.facts(AttributeNames.MEMORY_STANDARD, MemoryStandard.class)
 				.isPresent();
 		return hasCapacity && (hasModuleForm || hasMemoryStandard) ? Confidence.STRONG : Confidence.NONE;
 	}

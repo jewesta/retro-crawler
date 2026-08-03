@@ -31,9 +31,9 @@ class InternalClueKeysTest {
 	void permitsSyntheticCluesButKeepsTypeForSerialization() {
 		assertAll(
 				() -> assertEquals(InternalClueKeys.ID,
-						Clue.internal(InternalClueKeys.ID, "artifact-id").getKey()),
+						Clue.internal(InternalClueKeys.ID, "artifact-id").key()),
 				() -> assertEquals(InternalClueKeys.FOLDER,
-						Clue.internal(InternalClueKeys.FOLDER, "artifact-folder").getKey()),
+						Clue.internal(InternalClueKeys.FOLDER, "artifact-folder").key()),
 				() -> assertThrows(IllegalArgumentException.class,
 						() -> Clue.internal(InternalClueKeys.TYPE, "clue-type")));
 	}

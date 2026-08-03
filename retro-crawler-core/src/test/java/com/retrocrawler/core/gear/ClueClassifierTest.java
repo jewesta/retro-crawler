@@ -20,8 +20,8 @@ class ClueClassifierTest {
 
 		assertTrue(clue(clues, "sn").isMissingValue());
 		assertTrue(clues.stream().filter(Clue::isAnonymous)
-				.anyMatch(value -> value.getValue().equals(Set.of("AGP"))));
-		assertFalse(clues.stream().anyMatch(value -> value.getValue().contains("")));
+				.anyMatch(value -> value.value().equals(Set.of("AGP"))));
+		assertFalse(clues.stream().anyMatch(value -> value.value().contains("")));
 	}
 
 	@Test
@@ -30,11 +30,11 @@ class ClueClassifierTest {
 
 		final Set<Clue> clues = classifier.classify(Set.of(Clue.of("SN"), Clue.of("sn", "12345")));
 
-		assertEquals(Set.of("12345"), clue(clues, "sn").getValue());
+		assertEquals(Set.of("12345"), clue(clues, "sn").value());
 		assertFalse(clue(clues, "sn").isMissingValue());
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {
-		return clues.stream().filter(candidate -> key.equals(candidate.getKey())).findFirst().orElseThrow();
+		return clues.stream().filter(candidate -> key.equals(candidate.key())).findFirst().orElseThrow();
 	}
 }

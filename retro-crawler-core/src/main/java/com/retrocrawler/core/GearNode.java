@@ -14,11 +14,11 @@ public final class GearNode<G> {
 		this.children = List.copyOf(Objects.requireNonNull(children, "children"));
 	}
 
-	public G getGear() {
+	public G gear() {
 		return gear;
 	}
 
-	public List<GearNode<G>> getChildren() {
+	public List<GearNode<G>> children() {
 		return children;
 	}
 }

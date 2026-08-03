@@ -44,7 +44,7 @@ class RetroCrawlerBuilderTest {
 				TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
-		assertEquals(1, result.getBuckets().size());
+		assertEquals(1, result.buckets().size());
 	}
 
 	@Test

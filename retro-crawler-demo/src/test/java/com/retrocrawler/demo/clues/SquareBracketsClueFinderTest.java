@@ -15,13 +15,13 @@ class SquareBracketsClueFinderTest {
 		final Set<Clue> clues = new SquareBracketsClueFinder()
 				.find("Manual [ISBN 978-0-306-40615-7] [Alias one, two]");
 
-		assertEquals(Set.of("978-0-306-40615-7"), clue(clues, "isbn").getValue());
-		assertEquals(Set.of("one", "two"), clue(clues, "alias").getValue());
+		assertEquals(Set.of("978-0-306-40615-7"), clue(clues, "isbn").value());
+		assertEquals(Set.of("one", "two"), clue(clues, "alias").value());
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {
 		return clues.stream()
-				.filter(value -> value.getKey().equals(key))
+				.filter(value -> value.key().equals(key))
 				.findFirst()
 				.orElseThrow();
 	}

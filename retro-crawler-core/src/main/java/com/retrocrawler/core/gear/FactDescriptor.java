@@ -39,7 +39,7 @@ public class FactDescriptor {
 		this.parser = Objects.requireNonNull(p, "parser");
 	}
 
-	public String getKey() {
+	public String key() {
 		return key;
 	}
 
@@ -47,7 +47,7 @@ public class FactDescriptor {
 		return optional;
 	}
 
-	public Field getField() {
+	public Field field() {
 		return field;
 	}
 
@@ -59,11 +59,11 @@ public class FactDescriptor {
 		return contextual;
 	}
 
-	public Class<? extends FactParser> getParser() {
+	public Class<? extends FactParser> parser() {
 		return parser;
 	}
 
-	public Optional<Class<?>> getSingleGenericArgument() {
+	public Optional<Class<?>> singleGenericArgument() {
 		final Type t = field.getGenericType();
 		if (!(t instanceof ParameterizedType)) {
 			return Optional.empty();

@@ -24,15 +24,15 @@ public class ArchiveDescriptor implements Descriptor {
 		this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
 	}
 
-	public ArchiveId getId() {
+	public ArchiveId id() {
 		return id;
 	}
 
-	public String getName() {
+	public String name() {
 		return name;
 	}
 
-	public Collection<Path> getPaths() {
+	public Collection<Path> paths() {
 		return paths;
 	}
 
@@ -50,14 +50,14 @@ public class ArchiveDescriptor implements Descriptor {
 
 	public static final ArchiveDescriptor of(final RetroCollection collection, final ArchiveRoots archiveRoots) {
 		Objects.requireNonNull(archiveRoots, "archiveRoots");
-		return fromPaths(collection, archiveRoots.getPaths());
+		return fromPaths(collection, archiveRoots.paths());
 	}
 
 	private static ArchiveDescriptor fromPaths(final RetroCollection collection, final Collection<Path> paths) {
 		Objects.requireNonNull(collection, "collection");
 		final List<Path> immutablePaths = List.copyOf(Objects.requireNonNull(paths, "paths"));
 		final ArchiveId id = ArchiveId.of(collection.id());
-		final String name = collection.name().isBlank() ? id.get() : collection.name().trim();
+		final String name = collection.name().isBlank() ? id.value() : collection.name().trim();
 		if (immutablePaths.isEmpty()) {
 			throw new IllegalArgumentException(
 					"A " + TypeName.simple(RetroCollection.class) + " requires at least one location to be set.");

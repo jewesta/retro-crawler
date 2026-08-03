@@ -17,18 +17,18 @@ class NintendoGameBoyCartridgeCodeTest {
 	void parsesStandardKnownLabelCodes() {
 		assertEquals(new NintendoGameBoyCartridgeCode(
 				NintendoGameBoyPlatform.GAME_BOY, "F4", "USA", OptionalInt.of(1)),
-				parser.parse("dmg-f4-usa-1").getValue().orElseThrow());
+				parser.parse("dmg-f4-usa-1").value().orElseThrow());
 		assertEquals(new NintendoGameBoyCartridgeCode(
 				NintendoGameBoyPlatform.GAME_BOY_COLOR, "BMVJ", "JPN"),
-				parser.parse("CGB-BMVJ-JPN").getValue().orElseThrow());
+				parser.parse("CGB-BMVJ-JPN").value().orElseThrow());
 		assertEquals(new NintendoGameBoyCartridgeCode(
 				NintendoGameBoyPlatform.GAME_BOY_ADVANCE, "A2CP", "EUR"),
-				parser.parse("AGB-A2CP-EUR").getValue().orElseThrow());
+				parser.parse("AGB-A2CP-EUR").value().orElseThrow());
 		assertEquals(new NintendoGameBoyCartridgeCode(
 				NintendoGameBoyPlatform.GAME_BOY, "AB", "NNOE"),
-				parser.parse("DMG-AB-NNOE").getValue().orElseThrow());
+				parser.parse("DMG-AB-NNOE").value().orElseThrow());
 
-		assertEquals("DMG-F4-USA-1", parser.parse("dmg-f4-usa-1").getValue().orElseThrow().toString());
+		assertEquals("DMG-F4-USA-1", parser.parse("dmg-f4-usa-1").value().orElseThrow().toString());
 	}
 
 	@Test
@@ -43,9 +43,9 @@ class NintendoGameBoyCartridgeCodeTest {
 		assertEquals("ADME", distributor.gameCode().orElseThrow());
 		assertEquals("USA", distributor.distributionCode().orElseThrow());
 
-		assertEquals(Confidence.EXACT, parser.parse("AGP-BPPP-EUR").getConfidence());
-		assertEquals(Confidence.EXACT, parser.parse("DNG-NE-USA").getConfidence());
-		assertEquals(Confidence.EXACT, parser.parse("DMG-401CHN").getConfidence());
+		assertEquals(Confidence.EXACT, parser.parse("AGP-BPPP-EUR").confidence());
+		assertEquals(Confidence.EXACT, parser.parse("DNG-NE-USA").confidence());
+		assertEquals(Confidence.EXACT, parser.parse("DMG-401CHN").confidence());
 		assertTrue(parsed("AGP-BPPP-EUR").platform().isEmpty());
 
 		final NintendoGameBoyCartridgeCode revisedLegacy = parsed("DMG-ZZJ-1");
@@ -55,21 +55,21 @@ class NintendoGameBoyCartridgeCodeTest {
 
 	@Test
 	void acceptsPlausibleUnknownCodesWithoutPretendingTheyAreCatalogued() {
-		assertEquals(Confidence.STRONG, parser.parse("DMG-Z9-XYZ-7").getConfidence());
+		assertEquals(Confidence.STRONG, parser.parse("DMG-Z9-XYZ-7").confidence());
 		assertEquals("DMG-Z9-XYZ-7", parsed("dmg-z9-xyz-7").value());
-		assertEquals(Confidence.STRONG, parser.parse("DMG-001").getConfidence());
+		assertEquals(Confidence.STRONG, parser.parse("DMG-001").confidence());
 	}
 
 	@Test
 	void rejectsUnrelatedOrMalformedText() {
-		assertEquals(Confidence.NONE, parser.parse("NOT-A-CODE").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("DMG F4 USA").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("DMG/F4/USA").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(" ").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("NOT-A-CODE").confidence());
+		assertEquals(Confidence.NONE, parser.parse("DMG F4 USA").confidence());
+		assertEquals(Confidence.NONE, parser.parse("DMG/F4/USA").confidence());
+		assertEquals(Confidence.NONE, parser.parse(" ").confidence());
+		assertEquals(Confidence.NONE, parser.parse(null).confidence());
 	}
 
 	private NintendoGameBoyCartridgeCode parsed(final String value) {
-		return (NintendoGameBoyCartridgeCode) parser.parse(value).getValue().orElseThrow();
+		return (NintendoGameBoyCartridgeCode) parser.parse(value).value().orElseThrow();
 	}
 }

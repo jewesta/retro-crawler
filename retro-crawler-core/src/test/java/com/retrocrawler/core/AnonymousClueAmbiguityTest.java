@@ -51,7 +51,7 @@ class AnonymousClueAmbiguityTest {
 		assertNull(gear.getFirst().secondMeaning);
 		assertTrue(gear.getFirst().attributes.values().stream()
 				.map(attribute -> assertInstanceOf(Clue.class, attribute))
-				.anyMatch(clue -> clue.isAnonymous() && clue.getValue().equals(Set.of("overlap"))));
+				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("overlap"))));
 	}
 
 	@RetroCollection(id = "anonymous_ambiguity")

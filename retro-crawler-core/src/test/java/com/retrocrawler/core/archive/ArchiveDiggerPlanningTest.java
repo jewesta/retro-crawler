@@ -40,7 +40,7 @@ class ArchiveDiggerPlanningTest {
 
 		assertEquals(2, plan.analyzedDepth());
 		assertEquals(4, plan.totalRegions());
-		assertEquals(2, archive.getChildren().size());
+		assertEquals(2, archive.children().size());
 
 		final List<ProgressSnapshot> crawling = events.stream()
 				.filter(event -> event.stage().equals(ProgressStage.CRAWLING)).toList();
@@ -74,9 +74,9 @@ class ArchiveDiggerPlanningTest {
 
 		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
-		assertEquals(List.of("known"), archive.getChildren().stream().map(ArchiveNode::getFolder).toList());
-		assertFalse(archive.getChildren().stream()
-				.anyMatch(node -> "created-after-planning".equals(node.getFolder())));
+		assertEquals(List.of("known"), archive.children().stream().map(ArchiveNode::folder).toList());
+		assertFalse(archive.children().stream()
+				.anyMatch(node -> "created-after-planning".equals(node.folder())));
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class ArchiveDiggerPlanningTest {
 
 		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
-		assertTrue(archive.getChildren() == null || archive.getChildren().isEmpty());
+		assertTrue(archive.children() == null || archive.children().isEmpty());
 	}
 
 	private ArchiveDigger digger(final CrawlPlanning planning) {

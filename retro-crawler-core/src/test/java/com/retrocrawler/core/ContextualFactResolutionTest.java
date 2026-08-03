@@ -56,9 +56,9 @@ class ContextualFactResolutionTest {
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());
 		assertNull(hardDrive.genericMeasurement());
-		assertEquals(Set.of("hard-drive-form-factor"), hardDrive.formFactor.getValue());
+		assertEquals(Set.of("hard-drive-form-factor"), hardDrive.formFactor.value());
 		assertTrue(hardDrive.formFactor.source().isAnonymous());
-		assertEquals(Set.of("2.5\""), hardDrive.formFactor.source().getValue());
+		assertEquals(Set.of("2.5\""), hardDrive.formFactor.source().value());
 
 		final Mystery mystery = assertInstanceOf(Mystery.class,
 				gear.stream().filter(Mystery.class::isInstance).findFirst().orElseThrow());
@@ -108,7 +108,7 @@ class ContextualFactResolutionTest {
 
 		@Override
 		public Confidence matches(final GearContext context) {
-			return context.getFact("kind", String.class).filter("hard-drive"::equals).isPresent()
+			return context.fact("kind", String.class).filter("hard-drive"::equals).isPresent()
 					? Confidence.EXACT
 					: Confidence.NONE;
 		}

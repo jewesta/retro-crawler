@@ -94,14 +94,14 @@ public class SearchView extends HorizontalLayout {
 		setHeightFull();
 		final Repository repository = new JsonFileRepository();
 		this.retroCrawler = Arrays.stream(DemoModels.values()).map(model -> createCrawler(model, repository))
-				.collect(Collectors.toUnmodifiableMap(rc -> rc.getArchiveDescriptor().getId(), Function.identity()));
+				.collect(Collectors.toUnmodifiableMap(rc -> rc.archiveDescriptor().id(), Function.identity()));
 		activeArchiveId = retroCrawler.keySet().iterator().next();
 	}
 
 	private static RetroCrawler createCrawler(final DemoModels demoModel, final Repository repository) {
 		final Model model = Model.from(demoModel.getBasePackage());
 		final RetroCrawler retroCrawler = RetroCrawler.builder().model(model).repository(repository).build();
-		final ArchiveDescriptor descriptor = retroCrawler.getArchiveDescriptor();
+		final ArchiveDescriptor descriptor = retroCrawler.archiveDescriptor();
 		try {
 			DemoFiles.copyToWorkDirectory(descriptor);
 		} catch (final IOException e) {
@@ -180,7 +180,7 @@ public class SearchView extends HorizontalLayout {
 		crawl.addClickListener(event -> {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
 			final ArchiveDescriptor location = archives.getValue();
-			activeArchiveId = location.getId();
+			activeArchiveId = location.id();
 			refreshAsync(eventUI, ReindexScope.all());
 		});
 
@@ -198,9 +198,9 @@ public class SearchView extends HorizontalLayout {
 
 		// final List<ArchiveDescriptor> repoLocationList = getLocations();
 		final List<ArchiveDescriptor> repoLocationList = retroCrawler.values().stream()
-				.map(RetroCrawler::getArchiveDescriptor).toList();
+				.map(RetroCrawler::archiveDescriptor).toList();
 		archives.setItems(repoLocationList);
-		archives.setItemLabelGenerator(ArchiveDescriptor::getName);
+		archives.setItemLabelGenerator(ArchiveDescriptor::name);
 		archives.setValue(repoLocationList.get(0));
 
 		messageBar.setMaxWidth("100%");

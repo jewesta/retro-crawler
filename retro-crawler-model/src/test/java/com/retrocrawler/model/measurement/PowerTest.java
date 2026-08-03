@@ -14,8 +14,8 @@ class PowerTest {
 	void parsesElectricalPowerWithoutConfusingOtherMeasurements() {
 		final PowerParser parser = new PowerParser();
 
-		assertEquals(new Power(BigDecimal.valueOf(400)), parser.parse("400W").getValue().orElseThrow());
-		assertEquals(new Power(new BigDecimal("3.3")), parser.parse("3,3 W").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("400MB").getConfidence());
+		assertEquals(new Power(BigDecimal.valueOf(400)), parser.parse("400W").value().orElseThrow());
+		assertEquals(new Power(new BigDecimal("3.3")), parser.parse("3,3 W").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("400MB").confidence());
 	}
 }

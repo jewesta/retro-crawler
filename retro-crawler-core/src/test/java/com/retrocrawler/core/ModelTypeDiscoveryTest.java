@@ -22,7 +22,7 @@ class ModelTypeDiscoveryTest {
 	void discoversAnnotatedTypesRecursivelyBelowBasePackage() {
 		final Model model = Model.from(FIXTURE_PACKAGE);
 
-		assertEquals("discovered_model", model.getArchiveDescriptor().getId().get());
+		assertEquals("discovered_model", model.archiveDescriptor().id().value());
 	}
 
 	@Test

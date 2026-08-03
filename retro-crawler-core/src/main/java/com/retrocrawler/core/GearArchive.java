@@ -11,7 +11,7 @@ public final class GearArchive<G> {
 		this.buckets = List.copyOf(Objects.requireNonNull(buckets, "buckets"));
 	}
 
-	public List<GearBucket<G>> getBuckets() {
+	public List<GearBucket<G>> buckets() {
 		return buckets;
 	}
 }

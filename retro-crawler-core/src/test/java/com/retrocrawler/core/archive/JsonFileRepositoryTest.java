@@ -52,9 +52,9 @@ class JsonFileRepositoryTest {
 		assertTrue(Files.exists(repositoryDirectory.resolve(ReadmeWriter.README_TXT)));
 
 		final Archive retrieved = repository.retrieve(ArchiveId.of("test_archive")).orElseThrow();
-		assertEquals(id, retrieved.getId());
-		assertEquals(1, retrieved.getBuckets().size());
-		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.getBuckets().get(0).getBasePath());
+		assertEquals(id, retrieved.id());
+		assertEquals(1, retrieved.buckets().size());
+		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.buckets().get(0).basePath());
 	}
 
 	@Test
@@ -66,7 +66,7 @@ class JsonFileRepositoryTest {
 		repository.stowaway(archive(id, "second"));
 
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
-		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.getBuckets().get(0).getBasePath());
+		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.buckets().get(0).basePath());
 	}
 
 	@Test
@@ -81,14 +81,14 @@ class JsonFileRepositoryTest {
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
 		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
-		final Artifact retrieved = repository.retrieve(id).orElseThrow().getBuckets().getFirst().getRoot()
-				.getArtifact();
-		final Clue clue = retrieved.getClues().stream().findFirst().orElseThrow();
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root()
+				.artifact();
+		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
 		assertEquals(2, json.path("version").asInt());
 		assertTrue(storedClue.isArray());
 		assertTrue(storedClue.isEmpty());
-		assertEquals("sn", clue.getKey());
+		assertEquals("sn", clue.key());
 		assertTrue(clue.isMissingValue());
 	}
 

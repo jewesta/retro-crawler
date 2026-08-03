@@ -431,7 +431,7 @@ class MyCollectionModelTest {
 		assertTrue(ambiguous.getRegions().isEmpty());
 		assertTrue(ambiguous.getAttributes().values().stream()
 				.filter(Clue.class::isInstance).map(Clue.class::cast)
-				.anyMatch(clue -> clue.isAnonymous() && clue.getValue().equals(Set.of("DE"))));
+				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("DE"))));
 
 		final MyGear explicit = gear(gear, "Explicit locale [language DE] [region DE] [200034]");
 		assertEquals(Set.of(new LanguageCode("de")), explicit.getLanguages());
@@ -446,7 +446,7 @@ class MyCollectionModelTest {
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
 				() -> crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 
-		final List<String> paths = failure.getDuplicates().get(new RetroId(200004));
+		final List<String> paths = failure.duplicates().get(new RetroId(200004));
 		assertEquals(2, paths.size());
 		assertTrue(paths.contains(first.toString()));
 		assertTrue(paths.contains(second.toString()));
@@ -499,11 +499,11 @@ class MyCollectionModelTest {
 		crawler(nasRoot, repository).crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final Archive stored = repository.retrieve(ArchiveId.of("my_collection")).orElseThrow();
-		final Clue storedImage = stored.getBuckets().getFirst().getRoot().getChildren().getFirst().getArtifact()
-				.getClues().stream().filter(clue -> AttributeNames.IMAGE_FRONT.equals(clue.getKey()))
+		final Clue storedImage = stored.buckets().getFirst().root().children().getFirst().artifact()
+				.clues().stream().filter(clue -> AttributeNames.IMAGE_FRONT.equals(clue.key()))
 				.findFirst().orElseThrow();
 		assertEquals(Set.of(Path.of("Portable object [200006]", "front.jpeg").toString()),
-				storedImage.getValue());
+				storedImage.value());
 
 		final Path desktopRoot = Files.move(nasRoot, archiveRoot.resolve("desktop-root"));
 		final MyGear rebound = gear(

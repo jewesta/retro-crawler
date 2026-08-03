@@ -26,7 +26,7 @@ class FactTest {
 
 		values.add("PCI");
 
-		assertEquals(Set.of("AGP"), fact.getValue());
-		assertThrows(UnsupportedOperationException.class, () -> fact.getValue().add("PCI"));
+		assertEquals(Set.of("AGP"), fact.value());
+		assertThrows(UnsupportedOperationException.class, () -> fact.value().add("PCI"));
 	}
 }

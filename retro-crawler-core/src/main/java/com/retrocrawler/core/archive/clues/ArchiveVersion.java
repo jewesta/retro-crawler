@@ -13,7 +13,7 @@ public final class ArchiveVersion extends AbstractId<Integer> {
 	}
 
 	public static final ArchiveVersion of(final int version) {
-		if (version < 1 || version > CURRENT_IMPLEMENTATION_VERSION.get().intValue()) {
+		if (version < 1 || version > CURRENT_IMPLEMENTATION_VERSION.value().intValue()) {
 			throw new IllegalArgumentException(
 					"Expected version to be >= 1 and <= " + CURRENT_IMPLEMENTATION_VERSION + " but got " + version);
 		}

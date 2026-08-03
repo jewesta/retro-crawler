@@ -67,11 +67,11 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		final Map<Class<?>, Set<String>> contextualFactKeys = new HashMap<>();
 
 		for (final GearSpecialist specialist : specialists.values()) {
-			final GearDescriptor definition = specialist.getGearDefinition();
-			final Class<?> type = definition.getType();
+			final GearDescriptor definition = specialist.gearDefinition();
+			final Class<?> type = definition.type();
 			final Set<String> contextualKeys = new HashSet<>();
 
-			for (final Entry<String, FactDescriptor> entry : definition.getAttributes().entrySet()) {
+			for (final Entry<String, FactDescriptor> entry : definition.attributes().entrySet()) {
 				final String key = entry.getKey();
 				final FactDescriptor incoming = entry.getValue();
 				if (incoming.isContextual()) {
@@ -103,7 +103,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 			final FactDescriptor factDef = attrDef;
 
-			final Class<? extends FactParser> parserType = factDef.getParser();
+			final Class<? extends FactParser> parserType = factDef.parser();
 			final FactParser parser;
 
 			if (parserType.equals(AutoDetectParser.class)) {
@@ -112,7 +112,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 				parser = configuredParser(parserType, workingDirectory, parserConfigurations.get(parserType));
 			}
 
-			final Class<?> fieldType = factDef.getField().getType();
+			final Class<?> fieldType = factDef.field().getType();
 			final boolean strict = factDef.isStrict();
 
 			factFinders.put(key, new FactFinder(key, parser, fieldType, strict, factDef.isContextual()));
@@ -156,8 +156,8 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(attrDef, "attrDef");
 
-		final Class<?> fieldType = attrDef.getField().getType();
-		final var genericType = attrDef.getSingleGenericArgument();
+		final Class<?> fieldType = attrDef.field().getType();
+		final var genericType = attrDef.singleGenericArgument();
 
 		if (fieldType == String.class) {
 			return new StringParser();
@@ -216,10 +216,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		Class<?> firstType = null;
 
 		for (final GearSpecialist specialist : specialists.values()) {
-			final GearDescriptor def = specialist.getGearDefinition();
-			final Class<?> gearType = def.getType();
+			final GearDescriptor def = specialist.gearDefinition();
+			final Class<?> gearType = def.type();
 
-			final Optional<Field> idFieldOpt = def.getIdField();
+			final Optional<Field> idFieldOpt = def.idField();
 			if (idFieldOpt.isEmpty()) {
 				continue;
 			}
@@ -229,9 +229,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			boolean standalone = true;
 			String key = null;
 
-			for (final Entry<String, FactDescriptor> e : def.getAttributes().entrySet()) {
+			for (final Entry<String, FactDescriptor> e : def.attributes().entrySet()) {
 				final FactDescriptor attrDef = e.getValue();
-				if (attrDef.getField().equals(idField)) {
+				if (attrDef.field().equals(idField)) {
 					standalone = false;
 					key = e.getKey();
 					break;

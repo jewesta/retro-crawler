@@ -21,8 +21,8 @@ final class StandaloneIdInjector implements Injector {
 
 	@Override
 	public void inject(final GearInjectionSession session) {
-		final GearDescriptor definition = session.getDescriptor();
-		final Optional<Field> idFieldOpt = definition.getIdField();
+		final GearDescriptor definition = session.descriptor();
+		final Optional<Field> idFieldOpt = definition.idField();
 		if (idFieldOpt.isEmpty()) {
 			return;
 		}
@@ -30,22 +30,22 @@ final class StandaloneIdInjector implements Injector {
 		if (isIdFieldAlreadyHandledByFact(definition, idField)) {
 			return;
 		}
-		final RetroAttribute attribute = session.getAttributes().get(InternalClueKeys.ID);
+		final RetroAttribute attribute = session.attributes().get(InternalClueKeys.ID);
 		if (attribute == null) {
 			throw new IllegalStateException("Missing technical id clue for key '" + InternalClueKeys.ID
 					+ "' required by standalone " + TypeName.simple(RetroId.class) + " on gear "
-					+ TypeName.full(session.getGearType()) + " field " + idField.getName() + ".");
+					+ TypeName.full(session.gearType()) + " field " + idField.getName() + ".");
 		}
-		final Object inject = adapter.adaptAttributeToField(session.getGearType(), idField, InternalClueKeys.ID,
+		final Object inject = adapter.adaptAttributeToField(session.gearType(), idField, InternalClueKeys.ID,
 				attribute);
 		Objects.requireNonNull(inject);
-		FieldSetter.setField(session.getGear(), idField, inject);
+		FieldSetter.setField(session.gear(), idField, inject);
 		session.markAssigned(attribute);
 	}
 
 	private static boolean isIdFieldAlreadyHandledByFact(final GearDescriptor definition, final Field idField) {
-		for (final FactDescriptor def : definition.getAttributes().values()) {
-			if (def.getField().equals(idField)) {
+		for (final FactDescriptor def : definition.attributes().values()) {
+			if (def.field().equals(idField)) {
 				return true;
 			}
 		}

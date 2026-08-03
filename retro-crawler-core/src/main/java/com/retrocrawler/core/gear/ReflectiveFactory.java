@@ -7,7 +7,7 @@ public interface ReflectiveFactory<T> {
 	T reflectOn(Set<Class<?>> types);
 
 	default T reflectOn(final TypeSource source) {
-		return reflectOn(source.getTypes());
+		return reflectOn(source.types());
 	}
 
 }

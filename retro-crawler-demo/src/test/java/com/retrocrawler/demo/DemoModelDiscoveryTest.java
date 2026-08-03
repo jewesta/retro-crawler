@@ -12,6 +12,6 @@ class DemoModelDiscoveryTest {
 	void discoversDemoModelFromBasePackage() {
 		final Model model = Model.from(DemoModels.RETRO_PC.getBasePackage());
 
-		assertEquals("retro_pc_demo", model.getArchiveDescriptor().getId().get());
+		assertEquals("retro_pc_demo", model.archiveDescriptor().id().value());
 	}
 }

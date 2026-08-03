@@ -33,16 +33,16 @@ public final class Fact implements RetroAttribute {
 	}
 
 	@Override
-	public String getKey() {
+	public String key() {
 		return key;
 	}
 
 	@Override
-	public Set<Object> getValue() {
+	public Set<Object> value() {
 		return value;
 	}
 
-	public Confidence getConfidence() {
+	public Confidence confidence() {
 		return confidence;
 	}
 

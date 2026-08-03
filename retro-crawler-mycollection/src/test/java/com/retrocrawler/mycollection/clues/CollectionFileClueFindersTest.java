@@ -27,7 +27,7 @@ class CollectionFileClueFindersTest {
 		final Set<Clue> clues = finder.find(input(markdown));
 
 		assertTrue(finder.matches("retro.md"));
-		assertEquals(Set.of(markdown), clue(clues, AttributeNames.DESC).getValue());
+		assertEquals(Set.of(markdown), clue(clues, AttributeNames.DESC).value());
 	}
 
 	@Test
@@ -46,12 +46,12 @@ class CollectionFileClueFindersTest {
 
 		final Set<Clue> clues = finder.find(input(markdown));
 
-		assertEquals(Set.of("120 EUR"), clue(clues, AttributeNames.PRICE).getValue());
-		assertEquals(Set.of("200001", "200002,200003"), clue(clues, AttributeNames.LOT).getValue());
-		assertEquals(Set.of("123"), clue(clues, AttributeNames.FCC_ID).getValue());
-		assertEquals(Set.of("defekt"), clue(clues, AttributeNames.HEALTH).getValue());
-		assertEquals(Set.of("post"), clue(clues, AttributeNames.TESTED).getValue());
-		assertEquals(Set.of("Gerät läuft wieder."), clue(clues, AttributeNames.DESC).getValue());
+		assertEquals(Set.of("120 EUR"), clue(clues, AttributeNames.PRICE).value());
+		assertEquals(Set.of("200001", "200002,200003"), clue(clues, AttributeNames.LOT).value());
+		assertEquals(Set.of("123"), clue(clues, AttributeNames.FCC_ID).value());
+		assertEquals(Set.of("defekt"), clue(clues, AttributeNames.HEALTH).value());
+		assertEquals(Set.of("post"), clue(clues, AttributeNames.TESTED).value());
+		assertEquals(Set.of("Gerät läuft wieder."), clue(clues, AttributeNames.DESC).value());
 	}
 
 	@Test
@@ -76,11 +76,11 @@ class CollectionFileClueFindersTest {
 				folder.resolve("overview.jpeg")));
 
 		assertEquals(Set.of(folder.resolve("ANGLED.JPEG").toString()),
-				clue(clues, AttributeNames.IMAGE_ANGLED).getValue());
+				clue(clues, AttributeNames.IMAGE_ANGLED).value());
 		assertEquals(Set.of(folder.resolve("front.jpeg").toString()),
-				clue(clues, AttributeNames.IMAGE_FRONT).getValue());
+				clue(clues, AttributeNames.IMAGE_FRONT).value());
 		assertEquals(Set.of(folder.resolve("back.jpeg").toString()),
-				clue(clues, AttributeNames.IMAGE_BACK).getValue());
+				clue(clues, AttributeNames.IMAGE_BACK).value());
 		assertEquals(3, clues.size());
 	}
 
@@ -94,10 +94,10 @@ class CollectionFileClueFindersTest {
 				folder.resolve("fd-0008 Boot disk.ima"),
 				folder.resolve("Copy of FD-0009.img")));
 
-		assertEquals(Set.of("FD-0007", "FD-0008"), clue(clues, AttributeNames.FLOPPY_IMAGE_ID).getValue());
+		assertEquals(Set.of("FD-0007", "FD-0008"), clue(clues, AttributeNames.FLOPPY_IMAGE_ID).value());
 		assertEquals(Set.of(folder.resolve("FD-0007.img").toString(),
 				folder.resolve("fd-0008 Boot disk.ima").toString()),
-				clue(clues, AttributeNames.FLOPPY_IMAGES).getValue());
+				clue(clues, AttributeNames.FLOPPY_IMAGES).value());
 	}
 
 	private static ByteArrayInputStream input(final String value) {
@@ -106,7 +106,7 @@ class CollectionFileClueFindersTest {
 
 	private static Clue clue(final Set<Clue> clues, final String key) {
 		final java.util.Map<String, Clue> byKey = clues.stream()
-				.collect(Collectors.toMap(Clue::getKey, java.util.function.Function.identity()));
+				.collect(Collectors.toMap(Clue::key, java.util.function.Function.identity()));
 		return byKey.get(key);
 	}
 }

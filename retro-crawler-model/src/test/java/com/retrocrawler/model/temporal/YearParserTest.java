@@ -19,11 +19,11 @@ class YearParserTest {
 	void acceptsOnlyFourDigitYearsFrom1950ThroughTheCurrentYear() {
 		final YearParser parser = new YearParser(DURING_2026);
 
-		assertEquals(Year.of(1950), parser.parse("1950").getValue().orElseThrow());
-		assertEquals(Year.of(2026), parser.parse("2026").getValue().orElseThrow());
-		assertEquals(Confidence.STRONG, parser.parse("1989").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("1949").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("2027").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("89").getConfidence());
+		assertEquals(Year.of(1950), parser.parse("1950").value().orElseThrow());
+		assertEquals(Year.of(2026), parser.parse("2026").value().orElseThrow());
+		assertEquals(Confidence.STRONG, parser.parse("1989").confidence());
+		assertEquals(Confidence.NONE, parser.parse("1949").confidence());
+		assertEquals(Confidence.NONE, parser.parse("2027").confidence());
+		assertEquals(Confidence.NONE, parser.parse("89").confidence());
 	}
 }

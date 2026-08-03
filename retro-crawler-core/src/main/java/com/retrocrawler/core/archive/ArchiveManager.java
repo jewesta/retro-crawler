@@ -42,7 +42,7 @@ public class ArchiveManager {
 	}
 
 	private Archive fromFileSystem(final Progressor progressor) throws IOException {
-		final Collection<Path> rootPaths = descriptor.getPaths();
+		final Collection<Path> rootPaths = descriptor.paths();
 		final List<ArchiveDigTarget> targets = rootPaths.stream().map(path -> new ArchiveDigTarget(path, path)).toList();
 		final ArchiveDigPlan plan = digger.plan(targets, progressor);
 		final List<Bucket> buckets = new ArrayList<>();
@@ -52,7 +52,7 @@ public class ArchiveManager {
 			final Bucket bucket = Bucket.of(rootPath, rootNode);
 			buckets.add(bucket);
 		}
-		final Archive archive = Archive.of(descriptor.getId(), buckets);
+		final Archive archive = Archive.of(descriptor.id(), buckets);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
@@ -66,24 +66,24 @@ public class ArchiveManager {
 		final List<ArchiveDigTarget> targets = subtrees.stream().map(LocatedSubtree::target).toList();
 		final ArchiveDigPlan plan = digger.plan(targets, progressor);
 
-		final List<Bucket> buckets = new ArrayList<>(stored.getBuckets());
+		final List<Bucket> buckets = new ArrayList<>(stored.buckets());
 		for (final LocatedSubtree subtree : subtrees) {
 			progressor.throwIfCancelled();
 			final ArchiveDigTarget target = subtree.target();
 			final ArchiveNode freshNode = digger.dig(target.root(), target.path(), plan, progressor);
 			final Bucket storedBucket = buckets.get(subtree.bucketIndex());
-			final ArchiveNode mergedRoot = replace(storedBucket.getRoot(), subtree.relativeFolders(), freshNode);
-			buckets.set(subtree.bucketIndex(), Bucket.of(Path.of(storedBucket.getBasePath()), mergedRoot));
+			final ArchiveNode mergedRoot = replace(storedBucket.root(), subtree.relativeFolders(), freshNode);
+			buckets.set(subtree.bucketIndex(), Bucket.of(Path.of(storedBucket.basePath()), mergedRoot));
 		}
 
-		final Archive archive = Archive.of(stored.getId(), buckets);
+		final Archive archive = Archive.of(stored.id(), buckets);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
 
-	public synchronized Archive getArchive(final Progressor progressor, final ReindexScope reindexScope)
+	public synchronized Archive archive(final Progressor progressor, final ReindexScope reindexScope)
 			throws IOException {
 		Objects.requireNonNull(progressor, "progressor");
 		Objects.requireNonNull(reindexScope, "reindexScope");
@@ -108,7 +108,7 @@ public class ArchiveManager {
 		if (cache != null) {
 			return cache;
 		}
-		final Optional<Archive> stored = repository.retrieve(descriptor.getId());
+		final Optional<Archive> stored = repository.retrieve(descriptor.id());
 		if (stored.isEmpty()) {
 			throw new IllegalStateException(
 					"Cannot re-index archive subtrees because no stored clue archive exists. Re-index the complete archive first.");
@@ -118,24 +118,24 @@ public class ArchiveManager {
 
 	private Optional<Archive> retrieve() {
 		try {
-			return repository.retrieve(descriptor.getId()).map(this::bindToConfiguredRoots);
+			return repository.retrieve(descriptor.id()).map(this::bindToConfiguredRoots);
 		} catch (final RepositoryException e) {
 			logger.warn("Could not retrieve archive '{}'. The filesystem archive will be crawled again.",
-					descriptor.getId(), e);
+					descriptor.id(), e);
 			return Optional.empty();
 		}
 	}
 
 	private Archive bindToConfiguredRoots(final Archive stored) {
-		if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(stored.getVersion())) {
-			throw new RepositoryException("Stored archive '" + stored.getId() + "' uses cache version "
-					+ stored.getVersion() + " but this crawler requires "
+		if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(stored.version())) {
+			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version "
+					+ stored.version() + " but this crawler requires "
 					+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 		}
-		final List<Path> configuredRoots = List.copyOf(descriptor.getPaths());
-		final List<Bucket> storedBuckets = stored.getBuckets();
+		final List<Path> configuredRoots = List.copyOf(descriptor.paths());
+		final List<Bucket> storedBuckets = stored.buckets();
 		if (storedBuckets.size() != configuredRoots.size()) {
-			throw new RepositoryException("Stored archive '" + stored.getId() + "' contains " + storedBuckets.size()
+			throw new RepositoryException("Stored archive '" + stored.id() + "' contains " + storedBuckets.size()
 					+ " buckets but the current configuration supplies " + configuredRoots.size() + " archive roots.");
 		}
 
@@ -144,17 +144,17 @@ public class ArchiveManager {
 		for (int index = 0; index < storedBuckets.size(); index++) {
 			final Bucket storedBucket = storedBuckets.get(index);
 			final Path configuredRoot = configuredRoots.get(index);
-			if (!normalize(Path.of(storedBucket.getBasePath())).equals(normalize(configuredRoot))) {
+			if (!normalize(Path.of(storedBucket.basePath())).equals(normalize(configuredRoot))) {
 				unchanged = false;
 			}
-			bound.add(Bucket.of(configuredRoot, storedBucket.getRoot()));
+			bound.add(Bucket.of(configuredRoot, storedBucket.root()));
 		}
-		return unchanged ? stored : Archive.of(stored.getId(), List.copyOf(bound));
+		return unchanged ? stored : Archive.of(stored.id(), List.copyOf(bound));
 	}
 
 	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<Path> requestedPaths) {
 		final List<Path> effectivePaths = eliminateNestedPaths(requestedPaths);
-		final List<ConfiguredRoot> configuredRoots = descriptor.getPaths().stream()
+		final List<ConfiguredRoot> configuredRoots = descriptor.paths().stream()
 				.map(path -> new ConfiguredRoot(normalize(path))).toList();
 		final List<LocatedSubtree> result = new ArrayList<>();
 
@@ -175,7 +175,7 @@ public class ArchiveManager {
 			}
 			final int bucketIndex = findBucket(stored, configuredRoot.normalized());
 			final List<String> relativeFolders = relativeFolders(configuredRoot.normalized(), requestedPath);
-			requireStoredSubtree(stored.getBuckets().get(bucketIndex).getRoot(), relativeFolders, requestedPath);
+			requireStoredSubtree(stored.buckets().get(bucketIndex).root(), relativeFolders, requestedPath);
 			result.add(new LocatedSubtree(bucketIndex,
 					new ArchiveDigTarget(configuredRoot.normalized(), requestedPath), relativeFolders));
 		}
@@ -204,8 +204,8 @@ public class ArchiveManager {
 
 	private static int findBucket(final Archive stored, final Path normalizedRoot) {
 		final List<Integer> matches = new ArrayList<>();
-		for (int index = 0; index < stored.getBuckets().size(); index++) {
-			final Path bucketPath = normalize(Path.of(stored.getBuckets().get(index).getBasePath()));
+		for (int index = 0; index < stored.buckets().size(); index++) {
+			final Path bucketPath = normalize(Path.of(stored.buckets().get(index).basePath()));
 			if (bucketPath.equals(normalizedRoot)) {
 				matches.add(index);
 			}
@@ -242,7 +242,7 @@ public class ArchiveManager {
 		}
 
 		final String folder = relativeFolders.getFirst();
-		final List<ArchiveNode> children = current.getChildren();
+		final List<ArchiveNode> children = current.children();
 		if (children == null) {
 			throw new IllegalStateException("Stored archive tree no longer contains expected folder: " + folder);
 		}
@@ -250,22 +250,22 @@ public class ArchiveManager {
 		final List<ArchiveNode> replacements = new ArrayList<>(children);
 		for (int index = 0; index < replacements.size(); index++) {
 			final ArchiveNode candidate = replacements.get(index);
-			if (folder.equals(candidate.getFolder())) {
+			if (folder.equals(candidate.folder())) {
 				final ArchiveNode replaced = replace(candidate, relativeFolders.subList(1, relativeFolders.size()),
 						replacement);
 				replacements.set(index, replaced);
-				return new ArchiveNode(current.getFolder(), current.getArtifact(), replacements);
+				return new ArchiveNode(current.folder(), current.artifact(), replacements);
 			}
 		}
 		throw new IllegalStateException("Stored archive tree no longer contains expected folder: " + folder);
 	}
 
 	private static Optional<ArchiveNode> child(final ArchiveNode node, final String folder) {
-		final List<ArchiveNode> children = node.getChildren();
+		final List<ArchiveNode> children = node.children();
 		if (children == null) {
 			return Optional.empty();
 		}
-		return children.stream().filter(child -> folder.equals(child.getFolder())).findFirst();
+		return children.stream().filter(child -> folder.equals(child.folder())).findFirst();
 	}
 
 	private record ConfiguredRoot(Path normalized) {

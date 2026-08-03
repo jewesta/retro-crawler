@@ -24,7 +24,7 @@ public final class CollectionColorParser implements FactParser {
 
 		final String canonical = canonical(rawValue);
 		final RatedFact direct = delegate.parse(canonical);
-		if (direct.getConfidence() != Confidence.NONE) {
+		if (direct.confidence() != Confidence.NONE) {
 			return direct;
 		}
 

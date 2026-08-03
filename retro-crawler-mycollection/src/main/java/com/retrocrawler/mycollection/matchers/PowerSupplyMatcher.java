@@ -11,9 +11,9 @@ public final class PowerSupplyMatcher implements GearMatcher {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		final boolean hasPower = context.getFact(AttributeNames.POWER, Power.class).isPresent();
+		final boolean hasPower = context.fact(AttributeNames.POWER, Power.class).isPresent();
 		final boolean hasComputerForm = context
-				.getFacts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class).isPresent();
+				.facts(AttributeNames.COMPUTER_FORM_FACTOR, ComputerFormFactor.class).isPresent();
 		return hasPower && hasComputerForm ? Confidence.STRONG : Confidence.NONE;
 	}
 }

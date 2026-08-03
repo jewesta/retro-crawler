@@ -17,15 +17,15 @@ public class RetroAttributes {
 
 	public void put(final RetroAttribute attribute) {
 		if (contains(attribute)) {
-			throw new IllegalArgumentException("Already contains attribute with key '" + attribute.getKey() + "'.");
+			throw new IllegalArgumentException("Already contains attribute with key '" + attribute.key() + "'.");
 		}
-		final String key = attribute.getKey();
+		final String key = attribute.key();
 		attributes.put(key, attribute);
 		registerAnonymousSource(attribute, key);
 	}
 
 	void replace(final RetroAttribute attribute) {
-		final String key = attribute.getKey();
+		final String key = attribute.key();
 		if (!attributes.containsKey(key)) {
 			throw new IllegalArgumentException("Cannot replace missing attribute with key '" + key + "'.");
 		}
@@ -43,7 +43,7 @@ public class RetroAttributes {
 		if (attribute instanceof final Fact fact) {
 			final Clue source = fact.source();
 			if (source.isAnonymous()) {
-				anonymousToKnown.put(source.getKey(), key);
+				anonymousToKnown.put(source.key(), key);
 			}
 		}
 	}
@@ -80,29 +80,29 @@ public class RetroAttributes {
 	}
 
 	public boolean containsFact(final Fact fact) {
-		final RetroAttribute existing = attributes.get(fact.getKey());
+		final RetroAttribute existing = attributes.get(fact.key());
 		return existing instanceof Fact;
 	}
 
 	public boolean containsClue(final Clue clue) {
-		final String key = clue.getKey();
+		final String key = clue.key();
 		if (attributes.containsKey(key)) {
 			return true;
 		}
 		return clue.isAnonymous() && anonymousToKnown.containsKey(key);
 	}
 
-	public Set<Fact> getFacts() {
+	public Set<Fact> facts() {
 		return attributes.values().stream().filter(Fact.class::isInstance).map(Fact.class::cast)
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
-	public Set<Clue> getClues() {
+	public Set<Clue> clues() {
 		return attributes.values().stream().filter(Clue.class::isInstance).map(Clue.class::cast)
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
-	public Map<String, RetroAttribute> getAll() {
+	public Map<String, RetroAttribute> all() {
 		return new LinkedHashMap<>(attributes);
 	}
 

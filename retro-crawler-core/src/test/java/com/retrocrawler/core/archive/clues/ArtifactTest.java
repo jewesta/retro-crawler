@@ -17,8 +17,8 @@ class ArtifactTest {
 
 		clues.clear();
 
-		assertEquals(1, artifact.getClues().size());
-		assertThrows(UnsupportedOperationException.class, () -> artifact.getClues().clear());
+		assertEquals(1, artifact.clues().size());
+		assertThrows(UnsupportedOperationException.class, () -> artifact.clues().clear());
 	}
 
 	@Test
@@ -28,7 +28,7 @@ class ArtifactTest {
 
 		values.add("PCI");
 
-		assertEquals(Set.of("AGP"), clue.getValue());
-		assertThrows(UnsupportedOperationException.class, () -> clue.getValue().add("PCI"));
+		assertEquals(Set.of("AGP"), clue.value());
+		assertThrows(UnsupportedOperationException.class, () -> clue.value().add("PCI"));
 	}
 }

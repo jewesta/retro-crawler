@@ -16,11 +16,11 @@ public final class GearBucket<G> {
 		this.roots = List.copyOf(Objects.requireNonNull(roots, "roots"));
 	}
 
-	public Bucket getBucket() {
+	public Bucket bucket() {
 		return bucket;
 	}
 
-	public List<GearNode<G>> getRoots() {
+	public List<GearNode<G>> roots() {
 		return roots;
 	}
 }

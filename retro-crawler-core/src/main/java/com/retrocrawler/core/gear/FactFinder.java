@@ -38,15 +38,15 @@ public class FactFinder {
 		this.contextual = contextual;
 	}
 
-	public String getKey() {
+	public String key() {
 		return key;
 	}
 
-	public FactParser getParser() {
+	public FactParser parser() {
 		return parser;
 	}
 
-	public Class<?> getFieldType() {
+	public Class<?> fieldType() {
 		return fieldType;
 	}
 
@@ -64,7 +64,7 @@ public class FactFinder {
 
 	public Optional<Fact> find(final Clue clue, final FactParseContext context) {
 		Objects.requireNonNull(context, "context");
-		final Set<String> raws = clue.getValue();
+		final Set<String> raws = clue.value();
 		if (raws.isEmpty()) {
 			return Optional.empty();
 		}
@@ -77,14 +77,14 @@ public class FactFinder {
 		for (final String raw : raws) {
 			final RatedFact rated = parser.parse(raw, context);
 
-			if (rated.getConfidence() == Confidence.NONE) {
+			if (rated.confidence() == Confidence.NONE) {
 				// Not successfully parsed -> no Fact at all.
 				return Optional.empty();
 			}
 
-			final Object parsed = rated.getValue()
+			final Object parsed = rated.value()
 					.orElseThrow(() -> new IllegalStateException("Parser " + parser.getClass().getSimpleName()
-							+ " returned confidence " + rated.getConfidence() + " but no value."));
+							+ " returned confidence " + rated.confidence() + " but no value."));
 
 			final Collection<?> parsedValues = parsed instanceof final Collection<?> collection
 					? collection
@@ -108,8 +108,8 @@ public class FactFinder {
 			}
 
 			// Aggregate confidence: keep the weakest (worst) one.
-			if (rated.getConfidence().compareTo(overall) > 0) {
-				overall = rated.getConfidence();
+			if (rated.confidence().compareTo(overall) > 0) {
+				overall = rated.confidence();
 			}
 		}
 

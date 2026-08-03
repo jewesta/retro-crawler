@@ -39,8 +39,8 @@ class ArchiveDiggerCrawlPolicyTest {
 		final ArchiveNode archive = digger.dig(root, plan, progressor);
 
 		assertEquals(1, plan.totalRegions());
-		assertEquals(List.of("Visible folder"), archive.getChildren().stream().map(ArchiveNode::getFolder).toList());
-		assertEquals(Set.of("visible.txt"), clue(archive, "files").getValue());
+		assertEquals(List.of("Visible folder"), archive.children().stream().map(ArchiveNode::folder).toList());
+		assertEquals(Set.of("visible.txt"), clue(archive, "files").value());
 	}
 
 	@Test
@@ -51,7 +51,7 @@ class ArchiveDiggerCrawlPolicyTest {
 				.dig(root, new Progressor());
 
 		assertEquals(List.of(".archive-metadata"),
-				archive.getChildren().stream().map(ArchiveNode::getFolder).toList());
+				archive.children().stream().map(ArchiveNode::folder).toList());
 	}
 
 	@Test
@@ -63,7 +63,7 @@ class ArchiveDiggerCrawlPolicyTest {
 		final ArchiveNode archive = new ArchiveDigger(descriptor(), clueFinder(), CrawlPlanning.defaults(), policy)
 				.dig(root, new Progressor());
 
-		assertEquals(List.of("admit"), archive.getChildren().stream().map(ArchiveNode::getFolder).toList());
+		assertEquals(List.of("admit"), archive.children().stream().map(ArchiveNode::folder).toList());
 	}
 
 	private ArchiveDescriptor descriptor() {
@@ -77,8 +77,8 @@ class ArchiveDiggerCrawlPolicyTest {
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {
-		return node.getArtifact().getClues().stream()
-				.filter(candidate -> key.equals(candidate.getKey()))
+		return node.artifact().clues().stream()
+				.filter(candidate -> key.equals(candidate.key()))
 				.findFirst()
 				.orElseThrow();
 	}

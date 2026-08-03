@@ -20,11 +20,11 @@ public final class Bucket {
 		this.root = Objects.requireNonNull(root, "root");
 	}
 
-	public String getBasePath() {
+	public String basePath() {
 		return basePath;
 	}
 
-	public ArchiveNode getRoot() {
+	public ArchiveNode root() {
 		return root;
 	}
 
@@ -34,7 +34,7 @@ public final class Bucket {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[basePath=" + getBasePath() + "]";
+		return getClass().getSimpleName() + "[basePath=" + basePath() + "]";
 	}
 
 }

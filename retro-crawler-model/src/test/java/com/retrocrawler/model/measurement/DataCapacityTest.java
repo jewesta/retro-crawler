@@ -16,10 +16,10 @@ class DataCapacityTest {
 		final DataCapacityParser parser = new DataCapacityParser();
 
 		assertEquals(new DataCapacity(new BigDecimal("1.125"), DataCapacity.Unit.MB),
-				parser.parse("1,125MB").getValue().orElseThrow());
+				parser.parse("1,125MB").value().orElseThrow());
 		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
-				parser.parse("32kb").getValue().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("3,3V").getConfidence());
+				parser.parse("32kb").value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("3,3V").confidence());
 	}
 
 	@Test

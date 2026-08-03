@@ -16,9 +16,9 @@ class PlayStationPortableDiscIdTest {
 		final PlayStationPortableDiscId european = new PlayStationPortableDiscId(
 				PlayStationPortableDiscPrefix.ULES, "01234");
 
-		assertEquals(european, parser.parse("ules-01234").getValue().orElseThrow());
-		assertEquals(european, parser.parse("ULES 01234").getValue().orElseThrow());
-		assertEquals(european, parser.parse("ULES01234").getValue().orElseThrow());
+		assertEquals(european, parser.parse("ules-01234").value().orElseThrow());
+		assertEquals(european, parser.parse("ULES 01234").value().orElseThrow());
+		assertEquals(european, parser.parse("ULES01234").value().orElseThrow());
 		assertEquals("ULES-01234", european.toString());
 		assertEquals("ULES01234", european.toCompactString());
 		assertEquals(PlayStationPortableMarket.EUROPE, european.prefix().market());
@@ -37,12 +37,12 @@ class PlayStationPortableDiscIdTest {
 		assertEquals(PlayStationPortableMarket.ASIA,
 				parsed("UCAS-00001").prefix().market());
 
-		assertEquals(Confidence.NONE, parser.parse("CUSA-00001").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("ULES-1234").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("ULES01234DATA").getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("CUSA-00001").confidence());
+		assertEquals(Confidence.NONE, parser.parse("ULES-1234").confidence());
+		assertEquals(Confidence.NONE, parser.parse("ULES01234DATA").confidence());
 	}
 
 	private PlayStationPortableDiscId parsed(final String rawValue) {
-		return assertInstanceOf(PlayStationPortableDiscId.class, parser.parse(rawValue).getValue().orElseThrow());
+		return assertInstanceOf(PlayStationPortableDiscId.class, parser.parse(rawValue).value().orElseThrow());
 	}
 }

@@ -53,8 +53,8 @@ public final class MyCollectionSmokeCrawl {
 			printSummary(gear);
 		} catch (final DuplicateRetroIdException failure) {
 			final Path report = writeDuplicateReport(cacheDirectory, failure);
-			final long occurrences = failure.getDuplicates().values().stream().mapToLong(List::size).sum();
-			System.out.println("RC_VALIDATION\tduplicateRetroIds=" + failure.getDuplicates().size()
+			final long occurrences = failure.duplicates().values().stream().mapToLong(List::size).sum();
+			System.out.println("RC_VALIDATION\tduplicateRetroIds=" + failure.duplicates().size()
 					+ "\toccurrences=" + occurrences + "\treport=" + report);
 			throw new IllegalStateException("Duplicate Retro IDs detected; see private report: " + report);
 		}
@@ -127,14 +127,14 @@ public final class MyCollectionSmokeCrawl {
 	private static Path writeDuplicateReport(final Path cacheDirectory, final DuplicateRetroIdException failure)
 			throws java.io.IOException {
 		final Path report = cacheDirectory.resolve("duplicate-retro-ids.txt");
-		final long occurrences = failure.getDuplicates().values().stream().mapToLong(List::size).sum();
+		final long occurrences = failure.duplicates().values().stream().mapToLong(List::size).sum();
 		final StringBuilder contents = new StringBuilder()
 				.append("Duplicate Retro IDs\n")
 				.append("===================\n\n")
-				.append("Values: ").append(failure.getDuplicates().size()).append('\n')
+				.append("Values: ").append(failure.duplicates().size()).append('\n')
 				.append("Occurrences: ").append(occurrences).append("\n\n");
 
-		failure.getDuplicates().entrySet().stream()
+		failure.duplicates().entrySet().stream()
 				.sorted(Map.Entry.comparingByKey((left, right) -> left.toString().compareTo(right.toString())))
 				.forEach(entry -> {
 					contents.append(entry.getKey()).append('\n');

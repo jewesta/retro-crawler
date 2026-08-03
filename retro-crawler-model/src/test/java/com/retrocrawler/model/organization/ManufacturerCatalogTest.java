@@ -35,11 +35,11 @@ class ManufacturerCatalogTest {
 		final ManufacturerParser parser = new ManufacturerParser();
 
 		assertEquals(new Manufacturer("ASUS", "ASUSTeK Computer Inc."),
-				parser.parse("Asus").getValue().orElseThrow());
-		assertEquals(Confidence.EXACT, parser.parse("ASUSTeK Computer Inc.").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("Unknown Industries").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(" ").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+				parser.parse("Asus").value().orElseThrow());
+		assertEquals(Confidence.EXACT, parser.parse("ASUSTeK Computer Inc.").confidence());
+		assertEquals(Confidence.NONE, parser.parse("Unknown Industries").confidence());
+		assertEquals(Confidence.NONE, parser.parse(" ").confidence());
+		assertEquals(Confidence.NONE, parser.parse(null).confidence());
 	}
 
 	@Test
@@ -52,13 +52,13 @@ class ManufacturerCatalogTest {
 		final ManufacturerParser parser = new ManufacturerParser(external);
 
 		assertEquals(2, external.findByName("Umax").size());
-		assertEquals(Confidence.NONE, parser.parse("Umax").getConfidence());
-		assertTrue(parser.parse("Umax").getExplanation().orElseThrow().contains("ambiguous"));
+		assertEquals(Confidence.NONE, parser.parse("Umax").confidence());
+		assertTrue(parser.parse("Umax").explanation().orElseThrow().contains("ambiguous"));
 		final Manufacturer conQuest = (Manufacturer) parser.parse("ConQuest Entertainment a. s.")
-				.getValue().orElseThrow();
+				.value().orElseThrow();
 		assertEquals("ConQuest Entertainment a. s.", conQuest.fullName().orElseThrow());
-		assertEquals(new Manufacturer("Solo"), parser.parse("Solo").getValue().orElseThrow());
-		final Manufacturer linked = (Manufacturer) parser.parse("Umax Technologies, Inc.").getValue().orElseThrow();
+		assertEquals(new Manufacturer("Solo"), parser.parse("Solo").value().orElseThrow());
+		final Manufacturer linked = (Manufacturer) parser.parse("Umax Technologies, Inc.").value().orElseThrow();
 		assertEquals("https://theretroweb.com/manufacturers/2573",
 				linked.theRetroWebReference().orElseThrow().lookupUri().toString());
 	}

@@ -21,7 +21,7 @@ public class InMemoryRepository implements Repository {
 	@Override
 	public void stowaway(final Archive archive) {
 		Objects.requireNonNull(archive, "archive");
-		archives.put(archive.getId(), archive);
+		archives.put(archive.id(), archive);
 	}
 
 	@Override

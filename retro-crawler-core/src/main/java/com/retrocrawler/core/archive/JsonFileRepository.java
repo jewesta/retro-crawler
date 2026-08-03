@@ -41,9 +41,9 @@ public class JsonFileRepository implements Repository {
 		this.directory = Objects.requireNonNull(directory, "directory");
 	}
 
-	private Path getJsonPath(final ArchiveId id) {
+	private Path jsonPath(final ArchiveId id) {
 		Objects.requireNonNull(id, "id");
-		final String encodedId = URLEncoder.encode(id.get(), StandardCharsets.UTF_8);
+		final String encodedId = URLEncoder.encode(id.value(), StandardCharsets.UTF_8);
 		return directory.resolve("archive_" + encodedId + ".json");
 	}
 
@@ -64,7 +64,7 @@ public class JsonFileRepository implements Repository {
 		Objects.requireNonNull(archive, "archive");
 		prepareDirectory();
 
-		final Path jsonPath = getJsonPath(archive.getId());
+		final Path jsonPath = jsonPath(archive.id());
 		Path temporaryPath = null;
 		try {
 			temporaryPath = Files.createTempFile(directory, ".retro-crawler-", ".json");
@@ -100,7 +100,7 @@ public class JsonFileRepository implements Repository {
 	@Override
 	public Optional<Archive> retrieve(final ArchiveId id) {
 		Objects.requireNonNull(id, "id");
-		final Path jsonPath = getJsonPath(id);
+		final Path jsonPath = jsonPath(id);
 		if (Files.notExists(jsonPath)) {
 			return Optional.empty();
 		}
@@ -112,13 +112,13 @@ public class JsonFileRepository implements Repository {
 			if (archive == null) {
 				throw new RepositoryException("Stored JSON does not contain an archive at: " + jsonPath);
 			}
-			if (!id.equals(archive.getId())) {
+			if (!id.equals(archive.id())) {
 				throw new RepositoryException(
-						"Expected archive id '" + id + "' but retrieved '" + archive.getId() + "' from: " + jsonPath);
+						"Expected archive id '" + id + "' but retrieved '" + archive.id() + "' from: " + jsonPath);
 			}
-			if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(archive.getVersion())) {
+			if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(archive.version())) {
 				throw new RepositoryException("Stored archive at " + jsonPath + " uses cache version "
-						+ archive.getVersion() + " but this crawler requires "
+						+ archive.version() + " but this crawler requires "
 						+ ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 			}
 			return Optional.of(archive);

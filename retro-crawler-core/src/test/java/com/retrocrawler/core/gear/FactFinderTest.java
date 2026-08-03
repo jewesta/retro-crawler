@@ -32,7 +32,7 @@ class FactFinderTest {
 		final FactFinder finder = new FactFinder("bus", parser, Set.class, false);
 
 		assertEquals(Set.of(Bus.AGP, Bus.PCI),
-				finder.find(Clue.of("bus", Set.of("AGP", "PCI"))).orElseThrow().getValue());
+				finder.find(Clue.of("bus", Set.of("AGP", "PCI"))).orElseThrow().value());
 	}
 
 	@Test
@@ -40,7 +40,7 @@ class FactFinderTest {
 		final FactFinder finder = new FactFinder("bus", parser, Bus.class, false);
 
 		assertEquals(Set.of(Bus.AGP),
-				finder.find(Clue.of("bus", Set.of("AGP", "agp"))).orElseThrow().getValue());
+				finder.find(Clue.of("bus", Set.of("AGP", "agp"))).orElseThrow().value());
 	}
 
 	@Test
@@ -56,7 +56,7 @@ class FactFinderTest {
 		final FactFinder finder = new FactFinder("bus", compoundParser, Set.class, false);
 
 		assertEquals(Set.of(Bus.AGP, Bus.PCI),
-				finder.find(Clue.of("bus", "AGP/PCI")).orElseThrow().getValue());
+				finder.find(Clue.of("bus", "AGP/PCI")).orElseThrow().value());
 	}
 
 	@Test

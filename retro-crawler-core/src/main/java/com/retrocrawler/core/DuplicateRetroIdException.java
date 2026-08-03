@@ -22,7 +22,7 @@ public final class DuplicateRetroIdException extends IllegalStateException {
 		this.duplicates = Collections.unmodifiableMap(copy);
 	}
 
-	public Map<Object, List<String>> getDuplicates() {
+	public Map<Object, List<String>> duplicates() {
 		return duplicates;
 	}
 

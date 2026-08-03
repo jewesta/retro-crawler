@@ -42,7 +42,7 @@ public interface RetroCrawler {
 		RetroCrawler build();
 	}
 
-	ArchiveDescriptor getArchiveDescriptor();
+	ArchiveDescriptor archiveDescriptor();
 
 	<R, N, G> R crawl(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
 			throws IOException;

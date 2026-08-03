@@ -45,8 +45,8 @@ public final class RetroCrawlerCli {
 		 * The local folder will be exactly what's annotated as the location in the demo
 		 * type annotated with @RetroCollection. Currently /rc_demo_archives.
 		 */
-		final ArchiveDescriptor descriptor = crawler.getArchiveDescriptor();
-		System.out.println("Creating local demo archive for " + descriptor.getName());
+		final ArchiveDescriptor descriptor = crawler.archiveDescriptor();
+		System.out.println("Creating local demo archive for " + descriptor.name());
 		DemoFiles.copyToWorkDirectory(descriptor);
 		System.out.println("Local archive files created.");
 

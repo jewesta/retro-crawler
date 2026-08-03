@@ -114,7 +114,7 @@ public final class DemoFiles {
 	}
 
 	public static void copyToWorkDirectory(final ArchiveDescriptor descriptor) throws IOException {
-		for (final Path path : descriptor.getPaths()) {
+		for (final Path path : descriptor.paths()) {
 			copyToWorkDirectory(path);
 		}
 	}

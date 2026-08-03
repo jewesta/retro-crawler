@@ -26,15 +26,15 @@ public final class Archive {
 		this.buckets = Objects.requireNonNull(buckets, "buckets");
 	}
 
-	public ArchiveId getId() {
+	public ArchiveId id() {
 		return id;
 	}
 
-	public ArchiveVersion getVersion() {
+	public ArchiveVersion version() {
 		return version;
 	}
 
-	public List<Bucket> getBuckets() {
+	public List<Bucket> buckets() {
 		return buckets;
 	}
 

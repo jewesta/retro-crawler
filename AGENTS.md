@@ -106,5 +106,10 @@ adapters should likewise remain outside `retro-crawler-core`.
 
 - Preserve unrelated user changes in the working tree.
 - Keep public API naming consistent with the domain vocabulary above.
+- Use component-style accessors for immutable framework state and
+  configuration, with `is...` or `has...` reserved for predicates. Do not add
+  zero-argument JavaBeans-style getters to `retro-crawler-core` or immutable
+  shared-model values; map-like keyed `get(key)` operations remain ordinary
+  lookups.
 - Prefer small, reviewable changes and avoid unrelated refactoring in issue
   branches.
