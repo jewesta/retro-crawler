@@ -3119,6 +3119,61 @@ Cache-only validation resolves chip designations on all 54 affected gear. It
 introduces no anonymous-parser ambiguity and leaves every gear-type count
 unchanged.
 
+### Precision-preserving date markings
+
+A fresh read-only crawl on 2026-08-02 contains 99 bracketed temporal
+observations, not the earlier working count of 40. They comprise 37 bare years,
+54 year-month values, five calendar dates, one `YYYY-KWww` calendar week, one
+reversed `KWww YYYY` calendar week, and one U.S.-ordered `MM-DD-YYYY` date.
+Graphics-card folders account for eight of the observations: four years, one
+year-month, two calendar dates, and the reversed calendar week. Optical-drive
+folders account for 16: 15 year-month values and one year. The remainder occurs
+elsewhere in the collection. No bracketed ranges, approximate dates, slash
+dates, or dotted dates are currently present.
+
+The clue itself does not say whether such a value is a manufacture, release,
+publication, acquisition, or lifecycle-event date. The shared model therefore
+uses the role-neutral sealed `DateMarking` type and retains exactly the
+precision supplied by the source:
+
+- `YearOnly` wraps `java.time.Year` and emits `YYYY`;
+- `YearAndMonth` wraps `java.time.YearMonth` and emits `YYYY-MM`;
+- `CalendarDate` wraps `java.time.LocalDate` and emits `YYYY-MM-DD`; and
+- `Week` wraps the shared `YearWeek` value and emits the ISO week form
+  `YYYY-Www`.
+
+Month and week values consequently cannot collide: `1994-05` is May 1994,
+whereas `1994-W05` is ISO week 5. `YearWeek` validates the number of ISO weeks
+in the stated week-based year and can expose its first day without pretending
+that the source supplied a day-level date. The canonical shared parser accepts
+only those four ISO-shaped forms from 1950 through the current applicable
+period. Bare years remain strong anonymous evidence because a four-digit number
+can have other meanings; the more structured forms are exact.
+
+The personal collection keeps its established German calendar-week spelling at
+the i18n boundary: `CollectionDateMarkingParser` maps `YYYY-KWww` to the shared
+`YYYY-Www` representation. It deliberately does not accept the reversed form or
+the U.S.-ordered date. The source corrections are instead explicit and
+deterministic: normalize `KW31 1994` to `1994-KW31`, and normalize `02-22-1994`
+to `1994-02-22`. Both exact folder renames were preflighted against the live
+archive, applied on 2026-08-03, verified at their destinations, and recorded in
+the affected archive root's journal.
+
+`MyGear` stores one optional `DateMarking`. Every current gear has at most one
+temporal observation, and two anonymous dates without roles would be competing
+interpretations rather than a meaningful set. If a gear later needs several
+dates, they should receive semantic keys such as manufacture or release date.
+The compatibility proxy `getYears()` exposes a value only for an explicit
+`YearOnly`; it does not discard month, day, or week precision to manufacture a
+second fact.
+
+The focused parser and collection-resolution tests pass. A new clue cache was
+then crawled read-only from all three live roots after the two source
+normalizations and resolved with the freshly built model. All 3,778 artifacts
+resolved without a duplicate-ID failure, and all 99 temporal observations
+produced a `DateMarking` fact. The complete eight-module `mvn clean install`
+reactor also passes.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.

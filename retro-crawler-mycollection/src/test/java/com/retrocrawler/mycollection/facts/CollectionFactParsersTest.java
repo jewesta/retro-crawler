@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Currency;
 import java.util.Set;
 
@@ -24,11 +26,27 @@ import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.ScreenSize;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.SealState;
+import com.retrocrawler.model.temporal.DateMarking;
+import com.retrocrawler.model.temporal.YearWeek;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.memory.RamSet;
 
 class CollectionFactParsersTest {
+
+	@Test
+	void adaptsGermanCalendarWeeksWithoutMakingMonthsAmbiguous() {
+		final CollectionDateMarkingParser parser = new CollectionDateMarkingParser();
+
+		assertEquals(DateMarking.of(YearMonth.of(1994, 5)),
+				parser.parse("1994-05").getValue().orElseThrow());
+		assertEquals(DateMarking.of(new YearWeek(1994, 31)),
+				parser.parse("1994-KW31").getValue().orElseThrow());
+		assertEquals(DateMarking.of(LocalDate.of(1994, 2, 22)),
+				parser.parse("1994-02-22").getValue().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("KW31 1994").getConfidence());
+		assertEquals(Confidence.NONE, parser.parse("02-22-1994").getConfidence());
+	}
 
 	@Test
 	void parsesTheRetroWebIdsAsExternalReferences() {

@@ -14,6 +14,8 @@ public final class AttributeNames {
 
 	public static final String DAMAGE = "damage";
 
+	public static final String DATE_MARKING = "dateMarking";
+
 	public static final String DESC = "desc";
 
 	public static final String DESTINY = "dest";
@@ -97,8 +99,6 @@ public final class AttributeNames {
 	public static final String VIDEO_CONNECTOR = "videoConnector";
 
 	public static final String VERSION = "version";
-
-	public static final String YEAR = "year";
 
 	private AttributeNames() {
 		// Static vocabulary.

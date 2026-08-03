@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.Year;
+import java.time.YearMonth;
 import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +68,8 @@ import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
 import com.retrocrawler.model.storage.FloppyDiskFormFactor;
 import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
+import com.retrocrawler.model.temporal.DateMarking;
+import com.retrocrawler.model.temporal.YearWeek;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.RetroId;
@@ -256,6 +260,31 @@ class MyCollectionModelTest {
 				new ChipDesignation("Example Semiconductor 7")),
 				gear(gear, "Controller [IC RC42-A] [ic Example Semiconductor 7]").getChipDesignations());
 		assertTrue(gear(gear, "Anonymous observation [RC42-A]").getChipDesignations().isEmpty());
+	}
+
+	@Test
+	void resolvesDateMarkingsWithoutConflatingMonthAndWeekPrecision() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Year observation [1994]"));
+		Files.createDirectories(archiveRoot.resolve("Month observation [1994-05]"));
+		Files.createDirectories(archiveRoot.resolve("Week observation [1994-KW05]"));
+		Files.createDirectories(archiveRoot.resolve("Exact date [1994-05-12]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final MyGear year = gear(gear, "Year observation [1994]");
+		assertEquals(Optional.of(DateMarking.of(Year.of(1994))), year.getDateMarking());
+		assertEquals(Set.of(Year.of(1994)), year.getYears());
+
+		final MyGear month = gear(gear, "Month observation [1994-05]");
+		assertEquals(Optional.of(DateMarking.of(YearMonth.of(1994, 5))), month.getDateMarking());
+		assertTrue(month.getYears().isEmpty());
+
+		final MyGear week = gear(gear, "Week observation [1994-KW05]");
+		assertEquals(Optional.of(DateMarking.of(new YearWeek(1994, 5))), week.getDateMarking());
+		assertTrue(week.getYears().isEmpty());
+
+		assertEquals(Optional.of(DateMarking.of(LocalDate.of(1994, 5, 12))),
+				gear(gear, "Exact date [1994-05-12]").getDateMarking());
 	}
 
 	@Test

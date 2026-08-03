@@ -58,7 +58,7 @@ import com.retrocrawler.model.software.VersionParser;
 import com.retrocrawler.model.storage.FloppyDiskFormFactor;
 import com.retrocrawler.model.storage.FloppyDiskFormFactorParser;
 import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
-import com.retrocrawler.model.temporal.YearParser;
+import com.retrocrawler.model.temporal.DateMarking;
 import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.DocumentId;
@@ -67,6 +67,7 @@ import com.retrocrawler.mycollection.catalog.RetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.facts.CollectionColorParser;
 import com.retrocrawler.mycollection.facts.CollectionDamageKindParser;
+import com.retrocrawler.mycollection.facts.CollectionDateMarkingParser;
 import com.retrocrawler.mycollection.facts.CollectionFunctionalConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
 import com.retrocrawler.mycollection.facts.CollectionItemConditionParser;
@@ -115,6 +116,10 @@ public abstract class MyGear {
 			strict = false, optional = true)
 	private Set<DamageKind> damageKinds = Set.of();
 
+	@RetroFact(key = AttributeNames.DATE_MARKING, parser = CollectionDateMarkingParser.class,
+			strict = false, optional = true)
+	private DateMarking dateMarking;
+
 	@RetroFact(key = AttributeNames.FLOPPY_DISK_FORM_FACTOR, parser = FloppyDiskFormFactorParser.class,
 			strict = false, optional = true)
 	private Set<FloppyDiskFormFactor> floppyDiskFormFactors = Set.of();
@@ -159,9 +164,6 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.VERSION, parser = VersionParser.class, strict = false, optional = true)
 	private Version version;
-
-	@RetroFact(key = AttributeNames.YEAR, parser = YearParser.class, strict = false, optional = true)
-	private Set<Year> years = Set.of();
 
 	@RetroFact(key = AttributeNames.TITLE, optional = true)
 	private String title;
@@ -286,6 +288,10 @@ public abstract class MyGear {
 		return Set.copyOf(damageKinds);
 	}
 
+	public Optional<DateMarking> getDateMarking() {
+		return Optional.ofNullable(dateMarking);
+	}
+
 	public Set<FloppyDiskFormFactor> getFloppyDiskFormFactors() {
 		return Set.copyOf(floppyDiskFormFactors);
 	}
@@ -347,7 +353,10 @@ public abstract class MyGear {
 	}
 
 	public Set<Year> getYears() {
-		return Set.copyOf(years);
+		if (dateMarking instanceof final DateMarking.YearOnly year) {
+			return Set.of(year.value());
+		}
+		return Set.of();
 	}
 
 	public Optional<String> getTitle() {
