@@ -20,8 +20,8 @@ import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
+import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
 import com.retrocrawler.core.gear.parser.FactParser;
-import com.retrocrawler.core.gear.parser.FactParserConfiguration;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
@@ -39,9 +39,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 	}
 
 	public GearResolver reflectOn(final Set<Class<?>> types, final Path workingDirectory,
-			final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations) {
+			final Map<Class<? extends CatalogFactParser<?>>, FactCatalogConfiguration> catalogConfigurations) {
 		Objects.requireNonNull(types, "types");
-		Objects.requireNonNull(parserConfigurations, "parserConfigurations");
+		Objects.requireNonNull(catalogConfigurations, "catalogConfigurations");
 
 		/*
 		 * Look for retro gear. Not all types are required to be annotated with
@@ -107,7 +107,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			if (parserType.equals(AutoDetectParser.class)) {
 				parser = autoDetectParser(key, factDef);
 			} else {
-				parser = configuredParser(parserType, workingDirectory, parserConfigurations.get(parserType));
+				parser = configuredParser(parserType, workingDirectory, catalogConfigurations.get(parserType));
 			}
 
 			final Class<?> fieldType = factDef.field().getType();
@@ -120,7 +120,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 	}
 
 	private static FactParser configuredParser(final Class<? extends FactParser> parserType,
-			final Path workingDirectory, final FactParserConfiguration configuration) {
+			final Path workingDirectory, final FactCatalogConfiguration configuration) {
 		if (!CatalogFactParser.class.isAssignableFrom(parserType)) {
 			if (configuration != null && configuration.catalogFile().isPresent()) {
 				throw new IllegalArgumentException("Fact parser " + parserType.getName() + " does not implement "
