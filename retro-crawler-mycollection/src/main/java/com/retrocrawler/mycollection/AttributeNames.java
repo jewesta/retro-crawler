@@ -6,6 +6,8 @@ public final class AttributeNames {
 
 	public static final String CAPACITY = "capacity";
 
+	public static final String CAPACITY_SET = "set";
+
 	public static final String CHIP_DESIGNATION = "ic";
 
 	public static final String COLOR = "color";
@@ -75,8 +77,6 @@ public final class AttributeNames {
 	public static final String PSP_DISC_ID = "pspDiscId";
 
 	public static final String PRICE = "price";
-
-	public static final String RAM_SET = "set";
 
 	public static final String RETRO_ID = "id";
 

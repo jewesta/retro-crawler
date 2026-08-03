@@ -46,6 +46,8 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
+import com.retrocrawler.model.measurement.CapacitySet;
+import com.retrocrawler.model.measurement.CapacitySetParser;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Length;
@@ -79,10 +81,8 @@ import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.GearKindParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
-import com.retrocrawler.mycollection.facts.RamSetParser;
 import com.retrocrawler.mycollection.facts.RetroIdParser;
 import com.retrocrawler.mycollection.facts.TestedParser;
-import com.retrocrawler.mycollection.memory.RamSet;
 
 import de.creativecouple.validation.isbn.ISBN;
 
@@ -237,8 +237,8 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, optional = true)
 	private Set<Path> floppyImages = Set.of();
 
-	@RetroFact(key = AttributeNames.RAM_SET, parser = RamSetParser.class, optional = true)
-	private RamSet ramSet;
+	@RetroFact(key = AttributeNames.CAPACITY_SET, parser = CapacitySetParser.class, optional = true)
+	private CapacitySet capacitySet;
 
 	@RetroFact(key = AttributeNames.DOCUMENT, parser = DocumentIdParser.class, strict = false, optional = true)
 	private Set<DocumentId> documentIds = Set.of();
@@ -448,8 +448,8 @@ public abstract class MyGear {
 		return Set.copyOf(floppyImages);
 	}
 
-	public Optional<RamSet> getRamSet() {
-		return Optional.ofNullable(ramSet);
+	public Optional<CapacitySet> getCapacitySet() {
+		return Optional.ofNullable(capacitySet);
 	}
 
 	public Set<DocumentId> getDocumentIds() {

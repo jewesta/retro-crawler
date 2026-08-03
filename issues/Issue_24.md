@@ -1268,14 +1268,14 @@ The initial pass added three value types and exact parsers:
   Lowercase `kb` is normalized to KB because the live archive uses it for byte
   capacities on SIMMs, cache modules, disks, and memory chips; capitalization
   is not a reliable bit/byte distinction in this folder language.
-- `RamSet` represents a count-first declaration such as `2 x 16MB`, exposes
+- `CapacitySet` represents a uniform declaration such as `2 x 16MB`, exposes
   the capacity per member, and derives the total capacity. The property is
   named `memberCount`, rather than `stickCount`, because the live archive also
-  applies the set convention to loose memory components.
+  applies the set convention to loose memory components and disk media.
 
 `TheRetroWebId` and `DataCapacity` were subsequently promoted into
-`retro-crawler-model`; `RamSet` and its folder-language parser remain owned by
-the personal collection.
+`retro-crawler-model`. `CapacitySet` was subsequently generalized and promoted
+there as well.
 
 The Retro Web deep-link category is deliberately not guessed by the ID parser.
 An ID alone does not say whether the target belongs below `motherboards`,
@@ -1389,7 +1389,6 @@ The personal model no longer has a generic `.model` package:
 
 - `RetroId` and `FloppyImageId` live under
   `com.retrocrawler.mycollection.catalog`.
-- `RamSet` lives under `com.retrocrawler.mycollection.memory`.
 - Shared facts are imported from `com.retrocrawler.model`.
 
 The demo package root was shortened from `com.retrocrawler.demo.collection` to
@@ -2713,12 +2712,11 @@ before adding diskette fact parsers:
    Core cannot repair this by consulting model-known keys without violating the
    clue/fact boundary; either the archive syntax or the collection adapter must
    provide an unambiguous convention.
-2. The collection key `set` currently means a RAM set. In this archive it means
-   pack quantity. Count-only values remain unresolved, while a count plus
-   capacity can accidentally satisfy `RamSetParser` even though the artifact is
-   disk media. This demonstrates that `set` is context-dependent and is too
-   broadly interpreted on `MyGear`; no diskette matcher should build on that
-   accidental fact.
+2. The collection key `set` originally meant a RAM set. In the diskette archive
+   it can also mean pack quantity. Count-only values remain unresolved, while a
+   count plus capacity was once mislabeled as RAM even when the artifact was
+   disk media. The later `CapacitySet` refactoring preserves the neutral part of
+   that evidence without letting the set clue select a Gear type.
 
 The first concrete grammar inconsistency was corrected on 2026-08-01. Eight
 side/density tags containing a space were normalized to the already established
@@ -3221,6 +3219,42 @@ reported, specialist counts were unchanged, and 129 Gear expose a generic
 `Length`. The current archive contains no explicit `HDD` type marker, so it
 correctly produces no `HardDiskDrive` Gear yet. This phase changed neither the
 cached `Artifact` clues nor any source folder.
+
+### Uniform capacity sets
+
+A fresh read-only crawl on 2026-08-03 contains 174 explicitly keyed `set`
+observations. The earlier count of 23 described only the observations rejected
+by the former count-first `RamSetParser`; it did not include the 151 observations
+that parser had already accepted.
+
+The clue's memory-specific name was incorrect. A declaration such as
+`2 x 16MB` objectively says that a set contains two equally sized members with
+16 MB per member. The same structure applies to memory modules, loose memory
+chips, and `20 x 1,2MB` disk media. The shared model therefore replaces the
+personal `RamSet` with `CapacitySet`, retaining `memberCount`,
+`capacityPerMember`, and derived `totalCapacity()` without assigning a Gear
+role. Its canonical parser accepts either multiplication order, so
+`2 x 16MB` and `16MB x 2` produce the same value. A member count below two is
+not a set.
+
+`MyGear` binds the collection's explicit `set` key directly to one optional
+`CapacitySet`. This does not require contextual resolution: the fact itself is
+neutral, and a specialized Gear may later expose role-specific proxy methods.
+In particular, the diskette declaration is no longer falsely represented as
+RAM.
+
+The fresh cache contains 163 uniform capacity sets: 151 count-first and twelve
+capacity-first observations. Eleven deliberately remain clues because they do
+not state a uniform capacity set: five count-only diskette packs, four named
+system-disk sets (`A` or `B`), one nested memory layout with parity, and one
+damaged expression whose member count is unknown. No union type or permissive
+fallback was introduced to force those different meanings together.
+
+Cache-only resolution with the newly built model resolves all 3,778 artifacts,
+reports no duplicate Retro ID, preserves every Gear-type count, and exposes all
+163 `CapacitySet` facts. The clue cache was created immediately before this
+validation and no source folder was modified. Focused model and collection
+tests pass, as does the complete eight-module `mvn clean install` reactor.
 
 ## Out of Scope for the Initial Slice
 

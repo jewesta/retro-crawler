@@ -56,6 +56,7 @@ import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebReference;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
+import com.retrocrawler.model.measurement.CapacitySet;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Length;
 import com.retrocrawler.model.measurement.Length.Unit;
@@ -84,7 +85,6 @@ import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.gear.PowerSupply;
-import com.retrocrawler.mycollection.memory.RamSet;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
 import de.creativecouple.validation.isbn.ISBN;
@@ -137,7 +137,7 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void resolvesTheRetroWebAndRamSetFacts() throws IOException {
+	void resolvesTheRetroWebAndCapacitySetFacts() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("Memory set [32MB] [Set 2 x 16MB] [TRW 10510]"));
 
 		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
@@ -145,10 +145,10 @@ class MyCollectionModelTest {
 
 		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32),
 				DataCapacity.Unit.MB);
-		final RamSet expectedSet = new RamSet(2,
+		final CapacitySet expectedSet = new CapacitySet(2,
 				new DataCapacity(java.math.BigDecimal.valueOf(16), DataCapacity.Unit.MB));
 		assertEquals(Optional.of(expectedCapacity), gear.getCapacity());
-		assertEquals(Optional.of(expectedSet), gear.getRamSet());
+		assertEquals(Optional.of(expectedSet), gear.getCapacitySet());
 		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
 		assertEquals(Optional.of(new TheRetroWebId(10510)), gear.getTheRetroWebId());
 		assertEquals(Optional.empty(), new TheRetroWebReferences().referenceFor(gear));

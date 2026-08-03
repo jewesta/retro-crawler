@@ -87,6 +87,7 @@ public final class MyCollectionSmokeCrawl {
 		final long withColors = gear.stream().filter(value -> !value.getColors().isEmpty()).count();
 		final long withChipDesignations = gear.stream()
 				.filter(value -> !value.getChipDesignations().isEmpty()).count();
+		final long withCapacitySets = gear.stream().filter(value -> value.getCapacitySet().isPresent()).count();
 		final long withCondition = gear.stream().filter(value -> value.getCondition().isPresent()).count();
 		final long withDamage = gear.stream().filter(value -> !value.getDamageKinds().isEmpty()).count();
 		final long withDateMarkings = gear.stream().filter(value -> value.getDateMarking().isPresent()).count();
@@ -111,6 +112,7 @@ public final class MyCollectionSmokeCrawl {
 				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
 				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\tcolors=" + withColors
 				+ "\tchipDesignations=" + withChipDesignations
+				+ "\tcapacitySets=" + withCapacitySets
 				+ "\tconditions=" + withCondition + "\thealth=" + withHealth + "\tdamage=" + withDamage
 				+ "\tdateMarkings=" + withDateMarkings
 				+ "\toriginalPackaging=" + withOriginalPackaging + "\tsealStates=" + withSealState
@@ -179,7 +181,7 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getMemoryAccessTimes().isEmpty()
 				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()
 				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
-				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getDocumentIds().isEmpty()
+				&& gear.getPower().isEmpty() && gear.getCapacitySet().isEmpty() && gear.getDocumentIds().isEmpty()
 				&& gear.getSealState().isEmpty()
 				&& gear.getScreenSize().isEmpty() && gear.getVersion().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()

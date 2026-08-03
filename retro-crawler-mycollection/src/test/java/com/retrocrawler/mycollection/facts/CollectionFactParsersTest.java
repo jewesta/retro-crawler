@@ -31,7 +31,6 @@ import com.retrocrawler.model.temporal.DateMarking;
 import com.retrocrawler.model.temporal.YearWeek;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.Tested;
-import com.retrocrawler.mycollection.memory.RamSet;
 
 class CollectionFactParsersTest {
 
@@ -70,20 +69,6 @@ class CollectionFactParsersTest {
 				parser.parse("32KB").getValue().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("3,5").getConfidence());
 		assertEquals(Confidence.NONE, parser.parse("3,3V").getConfidence());
-	}
-
-	@Test
-	void parsesOnlyCanonicalCountFirstRamSets() {
-		final RamSetParser parser = new RamSetParser();
-
-		final RamSet set = (RamSet) parser.parse("2 x 16MB").getValue().orElseThrow();
-		assertEquals(2, set.memberCount());
-		assertEquals(new DataCapacity(BigDecimal.valueOf(16), DataCapacity.Unit.MB), set.capacityPerMember());
-		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.MB), set.totalCapacity());
-
-		assertEquals(Confidence.NONE, parser.parse("32kb x 4").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("2 x 4 x 256kb plus Parity").getConfidence());
-		assertEquals(Confidence.NONE, parser.parse("? x 100MB").getConfidence());
 	}
 
 	@Test

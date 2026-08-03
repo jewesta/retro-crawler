@@ -52,7 +52,7 @@ class BracketClueFinderTest {
 		assertTrue(clues.stream().filter(Clue::isAnonymous)
 				.anyMatch(value -> value.getValue().equals(Set.of("ISA", "PCI"))));
 		assertEquals(Set.of("one", "two"), clue(clues, "alias").getValue());
-		assertEquals(Set.of("2 x 1,125MB"), clue(clues, AttributeNames.RAM_SET).getValue());
+		assertEquals(Set.of("2 x 1,125MB"), clue(clues, AttributeNames.CAPACITY_SET).getValue());
 	}
 
 	@Test
