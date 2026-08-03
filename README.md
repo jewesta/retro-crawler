@@ -1,4 +1,4 @@
-## ![RetroCrawler AI Slop Logo](retro-crawler-tools/documentation/src/main/resources/images/retro_crawler_ai_slop_logo.png)
+## ![RetroCrawler AI Slop Logo](docs/images/retro_crawler_ai_slop_logo.png)
 
 **RetroCrawler** is a Java framework for *structurally crawling* directory-based archives and turning them into typed domain objects so you can manage your stash of retro gear.
 
@@ -273,7 +273,7 @@ already current.
 ## Demo App
 
 Since RetroCrawler is a library, we provide a demo app based on the Vaadin UI framework so you can see how all comes together. You can use this as a starting point for building your own gui. But please note that compared to `retro-crawler-core` keeping `retro-crawler-app` stable is not a priority. Anything might change any time.
-![RetroCrawler Demo App](retro-crawler-tools/documentation/src/main/resources/images/retro_crawler_demo_app.png)
+![RetroCrawler Demo App](docs/images/retro_crawler_demo_app.png)
 You can run the demo app via a provided shell script (macOS) or batch file (Windows). CD into `/run` located in the root of the repository. Then run the script. This should build and install RetroCrawler and launch the Vaadin app. Once it runs you can access it via `localhost:8080`. The demo scenario is called "Retro PC" and the archive (data folder) it is based on is located at `/retro-crawler-app/archives/retro_pc`. RetroCrawler will create a folder `retro-crawler-app/cache` where the JSON cache file is located. This folder is on the Git ignore list.
 
 #### macOS

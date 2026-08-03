@@ -75,8 +75,6 @@ These instructions apply to the entire repository.
 - `retro-crawler-demo`: sample archive types, clue finders, and demo data.
 - `retro-crawler-app`: Vaadin demonstration application.
 - `retro-crawler-cli`: command-line demonstration application.
-- `retro-crawler-tools`: project-specific documentation and build plumbing.
-- `retro-crawler-tools/documentation`: documentation support and examples.
 
 The application and CLI are examples rather than stable public APIs. The Vaadin
 application remains a valuable visual browser, demonstration, and integration
