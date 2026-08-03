@@ -1,12 +1,29 @@
 package com.retrocrawler.model.hardware;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Confidence;
 
 class HardwareParsersTest {
+
+	@Test
+	void preservesExplicitChipDesignationsWithoutAssumingAPartNumberSyntax() {
+		final ChipDesignationParser parser = new ChipDesignationParser();
+
+		assertEquals(new ChipDesignation("RC42-A"),
+				parser.parse(" RC42-A ").getValue().orElseThrow());
+		assertEquals(new ChipDesignation("Example Semiconductor 42"),
+				parser.parse("Example Semiconductor 42").getValue().orElseThrow());
+		assertEquals(new ChipDesignation("mixed Case 7"),
+				parser.parse("mixed Case 7").getValue().orElseThrow());
+		assertEquals("mixed Case 7", new ChipDesignation(" mixed Case 7 ").toString());
+		assertEquals(Confidence.NONE, parser.parse("  ").getConfidence());
+		assertEquals(Confidence.NONE, parser.parse(null).getConfidence());
+		assertThrows(IllegalArgumentException.class, () -> new ChipDesignation(""));
+	}
 
 	@Test
 	void parsesExpansionBusNamesAndEstablishedAliases() {

@@ -6,6 +6,8 @@ public final class AttributeNames {
 
 	public static final String CAPACITY = "capacity";
 
+	public static final String CHIP_DESIGNATION = "ic";
+
 	public static final String COLOR = "color";
 
 	public static final String CONDITION = "condition";

@@ -17,6 +17,8 @@ import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.ItemCondition;
+import com.retrocrawler.model.hardware.ChipDesignation;
+import com.retrocrawler.model.hardware.ChipDesignationParser;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ComputerFormFactorParser;
 import com.retrocrawler.model.hardware.ExpansionBus;
@@ -98,6 +100,9 @@ public abstract class MyGear {
 
 	@RetroFact(key = AttributeNames.CAPACITY, parser = DataCapacityParser.class, strict = false, optional = true)
 	private DataCapacity capacity;
+
+	@RetroFact(key = AttributeNames.CHIP_DESIGNATION, parser = ChipDesignationParser.class, optional = true)
+	private Set<ChipDesignation> chipDesignations = Set.of();
 
 	@RetroFact(key = AttributeNames.COLOR, parser = CollectionColorParser.class, strict = false, optional = true)
 	private Set<Color> colors = Set.of();
@@ -263,6 +268,10 @@ public abstract class MyGear {
 
 	public Optional<DataCapacity> getCapacity() {
 		return Optional.ofNullable(capacity);
+	}
+
+	public Set<ChipDesignation> getChipDesignations() {
+		return Set.copyOf(chipDesignations);
 	}
 
 	public Set<Color> getColors() {

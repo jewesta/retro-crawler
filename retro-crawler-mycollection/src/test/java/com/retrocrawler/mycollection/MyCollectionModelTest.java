@@ -35,6 +35,7 @@ import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.ItemCondition;
+import com.retrocrawler.model.hardware.ChipDesignation;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
 import com.retrocrawler.model.hardware.MemoryAccessTime;
@@ -241,6 +242,20 @@ class MyCollectionModelTest {
 
 		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß-pink]");
 		assertEquals(Set.of(Color.BLACK, Color.WHITE, Color.PINK), colored.getColors());
+	}
+
+	@Test
+	void resolvesOnlyExplicitlyKeyedChipDesignationsAndAllowsSeveral() throws IOException {
+		Files.createDirectories(archiveRoot.resolve(
+				"Controller [IC RC42-A] [ic Example Semiconductor 7]"));
+		Files.createDirectories(archiveRoot.resolve("Anonymous observation [RC42-A]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		assertEquals(Set.of(new ChipDesignation("RC42-A"),
+				new ChipDesignation("Example Semiconductor 7")),
+				gear(gear, "Controller [IC RC42-A] [ic Example Semiconductor 7]").getChipDesignations());
+		assertTrue(gear(gear, "Anonymous observation [RC42-A]").getChipDesignations().isEmpty());
 	}
 
 	@Test

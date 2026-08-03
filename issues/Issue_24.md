@@ -3084,6 +3084,41 @@ packaging on 16 gear and a seal state on 39 gear, covering all 55
 observations across 54 gear without changing gear types or introducing
 anonymous-parser ambiguity.
 
+### Chip designations
+
+The cache contains 54 explicitly keyed `IC` observations on 54 gear, comprising
+37 distinct strings. Their context is broad: 45 describe memory chips, four
+audio controllers, two graphics chips, two storage controllers, and one cache
+module. Eight designations recur on more than one piece of gear. No current
+gear carries more than one such clue, but multiple noteworthy chips can
+legitimately coexist on a board.
+
+The observed strings do not all have the same identifier strength. They mix
+manufacturer-style part numbers, family or core names, manufacturer-plus-model
+descriptions, physical-package transcriptions, and incomplete identifying
+text. Calling them manufacturer part numbers would therefore assert more than
+the clues establish. The shared model instead uses `ChipDesignation`, a
+lossless identifying expression for an integrated circuit, together with a
+permissive `ChipDesignationParser` intended for explicitly keyed clues.
+
+The value type trims surrounding whitespace but preserves case, internal
+spacing, punctuation, and a leading `IC`. It rejects only null or blank input;
+unknown values and suspected transcription errors remain valid designations
+because the explicit key supplies their semantics. The parser must not be
+registered as an anonymous recognizer, since arbitrary text has no universal
+chip-part-number syntax.
+
+The collection binds its lower-cased `ic` clue key directly to a
+`Set<ChipDesignation>` on `MyGear`. The set records distinct designations
+present, not the number of physical packages using each designation, and
+allows future gear to name several chips. Manufacturer, function, package,
+role, and datasheet metadata remain possible later enrichment rather than
+requirements for accepting an observation.
+
+Cache-only validation resolves chip designations on all 54 affected gear. It
+introduces no anonymous-parser ambiguity and leaves every gear-type count
+unchanged.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.
