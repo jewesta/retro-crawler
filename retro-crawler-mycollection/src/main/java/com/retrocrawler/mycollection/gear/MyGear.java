@@ -49,6 +49,8 @@ import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.PowerParser;
 import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.packaging.PackagingOrigin;
+import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.software.Version;
 import com.retrocrawler.model.software.VersionParser;
 import com.retrocrawler.model.storage.FloppyDiskFormFactor;
@@ -67,8 +69,10 @@ import com.retrocrawler.mycollection.facts.CollectionFunctionalConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionHardDiskDriveFormFactorParser;
 import com.retrocrawler.mycollection.facts.CollectionItemConditionParser;
 import com.retrocrawler.mycollection.facts.CollectionLanguageCodeParser;
+import com.retrocrawler.mycollection.facts.CollectionPackagingOriginParser;
 import com.retrocrawler.mycollection.facts.CollectionRegionCodeParser;
 import com.retrocrawler.mycollection.facts.CollectionScreenSizeParser;
+import com.retrocrawler.mycollection.facts.CollectionSealStateParser;
 import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
@@ -129,6 +133,10 @@ public abstract class MyGear {
 			optional = true)
 	private Set<MemoryStandard> memoryStandards = Set.of();
 
+	@RetroFact(key = AttributeNames.PACKAGING_ORIGIN, parser = CollectionPackagingOriginParser.class,
+			strict = false, optional = true)
+	private PackagingOrigin packagingOrigin;
+
 	@RetroFact(key = AttributeNames.COMPUTER_FORM_FACTOR, parser = ComputerFormFactorParser.class,
 			strict = false, optional = true)
 	private Set<ComputerFormFactor> computerFormFactors = Set.of();
@@ -139,6 +147,10 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.SCREEN_SIZE, parser = CollectionScreenSizeParser.class, strict = false,
 			optional = true)
 	private Set<ScreenSize> screenSizes = Set.of();
+
+	@RetroFact(key = AttributeNames.SEAL_STATE, parser = CollectionSealStateParser.class,
+			strict = false, optional = true)
+	private SealState sealState;
 
 	@RetroFact(key = AttributeNames.VERSION, parser = VersionParser.class, strict = false, optional = true)
 	private Version version;
@@ -289,6 +301,14 @@ public abstract class MyGear {
 		return Set.copyOf(memoryStandards);
 	}
 
+	public Optional<PackagingOrigin> getPackagingOrigin() {
+		return Optional.ofNullable(packagingOrigin);
+	}
+
+	public boolean hasOriginalPackaging() {
+		return packagingOrigin == PackagingOrigin.ORIGINAL;
+	}
+
 	public Set<ComputerFormFactor> getComputerFormFactors() {
 		return Set.copyOf(computerFormFactors);
 	}
@@ -299,6 +319,18 @@ public abstract class MyGear {
 
 	public Set<ScreenSize> getScreenSizes() {
 		return Set.copyOf(screenSizes);
+	}
+
+	public Optional<SealState> getSealState() {
+		return Optional.ofNullable(sealState);
+	}
+
+	public boolean isSealed() {
+		return sealState == SealState.SEALED;
+	}
+
+	public boolean isExplicitlyOpened() {
+		return sealState == SealState.OPENED;
 	}
 
 	public Optional<Version> getVersion() {

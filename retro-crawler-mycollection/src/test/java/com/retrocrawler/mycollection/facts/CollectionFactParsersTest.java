@@ -22,6 +22,8 @@ import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.packaging.PackagingOrigin;
+import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.memory.RamSet;
@@ -116,6 +118,28 @@ class CollectionFactParsersTest {
 		assertEquals(Confidence.NONE, itemCondition.parse("defekt").getConfidence());
 		assertEquals(Confidence.NONE, functionalCondition.parse("beschädigt").getConfidence());
 		assertEquals(Confidence.NONE, damage.parse("beschädigt").getConfidence());
+	}
+
+	@Test
+	void adaptsCollectionPackagingLanguageWithoutInferringRelatedFacts() {
+		final CollectionPackagingOriginParser packagingOrigin = new CollectionPackagingOriginParser();
+		final CollectionSealStateParser sealState = new CollectionSealStateParser();
+
+		assertEquals(PackagingOrigin.ORIGINAL,
+				packagingOrigin.parse("OVP").getValue().orElseThrow());
+		assertEquals(PackagingOrigin.ORIGINAL,
+				packagingOrigin.parse("original packaging").getValue().orElseThrow());
+		assertEquals(SealState.SEALED, sealState.parse("sealed").getValue().orElseThrow());
+		assertEquals(SealState.SEALED, sealState.parse("versiegelt").getValue().orElseThrow());
+		assertEquals(SealState.OPENED, sealState.parse("geöffnet").getValue().orElseThrow());
+		assertEquals(SealState.OPENED, sealState.parse("opened").getValue().orElseThrow());
+
+		for (final String unrelated : new String[] { "CIB", "NIB", "NOS", "lose" }) {
+			assertEquals(Confidence.NONE, packagingOrigin.parse(unrelated).getConfidence());
+			assertEquals(Confidence.NONE, sealState.parse(unrelated).getConfidence());
+		}
+		assertEquals(Confidence.NONE, packagingOrigin.parse("sealed").getConfidence());
+		assertEquals(Confidence.NONE, sealState.parse("OVP").getConfidence());
 	}
 
 	@Test

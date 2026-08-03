@@ -46,6 +46,8 @@ public final class AttributeNames {
 
 	public static final String NINTENDO_GAME_BOY_CARTRIDGE_CODE = "nintendoGameBoyCartridgeCode";
 
+	public static final String PACKAGING_ORIGIN = "packagingOrigin";
+
 	public static final String HEALTH = "health";
 
 	public static final String HARD_DISK_DRIVE_FORM_FACTOR = "hardDiskDriveFormFactor";
@@ -73,6 +75,8 @@ public final class AttributeNames {
 	public static final String REGION = "region";
 
 	public static final String SCREEN_SIZE = "screenSize";
+
+	public static final String SEAL_STATE = "sealState";
 
 	public static final String SEGA_GAME_GEAR_CARTRIDGE_CODE = "gg";
 

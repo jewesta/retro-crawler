@@ -3050,6 +3050,40 @@ retains composite `defekt`/`entsorgt` clues. They correctly remain unresolved
 because one anonymous clue expresses two fact keys; a future crawl will see the
 separated destiny and keyed health evidence from the source archive.
 
+### Packaging origin and seal state
+
+The 55 packaging-related observations occur on 54 gear: `OVP` appears 16
+times, `sealed` 36 times, `versiegelt` once, and `geöffnet` twice. One gear
+states both `OVP` and `sealed`. That coexistence is useful evidence that the
+origin of packaging and the state of its seal are independent facts rather
+than values on one packaging scale.
+
+The shared model therefore provides two small, non-ordered vocabularies with
+canonical English parsers:
+
+- `PackagingOrigin.ORIGINAL` means that observed packaging is original to the
+  gear. It does not assert that the packaging is a box, complete, or sealed.
+- `SealState.SEALED` and `SealState.OPENED` record an explicit seal
+  observation. They do not imply item condition or packaging origin.
+
+Both facts are scalar on `MyGear`; absence means unknown rather than no
+packaging or no seal. The personal collection adapters map `OVP` to `original
+packaging`, `versiegelt` to `sealed`, and `geöffnet` to `opened`. Thus the
+shared module stays English-focused while archive-specific internationalized
+spellings remain at the collection boundary.
+
+`MyGear` also exposes the presentation-friendly proxy methods
+`hasOriginalPackaging()`, `isSealed()`, and `isExplicitlyOpened()`. These are
+pure views of the two underlying facts and do not create additional facts or
+provenance.
+
+No item condition, boxed state, or completeness is inferred. In particular,
+`CIB`, `NIB`, `NOS`, and `lose` remain outside this slice because each carries
+different or additional meaning. Cache-only validation resolves original
+packaging on 16 gear and a seal state on 39 gear, covering all 55
+observations across 54 gear without changing gear types or introducing
+anonymous-parser ambiguity.
+
 ## Out of Scope for the Initial Slice
 
 - Modeling the entire collection taxonomy.

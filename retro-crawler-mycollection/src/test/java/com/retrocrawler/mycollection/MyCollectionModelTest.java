@@ -57,6 +57,8 @@ import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.TrackDensity;
 import com.retrocrawler.model.measurement.ScreenSize;
+import com.retrocrawler.model.packaging.PackagingOrigin;
+import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.software.Version;
 import com.retrocrawler.model.storage.FloppyDiskFormat;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
@@ -266,6 +268,43 @@ class MyCollectionModelTest {
 		final MyGear partiallyFaulty = gear(gear, "Partially faulty object [teildefekt] [Bruch]");
 		assertEquals(Optional.of(FunctionalCondition.PARTIALLY_DEFECTIVE), partiallyFaulty.getHealth());
 		assertEquals(Set.of(DamageKind.BREAKAGE), partiallyFaulty.getDamageKinds());
+	}
+
+	@Test
+	void resolvesPackagingOriginAndSealStateAsIndependentFacts() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Original package [OVP]"));
+		Files.createDirectories(archiveRoot.resolve("Sealed package [sealed]"));
+		Files.createDirectories(archiveRoot.resolve("German sealed package [versiegelt]"));
+		Files.createDirectories(archiveRoot.resolve("Opened package [geöffnet]"));
+		Files.createDirectories(archiveRoot.resolve("Original sealed package [OVP] [sealed]"));
+
+		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+
+		final MyGear original = gear(gear, "Original package [OVP]");
+		assertEquals(Optional.of(PackagingOrigin.ORIGINAL), original.getPackagingOrigin());
+		assertTrue(original.hasOriginalPackaging());
+		assertTrue(original.getSealState().isEmpty());
+		assertFalse(original.isSealed());
+		assertFalse(original.isExplicitlyOpened());
+
+		final MyGear sealed = gear(gear, "Sealed package [sealed]");
+		assertEquals(Optional.of(SealState.SEALED), sealed.getSealState());
+		assertTrue(sealed.isSealed());
+		assertFalse(sealed.hasOriginalPackaging());
+
+		assertEquals(Optional.of(SealState.SEALED),
+				gear(gear, "German sealed package [versiegelt]").getSealState());
+
+		final MyGear opened = gear(gear, "Opened package [geöffnet]");
+		assertEquals(Optional.of(SealState.OPENED), opened.getSealState());
+		assertTrue(opened.isExplicitlyOpened());
+		assertFalse(opened.isSealed());
+
+		final MyGear originalSealed = gear(gear, "Original sealed package [OVP] [sealed]");
+		assertEquals(Optional.of(PackagingOrigin.ORIGINAL), originalSealed.getPackagingOrigin());
+		assertEquals(Optional.of(SealState.SEALED), originalSealed.getSealState());
+		assertTrue(originalSealed.hasOriginalPackaging());
+		assertTrue(originalSealed.isSealed());
 	}
 
 	@Test

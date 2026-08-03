@@ -87,6 +87,8 @@ public final class MyCollectionSmokeCrawl {
 		final long withCondition = gear.stream().filter(value -> value.getCondition().isPresent()).count();
 		final long withDamage = gear.stream().filter(value -> !value.getDamageKinds().isEmpty()).count();
 		final long withHealth = gear.stream().filter(value -> value.getHealth().isPresent()).count();
+		final long withOriginalPackaging = gear.stream().filter(MyGear::hasOriginalPackaging).count();
+		final long withSealState = gear.stream().filter(value -> value.getSealState().isPresent()).count();
 		final long withImages = gear.stream().filter(MyCollectionSmokeCrawl::hasImage).count();
 		final long withFloppyImages = gear.stream().filter(value -> !value.getFloppyImages().isEmpty()).count();
 		final long withLanguages = gear.stream().filter(value -> !value.getLanguages().isEmpty()).count();
@@ -104,6 +106,7 @@ public final class MyCollectionSmokeCrawl {
 				+ "\tmissingRetroIds=" + (gear.size() - withRetroId) + "\tdescriptions=" + withDescription
 				+ "\timages=" + withImages + "\tfloppyImages=" + withFloppyImages + "\tcolors=" + withColors
 				+ "\tconditions=" + withCondition + "\thealth=" + withHealth + "\tdamage=" + withDamage
+				+ "\toriginalPackaging=" + withOriginalPackaging + "\tsealStates=" + withSealState
 				+ "\tlanguages=" + withLanguages + "\tregions=" + withRegions
 				+ "\tgameBoyCartridgeCodes=" + withNintendoGameBoyCartridgeCodes
 				+ "\tgameGearCartridgeCodes=" + withSegaGameGearCartridgeCodes
@@ -150,7 +153,7 @@ public final class MyCollectionSmokeCrawl {
 	private static boolean hasNoOtherCollectionClues(final MyGear gear) {
 		return hasNoDisketteFacts(gear) && gear.getRetroId().isEmpty() && gear.getExpansionBuses().isEmpty()
 				&& gear.getTitle().isEmpty() && gear.getColors().isEmpty() && gear.getCondition().isEmpty()
-				&& gear.getDamageKinds().isEmpty()
+				&& gear.getDamageKinds().isEmpty() && gear.getPackagingOrigin().isEmpty()
 				&& gear.getCapacity().isEmpty() && gear.getDescription().isEmpty() && gear.getIsbn().isEmpty()
 				&& gear.getLanguages().isEmpty() && gear.getRegions().isEmpty()
 				&& gear.getDestiny().isEmpty() && gear.getFccId().isEmpty() && gear.getHealth().isEmpty()
@@ -166,6 +169,7 @@ public final class MyCollectionSmokeCrawl {
 				&& gear.getMemoryFeatures().isEmpty() && gear.getMemoryFormFactors().isEmpty()
 				&& gear.getMemoryStandards().isEmpty() && gear.getComputerFormFactors().isEmpty()
 				&& gear.getPower().isEmpty() && gear.getRamSet().isEmpty() && gear.getDocumentIds().isEmpty()
+				&& gear.getSealState().isEmpty()
 				&& gear.getFloppyDiskFormFactors().isEmpty() && gear.getHardDiskDriveFormFactors().isEmpty()
 				&& gear.getScreenSizes().isEmpty() && gear.getVersion().isEmpty() && gear.getYears().isEmpty()
 				&& gear.getTheRetroWebId().isEmpty() && gear.getVideoConnectors().isEmpty()
