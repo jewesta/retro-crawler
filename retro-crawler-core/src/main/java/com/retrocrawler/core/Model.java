@@ -47,8 +47,7 @@ public final class Model implements ArchiveDefinition {
 	private final List<ArchivePathFilter> pathFilters;
 
 	private Model(final ArchiveDescriptor archiveDescriptor, final ArchivePathClueFinder archivePathClueFinder,
-			final GearResolver gearResolver, final Path workingDirectory,
-			final List<ArchivePathFilter> pathFilters) {
+			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
 		this.archiveDescriptor = Objects.requireNonNull(archiveDescriptor, "archiveDescriptor");
 		this.archivePathClueFinder = Objects.requireNonNull(archivePathClueFinder, "archivePathClueFinder");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
@@ -139,9 +138,8 @@ public final class Model implements ArchiveDefinition {
 
 		final Set<Class<?>> immutableTypes = types.stream()
 				.map(type -> Objects.requireNonNull(type, "types must not contain null"))
-				.sorted(Comparator.comparing(Class::getName))
-				.collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
-						Collections::unmodifiableSet));
+				.sorted(Comparator.comparing(Class::getName)).collect(Collectors
+						.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), Collections::unmodifiableSet));
 		final CollectionDeclaration declaration = collectionDeclaration(immutableTypes);
 		final RetroCollection collection = declaration.collection();
 		final RetroClues clues = declaration.type().getAnnotation(RetroClues.class);
@@ -155,14 +153,13 @@ public final class Model implements ArchiveDefinition {
 		final Path workingDirectory = runtimeWorkingDirectory == null ? annotationWorkingDirectory(collection)
 				: runtimeWorkingDirectory;
 		final List<ArchivePathFilter> pathFilters = runtimePathFilters == null
-				? Arrays.stream(collection.pathFilters())
-						.<ArchivePathFilter>map(Reflection::newInstance).toList()
+				? Arrays.stream(collection.pathFilters()).<ArchivePathFilter>map(Reflection::newInstance).toList()
 				: runtimePathFilters;
-		final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations =
-				effectiveParserConfigurations(declaration.type(), runtimeParserConfigurations);
+		final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations = effectiveParserConfigurations(
+				declaration.type(), runtimeParserConfigurations);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
-		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(
-				immutableTypes, workingDirectory, parserConfigurations);
+		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
+				parserConfigurations);
 
 		return new Model(descriptor, clueFinder, gearResolver, workingDirectory, pathFilters);
 	}
@@ -200,8 +197,8 @@ public final class Model implements ArchiveDefinition {
 		try {
 			return Path.of(configured);
 		} catch (final InvalidPathException e) {
-			throw new IllegalArgumentException("Invalid workingDirectory on "
-					+ TypeName.simple(RetroCollection.class) + ": " + configured, e);
+			throw new IllegalArgumentException(
+					"Invalid workingDirectory on " + TypeName.simple(RetroCollection.class) + ": " + configured, e);
 		}
 	}
 
@@ -215,8 +212,8 @@ public final class Model implements ArchiveDefinition {
 				throw new IllegalArgumentException(TypeName.simple(RetroFactParser.class) + " for parser "
 						+ annotation.parser().getName() + " must override at least one setting.");
 			}
-			final FactParserConfiguration configuration = FactParserConfiguration.builder()
-					.catalogFile(catalogFile).build();
+			final FactParserConfiguration configuration = FactParserConfiguration.builder().catalogFile(catalogFile)
+					.build();
 			if (effective.putIfAbsent(annotation.parser(), configuration) != null) {
 				throw new IllegalArgumentException("Duplicate " + TypeName.simple(RetroFactParser.class)
 						+ " configuration for parser " + annotation.parser().getName() + ".");
@@ -239,8 +236,7 @@ public final class Model implements ArchiveDefinition {
 		private ArchiveRoots archiveRoots;
 		private Path workingDirectory;
 		private List<ArchivePathFilter> pathFilters;
-		private final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations =
-				new LinkedHashMap<>();
+		private final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations = new LinkedHashMap<>();
 
 		private Builder() {
 		}
@@ -315,13 +311,13 @@ public final class Model implements ArchiveDefinition {
 			Objects.requireNonNull(filters, "filters");
 			pathFilters = filters.stream()
 					.map(filter -> Objects.requireNonNull(filter, "filters must not contain null"))
-					.toList();
+					.map(ArchivePathFilter.class::cast).toList();
 			return this;
 		}
 
 		/**
-		 * Overrides standard configuration for a parser if that parser is selected by
-		 * a discovered fact declaration.
+		 * Overrides standard configuration for a parser if that parser is selected by a
+		 * discovered fact declaration.
 		 */
 		public Builder factParser(final Class<? extends FactParser> parser,
 				final Consumer<FactParserConfiguration.Builder> customizer) {
@@ -343,8 +339,7 @@ public final class Model implements ArchiveDefinition {
 			if (types == null) {
 				throw new IllegalStateException("Model types must be configured before building a model.");
 			}
-			return create(types, archiveRoots, workingDirectory, pathFilters,
-					Map.copyOf(parserConfigurations));
+			return create(types, archiveRoots, workingDirectory, pathFilters, Map.copyOf(parserConfigurations));
 		}
 	}
 }

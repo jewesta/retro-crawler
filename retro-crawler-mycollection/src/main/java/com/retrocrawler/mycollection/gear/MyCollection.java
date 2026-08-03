@@ -13,11 +13,18 @@ import com.retrocrawler.mycollection.clues.FloppyImageClueFinder;
 import com.retrocrawler.mycollection.clues.RetroMarkdownClueFinder;
 import com.retrocrawler.mycollection.clues.StandardImageClueFinder;
 
-@RetroCollection(id = "my_collection", name = "My Collection", pathFilters = { IgnoreDotPaths.class,
-		IgnoreWindowsSystemPaths.class, IgnoreMacSystemPaths.class, IgnoreLinuxSystemPaths.class,
-		IgnoreQNAPSystemPaths.class, IgnoreSynologySystemPaths.class })
-@RetroClues(fromFolderName = BracketClueFinder.class, fromFileContents = RetroMarkdownClueFinder.class, fromFileNames = {
-		StandardImageClueFinder.class, FloppyImageClueFinder.class })
+@RetroCollection(id = "my_collection", name = "My Collection", pathFilters = {
+		IgnoreDotPaths.class,
+		IgnoreWindowsSystemPaths.class,
+		IgnoreMacSystemPaths.class,
+		IgnoreLinuxSystemPaths.class,
+		IgnoreQNAPSystemPaths.class,
+		IgnoreSynologySystemPaths.class
+})
+@RetroClues(fromFolderName = BracketClueFinder.class, fromFileContents = RetroMarkdownClueFinder.class,
+		fromFileNames = {
+				StandardImageClueFinder.class, FloppyImageClueFinder.class
+		})
 public final class MyCollection {
 
 	private MyCollection() {

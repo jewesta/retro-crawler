@@ -234,6 +234,31 @@ nested equal or weighted windows with `splitIntoEqualParts(...)` and
 - Apache Maven
 - Node v25 (Vaadin demo app only)
 
+## Java cleanup and formatting
+
+RetroCrawler has a headless Java prettifier under `tools/prettify-java`. It
+first applies a conservative OpenRewrite cleanup, including import sorting and
+unused-import removal, and then formats the result with Eclipse JDT. The
+canonical `tools/prettify-java/formatting-rules.xml` profile can also be
+imported directly into Eclipse or STS.
+
+Check all tracked Java sources without writing changes:
+
+```sh
+run/prettify-java.sh --assert
+```
+
+Clean up and format particular files:
+
+```sh
+run/prettify-java.sh --apply path/to/First.java path/to/Second.java
+```
+
+The matching `run/prettify-java.bat` launcher provides the same interface on
+Windows. Maven preparation is enabled by default so OpenRewrite can resolve
+types correctly; `--no-prepare` skips that build when the reactor outputs are
+already current.
+
 ---
 
 ## Demo App

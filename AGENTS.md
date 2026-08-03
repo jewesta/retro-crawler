@@ -94,6 +94,11 @@ adapters should likewise remain outside `retro-crawler-core`.
 ## Build and Verification
 
 - The project targets Java 21 and is built as a Maven multi-module reactor.
+- `tools/prettify-java/formatting-rules.xml` is the canonical Java formatting
+  profile and can also be imported into Eclipse or STS.
+- Use `run/prettify-java.sh --apply <java-file>...` (or the matching `.bat`
+  launcher) to clean up and format concrete Java files. Use `--assert` for a
+  check-only run; omitting file paths selects all tracked Java sources.
 - Run `mvn test` from the repository root for the normal test suite.
 - Run `mvn clean install` when changes must be verified across packaged module
   boundaries.

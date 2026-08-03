@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.retrocrawler</groupId>
+		<artifactId>retro-crawler</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>retro-crawler-prettify-java</artifactId>
+	<name>retro-crawler-prettify-java</name>
+
+	<properties>
+		<prettify.build.directory>target</prettify.build.directory>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.openrewrite</groupId>
+			<artifactId>rewrite-java</artifactId>
+			<version>${rewrite.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openrewrite</groupId>
+			<artifactId>rewrite-java-21</artifactId>
+			<version>${rewrite.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openrewrite.recipe</groupId>
+			<artifactId>rewrite-static-analysis</artifactId>
+			<version>${rewrite-static-analysis.version}</version>
+		</dependency>
+		<!-- The static-analysis recipe bundle references Kotlin tree types while
+			OpenRewrite validates its runtime recipe classpath. -->
+		<dependency>
+			<groupId>org.openrewrite</groupId>
+			<artifactId>rewrite-kotlin</artifactId>
+			<version>${rewrite.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.jdt</groupId>
+			<artifactId>org.eclipse.jdt.core</artifactId>
+			<version>${eclipse.jdt.core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<directory>${prettify.build.directory}</directory>
+	</build>
+</project>
