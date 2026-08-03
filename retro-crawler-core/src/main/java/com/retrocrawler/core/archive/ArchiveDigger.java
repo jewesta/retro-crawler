@@ -29,6 +29,7 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
@@ -43,23 +44,19 @@ public class ArchiveDigger {
 
 	private final CrawlPlanning planning;
 
-	private final CrawlPolicy crawlPolicy;
+	private final List<ArchivePathFilter> pathFilters;
 
-	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder) {
-		this(descriptor, clueFinder, CrawlPlanning.defaults(), new CrawlEverything());
+	public ArchiveDigger(final ArchiveDefinition archive) {
+		this(archive, CrawlPlanning.defaults());
 	}
 
-	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder,
-			final CrawlPlanning planning) {
-		this(descriptor, clueFinder, planning, new CrawlEverything());
-	}
-
-	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder,
-			final CrawlPlanning planning, final CrawlPolicy crawlPolicy) {
-		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
-		this.clueFinder = Objects.requireNonNull(clueFinder, "clueFinder");
+	public ArchiveDigger(final ArchiveDefinition archive, final CrawlPlanning planning) {
+		Objects.requireNonNull(archive, "archive");
+		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
+		this.clueFinder = Objects.requireNonNull(archive.archivePathClueFinder(),
+				"archive.archivePathClueFinder()");
 		this.planning = Objects.requireNonNull(planning, "planning");
-		this.crawlPolicy = Objects.requireNonNull(crawlPolicy, "crawlPolicy");
+		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
@@ -150,8 +147,13 @@ public class ArchiveDigger {
 		 * crash with a java.io.IOException: Too many open files.
 		 */
 		try (Stream<Path> files = Files.list(path)) {
-			return files.filter(crawlPolicy::includes).sorted(Comparator.comparing(Path::toString)).toList();
+			final Stream<Path> accepted = pathFilters.isEmpty() ? files : files.filter(this::accept);
+			return accepted.sorted(Comparator.comparing(Path::toString)).toList();
 		}
+	}
+
+	private boolean accept(final Path path) {
+		return pathFilters.stream().allMatch(filter -> filter.accept(path));
 	}
 
 	ArchiveNode dig(final Path root, final ArchiveDigPlan plan, final Progressor progressor) throws IOException {

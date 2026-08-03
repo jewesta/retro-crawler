@@ -31,6 +31,12 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
+import com.retrocrawler.core.archive.filter.IgnoreLinuxSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreMacSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreSynologySystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
@@ -95,6 +101,20 @@ class MyCollectionModelTest {
 
 	@TempDir
 	private Path archiveRoot;
+
+	@Test
+	void configuresAllBundledArchivePathFilters() {
+		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(archiveRoot));
+
+		assertEquals(List.of(
+				IgnoreDotPaths.class,
+				IgnoreWindowsSystemPaths.class,
+				IgnoreMacSystemPaths.class,
+				IgnoreLinuxSystemPaths.class,
+				IgnoreQNAPSystemPaths.class,
+				IgnoreSynologySystemPaths.class),
+				model.pathFilters().stream().map(Object::getClass).toList());
+	}
 
 	@Test
 	void resolvesTheMinimalCollectionModelFromSyntheticFolders() throws IOException {

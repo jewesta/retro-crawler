@@ -1851,9 +1851,16 @@ filesystem changes until that root is included in a future crawl.
       `price` from recurring `lot-price`.
 - [x] Replace the collection-specific `Price` value with shared-model `Money`
       while retaining the collection's default-EUR parsing convention.
-- [x] Add annotation-configurable `CrawlPolicy`, use one policy for direct-entry
-      exclusion and subtree pruning, and provide an opt-in policy for dot files
-      and common operating-system or NAS service entries.
+- [x] Add annotation-configurable `ArchivePathFilter` lists, require every
+      filter to accept a direct entry, and use that decision consistently for
+      file exclusion and subtree pruning.
+- [x] Provide focused filters for dot paths and common Windows, macOS, Linux,
+      QNAP, and Synology service entries.
+- [x] Keep the framework default unfiltered, configure the demo with the four
+      portable desktop filters, and configure the QNAP-backed personal model
+      with all bundled filters.
+- [x] Introduce `ArchiveDefinition` as the narrow archive-facing contract
+      implemented by `Model` and consumed by `ArchiveDigger`.
 - [x] Harmonize immutable framework accessors on component-style names across
       the core API and shared model, without retaining legacy getter aliases.
 - [x] Record resulting core changes and verification.
@@ -1902,18 +1909,21 @@ Framework accessor harmonization completed on 2026-08-03:
 - The complete eight-module `mvn clean install` reactor completed 244 tests
   with no failures.
 
-Focused crawl-policy verification completed on 2026-08-03:
+Focused archive-path-filter verification completed on 2026-08-03:
 
-- `IgnoreSystemFilesTest` covers dot-prefixed entries and common macOS,
+- `SystemPathFiltersTest` covers dot-prefixed entries and focused macOS,
   Windows, Linux, QNAP, and Synology service names without filesystem metadata
   checks.
-- `ArchiveDiggerCrawlPolicyTest` proves that one policy consistently controls
-  planning, direct file clues, and complete subtree pruning while preserving
-  include-everything compatibility and accepting collection-specific policies.
-- `ModelTest` proves annotation instantiation, the `CrawlEverything` default,
-  and runtime override precedence.
-- The focused core reactor completed 133 tests with no failures.
-- The complete eight-module `mvn clean install` reactor completed 244 tests
+- `ArchiveDiggerPathFilterTest` proves that `ArchiveDefinition` supplies an
+  ordered filter list whose members all control planning, direct file clues,
+  and complete subtree pruning while an empty list accepts everything.
+- `ModelTest` proves that `Model` preserves annotation filter order, defaults
+  to an empty list, and gives runtime filter lists override precedence.
+- `DemoModelDiscoveryTest` and `MyCollectionModelTest` prove the demo selects
+  the four portable desktop filters while the QNAP-backed personal model
+  selects all six bundled filters.
+- The focused core reactor completed 137 tests with no failures.
+- The complete eight-module `mvn clean install` reactor completed 249 tests
   with no failures.
 
 Focused Markdown metadata verification completed on 2026-07-29:

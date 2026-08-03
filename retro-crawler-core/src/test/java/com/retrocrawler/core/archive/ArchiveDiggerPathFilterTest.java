@@ -16,15 +16,19 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FileNameClueFinder;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
+import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
+import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.core.progress.Progressor;
 
-class ArchiveDiggerCrawlPolicyTest {
+class ArchiveDiggerPathFilterTest {
 
 	@TempDir
 	private Path root;
 
 	@Test
-	void appliesOnePolicyToPlanningFilesAndPrunedSubtrees() throws IOException {
+	void appliesAllFiltersToPlanningFilesAndPrunedSubtrees() throws IOException {
 		Files.createFile(root.resolve("visible.txt"));
 		Files.createFile(root.resolve(".DS_Store"));
 		Files.createFile(root.resolve("Thumbs.db"));
@@ -32,22 +36,26 @@ class ArchiveDiggerCrawlPolicyTest {
 		Files.createDirectories(root.resolve(".@__thumb/cache"));
 		Files.createDirectories(root.resolve("@Recycle/deleted"));
 
-		final ArchiveDigger digger = new ArchiveDigger(descriptor(), clueFinder(),
-				new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)), new IgnoreSystemFiles());
+		final ArchiveDefinition archive = definition(
+				new IgnoreDotPaths(),
+				new IgnoreWindowsSystemPaths(),
+				new IgnoreQNAPSystemPaths());
+		final ArchiveDigger digger = new ArchiveDigger(archive,
+				new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
 		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
-		final ArchiveNode archive = digger.dig(root, plan, progressor);
+		final ArchiveNode result = digger.dig(root, plan, progressor);
 
 		assertEquals(1, plan.totalRegions());
-		assertEquals(List.of("Visible folder"), archive.children().stream().map(ArchiveNode::folder).toList());
-		assertEquals(Set.of("visible.txt"), clue(archive, "files").value());
+		assertEquals(List.of("Visible folder"), result.children().stream().map(ArchiveNode::folder).toList());
+		assertEquals(Set.of("visible.txt"), clue(result, "files").value());
 	}
 
 	@Test
-	void preservesExistingIncludeEverythingBehaviorByDefault() throws IOException {
+	void acceptsEveryPathWhenNoFiltersAreConfigured() throws IOException {
 		Files.createDirectory(root.resolve(".archive-metadata"));
 
-		final ArchiveNode archive = new ArchiveDigger(descriptor(), clueFinder())
+		final ArchiveNode archive = new ArchiveDigger(definition())
 				.dig(root, new Progressor());
 
 		assertEquals(List.of(".archive-metadata"),
@@ -55,19 +63,23 @@ class ArchiveDiggerCrawlPolicyTest {
 	}
 
 	@Test
-	void acceptsCollectionSpecificPolicies() throws IOException {
+	void acceptsCollectionSpecificFilters() throws IOException {
 		Files.createDirectory(root.resolve("admit"));
 		Files.createDirectory(root.resolve("skip"));
-		final CrawlPolicy policy = path -> !"skip".equals(path.getFileName().toString());
+		final ArchivePathFilter first = path -> true;
+		final ArchivePathFilter second = path -> !"skip".equals(path.getFileName().toString());
 
-		final ArchiveNode archive = new ArchiveDigger(descriptor(), clueFinder(), CrawlPlanning.defaults(), policy)
-				.dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(definition(first, second)).dig(root, new Progressor());
 
 		assertEquals(List.of("admit"), archive.children().stream().map(ArchiveNode::folder).toList());
 	}
 
+	private ArchiveDefinition definition(final ArchivePathFilter... filters) {
+		return new TestArchiveDefinition(descriptor(), clueFinder(), List.of(filters));
+	}
+
 	private ArchiveDescriptor descriptor() {
-		return new ArchiveDescriptor(ArchiveId.of("crawl_policy_test"), "Crawl policy test", List.of(root));
+		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", List.of(root));
 	}
 
 	private static ArchivePathClueFinder clueFinder() {

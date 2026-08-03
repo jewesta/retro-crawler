@@ -1,8 +1,6 @@
 package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,11 +18,11 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveRoots;
-import com.retrocrawler.core.archive.CrawlEverything;
-import com.retrocrawler.core.archive.CrawlPolicy;
-import com.retrocrawler.core.archive.IgnoreSystemFiles;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
+import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
+import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.core.gear.TypeSource;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -39,26 +37,28 @@ class ModelTest {
 	}
 
 	@Test
-	void createsAnnotationConfiguredCrawlPolicy() {
+	void createsAnnotationConfiguredArchivePathFiltersInDeclaredOrder() {
 		final Model model = Model.from(Set.of(FilteredArchive.class, TestGear.class));
 
-		assertInstanceOf(IgnoreSystemFiles.class, model.crawlPolicy());
+		assertEquals(List.of(IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class),
+				model.pathFilters().stream().map(Object::getClass).toList());
 	}
 
 	@Test
-	void preservesIncludeEverythingAsTheDefaultCrawlPolicy() {
+	void hasNoArchivePathFiltersByDefault() {
 		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
 
-		assertInstanceOf(CrawlEverything.class, model.crawlPolicy());
+		assertEquals(List.of(), model.pathFilters());
 	}
 
 	@Test
-	void builderOverridesAnnotationCrawlPolicy() {
-		final CrawlPolicy runtimePolicy = path -> false;
+	void builderOverridesAnnotationArchivePathFilters() {
+		final ArchivePathFilter first = path -> false;
+		final ArchivePathFilter second = path -> true;
 		final Model model = Model.builder().typesFrom(Set.of(FilteredArchive.class, TestGear.class))
-				.crawlPolicy(runtimePolicy).build();
+				.pathFilters(first, second).build();
 
-		assertSame(runtimePolicy, model.crawlPolicy());
+		assertEquals(List.of(first, second), model.pathFilters());
 	}
 
 	@Test
@@ -176,7 +176,7 @@ class ModelTest {
 	}
 
 	@RetroCollection(id = "filtered_archive", locations = "/not/read",
-			crawlPolicy = IgnoreSystemFiles.class)
+			pathFilters = { IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class })
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class FilteredArchive {
 	}

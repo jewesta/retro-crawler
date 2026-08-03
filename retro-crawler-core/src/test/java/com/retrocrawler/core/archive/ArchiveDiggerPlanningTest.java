@@ -98,7 +98,7 @@ class ArchiveDiggerPlanningTest {
 				List.of(root));
 		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
 				folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of());
-		return new ArchiveDigger(descriptor, clues, planning);
+		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), planning);
 	}
 
 	private void createTree() throws IOException {

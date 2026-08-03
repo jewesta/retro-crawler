@@ -5,8 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.retrocrawler.core.archive.CrawlEverything;
-import com.retrocrawler.core.archive.CrawlPolicy;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 
 /**
  * Declares the identity and default filesystem configuration of one collector's
@@ -31,9 +30,10 @@ public @interface RetroCollection {
 	String[] locations() default {};
 
 	/**
-	 * Policy deciding which filesystem entries belong to the archive crawl.
+	 * Filters deciding which filesystem entries belong to the archive. An entry
+	 * must be accepted by every configured filter.
 	 */
-	Class<? extends CrawlPolicy> crawlPolicy() default CrawlEverything.class;
+	Class<? extends ArchivePathFilter>[] pathFilters() default {};
 
 	/**
 	 * Optional collection-wide directory for crawler-owned files such as external

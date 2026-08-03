@@ -2,12 +2,21 @@ package com.retrocrawler.demo.gear;
 
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
+import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
+import com.retrocrawler.core.archive.filter.IgnoreLinuxSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreMacSystemPaths;
+import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.clues.ImageClueFinder;
 import com.retrocrawler.demo.clues.SquareBracketsClueFinder;
 
 @RetroCollection(id = "retro_pc_demo", name = "Retro PC (Demo)",
-		locations = DemoFiles.DEMO_ARCHIVE_PARENT + "/retro_pc")
+		locations = DemoFiles.DEMO_ARCHIVE_PARENT + "/retro_pc",
+		pathFilters = {
+				IgnoreDotPaths.class,
+				IgnoreWindowsSystemPaths.class,
+				IgnoreMacSystemPaths.class,
+				IgnoreLinuxSystemPaths.class })
 @RetroClues(fromFolderName = SquareBracketsClueFinder.class,
 		fromFileNames = ImageClueFinder.class)
 public final class RetroPCDemoCollection {

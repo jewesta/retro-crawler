@@ -69,7 +69,8 @@ RetroCrawler's collection and gear model can be configured via annotations:
 
 - `@RetroCollection`
   Declares the collection identity, source locations, optional working
-  directory, and `CrawlPolicy`. Exactly one collection is present in a model.
+  directory, and `ArchivePathFilter`. Exactly one collection is present in a
+  model.
 
 - `@RetroClues`
   Declares which folder names, file names, file contents, and folder trees
@@ -91,7 +92,7 @@ RetroCrawler's collection and gear model can be configured via annotations:
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
 
 Filesystem noise can be pruned before entries are classified or supplied to
-clue finders. The bundled opt-in policy ignores every dot-prefixed entry and
+clue finders. The bundled opt-in filter ignores every dot-prefixed entry and
 common operating-system or NAS service entries such as `Thumbs.db`,
 `__MACOSX`, `@Recycle`, and `System Volume Information`:
 
@@ -99,16 +100,23 @@ common operating-system or NAS service entries such as `Thumbs.db`,
 @RetroCollection(
         id = "my_collection",
         locations = "my-collection",
-        crawlPolicy = IgnoreSystemFiles.class)
+        pathFilters = {
+                IgnoreDotPaths.class,
+                IgnoreWindowsSystemPaths.class,
+                IgnoreMacSystemPaths.class,
+                IgnoreLinuxSystemPaths.class,
+                IgnoreQNAPSystemPaths.class,
+                IgnoreSynologySystemPaths.class
+        })
 ```
 
-`CrawlEverything` remains the default so existing collections retain their
-current behavior. Applications can implement `CrawlPolicy` with a public
-no-argument constructor for annotation use, or inject a configured instance
-through `Model.Builder.crawlPolicy(...)`. Rejecting a folder prunes its entire
-subtree during both crawl planning and digging. Changing the policy requires a
-re-index because retrieved clue archives retain the result of their original
-crawl.
+An entry must be accepted by every configured filter; an empty list accepts
+everything. Applications can implement `ArchivePathFilter` with a public
+no-argument constructor for annotation use, or inject configured instances
+through `Model.Builder.pathFilters(...)`. Rejecting a folder prunes its
+entire subtree during both crawl planning and digging. Changing the filters
+requires a re-index because retrieved clue archives retain the result of their
+original crawl.
 
 ---
 

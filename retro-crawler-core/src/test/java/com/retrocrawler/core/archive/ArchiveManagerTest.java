@@ -142,7 +142,7 @@ class ArchiveManagerTest {
 			cancellingProgressor.cancel("Stop.");
 			return Set.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
-		final ArchiveDigger digger = new ArchiveDigger(descriptor, clueFinder,
+		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 
@@ -303,7 +303,7 @@ class ArchiveManagerTest {
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
 				folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of());
-		final ArchiveDigger digger = new ArchiveDigger(descriptor, clueFinder);
+		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository);
 	}
 

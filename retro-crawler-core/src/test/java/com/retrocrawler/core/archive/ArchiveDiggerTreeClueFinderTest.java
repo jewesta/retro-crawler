@@ -52,7 +52,7 @@ class ArchiveDiggerTreeClueFinderTest {
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
 				name -> "Child artifact".equals(name) ? Set.of(Clue.of("kind", "part")) : Set.of(),
 				List.of(), List.of(), List.of(treeFinder));
-		final ArchiveDigger digger = new ArchiveDigger(descriptor(), clueFinder);
+		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
 
 		final ArchiveNode archive = digger.dig(root, new Progressor());
 
@@ -78,7 +78,8 @@ class ArchiveDiggerTreeClueFinderTest {
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(null, List.of(), List.of(),
 				List.of(treeFinder));
 
-		final ArchiveNode archive = new ArchiveDigger(descriptor(), clueFinder).dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder))
+				.dig(root, new Progressor());
 
 		assertNotNull(archive.artifact());
 		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
