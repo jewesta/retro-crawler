@@ -78,26 +78,63 @@ This phase does not change `AutoDetectParser` selection or introduce any
 default-parser configuration. It only gives that future extension point a
 typed parser contract to expose.
 
+## Decided Selection and Construction Model
+
+Parser selection and parser construction are separate:
+
+- `@RetroFact(parser = ...)` explicitly selects a parser class.
+- For a fact that retains `AutoDetectParser`, `@RetroFactDefaultParser` selects
+  the parser class for each supported value type. Its members are typed, for
+  example `Class<? extends FactParser<String>> string()`, and default to the
+  current built-in implementations.
+- Default parsers do not need marker roles such as `DefaultStringParser`.
+  After selecting a concrete parser class, explicit and automatically selected
+  parsers use the same construction path.
+- `Model.Builder` can register a per-key construction factory for any selected
+  parser class. The public shape is:
+
+  ```java
+  <T> Builder parserFactory(
+      Class<? extends FactParser<T>> parserType,
+      Function<String, ? extends FactParser<T>> factory)
+  ```
+
+- The factory receives the effective RetroCrawler fact key. It is queried once
+  per effective key, and the resulting parser is retained by that key's
+  `FactFinder`.
+- A factory may return a different implementation of `FactParser<T>` than the
+  selected class. This allows runtime construction and replacement without
+  weakening the parsed-value type.
+- If no factory is registered for the selected class, framework construction
+  falls back to the class's supported reflective construction path.
+
+For example, both a default-selected and an explicitly selected
+`StringParser.class` are constructed through the same registration:
+
+```java
+.parserFactory(StringParser.class, MyStringParser::new)
+```
+
+`parserFactory(...)` is intentionally about construction. Parser selection
+remains annotation-driven.
+
 ## Required Precedence
 
 1. A parser explicitly declared by `@RetroFact(parser = ...)`.
-2. User-configured default parser selection for a fact that retains
+2. The configured default parser class for a fact that retains
    `AutoDetectParser`.
-3. The framework's built-in default parser selection.
-4. An actionable unsupported-type failure when no selection applies.
+3. The framework's built-in default parser class.
+4. For the selected class, a builder-registered construction factory.
+5. Framework reflective construction when no factory is registered.
+6. An actionable failure when selection or construction is unsupported.
 
-User configuration must not alter facts that select their parser explicitly.
+An explicit field-level parser remains authoritative as the selected parser
+class. Builder configuration may customize how that selected class is
+constructed, just as it may for a default-selected class.
 
 ## Open Design Questions
 
-- Whether the public extension point is one replacement factory or an ordered
-  chain in which user selectors can defer to framework defaults.
-- Which immutable public request type exposes the fact key and declared Java
-  type without leaking the internal `FactDescriptor`.
-- Whether portable annotation configuration is useful in addition to runtime
-  `Model.Builder` configuration.
-- Whether selectors return parser instances, parser classes, or parser
-  factories, and how that choice interacts with framework-owned construction.
+- The exact annotation and factory shape for type-dependent enum parsing.
 - Whether configured catalog-backed defaults should use the same
   `CatalogLoader` construction path as explicitly selected catalog parsers.
 
@@ -115,10 +152,15 @@ User configuration must not alter facts that select their parser explicitly.
       delimited clue values.
 - [x] Migrated built-in, shared-model, demo, and collection parsers to typed
       results.
-- [ ] Agree on the public default-parser selection contract.
-- [ ] Implement model-level configuration and precedence.
-- [ ] Add focused tests for replacement, fallback, generic types, and explicit
-      parser precedence.
+- [x] Agreed on annotation-based default-class selection and general per-key
+      builder factories for selected parser classes.
+- [x] Implemented `@RetroFactDefaultParser` for string, integer, and path
+      defaults, including collections of paths.
+- [x] Implemented typed `Model.Builder.parserFactory(...)` construction for
+      both default-selected and explicitly selected parser classes.
+- [x] Added focused tests for annotation fallback, per-key factories, generic
+      replacement, explicit selection, duplicate registration, and null
+      results.
 - [ ] Update public documentation with configuration examples.
 
 ## Verification
@@ -129,3 +171,9 @@ After the typed parser-contract refactor:
 - `mvn -pl retro-crawler-core,retro-crawler-model,retro-crawler-mycollection -am test`:
   250 tests passed.
 - `mvn clean install`: all seven reactor modules and 253 tests passed.
+
+After implementing configurable fixed defaults and per-key parser factories:
+
+- `run/prettify.sh --apply ...`: all changed Java sources processed.
+- `mvn -pl retro-crawler-core test`: 146 tests passed.
+- `mvn clean install`: all seven reactor modules and 259 tests passed.

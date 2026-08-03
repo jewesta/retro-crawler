@@ -14,11 +14,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
+import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.archive.ArchiveDefinition;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveRoots;
@@ -27,8 +29,10 @@ import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
 import com.retrocrawler.core.gear.TypeSource;
+import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
 import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
+import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.util.Reflection;
 import com.retrocrawler.core.util.TypeName;
 
@@ -135,7 +139,8 @@ public final class Model implements ArchiveDefinition {
 
 	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots,
 			final Path runtimeWorkingDirectory, final List<ArchivePathFilter> runtimePathFilters,
-			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeCatalogConfigurations) {
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeCatalogConfigurations,
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> runtimeParserFactories) {
 		Objects.requireNonNull(types, "types");
 
 		final Set<Class<?>> immutableTypes = types.stream()
@@ -159,9 +164,10 @@ public final class Model implements ArchiveDefinition {
 				: runtimePathFilters;
 		final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = effectiveCatalogConfigurations(
 				declaration.type(), runtimeCatalogConfigurations);
+		final RetroFactDefaultParser defaultParsers = declaration.type().getAnnotation(RetroFactDefaultParser.class);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
-				catalogConfigurations);
+				catalogConfigurations, defaultParsers, runtimeParserFactories);
 
 		return new Model(descriptor, clueFinder, gearResolver, workingDirectory, pathFilters);
 	}
@@ -239,6 +245,7 @@ public final class Model implements ArchiveDefinition {
 		private Path workingDirectory;
 		private List<ArchivePathFilter> pathFilters;
 		private final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = new LinkedHashMap<>();
+		private final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories = new LinkedHashMap<>();
 
 		private Builder() {
 		}
@@ -339,6 +346,31 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
+		 * Supplies per-fact-key construction for a parser class selected either
+		 * explicitly or as a default. The factory receives the effective fact
+		 * key and is invoked once for each matching key. It may return any
+		 * parser implementation for the same fact value type. Without a
+		 * registered factory, the framework uses its standard construction for
+		 * the selected class.
+		 */
+		public <T> Builder parserFactory(final Class<? extends FactParser<T>> parserType,
+				final Function<String, ? extends FactParser<T>> factory) {
+			Objects.requireNonNull(parserType, "parserType");
+			Objects.requireNonNull(factory, "factory");
+			if (parserType.equals(AutoDetectParser.class)) {
+				throw new IllegalArgumentException(TypeName.simple(AutoDetectParser.class)
+						+ " selects another parser class and is not itself constructed.");
+			}
+			final Class<? extends FactParser<?>> untypedParserType = parserType;
+			final Function<String, ? extends FactParser<?>> untypedFactory = factory;
+			if (parserFactories.putIfAbsent(untypedParserType, untypedFactory) != null) {
+				throw new IllegalArgumentException(
+						"Parser factory is configured more than once: " + parserType.getName());
+			}
+			return this;
+		}
+
+		/**
 		 * Validates the combined annotation and runtime configuration and
 		 * creates an immutable model.
 		 */
@@ -346,7 +378,8 @@ public final class Model implements ArchiveDefinition {
 			if (types == null) {
 				throw new IllegalStateException("Model types must be configured before building a model.");
 			}
-			return create(types, archiveRoots, workingDirectory, pathFilters, Map.copyOf(catalogConfigurations));
+			return create(types, archiveRoots, workingDirectory, pathFilters, Map.copyOf(catalogConfigurations),
+					Map.copyOf(parserFactories));
 		}
 	}
 }

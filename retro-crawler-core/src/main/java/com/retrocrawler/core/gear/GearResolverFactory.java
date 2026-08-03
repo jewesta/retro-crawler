@@ -11,7 +11,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
+import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
@@ -35,13 +37,21 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 	@Override
 	public GearResolver reflectOn(final Set<Class<?>> types) {
-		return reflectOn(types, null, Map.of());
+		return reflectOn(types, null, Map.of(), null, Map.of());
 	}
 
 	public GearResolver reflectOn(final Set<Class<?>> types, final Path workingDirectory,
 			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations) {
+		return reflectOn(types, workingDirectory, catalogConfigurations, null, Map.of());
+	}
+
+	public GearResolver reflectOn(final Set<Class<?>> types, final Path workingDirectory,
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations,
+			final RetroFactDefaultParser defaultParsers,
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories) {
 		Objects.requireNonNull(types, "types");
 		Objects.requireNonNull(catalogConfigurations, "catalogConfigurations");
+		Objects.requireNonNull(parserFactories, "parserFactories");
 
 		/*
 		 * Look for retro gear. Not all types are required to be annotated with
@@ -105,9 +115,11 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final FactParser<?> parser;
 
 			if (parserType.equals(AutoDetectParser.class)) {
-				parser = autoDetectParser(key, factDef);
+				parser = autoDetectParser(key, factDef, workingDirectory, catalogConfigurations, defaultParsers,
+						parserFactories);
 			} else {
-				parser = configuredParser(parserType, workingDirectory, catalogConfigurations.get(parserType));
+				parser = configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+						parserFactories);
 			}
 
 			final Class<?> fieldType = factDef.field().getType();
@@ -119,8 +131,15 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys));
 	}
 
-	private static FactParser<?> configuredParser(final Class<? extends FactParser<?>> parserType,
-			final Path workingDirectory, final FactCatalogConfiguration configuration) {
+	private static FactParser<?> configuredParser(final String key, final Class<? extends FactParser<?>> parserType,
+			final Path workingDirectory, final FactCatalogConfiguration configuration,
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories) {
+		final Function<String, ? extends FactParser<?>> factory = parserFactories.get(parserType);
+		if (factory != null) {
+			return Objects.requireNonNull(factory.apply(key),
+					"Parser factory for " + parserType.getName() + " returned null for key '" + key + "'.");
+		}
+
 		if (!CatalogFactParser.class.isAssignableFrom(parserType)) {
 			if (configuration != null && configuration.catalogFile().isPresent()) {
 				throw new IllegalArgumentException("Fact parser " + parserType.getName() + " does not implement "
@@ -148,9 +167,11 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 	}
 
-	// TODO turn into configurable factory so users can supply their own default
-	// parsers
-	private static FactParser<?> autoDetectParser(final String key, final FactDescriptor attrDef) {
+	private static FactParser<?> autoDetectParser(final String key, final FactDescriptor attrDef,
+			final Path workingDirectory,
+			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations,
+			final RetroFactDefaultParser defaultParsers,
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(attrDef, "attrDef");
 
@@ -158,15 +179,24 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		final var genericType = attrDef.singleGenericArgument();
 
 		if (fieldType == String.class) {
-			return new StringParser();
+			final Class<? extends FactParser<String>> parserType = defaultParsers == null ? StringParser.class
+					: defaultParsers.string();
+			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+					parserFactories);
 		}
 
 		if (fieldType == int.class || fieldType == Integer.class) {
-			return new IntParser();
+			final Class<? extends FactParser<Integer>> parserType = defaultParsers == null ? IntParser.class
+					: defaultParsers.integer();
+			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+					parserFactories);
 		}
 
 		if (fieldType == Path.class) {
-			return new PathParser();
+			final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
+					: defaultParsers.path();
+			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+					parserFactories);
 		}
 
 		if (fieldType.isEnum()) {
@@ -198,7 +228,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			}
 			final Class<?> elementType = genericType.get();
 			if (elementType == Path.class) {
-				return new PathParser();
+				final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
+						: defaultParsers.path();
+				return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+						parserFactories);
 			}
 			throw new UnsupportedOperationException("Auto-detected " + TypeName.full(fieldType) + "<"
 					+ TypeName.full(elementType) + "> for key '" + key + "', but no parser is implemented yet.");
