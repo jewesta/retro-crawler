@@ -19,12 +19,14 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFactParser;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.CrawlPolicy;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
 import com.retrocrawler.core.gear.TypeSource;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.FactParserConfiguration;
+import com.retrocrawler.core.util.Reflection;
 import com.retrocrawler.core.util.TypeName;
 
 /**
@@ -39,13 +41,15 @@ public final class Model {
 	private final ArchivePathClueFinder archivePathClueFinder;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
+	private final CrawlPolicy crawlPolicy;
 
 	private Model(final ArchiveDescriptor archiveDescriptor, final ArchivePathClueFinder archivePathClueFinder,
-			final GearResolver gearResolver, final Path workingDirectory) {
+			final GearResolver gearResolver, final Path workingDirectory, final CrawlPolicy crawlPolicy) {
 		this.archiveDescriptor = Objects.requireNonNull(archiveDescriptor, "archiveDescriptor");
 		this.archivePathClueFinder = Objects.requireNonNull(archivePathClueFinder, "archivePathClueFinder");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
 		this.workingDirectory = workingDirectory;
+		this.crawlPolicy = Objects.requireNonNull(crawlPolicy, "crawlPolicy");
 	}
 
 	/**
@@ -117,8 +121,12 @@ public final class Model {
 		return gearResolver;
 	}
 
+	CrawlPolicy crawlPolicy() {
+		return crawlPolicy;
+	}
+
 	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots,
-			final Path runtimeWorkingDirectory,
+			final Path runtimeWorkingDirectory, final CrawlPolicy runtimeCrawlPolicy,
 			final Map<Class<? extends FactParser>, FactParserConfiguration> runtimeParserConfigurations) {
 		Objects.requireNonNull(types, "types");
 
@@ -139,13 +147,16 @@ public final class Model {
 				: ArchiveDescriptor.of(collection, archiveRoots);
 		final Path workingDirectory = runtimeWorkingDirectory == null ? annotationWorkingDirectory(collection)
 				: runtimeWorkingDirectory;
+		final CrawlPolicy crawlPolicy = runtimeCrawlPolicy == null
+				? Reflection.newInstance(collection.crawlPolicy())
+				: runtimeCrawlPolicy;
 		final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations =
 				effectiveParserConfigurations(declaration.type(), runtimeParserConfigurations);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(
 				immutableTypes, workingDirectory, parserConfigurations);
 
-		return new Model(descriptor, clueFinder, gearResolver, workingDirectory);
+		return new Model(descriptor, clueFinder, gearResolver, workingDirectory, crawlPolicy);
 	}
 
 	private static CollectionDeclaration collectionDeclaration(final Set<Class<?>> types) {
@@ -219,6 +230,7 @@ public final class Model {
 		private Set<Class<?>> types;
 		private ArchiveRoots archiveRoots;
 		private Path workingDirectory;
+		private CrawlPolicy crawlPolicy;
 		private final Map<Class<? extends FactParser>, FactParserConfiguration> parserConfigurations =
 				new LinkedHashMap<>();
 
@@ -281,6 +293,14 @@ public final class Model {
 		}
 
 		/**
+		 * Overrides the crawl policy declared by {@link RetroCollection}.
+		 */
+		public Builder crawlPolicy(final CrawlPolicy policy) {
+			crawlPolicy = Objects.requireNonNull(policy, "policy");
+			return this;
+		}
+
+		/**
 		 * Overrides standard configuration for a parser if that parser is selected by
 		 * a discovered fact declaration.
 		 */
@@ -304,7 +324,7 @@ public final class Model {
 			if (types == null) {
 				throw new IllegalStateException("Model types must be configured before building a model.");
 			}
-			return create(types, archiveRoots, workingDirectory, Map.copyOf(parserConfigurations));
+			return create(types, archiveRoots, workingDirectory, crawlPolicy, Map.copyOf(parserConfigurations));
 		}
 	}
 }

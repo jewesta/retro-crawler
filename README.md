@@ -68,8 +68,8 @@ Unknown or unparseable clues are preserved and may be accessed explicitly.
 RetroCrawler's collection and gear model can be configured via annotations:
 
 - `@RetroCollection`
-  Declares the collection identity, source locations, and optional working
-  directory. Exactly one collection is present in a model.
+  Declares the collection identity, source locations, optional working
+  directory, and `CrawlPolicy`. Exactly one collection is present in a model.
 
 - `@RetroClues`
   Declares which folder names, file names, file contents, and folder trees
@@ -89,6 +89,26 @@ RetroCrawler's collection and gear model can be configured via annotations:
   Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
 
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
+
+Filesystem noise can be pruned before entries are classified or supplied to
+clue finders. The bundled opt-in policy ignores every dot-prefixed entry and
+common operating-system or NAS service entries such as `Thumbs.db`,
+`__MACOSX`, `@Recycle`, and `System Volume Information`:
+
+```java
+@RetroCollection(
+        id = "my_collection",
+        locations = "my-collection",
+        crawlPolicy = IgnoreSystemFiles.class)
+```
+
+`CrawlEverything` remains the default so existing collections retain their
+current behavior. Applications can implement `CrawlPolicy` with a public
+no-argument constructor for annotation use, or inject a configured instance
+through `Model.Builder.crawlPolicy(...)`. Rejecting a folder prunes its entire
+subtree during both crawl planning and digging. Changing the policy requires a
+re-index because retrieved clue archives retain the result of their original
+crawl.
 
 ---
 

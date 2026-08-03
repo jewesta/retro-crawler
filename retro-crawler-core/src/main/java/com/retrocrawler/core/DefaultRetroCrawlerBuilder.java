@@ -52,7 +52,7 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 
 		final CrawlPlanning effectivePlanning = crawlPlanning == null ? CrawlPlanning.defaults() : crawlPlanning;
 		final ArchiveDigger digger = new ArchiveDigger(model.getArchiveDescriptor(), model.archivePathClueFinder(),
-				effectivePlanning);
+				effectivePlanning, model.crawlPolicy());
 		return new RetroCrawlerImpl(model.getArchiveDescriptor(), digger, model.gearResolver(), repository);
 	}
 }

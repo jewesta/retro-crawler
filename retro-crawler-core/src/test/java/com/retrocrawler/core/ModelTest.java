@@ -1,6 +1,8 @@
 package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +20,9 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.CrawlEverything;
+import com.retrocrawler.core.archive.CrawlPolicy;
+import com.retrocrawler.core.archive.IgnoreSystemFiles;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.TypeSource;
@@ -31,6 +36,29 @@ class ModelTest {
 		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
 
 		assertEquals("model_test", model.getArchiveDescriptor().getId().get());
+	}
+
+	@Test
+	void createsAnnotationConfiguredCrawlPolicy() {
+		final Model model = Model.from(Set.of(FilteredArchive.class, TestGear.class));
+
+		assertInstanceOf(IgnoreSystemFiles.class, model.crawlPolicy());
+	}
+
+	@Test
+	void preservesIncludeEverythingAsTheDefaultCrawlPolicy() {
+		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
+
+		assertInstanceOf(CrawlEverything.class, model.crawlPolicy());
+	}
+
+	@Test
+	void builderOverridesAnnotationCrawlPolicy() {
+		final CrawlPolicy runtimePolicy = path -> false;
+		final Model model = Model.builder().typesFrom(Set.of(FilteredArchive.class, TestGear.class))
+				.crawlPolicy(runtimePolicy).build();
+
+		assertSame(runtimePolicy, model.crawlPolicy());
 	}
 
 	@Test
@@ -145,6 +173,12 @@ class ModelTest {
 	@RetroCollection(id = "runtime_model_test")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class RuntimeConfiguredArchive {
+	}
+
+	@RetroCollection(id = "filtered_archive", locations = "/not/read",
+			crawlPolicy = IgnoreSystemFiles.class)
+	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	public static class FilteredArchive {
 	}
 
 	@RetroCollection(id = "working_directory", locations = "/not/read",

@@ -1851,12 +1851,13 @@ filesystem changes until that root is included in a future crawl.
       `price` from recurring `lot-price`.
 - [x] Replace the collection-specific `Price` value with shared-model `Money`
       while retaining the collection's default-EUR parsing convention.
+- [x] Add annotation-configurable `CrawlPolicy`, use one policy for direct-entry
+      exclusion and subtree pruning, and provide an opt-in policy for dot files
+      and common operating-system or NAS service entries.
 - [x] Record resulting core changes and verification.
 
 ## Open Questions
 
-- Should ignore policy and subtree-pruning policy be one contract or separate
-  extension points?
 - Which repeated uses of a 1-series or `FD-*` identifier are valid references,
   and which violate their namespace rules?
 - Which tagged folders without a Retro ID should still resolve to a specialized
@@ -1887,6 +1888,20 @@ filesystem changes until that root is included in a future crawl.
   the bundle discoverable?
 
 ## Verification
+
+Focused crawl-policy verification completed on 2026-08-03:
+
+- `IgnoreSystemFilesTest` covers dot-prefixed entries and common macOS,
+  Windows, Linux, QNAP, and Synology service names without filesystem metadata
+  checks.
+- `ArchiveDiggerCrawlPolicyTest` proves that one policy consistently controls
+  planning, direct file clues, and complete subtree pruning while preserving
+  include-everything compatibility and accepting collection-specific policies.
+- `ModelTest` proves annotation instantiation, the `CrawlEverything` default,
+  and runtime override precedence.
+- The focused core reactor completed 133 tests with no failures.
+- The complete eight-module `mvn clean install` reactor completed 244 tests
+  with no failures.
 
 Focused Markdown metadata verification completed on 2026-07-29:
 

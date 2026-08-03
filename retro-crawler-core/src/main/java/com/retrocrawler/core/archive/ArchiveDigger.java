@@ -43,15 +43,23 @@ public class ArchiveDigger {
 
 	private final CrawlPlanning planning;
 
+	private final CrawlPolicy crawlPolicy;
+
 	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder) {
-		this(descriptor, clueFinder, CrawlPlanning.defaults());
+		this(descriptor, clueFinder, CrawlPlanning.defaults(), new CrawlEverything());
 	}
 
 	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder,
 			final CrawlPlanning planning) {
+		this(descriptor, clueFinder, planning, new CrawlEverything());
+	}
+
+	public ArchiveDigger(final ArchiveDescriptor descriptor, final ArchivePathClueFinder clueFinder,
+			final CrawlPlanning planning, final CrawlPolicy crawlPolicy) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.clueFinder = Objects.requireNonNull(clueFinder, "clueFinder");
 		this.planning = Objects.requireNonNull(planning, "planning");
+		this.crawlPolicy = Objects.requireNonNull(crawlPolicy, "crawlPolicy");
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
@@ -136,13 +144,13 @@ public class ArchiveDigger {
 		progressor.indeterminate(ProgressStage.PLANNING, message);
 	}
 
-	private static List<Path> list(final Path path) throws IOException {
+	private List<Path> list(final Path path) throws IOException {
 		/*
 		 * Need a try-with to close the stream or else the JVM will sooner or later
 		 * crash with a java.io.IOException: Too many open files.
 		 */
 		try (Stream<Path> files = Files.list(path)) {
-			return files.sorted(Comparator.comparing(Path::toString)).toList();
+			return files.filter(crawlPolicy::includes).sorted(Comparator.comparing(Path::toString)).toList();
 		}
 	}
 

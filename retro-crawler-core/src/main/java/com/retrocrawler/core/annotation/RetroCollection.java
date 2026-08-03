@@ -5,6 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.retrocrawler.core.archive.CrawlEverything;
+import com.retrocrawler.core.archive.CrawlPolicy;
+
 /**
  * Declares the identity and default filesystem configuration of one collector's
  * collection. Exactly one type in a RetroCrawler model carries this annotation.
@@ -26,6 +29,11 @@ public @interface RetroCollection {
 	 * they are supplied explicitly while constructing the model.
 	 */
 	String[] locations() default {};
+
+	/**
+	 * Policy deciding which filesystem entries belong to the archive crawl.
+	 */
+	Class<? extends CrawlPolicy> crawlPolicy() default CrawlEverything.class;
 
 	/**
 	 * Optional collection-wide directory for crawler-owned files such as external
