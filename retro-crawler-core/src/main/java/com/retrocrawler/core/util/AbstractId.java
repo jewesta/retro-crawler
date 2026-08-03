@@ -14,7 +14,7 @@ public class AbstractId<T> implements Id<T> {
 
 	@Override
 	@JsonValue
-	public T get() {
+	public T value() {
 		return id;
 	}
 

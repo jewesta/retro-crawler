@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,15 +15,23 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.archive.CrawlPlanning;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.PathNameClueFinder;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
+import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.progress.ProgressState;
+import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class RetroCrawlerBuilderTest {
@@ -32,12 +42,48 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
 
-		final GearArchive<TestGear> result = crawler.crawlArchive(new Monitor(message -> {
-			// No progress reporting required in tests.
-		}), false, TestGear.class);
+		final Stash<TestGear> result = crawler.crawlStash(new Progressor(), ReindexScope.none(), TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
-		assertEquals(0, result.getBuckets().size());
+		assertEquals(1, result.buckets().size());
+	}
+
+	@Test
+	void reportsFactoryFailureAsTerminalProgress() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository()).build();
+		final Progressor progressor = new Progressor();
+		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
+
+			@Override
+			public Class<Object> gearType() {
+				return Object.class;
+			}
+
+			@Override
+			public void beginBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
+				// No buckets in this test archive.
+			}
+
+			@Override
+			public void endBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
+				// No buckets in this test archive.
+			}
+
+			@Override
+			public Object addNode(final Object parent, final Object gear) {
+				throw new AssertionError("No gear expected.");
+			}
+
+			@Override
+			public Object build() {
+				throw new IllegalStateException("Factory broke.");
+			}
+		};
+
+		assertThrows(IllegalStateException.class, () -> crawler.crawl(progressor, ReindexScope.none(), failingFactory));
+		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
+		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
 	}
 
 	@Test
@@ -79,8 +125,27 @@ class RetroCrawlerBuilderTest {
 		assertEquals("Repository is already configured.", failure.getMessage());
 	}
 
-	@RetroArchive(id = "factory_test", locations = "/this/path/must/not/be/crawled",
-			findClues = @RetroArchive.LookAt(pathName = EmptyClueFinder.class))
+	@Test
+	void acceptsExplicitCrawlPlanning() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final CrawlPlanning planning = new CrawlPlanning(25, 3, 200, Duration.ofSeconds(2));
+
+		RetroCrawler.builder().model(model).repository(new RecordingRepository()).crawlPlanning(planning).build();
+	}
+
+	@Test
+	void rejectsDuplicateCrawlPlanningConfiguration() {
+		final CrawlPlanning planning = CrawlPlanning.defaults();
+		final RetroCrawler.Builder builder = RetroCrawler.builder().crawlPlanning(planning);
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> builder.crawlPlanning(planning));
+
+		assertEquals("Crawl planning is already configured.", failure.getMessage());
+	}
+
+	@RetroCollection(id = "factory_test", locations = "/this/path/must/not/be/crawled")
+	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class TestArchiveConfiguration {
 	}
 
@@ -94,10 +159,10 @@ class RetroCrawlerBuilderTest {
 		}
 	}
 
-	public static class EmptyClueFinder implements PathNameClueFinder {
+	public static class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String pathName) {
+		public Set<Clue> find(final String folderName) {
 			return Set.of();
 		}
 	}
@@ -114,7 +179,8 @@ class RetroCrawlerBuilderTest {
 		@Override
 		public Optional<Archive> retrieve(final ArchiveId id) {
 			retrieveCount++;
-			return Optional.of(Archive.of(id, List.of()));
+			final Path root = Path.of("/this/path/must/not/be/crawled");
+			return Optional.of(Archive.of(id, List.of(Bucket.of(root, new ArchiveNode(".", null, null)))));
 		}
 	}
 

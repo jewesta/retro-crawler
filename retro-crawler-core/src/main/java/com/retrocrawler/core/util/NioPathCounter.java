@@ -16,9 +16,11 @@ public final class NioPathCounter {
 	 * Counts all paths (files and directories) under the given root path
 	 * recursively.
 	 *
-	 * @param rootPath the root directory as a string
+	 * @param rootPath
+	 *            the root directory as a string
 	 * @return the number of paths found, including the root directory itself
-	 * @throws IOException if an IO error occurs
+	 * @throws IOException
+	 *             if an IO error occurs
 	 */
 	public static long countPathsRecursively(final String rootPath) throws IOException {
 		final Path root = FileSystems.getDefault().getPath(rootPath);

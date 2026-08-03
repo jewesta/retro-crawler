@@ -19,15 +19,15 @@ public class RatedFact {
 		this.explanation = explanation;
 	}
 
-	public Optional<Object> getValue() {
+	public Optional<Object> value() {
 		return Optional.ofNullable(value);
 	}
 
-	public Confidence getConfidence() {
+	public Confidence confidence() {
 		return confidence;
 	}
 
-	public Optional<String> getExplanation() {
+	public Optional<String> explanation() {
 		return Optional.ofNullable(explanation);
 	}
 

@@ -9,15 +9,15 @@ public class AttributeValueParseException extends RetroCrawlerException {
 		super();
 	}
 
-	public AttributeValueParseException(String message, Throwable cause) {
+	public AttributeValueParseException(final String message, final Throwable cause) {
 		super(message, cause);
 	}
 
-	public AttributeValueParseException(String message) {
+	public AttributeValueParseException(final String message) {
 		super(message);
 	}
 
-	public AttributeValueParseException(Throwable cause) {
+	public AttributeValueParseException(final Throwable cause) {
 		super(cause);
 	}
 

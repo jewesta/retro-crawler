@@ -31,13 +31,14 @@ class ModelPackagedDiscoveryTest {
 		final Path jar = createJar(classesDirectory);
 		final ClassLoader originalContextClassLoader = Thread.currentThread().getContextClassLoader();
 
-		try (URLClassLoader jarClassLoader = new URLClassLoader(new URL[] { jar.toUri().toURL() },
-				originalContextClassLoader)) {
+		try (URLClassLoader jarClassLoader = new URLClassLoader(new URL[] {
+				jar.toUri().toURL()
+		}, originalContextClassLoader)) {
 			Thread.currentThread().setContextClassLoader(jarClassLoader);
 
 			final Model model = Model.from(PACKAGE_NAME);
 
-			assertEquals("packaged_model", model.getArchiveDescriptor().getId().get());
+			assertEquals("packaged_model", model.archiveDescriptor().id().value());
 		} finally {
 			Thread.currentThread().setContextClassLoader(originalContextClassLoader);
 		}
@@ -52,31 +53,31 @@ class ModelPackagedDiscoveryTest {
 		Files.createDirectories(packageDirectory);
 		Files.createDirectories(classesDirectory);
 		Files.writeString(archiveSource, """
-				package com.retrocrawler.packagedfixture;
+			package com.retrocrawler.packagedfixture;
 
-				@com.retrocrawler.core.annotation.RetroArchive(
-						id = "packaged_model",
-						locations = "/unused",
-						findClues = @com.retrocrawler.core.annotation.RetroArchive.LookAt(
-								pathName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class))
-				public class PackagedArchive {
-				}
-				""");
+			@com.retrocrawler.core.annotation.RetroCollection(
+					id = "packaged_model",
+					locations = "/unused")
+			@com.retrocrawler.core.annotation.RetroClues(
+					fromFolderName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class)
+			public class PackagedArchive {
+			}
+			""");
 		Files.writeString(gearSource, """
-				package com.retrocrawler.packagedfixture;
+			package com.retrocrawler.packagedfixture;
 
-				@com.retrocrawler.core.annotation.RetroGear(
-						com.retrocrawler.core.gear.matcher.AnyGearMatcher.class)
-				public class PackagedGear {
+			@com.retrocrawler.core.annotation.RetroGear(
+					com.retrocrawler.core.gear.matcher.AnyGearMatcher.class)
+			public class PackagedGear {
 
-					@com.retrocrawler.core.annotation.RetroAnyAttribute
-					private final java.util.Map<String, com.retrocrawler.core.util.RetroAttribute> attributes =
-							new java.util.HashMap<>();
+				@com.retrocrawler.core.annotation.RetroAnyAttribute
+				private final java.util.Map<String, com.retrocrawler.core.util.RetroAttribute> attributes =
+						new java.util.HashMap<>();
 
-					public PackagedGear() {
-					}
+				public PackagedGear() {
 				}
-				""");
+			}
+			""");
 
 		final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		assertNotNull(compiler, "The packaged-discovery test requires a JDK.");

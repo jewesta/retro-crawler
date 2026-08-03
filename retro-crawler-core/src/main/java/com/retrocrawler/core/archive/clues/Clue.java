@@ -4,16 +4,19 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-import com.retrocrawler.core.util.JacksonSerializable;
 import com.retrocrawler.core.util.RetroAttribute;
 
+/**
+ * Model-independent evidence observed while crawling an archive.
+ * <p>
+ * A clue retains the raw string values and any key explicitly observed by its
+ * finder. It may be cached as part of an {@link Artifact}; only later gear
+ * resolution may interpret it as a typed {@link com.retrocrawler.core.gear.Fact
+ * Fact}.
+ */
 public class Clue implements RetroAttribute {
 
 	public static final String PREFIX_ANONYMOUS = "_";
-
-	public static final String KEY_INTERNAL_ID = JacksonSerializable.PREFIX_INTERNAL + "id";
-
-	public static final String KEY_INTERNAL_FOLDER = JacksonSerializable.PREFIX_INTERNAL + "folder";
 
 	private static final Random RANDOM = new Random();
 
@@ -23,16 +26,16 @@ public class Clue implements RetroAttribute {
 
 	Clue(final String key, final Set<String> values) {
 		this.key = key;
-		this.value = Objects.requireNonNull(values, "values");
+		this.value = Set.copyOf(Objects.requireNonNull(values, "values"));
 	}
 
 	@Override
-	public String getKey() {
+	public String key() {
 		return key;
 	}
 
 	@Override
-	public Set<String> getValue() {
+	public Set<String> value() {
 		return value;
 	}
 
@@ -42,6 +45,15 @@ public class Clue implements RetroAttribute {
 
 	public boolean isAnonymous() {
 		return key.startsWith(PREFIX_ANONYMOUS);
+	}
+
+	/**
+	 * A missing-value clue records that a known key was deliberately observed
+	 * even though no value was supplied. It can establish an artifact and
+	 * retain source intent, but cannot be resolved into a fact.
+	 */
+	public boolean isMissingValue() {
+		return !isAnonymous() && value.isEmpty();
 	}
 
 	public static Clue of(final String value) {
@@ -62,6 +74,11 @@ public class Clue implements RetroAttribute {
 		return new Clue(key, values);
 	}
 
+	public static Clue missingValue(final String key) {
+		assertUnreserved(key);
+		return new Clue(key, Set.of());
+	}
+
 	private static String random(final int length) {
 		final String chars = "abcdefghijklmnopqrstuvwxyz0123456789";
 		final StringBuilder sb = new StringBuilder();
@@ -73,13 +90,13 @@ public class Clue implements RetroAttribute {
 	}
 
 	public static Clue internal(final String key, final String value) {
-		if (!key.startsWith(JacksonSerializable.PREFIX_INTERNAL)) {
-			throw new IllegalArgumentException("Expected internal key starting with '"
-					+ JacksonSerializable.PREFIX_INTERNAL + "' but got: '" + key + "'.");
-		}
-		if (key.equals(JacksonSerializable.TYPE)) {
+		if (!key.startsWith(InternalClueKeys.PREFIX)) {
 			throw new IllegalArgumentException(
-					JacksonSerializable.TYPE + " is reserved for serialization and cannot be used.");
+					"Expected internal key starting with '" + InternalClueKeys.PREFIX + "' but got: '" + key + "'.");
+		}
+		if (key.equals(InternalClueKeys.TYPE)) {
+			throw new IllegalArgumentException(
+					InternalClueKeys.TYPE + " is reserved for serialization and cannot be used.");
 		}
 		return new Clue(key, Set.of(value));
 	}
@@ -94,8 +111,8 @@ public class Clue implements RetroAttribute {
 					+ "'. This prefix is reserved for anonymous keys and cannot be used. Offending key: '" + key
 					+ "'.");
 		}
-		if (key.startsWith(JacksonSerializable.PREFIX_INTERNAL)) {
-			throw new IllegalArgumentException("Expected key that doesn't start '" + JacksonSerializable.PREFIX_INTERNAL
+		if (key.startsWith(InternalClueKeys.PREFIX)) {
+			throw new IllegalArgumentException("Expected key that doesn't start '" + InternalClueKeys.PREFIX
 					+ "'. This prefix is reserved for internal keys and cannot be used. Offending key: '" + key + "'.");
 		}
 	}

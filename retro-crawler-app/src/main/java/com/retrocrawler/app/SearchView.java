@@ -20,11 +20,13 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
-import com.retrocrawler.core.util.Monitor;
-import com.retrocrawler.demo.collection.DemoFiles;
-import com.retrocrawler.demo.collection.DemoModels;
-import com.retrocrawler.demo.collection.gear.MyKnownGear;
+import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.demo.DemoFiles;
+import com.retrocrawler.demo.DemoModels;
+import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -80,7 +82,7 @@ public class SearchView extends HorizontalLayout {
 
 	private final Paragraph messageBar = new Paragraph();
 
-	private Monitor monitor;
+	private Progressor progressor;
 
 	private final Map<ArchiveId, RetroCrawler> retroCrawler;
 
@@ -92,14 +94,14 @@ public class SearchView extends HorizontalLayout {
 		setHeightFull();
 		final Repository repository = new JsonFileRepository();
 		this.retroCrawler = Arrays.stream(DemoModels.values()).map(model -> createCrawler(model, repository))
-				.collect(Collectors.toUnmodifiableMap(rc -> rc.getArchiveDescriptor().getId(), Function.identity()));
+				.collect(Collectors.toUnmodifiableMap(rc -> rc.archiveDescriptor().id(), Function.identity()));
 		activeArchiveId = retroCrawler.keySet().iterator().next();
 	}
 
 	private static RetroCrawler createCrawler(final DemoModels demoModel, final Repository repository) {
 		final Model model = Model.from(demoModel.getBasePackage());
 		final RetroCrawler retroCrawler = RetroCrawler.builder().model(model).repository(repository).build();
-		final ArchiveDescriptor descriptor = retroCrawler.getArchiveDescriptor();
+		final ArchiveDescriptor descriptor = retroCrawler.archiveDescriptor();
 		try {
 			DemoFiles.copyToWorkDirectory(descriptor);
 		} catch (final IOException e) {
@@ -113,28 +115,19 @@ public class SearchView extends HorizontalLayout {
 		super.onAttach(attachEvent);
 		contentArea.setPadding(false);
 
-		final UI ui = attachEvent.getUI();
-		final AtomicInteger counter = new AtomicInteger(0);
-		this.monitor = new Monitor(s -> ui.access(() -> {
-			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
-			drums.setSrc(drums(frame).getSrc());
-			messageBar.setText(s);
-			ui.push();
-		}));
-
-//		searchTerm = new TextField("Search Term");
-//		searchButton = new Button("Search");
-//		searchButton.addClickListener(e -> {
-//			Notification.show("Hello " + searchTerm.getValue());
-//		});
-//		searchButton.addClickShortcut(Key.ENTER);
-//
-//		setMargin(true);
-//		setVerticalComponentAlignment(Alignment.END, searchTerm, searchButton);
-//
-//		searchArea.add(searchTerm, searchButton);
-//
-//		mainLayout.add(searchArea);
+		//		searchTerm = new TextField("Search Term");
+		//		searchButton = new Button("Search");
+		//		searchButton.addClickListener(e -> {
+		//			Notification.show("Hello " + searchTerm.getValue());
+		//		});
+		//		searchButton.addClickShortcut(Key.ENTER);
+		//
+		//		setMargin(true);
+		//		setVerticalComponentAlignment(Alignment.END, searchTerm, searchButton);
+		//
+		//		searchArea.add(searchTerm, searchButton);
+		//
+		//		mainLayout.add(searchArea);
 
 		treeGrid.addHierarchyColumn(p -> p.getTitle() != null ? p.getTitle() : "<unknown>").setHeader("Title")
 				.setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
@@ -142,7 +135,8 @@ public class SearchView extends HorizontalLayout {
 				.setHeader("Id").setResizable(true);
 		treeGrid.addComponentColumn(p -> p.getPicFront().map(path -> {
 			/*
-			 * The StreamResource allows for loading the image from the local file system.
+			 * The StreamResource allows for loading the image from the local
+			 * file system.
 			 */
 			final String fileName = path.getFileName().toString();
 			final StreamResource resource = new StreamResource(fileName, () -> {
@@ -187,13 +181,13 @@ public class SearchView extends HorizontalLayout {
 		crawl.addClickListener(event -> {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
 			final ArchiveDescriptor location = archives.getValue();
-			activeArchiveId = location.getId();
-			refreshAsync(eventUI, true);
+			activeArchiveId = location.id();
+			refreshAsync(eventUI, ReindexScope.all());
 		});
 
 		final Button cancel = retroButton("Cancel Indexing");
 		cancel.addClickListener(event -> {
-			monitor.cancel("Cancel requested...");
+			progressor.cancel("Cancel requested...");
 			logger.info("Repository indexing cancelled.");
 		});
 
@@ -205,9 +199,9 @@ public class SearchView extends HorizontalLayout {
 
 		// final List<ArchiveDescriptor> repoLocationList = getLocations();
 		final List<ArchiveDescriptor> repoLocationList = retroCrawler.values().stream()
-				.map(RetroCrawler::getArchiveDescriptor).toList();
+				.map(RetroCrawler::archiveDescriptor).toList();
 		archives.setItems(repoLocationList);
-		archives.setItemLabelGenerator(ArchiveDescriptor::getName);
+		archives.setItemLabelGenerator(ArchiveDescriptor::name);
 		archives.setValue(repoLocationList.get(0));
 
 		messageBar.setMaxWidth("100%");
@@ -231,7 +225,7 @@ public class SearchView extends HorizontalLayout {
 		final HorizontalLayout drawerHeader = createHeader();
 		final VerticalLayout drawerHeaderArea = createHeaderArea(drawerHeader);
 
-//		final TextField textField = new TextField();
+		//		final TextField textField = new TextField();
 		drawer.add(drawerHeaderArea);
 		drawer.setPadding(false);
 		// shown by selection event
@@ -247,8 +241,7 @@ public class SearchView extends HorizontalLayout {
 		add(splitLayout);
 
 		// Perform initial loading
-		monitor.postUpdate("Loading index...");
-		refreshAsync(attachEvent.getUI(), false);
+		refreshAsync(attachEvent.getUI(), ReindexScope.none());
 	}
 
 	private static VerticalLayout createHeaderArea(final Component... children) {
@@ -275,22 +268,23 @@ public class SearchView extends HorizontalLayout {
 		return button;
 	}
 
-	private void refreshAsync(final UI ui, final boolean reindex) {
+	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
+		final Progressor activeProgressor = createProgressor(ui);
+		this.progressor = activeProgressor;
+		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				final RetroCrawler activeCrawler = retroCrawler.get(activeArchiveId);
-				return activeCrawler.crawl(monitor, reindex, new VaadinTreeDataFactory());
+				return activeCrawler.crawl(activeProgressor, reindexScope, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
-		}).thenAccept(successResult -> {
+		}).thenAccept(successResult -> ui.access(() -> {
+			activeProgressor.complete(INDEX_READY);
+			setParts(successResult);
+		})).exceptionally(failureException -> {
 			ui.access(() -> {
-				monitor.done(INDEX_READY);
-				setParts(successResult);
-			});
-		}).exceptionally(failureException -> {
-			ui.access(() -> {
-				monitor.done(INDEX_FAILED + " " + failureException.getMessage());
+				activeProgressor.fail(INDEX_FAILED + " " + failureException.getMessage());
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
@@ -298,8 +292,18 @@ public class SearchView extends HorizontalLayout {
 		});
 	}
 
+	private Progressor createProgressor(final UI ui) {
+		final AtomicInteger counter = new AtomicInteger(0);
+		return Progressor.reportingMessages(message -> ui.access(() -> {
+			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
+			drums.setSrc(drums(frame).getSrc());
+			messageBar.setText(message);
+			ui.push();
+		}));
+	}
+
 	public void setParts(final TreeData<MyKnownGear> tree) {
-		final TreeDataProvider<MyKnownGear> partsProvider = new TreeDataProvider<MyKnownGear>(tree);
+		final TreeDataProvider<MyKnownGear> partsProvider = new TreeDataProvider<>(tree);
 		treeGrid.setDataProvider(partsProvider);
 		this.parts = tree;
 	}
@@ -308,8 +312,8 @@ public class SearchView extends HorizontalLayout {
 		return parts;
 	}
 
-	protected Optional<Monitor> getMonitor() {
-		return Optional.ofNullable(monitor);
+	protected Optional<Progressor> getProgressor() {
+		return Optional.ofNullable(progressor);
 	}
 
 	private static final Image drums(final int i) {

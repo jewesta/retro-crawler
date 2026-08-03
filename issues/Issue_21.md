@@ -85,7 +85,7 @@ public final class Model {
 	}
 
 	public static Model from(TypeSource source) {
-		return from(source.getTypes());
+		return from(source.types());
 	}
 }
 ```
@@ -143,7 +143,7 @@ optional integration.
 The discovery contract should be narrow:
 
 - Scan the named package and its subpackages.
-- Discover types carrying `@RetroArchive` or `@RetroGear`.
+- Discover types carrying `@RetroCollection` or `@RetroGear`.
 - Inspect annotation metadata without initializing every class in the package.
 - Load only candidate model types, using the scanner's corresponding class
   loader.
@@ -165,7 +165,7 @@ than weakening error reporting in `Model.from(basePackage)`.
 
 The implementation is verified against exploded Maven test classes, an ordinary
 JAR reached through a custom context class loader, recursive subpackages,
-missing model annotations, multiple/missing archive declarations, and candidate
+missing model annotations, multiple/missing collection declarations, and candidate
 class loading without static initialization. The current Vaadin module does not
 produce a nested Spring Boot JAR, and the project does not contain JPMS modules,
 so those two environments are not represented by project fixtures. ClassGraph
@@ -178,7 +178,7 @@ deployment does not expose its model packages to scanning.
 The immutable `Model` contains the annotation-derived domain configuration
 needed to assemble a crawler:
 
-- One archive definition.
+- One collection definition.
 - The configured clue-finder instances.
 - Fact definitions keyed by clue/fact key.
 - Gear specialists keyed by gear type.
@@ -218,15 +218,20 @@ application-supplied base package. `Model.from(Set<Class<?>>)` and
 `Model.from(TypeSource)` feed the same deterministic annotation parser without
 requiring classpath scanning.
 
-The existing annotations configure:
+The current annotations configure:
 
-- `@RetroArchive`
-  - Archive ID
+- `@RetroCollection`
+  - Collection ID
   - Display name
   - Filesystem locations
-  - Path-name clue finder
+  - Working directory
+- `@RetroClues`
+  - Folder-name clue finder
   - File-name clue finders
   - File-content clue finders
+  - Folder-tree clue finders
+- `@RetroFactParser`
+  - Collection-specific overrides for a selected fact parser
 - `@RetroGear`
   - Gear type
   - Gear matcher implementation
@@ -243,9 +248,9 @@ The existing annotations configure:
 Annotation parsing and object creation are implemented with ordinary Java
 reflection:
 
-- `Model` locates `@RetroArchive` and assembles the model-owned runtime
+- `Model` locates `@RetroCollection` and assembles the model-owned runtime
   components.
-- `ArchiveDescriptor.of` reads archive metadata.
+- `ArchiveDescriptor.of` reads collection source metadata.
 - `ArchivePathClueFinder.of` reads clue-finder declarations and creates the
   declared implementations.
 - `GearDescriptor.of` reads gear and field annotations.
@@ -269,7 +274,7 @@ No Spring configuration mechanism is involved in `retro-crawler-core`.
 The project already exposes many of the interfaces required by a manual
 configuration API:
 
-- `PathNameClueFinder`
+- `FolderNameClueFinder`
 - `FileNameClueFinder`
 - `FileContentClueFinder`
 - `FactParser`
@@ -348,8 +353,11 @@ configuration will require explicit rules for:
 - When the combined configuration becomes immutable.
 
 Prefer deterministic behavior and actionable validation errors over implicit
-last-write-wins behavior. These rules are deferred together with the public
-`Model.builder()` API.
+last-write-wins behavior. Issue 25 introduces the first deliberately narrow
+`Model.builder()` slice: it selects the same annotation-derived types as
+`Model.from(...)` while overriding runtime locations, working directory, and
+standard fact-parser configuration. Annotation-free fact and Gear registration
+remains deferred.
 
 ## Relationship to Issue 17
 
@@ -392,6 +400,8 @@ The work for issues 17 and 21 is intended to be merged into `main` together.
       annotation-derived models, required crawler composition, and validation.
 - [x] Document `Model.from(...)` and `RetroCrawler.builder()` as the primary
       composition API.
+- [x] Add `Model.builder()` for annotation-derived models with runtime
+      collection locations, working directory, and fact-parser overrides.
 
 ## Decisions
 
@@ -400,7 +410,8 @@ The work for issues 17 and 21 is intended to be merged into `main` together.
 - `Model` owns the annotation-derived `ArchiveDescriptor`,
   `ArchivePathClueFinder`, and `GearResolver`. The builder owns composition with
   the repository and creates `ArchiveDigger` and `RetroCrawlerImpl`.
-- Manual `Model.builder()` design remains deferred.
+- Fully manual fact, clue-finder, matcher, and Gear registration remains
+  deferred; the current `Model.builder()` configures annotation-derived models.
 
 ## Verification
 
@@ -420,7 +431,6 @@ builder entries, duplicate builder entries, and repository propagation.
 - Requiring an external dependency injection container.
 - Adding H2 or another database implementation.
 - Configuring per-crawl runtime behavior during crawler construction.
-- A public `Model.builder()` or manual model registrations in the initial
-  implementation.
+- Annotation-free manual model registrations.
 - Refactoring working matcher, factory, context, or specialist contracts for
   hypothetical manual configuration.

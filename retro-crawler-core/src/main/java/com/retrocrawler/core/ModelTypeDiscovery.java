@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 
 import io.github.classgraph.ClassGraph;
@@ -32,7 +32,7 @@ final class ModelTypeDiscovery {
 		try (ScanResult scan = new ClassGraph().acceptPackages(effectiveBasePackage).enableAnnotationInfo()
 				.ignoreClassVisibility().scan()) {
 			types = Stream
-					.concat(scan.getClassesWithAnnotation(RetroArchive.class.getName()).stream(),
+					.concat(scan.getClassesWithAnnotation(RetroCollection.class.getName()).stream(),
 							scan.getClassesWithAnnotation(RetroGear.class.getName()).stream())
 					.distinct().sorted(Comparator.comparing(ClassInfo::getName))
 					.map(classInfo -> loadClass(classInfo, effectiveBasePackage))
@@ -45,7 +45,7 @@ final class ModelTypeDiscovery {
 		}
 
 		if (types.isEmpty()) {
-			throw new IllegalArgumentException("No types annotated with @" + RetroArchive.class.getSimpleName()
+			throw new IllegalArgumentException("No types annotated with @" + RetroCollection.class.getSimpleName()
 					+ " or @" + RetroGear.class.getSimpleName() + " found in base package '" + effectiveBasePackage
 					+ "'.");
 		}

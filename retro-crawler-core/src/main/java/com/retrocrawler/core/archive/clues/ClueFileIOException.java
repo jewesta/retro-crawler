@@ -9,15 +9,15 @@ public class ClueFileIOException extends RetroCrawlerException {
 		super();
 	}
 
-	public ClueFileIOException(String message, Throwable cause) {
+	public ClueFileIOException(final String message, final Throwable cause) {
 		super(message, cause);
 	}
 
-	public ClueFileIOException(String message) {
+	public ClueFileIOException(final String message) {
 		super(message);
 	}
 
-	public ClueFileIOException(Throwable cause) {
+	public ClueFileIOException(final Throwable cause) {
 		super(cause);
 	}
 

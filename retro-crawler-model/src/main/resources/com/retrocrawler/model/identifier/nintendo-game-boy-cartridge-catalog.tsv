@@ -1,0 +1,634 @@
+# Nintendo Game Boy-family cartridge label-code catalogue
+# Source: Game Boy hardware database by Gekkio and contributors
+# Source URL: https://gbhwdb.gekkio.fi/static/export/cartridges.csv
+# Retrieved: 2026-08-02
+# Source SHA-256: 007ea8d8ac02448764b75eda7057314c952f19b7d0654d473cb3877c8e54e18f
+# Changes: selected cartridge label code, ROM ID, game title, normalized release regions, and explicit game-language groups; removed duplicate observations; sorted
+# License: CC-BY-SA-4.0; see README.md beside this resource
+cartridge_code	rom_id	title	release_regions	game_languages
+AGB-A2CP-EUR	AGB-A2CP-0	Castlevania - Aria of Sorrow (Europe) (En,Fr,De)	EUR	en,fr,de
+AGB-A2NP-FAH	AGB-A2NP-0	Sonic Advance 2 (Europe) (En,Ja,Fr,De,Es,It)	EUR	en,ja,fr,de,es,it
+AGB-A3AP-EUR	AGB-A3AP-0	Super Mario Advance 3 - Yoshi's Island (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-A5AP-EUR	AGB-A5AP-0	Bionicle - Matoran Adventures (USA, Europe) (En,Fr,De,Es,It,Nl,Sv,Da)	US,EUR	en,fr,de,es,it,nl,sv,da
+AGB-A7HJ-JPN	AGB-A7HJ-0	Harry Potter to Himitsu no Heya (Japan)	JP	
+AGB-A7KE-USA	AGB-A7KE-0	Kirby - Nightmare in Dream Land (USA)	US	
+AGB-A7KP-EUR	AGB-A7KP-0	Kirby - Nightmare in Dream Land (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-A88P-EUR	AGB-A88P-0	Mario & Luigi - Superstar Saga (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AA2P-EUR	AGB-AA2P-0	Super Mario Advance 2 - Super Mario World (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+AGB-AAMP-EUR-1	AGB-AAMP-0	Castlevania (Europe)	EUR	
+AGB-AF5P-EUR	AGB-AF5P-0	Shining Force - Resurrection of the Dark Dragon (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AFGP-EUR	AGB-AFGP-0	American Tail, An - Fievel's Gold Rush (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AFTP-UKV	AGB-AFTP-0	F-14 Tomcat (USA, Europe)	US,EUR	
+AGB-AFZP-EUR	AGB-AFZP-0	F-Zero - Maximum Velocity (USA, Europe)	US,EUR	
+AGB-AGAP-EUR	AGB-AGAP-0	Gradius Advance (Europe)	EUR	
+AGB-AGFF-FRA	AGB-AGFF-0	Golden Sun - L'Age Perdu (France)	FR	
+AGB-AGPP-EUR	AGB-AGPP-0	No Rules - Get Phat (USA, Europe) (En,Fr,De,Es,It,Nl)	US,EUR	en,fr,de,es,it,nl
+AGB-AGSF-FRA	AGB-AGSF-0	Golden Sun (France)	FR	
+AGB-AH3P-EUR	AGB-AH3P-0	Hamtaro - Ham-Ham Heartbreak (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AK8P-EUR	AGB-AK8P-0	Medabots AX - Metabee Ver. (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AM8P-EUR	AGB-AM8P-0	Monster Force (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AMAP-EUR-1	AGB-AMAP-0	Super Mario Advance (USA, Europe)	US,EUR	
+AGB-AMKE-USA	AGB-AMKE-0	Mario Kart - Super Circuit (USA)	US	
+AGB-AMKP-EUR	AGB-AMKP-0	Mario Kart - Super Circuit (Europe)	EUR	
+AGB-AN8P-EUR	AGB-AN8P-0	Tales of Phantasia (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AO4P-EUR	AGB-AO4P-0	Tom Clancy's Splinter Cell (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+AGB-APXP-EUR	AGB-APXP-0	Phalanx (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+AGB-AQPF-FRA	AGB-AQPF-0	Disney Princesse (France)	FR	
+AGB-AREP-EUR	AGB-AREP-0	Megaman - Battle Network (Europe)	EUR	
+AGB-ASIP-EUR	AGB-ASIP-0	Sims, The - Bustin' Out (USA, Europe) (En,Fr,De,Es,It,Nl)	US,EUR	en,fr,de,es,it,nl
+AGB-ASOP-FRA	AGB-ASOP-0	Sonic Advance (Europe) (En,Ja,Fr,De,Es)	EUR	en,ja,fr,de,es
+AGB-ASOP-UKV	AGB-ASOP-0	Sonic Advance (Europe) (En,Ja,Fr,De,Es)	EUR	en,ja,fr,de,es
+AGB-AU2P-EUR	AGB-AU2P-0	Shining Soul II (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AVSX-EUR	AGB-AVSX-0	Sword of Mana (Europe) (Fr,De)	EUR	fr,de
+AGB-AW2P-EUR	AGB-AW2P-0	Advance Wars 2 - Black Hole Rising (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AWAP-EUR	AGB-AWAP-0	Wario Land 4 (USA, Europe)	US,EUR	
+AGB-AX3F-FRA	AGB-AX3F-0	xXx (France)	FR	
+AGB-AX4E-USA	AGB-AX4E-1	Super Mario Advance 4 - Super Mario Bros. 3 (USA, Australia) (Rev 1)	US,AU	
+AGB-AX4P-EUR	AGB-AX4P-1	Super Mario Advance 4 - Super Mario Bros. 3 (Europe) (En,Fr,De,Es,It) (Rev 1)	EUR	en,fr,de,es,it
+AGB-AXPE-USA	AGB-AXPE-0	Pokemon - Sapphire Version (USA, Europe)	US,EUR	
+AGB-AXPE-USA	AGB-AXPE-1	Pokemon - Sapphire Version (USA, Europe) (Rev 1)	US,EUR	
+AGB-AXPE-USA	AGB-AXPE-2	Pokemon - Sapphire Version (USA, Europe) (Rev 2)	US,EUR	
+AGB-AXPF-FRA	AGB-AXPF-0	Pokemon - Version Saphir (France)	FR	
+AGB-AXPJ-JPN	AGB-AXPJ-0	Pocket Monsters - Sapphire (Japan)	JP	
+AGB-AXPJ-JPN	AGB-AXPJ-1	Pocket Monsters - Sapphire (Japan) (Rev 1)	JP	
+AGB-AXPS-ESP	AGB-AXPS-1	Pokemon - Edicion Zafiro (Spain) (Rev 1)	ES	
+AGB-AXQF-FRA	AGB-AXQF-0	Taxi 3 (France)	FR	
+AGB-AXVE-USA	AGB-AXVE-0	Pokemon - Ruby Version (USA, Europe)	US,EUR	
+AGB-AXVF-FRA	AGB-AXVF-0	Pokemon - Version Rubis (France)	FR	
+AGB-AXVJ-JPN	AGB-AXVJ-0	Pocket Monsters - Ruby (Japan)	JP	
+AGB-AXVS-ESP	AGB-AXVS-0	Pokemon - Edicion Rubi (Spain)	ES	
+AGB-AXYP-EUR	AGB-AXYP-0	SSX Tricky (USA, Europe) (En,Fr,De)	US,EUR	en,fr,de
+AGB-AY7E-USA	AGB-AY7E-0	Yu-Gi-Oh! - The Sacred Cards (USA)	US	
+AGB-AYCP-EUR	AGB-AYCP-0	Phantasy Star Collection (Europe)	EUR	
+AGB-AYDP-EUR	AGB-AYDP-0	Yu-Gi-Oh! - Dungeon Dice Monsters (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AYZP-EUR	AGB-AYZP-0	Rayman 3 (Europe) (En,Fr,De,Es,It,Nl,Sv,No,Da,Fi)	EUR	en,fr,de,es,it,nl,sv,no,da,fi
+AGB-AZ2E-USA	AGB-AZ2E-0	Zoids - Legacy (USA)	US	
+AGB-AZEP-EUR	AGB-AZEP-0	Zone of the Enders - The Fist of Mars (Europe) (En,Fr,De)	EUR	en,fr,de
+AGB-AZIX-EUR	AGB-AZIX-0	Finding Nemo (Europe) (Fr,Nl)	EUR	fr,nl
+AGB-AZLE-USA	AGB-AZLE-0	Legend of Zelda, The - A Link to the Past & Four Swords (USA)	US	
+AGB-AZLP-EUR	AGB-AZLP-0	Legend of Zelda, The - A Link to the Past & Four Swords (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-AZWP-EUR	AGB-AZWP-0	WarioWare, Inc. - Minigame Mania (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-B24E-USA	AGB-B24E-0	Pokemon Mystery Dungeon - Red Rescue Team (USA, Australia)	US,AU	
+AGB-B24P-EUR	AGB-B24P-0	Pokemon Mystery Dungeon - Red Rescue Team (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-B2BP-EUR	AGB-B2BP-0	2 Games in 1 - The SpongeBob SquarePants Movie + SpongeBob SquarePants and Friends in Freeze Frame Frenzy (Europe) (En,Fr,De,Es,It,Nl+En,Fr,De,Es,Nl)	EUR	en,fr,de,es,it,nl+en,fr,de,es,nl
+AGB-B2LP-EUR	AGB-B2LP-0	Totally Spies! 2 - Undercover (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+AGB-B3SP-EUR	AGB-B3SP-0	Sonic Advance 3 (Europe) (En,Ja,Fr,De,Es,It)	EUR	en,ja,fr,de,es,it
+AGB-B8KP-EUR	AGB-B8KP-0	Kirby & The Amazing Mirror (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-B8ME-USA	AGB-B8ME-0	Mario Party Advance (USA)	US	
+AGB-BAUE-USA	AGB-BAUE-0	Barbie - The Princess and the Pauper (USA)	US	
+AGB-BBRX-EUR	AGB-BBRX-0	Brother Bear (Europe) (Fr,De,Es,It,Nl,Sv,Da)	EUR	fr,de,es,it,nl,sv,da
+AGB-BCAX-FAH	AGB-BCAX-0	Cars (Europe) (Fr,Nl)	EUR	fr,nl
+AGB-BCRP-EUR	AGB-BCRP-0	Crazy Frog Racer (Europe) (En,Fr,De,Nl)	EUR	en,fr,de,nl
+AGB-BDVP-EUR	AGB-BDVP-0	Dragon Ball - Advanced Adventure (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BE8P-EUR	AGB-BE8P-0	Fire Emblem - The Sacred Stones (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BFKP-EUR	AGB-BFKP-2	Franklin the Turtle (Europe) (En,Fr,De,Es,It,Sv,No,Da,Fi) (Rev 2)	EUR	en,fr,de,es,it,sv,no,da,fi
+AGB-BFZP-EUR	AGB-BFZP-0	F-Zero - GP Legend (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BG7E-USA	AGB-BG7E-0	Games Explosion! (USA)	US	
+AGB-BGTP-EUR	AGB-BGTP-0	Grand Theft Auto (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BGZX-EUR	AGB-BGZX-0	Madagascar (Europe) (Fr,De,Pt)	EUR	fr,de,pt
+AGB-BH3E-USA	AGB-BH3E-0	Happy Feet (USA) (En,Fr)	US	en,fr
+AGB-BH3P-EUR	AGB-BH3P-0	Happy Feet (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BH8P-EUR	AGB-BH8P-0	Harry Potter and the Goblet of Fire (USA, Europe) (En,Fr,De,Es,It,Nl,Da)	US,EUR	en,fr,de,es,it,nl,da
+AGB-BHTP-EUR	AGB-BHTP-0	Harry Potter and the Prisoner of Azkaban (USA, Europe) (En,Fr,De,Es,It,Nl,Da)	US,EUR	en,fr,de,es,it,nl,da
+AGB-BICD-NOE	AGB-BICD-0	Unglaublichen, Die (Germany)	DE	
+AGB-BKMP-EUR	AGB-BKMP-0	Kim Possible 2 - Drakken's Demise (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+AGB-BL7E-USA	AGB-BL7E-0	LEGO Star Wars II - The Original Trilogy (USA)	US	
+AGB-BLPF-FRA	AGB-BLPF-0	2 Games in 1 - Disney Princesse + Le Roi Lion (France) (Fr+En,Fr,De,Es,It,Nl,Sv,Da)	FR	fr+en,fr,de,es,it,nl,sv,da
+AGB-BLXP-FAH	AGB-BLXP-0	Asterix & Obelix XXL (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+AGB-BM9J-JPN	AGB-BM9J-0	MAER Heaven - Knockin' on Heaven's Door (Japan)	JP	
+AGB-BMXP-EUR	AGB-BMXP-0	Metroid - Zero Mission (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BNKP-FRA	AGB-BNKP-0	Noddy - A Day in Toyland (Europe) (En,Fr,Es,It,Nl,Pt,Da)	EUR	en,fr,es,it,nl,pt,da
+AGB-BNSP-EUR	AGB-BNSP-0	Need for Speed - Underground (USA, Europe) (En,Fr,De,It)	US,EUR	en,fr,de,it
+AGB-BNWP-EUR	AGB-BNWP-0	Need for Speed - Most Wanted (USA, Europe) (En,Fr,De,It)	US,EUR	en,fr,de,it
+AGB-BP9E-USA	AGB-BP9E-0	World Championship Poker (USA)	US	
+AGB-BPED-NOE	AGB-BPED-0	Pokemon - Smaragd-Edition (Germany)	DE	
+AGB-BPEE-USA	AGB-BPEE-0	Pokemon - Emerald Version (USA, Europe)	US,EUR	
+AGB-BPEF-FRA	AGB-BPEF-0	Pokemon - Version Emeraude (France)	FR	
+AGB-BPEJ-JPN	AGB-BPEJ-0	Pocket Monsters - Emerald (Japan)	JP	
+AGB-BPES-ESP	AGB-BPES-0	Pokemon - Edicion Esmeralda (Spain)	ES	
+AGB-BPGE-USA	AGB-BPGE-1	Pokemon - LeafGreen Version (USA, Europe) (Rev 1)	US,EUR	
+AGB-BPGF-FRA	AGB-BPGF-0	Pokemon - Version Vert Feuille (France)	FR	
+AGB-BPGJ-JPN	AGB-BPGJ-0	Pocket Monsters - LeafGreen (Japan)	JP	
+AGB-BPGS-ESP	AGB-BPGS-0	Pokemon - Edicion Verde Hoja (Spain)	ES	
+AGB-BPRE-USA	AGB-BPRE-1	Pokemon - FireRed Version (USA, Europe) (Rev 1)	US,EUR	
+AGB-BPRF-FRA	AGB-BPRF-0	Pokemon - Version Rouge Feu (France)	FR	
+AGB-BPRJ-JPN	AGB-BPRJ-0	Pocket Monsters - FireRed (Japan)	JP	
+AGB-BPRS-ESP	AGB-BPRS-0	Pokemon - Edicion Rojo Fuego (Spain)	ES	
+AGB-BPTP-EUR	AGB-BPTP-0	Peter Pan - The Motion Picture Event (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BQQX-EUR	AGB-BQQX-0	SpongeBob SquarePants - Lights, Camera, Pants! (Europe) (En,Fr,De,Es,It,Nl,Sv)	EUR	en,fr,de,es,it,nl,sv
+AGB-BR3P-EUR	AGB-BR3P-0	R-Type III - The Third Lightning (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BR4J-JPN	AGB-BR4J-0	Rockman EXE 4.5 - Real Operation (Japan)	JP	
+AGB-BRKP-UKV	AGB-BRKP-0	Megaman - Battle Network 5 - Team Colonel (Europe)	EUR	
+AGB-BRQP-UKV	AGB-BRQP-0	3 Games in One - Darts + Roll-a-Ball + Shuffle Bowl (Europe)	EUR	
+AGB-BS7P-EUR	AGB-BS7P-0	2 in 1 Game Pack - Shrek 2 & Shark Tale (Europe) (En,Fr,De,Es,It,Sv+En,Fr,De,Es,It)	EUR	en,fr,de,es,it,sv+en,fr,de,es,it
+AGB-BUYP-EUR	AGB-BUYP-0	Ant Bully, The (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-BVCJ-JPN	AGB-BVCJ-0	bit Generations - Dotstream (Japan) (En)	JP	en
+AGB-BWIE-USA	AGB-BWIE-0	WinX Club (USA)	US	
+AGB-BXKP-EUR	AGB-BXKP-0	Castlevania Double Pack (Europe) (En,Fr,De)	EUR	en,fr,de
+AGB-BZ6E-USA	AGB-BZ6E-0	Final Fantasy VI Advance (USA)	US	
+AGB-BZMP-EUR	AGB-BZMP-0	Legend of Zelda, The - The Minish Cap (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-FADP-EUR	AGB-FADP-0	NES Classics - Castlevania (Europe)	EUR	
+AGB-FBMP-EUR	AGB-FBMP-0	Classic NES Series - Bomberman (USA, Europe)	US,EUR	
+AGB-FICP-EUR	AGB-FICP-0	Classic NES Series - Ice Climber (USA, Europe)	US,EUR	
+AGB-FLBP-EUR	AGB-FLBP-0	Classic NES Series - Zelda II - The Adventure of Link (USA, Europe)	US,EUR	
+AGB-FSMP-EUR	AGB-FSMP-0	Classic NES Series - Super Mario Bros. (USA, Europe)	US,EUR	
+AGB-FZLP-EUR	AGB-FZLP-0	Classic NES Series - The Legend of Zelda (USA, Europe)	US,EUR	
+AGB-KYGP-EUR	AGB-KYGP-0	Yoshi's Universal Gravitation (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-U32P-EUR-1	AGB-U32P-0	Boktai 2 - Solar Boy Django (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-U33J-JPN	AGB-U33J-0	Shin Bokura no Taiyou - Gyakushuu no Sabata (Japan)	JP	
+AGB-U3IP-EUR	AGB-U3IP-0	Boktai - The Sun Is in Your Hand (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+AGB-V49E-USA	AGB-V49E-0	Drill Dozer (USA)	US	
+AGP-BPPP-EUR	AGB-BPPP-0	Pokemon Pinball - Ruby & Sapphire (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+CGB-AAUK-KOR	CGB-AAUK-0	Pocket Monsters Geum (Korea)	KR	
+CGB-AAXK-KOR	CGB-AAXK-0	Pocket Monsters Eun (Korea)	KR	
+CGB-AFIP-AUS	CGB-AFIP-0	F-1 World Grand Prix (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+CGB-AHYE-USA	CGB-AHYE-0	Super Mario Bros. Deluxe (USA, Europe)	US,EUR	
+CGB-AHYE-USA-1	CGB-AHYE-1	Super Mario Bros. Deluxe (USA, Europe) (Rev 1)	US,EUR	
+CGB-AHYP-EUR-4	CGB-AHYP-2	Super Mario Bros. Deluxe (Europe) (Rev 2)	EUR	
+CGB-AJUP-EUR	CGB-AJUP-0	Jeremy McGrath Supercross 2000 (USA, Europe)	US,EUR	
+CGB-ALMP-FRA	CGB-ALMP-0	Looney Tunes Collector - Martian Alert! (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-ALQP-FAH	CGB-ALQP-0	Lucky Luke (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+CGB-AOVP-EUR	CGB-AOVP-0	Pong - The Next Level (USA, Europe)	US,EUR	
+CGB-AQOP-EUR	CGB-AQOP-0	Ready 2 Rumble Boxing (Europe)	EUR	
+CGB-AQOP-EUU	CGB-AQOP-0	Ready 2 Rumble Boxing (Europe)	EUR	
+CGB-ASNP-EUR	CGB-ASNP-0	Smurfs Nightmare, The (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+CGB-AT8E-USA	CGB-AT8E-0	Micro Machines 1 and 2 - Twin Turbo (USA, Europe)	US,EUR	
+CGB-AT9P-EUR-1	CGB-AT9P-0	Tomb Raider (USA, Europe) (En,Fr,De,Es,It)	US,EUR	en,fr,de,es,it
+CGB-ATHD-NOE	CGB-ATHD-0	Tarzan (Germany)	DE	
+CGB-ATHE-USA	CGB-ATHE-0	Tarzan (USA, Europe)	US,EUR	
+CGB-ATQP-EUR	CGB-ATQP-0	Tonka Raceway (Europe)	EUR	
+CGB-AVYP-FAH	CGB-AVYP-0	V-Rally - Championship Edition (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+CGB-AW8A-EUR	CGB-AW8A-0	Wario Land 3 (World) (En,Ja)	JP,US,EUR	en,ja
+CGB-AW8A-JPN	CGB-AW8A-0	Wario Land 3 (World) (En,Ja)	JP,US,EUR	en,ja
+CGB-AW8A-USA	CGB-AW8A-0	Wario Land 3 (World) (En,Ja)	JP,US,EUR	en,ja
+CGB-AXJP-EUR	CGB-AXJP-0	Magical Drop (Europe) (En,Fr,De)	EUR	en,fr,de
+CGB-AYQE-USA	CGB-AYQE-0	Rayman (USA) (En,Fr,De,Es,It,Nl)	US	en,fr,de,es,it,nl
+CGB-AYQP-EUR	CGB-AYQP-0	Rayman (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-AZ7J-JPN	CGB-AZ7J-0	Zelda no Densetsu - Fushigi no Kinomi - Daichi no Shou (Japan)	JP	
+CGB-AZ7P-EUR	CGB-AZ7P-0	Legend of Zelda, The - Oracle of Seasons (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+CGB-AZ8J-JPN	CGB-AZ8J-0	Zelda no Densetsu - Fushigi no Kinomi - Jikuu no Shou (Japan)	JP	
+CGB-AZ8P-EUR	CGB-AZ8P-0	Legend of Zelda, The - Oracle of Ages (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+CGB-AZRP-EUU	CGB-AZRP-0	Mask of Zorro, The (Europe)	EUR	
+CGB-B2XE-USA	CGB-B2XE-0	Mega Man Xtreme 2 (USA, Europe)	US,EUR	
+CGB-B2XP-EUR	CGB-B2XP-0	Mega Man Xtreme 2 (USA, Europe)	US,EUR	
+CGB-B3OP-EUR	CGB-B3OP-0	SnowCross (Europe) (En,Fr,De,Es,It,Pt)	EUR	en,fr,de,es,it,pt
+CGB-B4QP-UKV	CGB-B4QP-1	Monsters, Inc. (Europe) (Rev 1)	EUR	
+CGB-B82J-JPN	CGB-B82J-0	Densha de Go! 2 (Japan)	JP	
+CGB-B86J-JPN	CGB-B86J-0	Tottoko Hamutarou 2 - Hamu-chan Zu Daishuugou Dechu (Japan)	JP	
+CGB-B9AJ-JPN	CGB-B9AJ-0	Mobile Trainer (Japan)	JP	
+CGB-BBHF-FRA	CGB-BBHF-0	Powerpuff Girls, The - Bulle Contre Lui (France)	FR	
+CGB-BDDE-USA	CGB-BDDE-0	Donkey Kong Country (USA, Europe) (En,Fr,De,Es,It)	US,EUR	en,fr,de,es,it
+CGB-BDDJ-JPN	CGB-BDDJ-0	Donkey Kong 2001 (Japan)	JP	
+CGB-BDLP-EUR	CGB-BDLP-0	Deadly Skies (Europe) (En,Fr,De)	EUR	en,fr,de
+CGB-BDNP-EUR	CGB-BDNP-0	Dinosaur (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+CGB-BDQP-EUR	CGB-BDQP-0	Tiny Toon Adventures - Dizzy's Candy Quest (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-BDSP-EUR	CGB-BDSP-0	Dinosaur'us (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-BFUP-EUR	CGB-BFUP-0	Shrek - Fairy Tale Freakdown (USA, Europe) (En,Fr,De,Es,It)	US,EUR	en,fr,de,es,it
+CGB-BFVJ-JPN	CGB-BFVJ-1	Monster Traveler (Japan) (Rev 1)	JP	
+CGB-BGLJ-JPN	CGB-BGLJ-0	Super Gals! Kotobuki Ran (Japan)	JP	
+CGB-BGUJ-JPN	CGB-BGUJ-0	Super Gals! Kotobuki Ran 2 - Miracle Getting (Japan)	JP	
+CGB-BH2E-USA	CGB-BH2E-1	Frogger 2 (USA) (Rev 1)	US	
+CGB-BH6P-EUR	CGB-BH6P-0	Harry Potter and the Chamber of Secrets (USA, Europe) (En,Fr,De,Es,It,Nl,Pt,Sv,Da)	US,EUR	en,fr,de,es,it,nl,pt,sv,da
+CGB-BHFE-USA	CGB-BHFE-0	Mary-Kate and Ashley - Winners Circle (USA, Europe)	US,EUR	
+CGB-BHMJ-JPN	CGB-BHMJ-0	Hamster Paradise 2 (Japan)	JP	
+CGB-BHTJ-JPN	CGB-BHTJ-1	Tottoko Hamutarou - Tomodachi Daisakusen Dechu (Japan) (Rev 1)	JP	
+CGB-BJJE-USA-1	CGB-BJJE-0	Powerpuff Girls, The - Bad Mojo Jojo (USA)	US	
+CGB-BJWP-EUR	CGB-BJWP-0	Jimmy White's Cueball (Europe)	EUR	
+CGB-BLPP-EUU	CGB-BLPP-0	LEGO Alpha Team (Europe) (En,Fr,De,Es,It,Nl,Pt,Sv,No,Da)	EUR	en,fr,de,es,it,nl,pt,sv,no,da
+CGB-BLYP-EUR	CGB-BLYP-0	LEGO Stunt Rally (Europe) (En,Fr,De,Es,It,Nl,Pt,Sv,No,Da)	EUR	en,fr,de,es,it,nl,pt,sv,no,da
+CGB-BM5E-USA	CGB-BM5E-0	Mat Hoffman's Pro BMX (USA, Europe)	US,EUR	
+CGB-BMVJ-JPN	CGB-BMVJ-0	Net de Get - Minigame @ 100 (Japan)	JP	
+CGB-BOMD-NOE	CGB-BOMD-0	Original Moorhuhn Jagd, Die (Germany)	DE	
+CGB-BP8P-EUR	CGB-BP8P-0	Pooh and Tigger's Hunny Safari (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-BPTE-USA	CGB-BPTE-0	Powerpuff Girls, The - Paint the Townsville Green (USA)	US	
+CGB-BPVP-EUR	CGB-BPVP-0	MTV Sports - Pure Ride (USA, Europe)	US,EUR	
+CGB-BROP-EUR	CGB-BROP-0	Dexter's Laboratory - Robot Rampage (USA, Europe)	US,EUR	
+CGB-BT2F-FRA	CGB-BT2F-0	Taxi 2 (France)	FR	
+CGB-BT5X-EUU	CGB-BT5X-0	Toy Story Racer (Europe) (En,Fr,De)	EUR	en,fr,de
+CGB-BT9P-FRA	CGB-BT9P-0	Tootuff (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-BT9P-FRA-1	CGB-BT9P-0	Tootuff (Europe) (En,Fr,De,Es,It,Nl)	EUR	en,fr,de,es,it,nl
+CGB-BTGP-EUR	CGB-BTGP-0	Tony Hawk's Pro Skater 2 (USA, Europe)	US,EUR	
+CGB-BTKP-EUR	CGB-BTKP-0	Batman of the Future - Return of the Joker (Europe) (En,Fr,De)	EUR	en,fr,de
+CGB-BWWJ-JPN	CGB-BWWJ-0	Game Boy Wars 3 (Japan)	JP	
+CGB-BXIF-FRA	CGB-BXIF-0	Taxi 3 (France)	FR	
+CGB-BXTJ-JPN	CGB-BXTJ-0	Pocket Monsters - Crystal Version (Japan)	JP	
+CGB-BY3D-NOE	CGB-BY3D-0	Yu-Gi-Oh! - Das Dunkle Duell (Germany)	DE	
+CGB-BY3F-FRA-1	CGB-BY3F-0	Yu-Gi-Oh! - Duel des Tenebres (France)	FR	
+CGB-BY3J-JPN	CGB-BY3J-0	Yu-Gi-Oh! Duel Monsters III - Tri Holy God Advant (Japan)	JP	
+CGB-BY4J-JPN	CGB-BY4J-0	Yu-Gi-Oh! Duel Monsters 4 - Battle of Great Duelist - Yuugi Deck (Japan)	JP	
+CGB-BYTD-NOE	CGB-BYTD-0	Pokemon - Kristall-Edition (Germany)	DE	
+CGB-BYTE-USA	CGB-BYTE-0	Pokemon - Crystal Version (USA)	US	
+CGB-BYTE-USA	CGB-BYTE-1	Pokemon - Crystal Version (USA, Europe) (Rev 1)	US,EUR	
+CGB-BYTF-FRA	CGB-BYTF-0	Pokemon - Version Cristal (France)	FR	
+CGB-BYTU-AUS	CGB-BYTU-0	Pokemon - Crystal Version (Australia)	AU	
+CGB-BZSP-EUR	CGB-BZSP-0	Zidane - Football Generation (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+CGB-HF2J-JPN	CGB-HF2J-0	Pocket Family GB 2 (Japan)	JP	
+CGB-KCEJ-JPN	CGB-KCEJ-0	Command Master (Japan)	JP	
+CGB-KKKJ-JPN	CGB-KKKJ-0	Korokoro Kirby (Japan)	JP	
+CGB-KTNE-USA	CGB-KTNE-0	Kirby - Tilt 'n' Tumble (USA)	US	
+CGB-VGRJ-JPN	CGB-VGRJ-0	Top Gear Pocket (Japan) (En) (Rumble Version)	JP	en
+CGB-VYHE-USA	CGB-VYHE-0	Star Wars Episode I - Racer (USA, Europe) (Rumble Version)	US,EUR	
+DIS-CGB-ADME-USA	CGB-ADME-0	Game Boy Color (World) (Demo) (Kiosk)	JP,US,EUR	
+DIS-CGB-AW8A-USA	CGB-AW8A-0	Wario Land 3 (World) (En,Ja)	JP,US,EUR	en,ja
+DMG-401CHN	DMG-MQE-2	Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev 2)	US,EUR	
+DMG-A2GJ-JPN	DMG-A2GJ-0	Beatmania GB 2 - Gotcha Mix (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-A2LJ-JPN	DMG-A2LJ-0	Megami Tensei Gaiden - Last Bible II (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-A3GP-EUR	DMG-A3GP-0	PGA Tour 96 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-A3ME-USA	DMG-A3ME-0	Mortal Kombat 3 (USA, Europe)	US,EUR	
+DMG-A3MP-EUR	DMG-A3ME-0	Mortal Kombat 3 (USA, Europe)	US,EUR	
+DMG-A4KP-EUU	DMG-A4KP-0	Mortal Kombat 4 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-A4RJ-JPN	DMG-A4RJ-0	Bakukyuu Renpatsu!! Super B-Daman - Gekitan! Rising Valkyrie!! (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-A6-SCN	DMG-A6W-0	Bamse (Sweden)	SE	
+DMG-A6SP-EUR	DMG-A6SP-0	FIFA Soccer 96 (USA, Europe) (En,Fr,De,Es) (SGB Enhanced)	US,EUR	en,fr,de,es
+DMG-A8SP-EUR	DMG-A8SP-0	FIFA - Road to World Cup 98 (Europe) (SGB Enhanced)	EUR	
+DMG-A8WP-EUR	DMG-A8WP-0	World Cup 98 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AAMJ-JPN	DMG-AAMJ-0	Mini Yonku GB Let's & Go!! - All-Star Battle Max (Japan) (SGB Enhanced)	JP	
+DMG-AAUD-NOE	DMG-AAUD-0	Pokemon - Goldene Edition (Germany) (SGB Enhanced) (GB Compatible)	DE	
+DMG-AAUF-FRA	DMG-AAUF-0	Pokemon - Version Or (France) (SGB Enhanced) (GB Compatible)	FR	
+DMG-AAUJ-JPN	DMG-AAUJ-1	Pocket Monsters Kin (Japan) (Rev 1) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AAUP-AUS	DMG-AAUP-0	Pokemon - Gold Version (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AAXD-NOE	DMG-AAXD-0	Pokemon - Silberne Edition (Germany) (SGB Enhanced) (GB Compatible)	DE	
+DMG-AAXE-USA	DMG-AAXE-0	Pokemon - Silver Version (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AAXF-FRA	DMG-AAXF-0	Pokemon - Version Argent (France) (SGB Enhanced) (GB Compatible)	FR	
+DMG-AAXJ-JPN	DMG-AAXJ-0	Pocket Monsters Gin (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AB2E-USA	DMG-AB2E-0	Bomberman GB (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AB6P-EUR	DMG-AB6P-0	Bugs Bunny - Crazy Castle 3 (USA, Europe) (GB Compatible)	US,EUR	
+DMG-ABEJ-JPN	DMG-ABEJ-0	Barcode Taisen Bardigun (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-ABEJ-JPN-1	DMG-ABEJ-1	Barcode Taisen Bardigun (Japan) (Rev 1) (SGB Enhanced) (GB Compatible)	JP	
+DMG-ABLP-FRA	DMG-ABLP-0	Bugs Bunny & Lola Bunny - Operation Carrot Patch (Europe) (En,Fr,De,Es,It,Nl) (GB Compatible)	EUR	en,fr,de,es,it,nl
+DMG-ABPJ-JPN	DMG-ABPJ-0	Super Black Bass Pocket (Japan) (SGB Enhanced)	JP	
+DMG-ABUP-EUR	DMG-ABUP-0	Bust-A-Move 2 - Arcade Edition (USA, Europe)	US,EUR	
+DMG-ACPE-USA	DMG-ACPE-0	Arcade Classic No. 2 - Centipede & Millipede (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ACRP-EUR	DMG-ACRP-0	Conker's Pocket Tales (USA, Europe) (En,Fr,De) (SGB Enhanced) (GB Compatible)	US,EUR	en,fr,de
+DMG-ACTJ-JPN	DMG-ACTJ-0	Captain Tsubasa J - Zenkoku Seiha e no Chousen (Japan) (SGB Enhanced)	JP	
+DMG-ACXJ-JPN	DMG-ACXJ-0	Pokemon Card GB (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AD3E-USA	DMG-AD3E-1	Donkey Kong Land III (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-AD3P-AUS	DMG-AD3P-1	Donkey Kong Land III (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-AD3P-EUR	DMG-AD3P-1	Donkey Kong Land III (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-AD4P-EUR	DMG-AD4P-0	Dropzone (Europe) (GB Compatible)	EUR	
+DMG-ADBJ-JPN	DMG-ADBJ-0	Dragon Ball Z - Gokuu Hishouden (Japan) (SGB Enhanced)	JP	
+DMG-ADDE-USA-2	DMG-ADDE-0	Donkey Kong Land 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ADDJ-JPN	DMG-ADDJ-0	Donkey Kong Land (Japan) (SGB Enhanced)	JP	
+DMG-ADDP-EUR-1	DMG-ADDP-0	Donkey Kong Land 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ADJE-USA	DMG-ADJE-0	Arcade Classic No. 4 - Defender & Joust (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ADNP-EUR	DMG-ADNP-0	Castlevania Legends (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ADQJ-JPN	DMG-ADQJ-0	Dragon Quest Monsters - Terry no Wonderland (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-ADQJ-JPN	DMG-ADQJ-1	Dragon Quest Monsters - Terry no Wonderland (Japan) (Rev 1) (SGB Enhanced) (GB Compatible)	JP	
+DMG-ADYD-NOE	DMG-ADYD-0	Barbie - Meeres Abenteuer (Germany) (GB Compatible)	DE	
+DMG-ADYP-UKV	DMG-ADYP-0	Barbie - Ocean Discovery (United Kingdom) (GB Compatible)	GB	
+DMG-AEDJ-JPN	DMG-AEDJ-0	Dragon Quest I & II (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AEMP-EUR	DMG-AEMP-0	Madden NFL 2000 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AF-FAH	DMG-AFX-0	Addams Family, The (Europe) (En,Fr,De)	EUR	en,fr,de
+DMG-AF-USA	DMG-AFE-0	Addams Family, The (USA)	US	
+DMG-AF5P-EUR	DMG-AF5P-0	Konami GB Collection Vol.1 (Europe) (GB Compatible)	EUR	
+DMG-AF6P-EUR	DMG-AF6P-0	Konami GB Collection Vol.2 (Europe) (GB Compatible)	EUR	
+DMG-AF7P-EUR	DMG-AF7P-0	Konami GB Collection Vol.3 (Europe) (GB Compatible)	EUR	
+DMG-AF8P-EUR	DMG-AF8P-0	Konami GB Collection Vol.4 (Europe) (GB Compatible)	EUR	
+DMG-AFFJ-JPN	DMG-AFFJ-0	Super Chinese Fighter GB (Japan) (SGB Enhanced)	JP	
+DMG-AFGE-USA	DMG-AFGE-0	Frogger (USA)	US	
+DMG-AFOP-FRA	DMG-AFOP-0	FIFA 2000 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AG-NOE	DMG-AGX-0	Pang (Europe)	EUR	
+DMG-AG2J-JPN	DMG-AG2J-0	Dai-2-ji Super Robot Taisen G (Japan) (SGB Enhanced)	JP	
+DMG-AGAE-USA	DMG-AGAE-1	Game & Watch Gallery (USA) (Rev 1) (SGB Enhanced)	US	
+DMG-AGCE-USA	DMG-AGCE-0	Arcade Classic No. 3 - Galaga & Galaxian (USA) (SGB Enhanced)	US	
+DMG-AGGA-AUS	DMG-AGGA-0	Game Boy Gallery - 5 Games in 1 (Europe) (SGB Enhanced)	EUR	
+DMG-AGGA-GPS	DMG-AGGA-0	Game Boy Gallery - 5 Games in 1 (Europe) (SGB Enhanced)	EUR	
+DMG-AGLE-USA	DMG-AGLE-0	Game & Watch Gallery 2 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AGLE-USA-1	DMG-AGLE-0	Game & Watch Gallery 2 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AGOP-NOE	DMG-AGOP-0	Hugo (Europe) (SGB Enhanced)	EUR	
+DMG-AGQE-USA	DMG-AGQE-0	Game & Watch Gallery 3 (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AGUJ-JPN	DMG-AGUJ-0	Ganbare Goemon - Tengutou no Gyakushuu (Japan) (GB Compatible)	JP	
+DMG-AGWJ-JPN	DMG-AGWJ-0	Game Boy Wars Turbo (Japan) (SGB Enhanced)	JP	
+DMG-AHHJ-JPN	DMG-AHHJ-0	Trade & Battle Card Hero (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AK2P-EUR	DMG-AK2P-0	Mortal Kombat & Mortal Kombat II (USA, Europe)	US,EUR	
+DMG-AKBE-USA	DMG-AKBE-0	Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKBJ-JPN	DMG-AKBJ-0	Hoshi no Kirby 2 (Japan) (SGB Enhanced)	JP	
+DMG-AKBP-AUS	DMG-AKBP-0	Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKBP-FAH	DMG-AKBP-0	Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKCE-USA	DMG-AKCE-0	Kirby's Star Stacker (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKGE-USA	DMG-AKGE-0	Ken Griffey Jr. Presents Major League Baseball (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKLE-USA	DMG-AKLE-0	Killer Instinct (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKLP-UKV	DMG-AKLP-0	Killer Instinct (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKMJ-JPN	DMG-AKMJ-0	Kandume Monsters (Japan) (SGB Enhanced)	JP	
+DMG-AKXE-USA	DMG-AKXE-0	Kirby's Block Ball (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AKXP-EUR	DMG-AKXP-0	Kirby's Block Ball (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ALAP-AUS	DMG-ALAP-0	Aladdin (Europe) (SGB Enhanced)	EUR	
+DMG-ALLP-FAH	DMG-ALLP-0	Lucky Luke (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+DMG-AM3J-JPN	DMG-AM3J-0	Momotarou Collection 2 (Japan) (SGB Enhanced)	JP	
+DMG-AM6J-JPN	DMG-AM6J-0	Daikaijuu Monogatari - The Miracle of the Zone II (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AMCE-USA	DMG-AMCE-0	Arcade Classic No. 1 - Asteroids & Missile Command (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AMDJ-JPN	DMG-AMDJ-0	Momotarou Collection (Japan) (SGB Enhanced)	JP	
+DMG-AMLP-EUR-1	DMG-AMLP-0	Mulan (Europe) (SGB Enhanced)	EUR	
+DMG-AMOE-USA	DMG-AMOE-0	Mole Mania (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AMOP-EUR	DMG-AMOP-0	Mole Mania (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-ANWJ-JPN	DMG-ANWJ-0	Itsudemo! Nyan to Wonderful (Japan) (SGB Enhanced)	JP	
+DMG-AODP-EUR	DMG-AODP-0	Oddworld Adventures (USA, Europe)	US,EUR	
+DMG-AOMJ-JPN	DMG-AOMJ-0	Game de Hakken!! Tamagotchi - Osutchi to Mesutchi (Japan) (SGB Enhanced)	JP	
+DMG-AORP-FAH	DMG-AORP-0	Ronaldo V-Football (Europe) (En,Fr,De,Es,It,Nl,Pt) (GB Compatible)	EUR	en,fr,de,es,it,nl,pt
+DMG-AP-FAH	DMG-APE-0	Kwirk - He's A-maze-ing! (USA, Europe)	US,EUR	
+DMG-AP2J-JPN	DMG-AP2J-0	Picross 2 (Japan) (SGB Enhanced)	JP	
+DMG-APAE-USA-1	DMG-APAE-0	Pokemon - Red Version (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APAF-FRA	DMG-APAF-0	Pokemon - Version Rouge (France) (SGB Enhanced)	FR	
+DMG-APAJ-JPN	DMG-APAJ-1	Pocket Monsters - Aka (Japan) (Rev 1) (SGB Enhanced)	JP	
+DMG-APAU-AUS	DMG-APAU-0	Pokemon - Red Version (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APBJ-JPN	DMG-APBJ-1	Pocket Monsters - Midori (Japan) (Rev 1) (SGB Enhanced)	JP	
+DMG-APCJ-JPN	DMG-APCJ-0	Mario no Picross (Japan) (SGB Enhanced)	JP	
+DMG-APCP-NOE	DMG-APCP-0	Mario's Picross (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APDP-EUR	DMG-APDP-0	Pinball Deluxe (Europe)	EUR	
+DMG-APED-NOE	DMG-APED-0	Pokemon - Blaue Edition (Germany) (SGB Enhanced)	DE	
+DMG-APEE-USA	DMG-APEE-0	Pokemon - Blue Version (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APEE-USA-1	DMG-APEE-0	Pokemon - Blue Version (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APEF-FRA	DMG-APEF-0	Pokemon - Version Bleue (France) (SGB Enhanced)	FR	
+DMG-APEJ-JPN	DMG-APEJ-0	Pocket Monsters - Ao (Japan) (SGB Enhanced)	JP	
+DMG-APEU-EUR	DMG-APEU-0	Pokemon - Blue Version (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-APME-USA	DMG-APME-0	Pagemaster, The (USA) (SGB Enhanced)	US	
+DMG-APOJ-JPN	DMG-APOJ-0	Pocket Bomberman (Japan) (SGB Enhanced)	JP	
+DMG-APSD-NOE	DMG-APSD-0	Pokemon - Gelbe Edition - Special Pikachu Edition (Germany) (CGB+SGB Enhanced)	DE	
+DMG-APSE-USA-1	DMG-APSE-0	Pokemon - Yellow Version - Special Pikachu Edition (USA, Europe) (CGB+SGB Enhanced)	US,EUR	
+DMG-APSF-FRA	DMG-APSF-0	Pokemon - Version Jaune - Edition Speciale Pikachu (France) (CGB+SGB Enhanced)	FR	
+DMG-APSJ-JPN	DMG-APSJ-0	Pocket Monsters - Pikachu (Japan) (SGB Enhanced)	JP	
+DMG-APSJ-JPN	DMG-APSJ-1	Pocket Monsters - Pikachu (Japan) (Rev 1) (SGB Enhanced)	JP	
+DMG-APSJ-JPN	DMG-APSJ-2	Pocket Monsters - Pikachu (Japan) (Rev 2) (SGB Enhanced)	JP	
+DMG-APSJ-JPN	DMG-APSJ-3	Pocket Monsters - Pikachu (Japan) (Rev 3) (SGB Enhanced)	JP	
+DMG-APXE-USA	DMG-APXE-0	Bug's Life, A (USA) (SGB Enhanced) (GB Compatible)	US	
+DMG-APYJ-JPN	DMG-APYJ-0	Pocket Puyo Puyo Tsuu (Japan) (SGB Enhanced)	JP	
+DMG-AQCP-EUR	DMG-AQCP-0	Ms. Pac-Man - Special Colour Edition (Europe) (SGB Enhanced) (GB Compatible)	EUR	
+DMG-AS2J-JPN	DMG-AS2J-0	From TV Animation Slam Dunk 2 - Zenkoku e no Tip Off (Japan) (SGB Enhanced)	JP	
+DMG-ASFE-USA-1	DMG-ASFE-1	Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-ASFP-EUR	DMG-ASFP-1	Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-ATAJ-JPN	DMG-ATAJ-0	Game de Hakken!! Tamagotchi (Japan) (SGB Enhanced)	JP	
+DMG-ATEA-EUR	DMG-ATEA-0	Tetris DX (World) (SGB Enhanced) (GB Compatible)	JP,US,EUR	
+DMG-ATEA-EUR-1	DMG-ATEA-0	Tetris DX (World) (SGB Enhanced) (GB Compatible)	JP,US,EUR	
+DMG-ATEA-JPN	DMG-ATEA-0	Tetris DX (World) (SGB Enhanced) (GB Compatible)	JP,US,EUR	
+DMG-ATEA-USA	DMG-ATEA-0	Tetris DX (World) (SGB Enhanced) (GB Compatible)	JP,US,EUR	
+DMG-ATEA-USA-1	DMG-ATEA-0	Tetris DX (World) (SGB Enhanced) (GB Compatible)	JP,US,EUR	
+DMG-ATFJ-JPN	DMG-ATFJ-0	Sanrio Timenet - Mirai Hen (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-ATOJ-JPN	DMG-ATOJ-0	Othello World (Japan) (SGB Enhanced)	JP	
+DMG-ATRJ-JPN	DMG-ATRJ-0	Tetris Plus (Japan) (SGB Enhanced)	JP	
+DMG-AUFP-FAH	DMG-AUFP-0	Smurfs Travel the World, The (Europe) (En,Fr,De,Es)	EUR	en,fr,de,es
+DMG-AVBJ-JPN	DMG-AVBJ-0	Pocket Bowling (Japan) (GB Compatible)	JP	
+DMG-AVLP-FAH	DMG-AVLP-0	V-Rally - Championship Edition (Europe) (En,Fr,De)	EUR	en,fr,de
+DMG-AVSE-USA	DMG-AVSE-0	Vegas Stakes (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AVUE-USA	DMG-AVUE-0	Beauty and the Beast - A Board Game Adventure (USA, Australia) (SGB Enhanced) (GB Compatible)	US,AU	
+DMG-AW-USA	DMG-AWA-0	Alleyway (World)	JP,US,EUR	
+DMG-AW2E-USA	DMG-AW2E-0	Wario Land II (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AW2J-JPN	DMG-AW2J-0	Wario Land 2 (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AW2P-EUR	DMG-AW2P-0	Wario Land II (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AW3P-FAH	DMG-AW3P-0	Worms (Europe)	EUR	
+DMG-AW7E-USA	DMG-AW7E-0	James Bond 007 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AW7E-USA-1	DMG-AW7E-0	James Bond 007 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AW7P-AUS	DMG-AW7P-0	James Bond 007 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-AWA	DMG-AWA-0	Alleyway (World)	JP,US,EUR	
+DMG-AWDJ-JPN	DMG-AWDJ-0	Dino Breeder (Japan) (SGB Enhanced)	JP	
+DMG-AWHP-EUR	DMG-AWHP-0	R-Type DX (USA, Europe) (GB Compatible)	US,EUR	
+DMG-AWLE-USA	DMG-AWLE-0	Wario Land II (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AWLE-USA-1	DMG-AWLE-0	Wario Land II (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AWLP-EUR	DMG-AWLP-0	Wario Land II (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AXFE-USA	DMG-AXFE-0	New Adventures of Mary-Kate & Ashley, The (USA, Europe) (GB Compatible)	US,EUR	
+DMG-AXQP-NOE	DMG-AXQP-0	Pokemon Trading Card Game (Europe) (En,Fr,De) (SGB Enhanced) (GB Compatible)	EUR	en,fr,de
+DMG-AXQU-AUS	DMG-AXQU-0	Pokemon Trading Card Game (USA, Australia) (SGB Enhanced) (GB Compatible)	US,AU	
+DMG-AYJ	DMG-AYJ-0	Ayakashi no Shiro (Japan)	JP	
+DMG-AYKJ-JPN	DMG-AYKJ-0	Yu-Gi-Oh! Duel Monsters II - Dark Duel Stories (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AYLE-USA	DMG-AYLE-1	Tetris Attack (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-AYLJ-JPN	DMG-AYLJ-0	Yoshi no Panepon (Japan) (SGB Enhanced)	JP	
+DMG-AYLP-EUR	DMG-AYLP-1	Tetris Attack (USA, Europe) (Rev 1) (SGB Enhanced)	US,EUR	
+DMG-AYMJ-JPN	DMG-AYMJ-1	Gakkyuu Ou Yamazaki (Japan) (Rev 1) (GB Compatible)	JP	
+DMG-AYNP-FRA	DMG-AYNP-0	Yannick Noah Tennis (France) (En)	FR	en
+DMG-AYRP-FRA	DMG-AYRP-0	Sylvester & Tweety - Breakfast on the Run (Europe) (En,Fr,De,Es,It,Nl) (GB Compatible)	EUR	en,fr,de,es,it,nl
+DMG-AYWJ-JPN	DMG-AYWJ-0	Bokujou Monogatari GB (Japan) (SGB Enhanced)	JP	
+DMG-AYWJ-JPN	DMG-AYWJ-1	Bokujou Monogatari GB (Japan) (Rev 1) (SGB Enhanced)	JP	
+DMG-AZLF-FRA	DMG-AZLF-0	Legend of Zelda, The - Link's Awakening DX (France) (SGB Enhanced) (GB Compatible)	FR	
+DMG-AZLF-FRA	DMG-AZLF-1	Legend of Zelda, The - Link's Awakening DX (France) (Rev 1) (SGB Enhanced) (GB Compatible)	FR	
+DMG-AZLJ-JPN	DMG-AZLJ-0	Zelda no Densetsu - Yume o Miru Shima DX (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-AZLP-EUR	DMG-AZLP-0	Legend of Zelda, The - Link's Awakening DX (USA, Europe) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-AZLP-EUR	DMG-AZLP-2	Legend of Zelda, The - Link's Awakening DX (USA, Europe) (Rev 2) (SGB Enhanced) (GB Compatible)	US,EUR	
+DMG-B2-AUS	DMG-B2E-0	Bubble Bobble (USA, Europe)	US,EUR	
+DMG-B2A	DMG-B2A-0	Bubble Bobble (Japan)	JP	
+DMG-B7HJ-JPN	DMG-B7HJ-0	Nakayoshi Pet Series 1 - Kawaii Hamster (Japan) (GB Compatible)	JP	
+DMG-B9-NOE	DMG-B9X-0	Bomb Jack (Europe)	EUR	
+DMG-BA-USA	DMG-BAA-0	Batman - The Video Game (World)	JP,US,EUR	
+DMG-BB-EUR	DMG-BBE-0	Bugs Bunny Crazy Castle, The (USA, Europe)	US,EUR	
+DMG-BB-FAH	DMG-BBE-0	Bugs Bunny Crazy Castle, The (USA, Europe)	US,EUR	
+DMG-BB-USA-1	DMG-BBE-0	Bugs Bunny Crazy Castle, The (USA, Europe)	US,EUR	
+DMG-BDA	DMG-BDA-0	Boulder Dash (Japan)	JP	
+DMG-BIA	DMG-BIA-0	Bomber King - Scenario 2 (Japan)	JP	
+DMG-BKJ	DMG-BKJ-0	Baseball Kids (Japan)	JP	
+DMG-BLUJ-JPN	DMG-BLUJ-0	From TV Animation One Piece - Yume no Luffy Kaizokudan Tanjou! (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-BM6E-USA	DMG-BM6E-0	Mega Man Xtreme (USA, Europe) (GB Compatible)	US,EUR	
+DMG-BMAE-USA	DMG-BMAE-0	Mary-Kate and Ashley - Pocket Planner (USA, Europe) (GB Compatible)	US,EUR	
+DMG-BMAP-EUR	DMG-BMAP-0	Mary-Kate and Ashley - Pocket Planner (USA, Europe) (GB Compatible)	US,EUR	
+DMG-BPWJ-JPN	DMG-BPWJ-0	Power Pro Kun Pocket 2 (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-BQLJ-JPN	DMG-BQLJ-0	Dragon Quest Monsters 2 - Maruta no Fushigi na Kagi - Ruka no Tabidachi (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-BS-USA	DMG-BSA-0	Baseball (World)	JP,US,EUR	
+DMG-BSA	DMG-BSA-0	Baseball (World)	JP,US,EUR	
+DMG-BT-FAH	DMG-BTE-0	Balloon Kid (USA, Europe)	US,EUR	
+DMG-BV-AUS	DMG-BVE-0	Battletoads (USA, Europe)	US,EUR	
+DMG-BY-USA-1	DMG-BYE-0	Bugs Bunny Crazy Castle 2, The (USA)	US	
+DMG-BZOJ-JPN	DMG-BZOJ-0	From TV Animation One Piece - Maboroshi no Grand Line Boukenki! (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-C3-FAH	DMG-C3X-0	Alfred Chicken (Europe)	EUR	
+DMG-C8-USA	DMG-C8E-0	Incredible Crash Dummies, The (USA, Europe)	US,EUR	
+DMG-CI-EUR	DMG-CIE-0	Yoshi's Cookie (USA, Europe)	US,EUR	
+DMG-CI-USA	DMG-CIE-0	Yoshi's Cookie (USA, Europe)	US,EUR	
+DMG-CMJ	DMG-CMJ-0	Chibi Maruko-chan - Okozukai Daisakusen! (Japan)	JP	
+DMG-CN-USA	DMG-CNE-0	Operation C (USA)	US	
+DMG-CV-FAH	DMG-CVX-0	Castlevania - The Adventure (Europe)	EUR	
+DMG-CV-NOE	DMG-CVX-0	Castlevania - The Adventure (Europe)	EUR	
+DMG-CVJ	DMG-CVJ-0	Dracula Densetsu (Japan)	JP	
+DMG-CW-FAH	DMG-CWE-0	Castlevania II - Belmont's Revenge (USA, Europe)	US,EUR	
+DMG-DC-AUS	DMG-DCX-0	Darkwing Duck (Europe)	EUR	
+DMG-DD-UKV	DMG-DDE-0	Double Dragon (USA, Europe)	US,EUR	
+DMG-DD-USA	DMG-DDE-0	Double Dragon (USA, Europe)	US,EUR	
+DMG-DF-FAH	DMG-DFE-0	Kid Dracula (USA, Europe)	US,EUR	
+DMG-DFJ	DMG-DFJ-0	Akumajou Special - Boku Dracula-kun (Japan)	JP	
+DMG-DIJ	DMG-DIJ-0	Daiku no Gen-san - Ghost Building Company (Japan)	JP	
+DMG-DT-EUR	DMG-DTX-0	DuckTales (Europe)	EUR	
+DMG-DT-NOE	DMG-DTX-0	DuckTales (Europe)	EUR	
+DMG-ECJ	DMG-ECJ-0	X (Japan)	JP	
+DMG-EE-UKV	DMG-EEE-0	Wario Blast Featuring Bomberman! (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-EH-FAH	DMG-EHX-0	Tetris 2 (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-F1-EUR	DMG-F1A-1	F-1 Race (World) (Rev 1)	JP,US,EUR	
+DMG-F1-SCN	DMG-F1A-1	F-1 Race (World) (Rev 1)	JP,US,EUR	
+DMG-F1-USA	DMG-F1A-1	F-1 Race (World) (Rev 1)	JP,US,EUR	
+DMG-F1-USA-1	DMG-F1A-1	F-1 Race (World) (Rev 1)	JP,US,EUR	
+DMG-F1A	DMG-F1A-1	F-1 Race (World) (Rev 1)	JP,US,EUR	
+DMG-F4-USA-1	DMG-F4E-0	4-in-1 Fun Pak (USA, Europe)	US,EUR	
+DMG-FA-USA	DMG-FAE-0	Faceball 2000 (USA)	US	
+DMG-FP-USA	DMG-FPE-0	Flipull (USA)	US	
+DMG-FPA	DMG-FPA-0	Flipull - An Exciting Cube Game (Japan)	JP	
+DMG-G2-FAH	DMG-G2E-0	Gauntlet II (USA, Europe)	US,EUR	
+DMG-G2-UKV	DMG-G2E-0	Gauntlet II (USA, Europe)	US,EUR	
+DMG-G2-USA	DMG-G2E-0	Gauntlet II (USA, Europe)	US,EUR	
+DMG-GK-UKV	DMG-GKX-0	B.C. Kid (Europe)	EUR	
+DMG-GM-NOE	DMG-GMA-0	BurgerTime Deluxe (World)	JP,US,EUR	
+DMG-GO-USA-1	DMG-GOA-0	Golf (World)	JP,US,EUR	
+DMG-GR-FAH	DMG-GRA-0	Gremlins 2 - The New Batch (World)	JP,US,EUR	
+DMG-GWJ	DMG-GWJ-0	Game Boy Wars (Japan)	JP	
+DMG-H2-FAH	DMG-H2E-0	NBA All-Star Challenge 2 (USA, Europe)	US,EUR	
+DMG-HA-USA	DMG-HAE-0	Heiankyo Alien (USA)	US	
+DMG-HB-AUS	DMG-HBX-0	Dynablaster (Europe)	EUR	
+DMG-HBA	DMG-HBA-0	Bomber Boy (Japan)	JP	
+DMG-HDJ	DMG-HDJ-0	Daisenryaku (Japan)	JP	
+DMG-HF-USA	DMG-HFE-0	Hunt for Red October, The (USA, Europe)	US,EUR	
+DMG-HFAJ-JPN	DMG-HFAJ-0	Pocket Family GB (Japan) (SGB Enhanced)	JP	
+DMG-HLA	DMG-HLA-1	Hyper Lode Runner (World) (Rev 1)	JP,US,EUR	
+DMG-HQ-USA	DMG-HQE-0	Chase H.Q. (USA, Europe)	US,EUR	
+DMG-HQJ	DMG-HQJ-0	Taito Chase H.Q. (Japan)	JP	
+DMG-HRCJ-JPN	DMG-HRCJ-0	Robot Poncots - Star Version (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-HREJ-JPN	DMG-HREJ-0	Robot Poncots - Sun Version (Japan) (SGB Enhanced) (GB Compatible)	JP	
+DMG-HU-UKV	DMG-HUX-0	Humans, The (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+DMG-I5-USA	DMG-I5X-0	Mickey Mouse - Magic Wands! (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-J7-AUS	DMG-J7E-0	Jungle Book, The (USA, Europe)	US,EUR	
+DMG-J7-FRA	DMG-J7E-0	Jungle Book, The (USA, Europe)	US,EUR	
+DMG-JB-AUS	DMG-JBE-0	Jordan vs Bird - One on One (USA, Europe)	US,EUR	
+DMG-JP-USA	DMG-JPE-0	Jeopardy! (USA)	US	
+DMG-JQ-AUS	DMG-JQX-0	Jurassic Park (Europe) (En,Fr,De,Es,It)	EUR	en,fr,de,es,it
+DMG-K9-FAH	DMG-K9E-0	Kirby's Pinball Land (USA, Europe)	US,EUR	
+DMG-K9-USA-1	DMG-K9E-0	Kirby's Pinball Land (USA, Europe)	US,EUR	
+DMG-K9J	DMG-K9J-0	Kirby no Pinball (Japan)	JP	
+DMG-KLA	DMG-KLA-0	Klax (Japan) (Hudson Soft)	JP	
+DMG-KUJ	DMG-KUJ-0	Nekketsu Kouha Kunio-kun - Bangai Rantou Hen (Japan)	JP	
+DMG-KY-AUS	DMG-KYE-0	Kirby's Dream Land (USA, Europe)	US,EUR	
+DMG-KY-FAH	DMG-KYE-0	Kirby's Dream Land (USA, Europe)	US,EUR	
+DMG-KY-SCN	DMG-KYE-0	Kirby's Dream Land (USA, Europe)	US,EUR	
+DMG-KY-USA-1	DMG-KYE-0	Kirby's Dream Land (USA, Europe)	US,EUR	
+DMG-KYJ	DMG-KYJ-0	Hoshi no Kirby (Japan)	JP	
+DMG-KYJ	DMG-KYJ-1	Hoshi no Kirby (Japan) (Rev 1)	JP	
+DMG-L3-AUS	DMG-L3E-0	Alien 3 (USA, Europe)	US,EUR	
+DMG-L3-FAH	DMG-L3E-0	Alien 3 (USA, Europe)	US,EUR	
+DMG-L6J	DMG-L6J-2	Super Mario Land 2 - 6-tsu no Kinka (Japan) (Rev 2)	JP	
+DMG-LD-USA-1	DMG-LDE-0	Little Mermaid, The (USA)	US	
+DMG-LW-NOE	DMG-LWE-0	WWF Superstars (USA, Europe)	US,EUR	
+DMG-LW-USA	DMG-LWE-0	WWF Superstars (USA, Europe)	US,EUR	
+DMG-MC-USA	DMG-MCE-0	Mickey's Dangerous Chase (USA)	US	
+DMG-MC-USA-1	DMG-MCE-0	Mickey's Dangerous Chase (USA)	US	
+DMG-ME-FAH	DMG-MEA-0	Metroid II - Return of Samus (World)	JP,US,EUR	
+DMG-ME-SCN	DMG-MEA-0	Metroid II - Return of Samus (World)	JP,US,EUR	
+DMG-ME-USA-1	DMG-MEA-0	Metroid II - Return of Samus (World)	JP,US,EUR	
+DMG-MEA	DMG-MEA-0	Metroid II - Return of Samus (World)	JP,US,EUR	
+DMG-ML-FAH	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-ML-ITA	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-ML-UKV	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-ML-USA-1	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-ML-USA-2	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-MLA	DMG-MLA-0	Super Mario Land (World)	JP,US,EUR	
+DMG-MLA	DMG-MLA-1	Super Mario Land (World) (Rev 1)	JP,US,EUR	
+DMG-MQ-FAH	DMG-MQE-0	Super Mario Land 2 - 6 Golden Coins (USA, Europe)	US,EUR	
+DMG-MQ-FAH	DMG-MQE-2	Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev 2)	US,EUR	
+DMG-MQ-NOE	DMG-MQE-0	Super Mario Land 2 - 6 Golden Coins (USA, Europe)	US,EUR	
+DMG-MQ-UKV	DMG-MQE-0	Super Mario Land 2 - 6 Golden Coins (USA, Europe)	US,EUR	
+DMG-MQ-UKV	DMG-MQE-2	Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev 2)	US,EUR	
+DMG-MQ-USA-1	DMG-MQE-2	Super Mario Land 2 - 6 Golden Coins (USA, Europe) (Rev 2)	US,EUR	
+DMG-MX-USA	DMG-MXE-0	Motocross Maniacs (USA)	US	
+DMG-N6-EUR	DMG-N6X-0	Super Battletank (Europe)	EUR	
+DMG-NBA	DMG-NBA-0	Kaisen Game - Navyblue (Japan)	JP	
+DMG-NC-FAH	DMG-NCE-0	Nintendo World Cup (USA, Europe)	US,EUR	
+DMG-NC-UKV	DMG-NCE-0	Nintendo World Cup (USA, Europe)	US,EUR	
+DMG-NE-FAH	DMG-NEX-0	Nemesis II - The Return of the Hero (Europe)	EUR	
+DMG-NM-FAH	DMG-NMX-0	Nemesis (Europe)	EUR	
+DMG-NM-NOE	DMG-NMX-0	Nemesis (Europe)	EUR	
+DMG-NM-USA	DMG-NME-0	Nemesis (USA)	US	
+DMG-NWJ	DMG-NWJ-0	Noobow (Japan)	JP	
+DMG-NYJ	DMG-NYJ-0	Nobunaga no Yabou - Game Boy Ban (Japan)	JP	
+DMG-OP-FAH	DMG-OPX-0	Pop Up (Europe)	EUR	
+DMG-OT-FAH	DMG-OTX-0	Othello (Europe)	EUR	
+DMG-PB-USA-1	DMG-PBE-0	Pinball - Revenge of the 'Gator (USA, Europe)	US,EUR	
+DMG-PBJ	DMG-PBJ-0	Pinball - 66hiki no Wani Daikoushin! (Japan)	JP	
+DMG-PC-USA	DMG-PCE-0	Pac-Man (USA)	US	
+DMG-PD-USA	DMG-PDE-0	Pipe Dream (USA)	US	
+DMG-PM-USA	DMG-PME-0	Catrap (USA)	US	
+DMG-PV-FAH	DMG-PVX-0	Parodius (Europe)	EUR	
+DMG-Q6-NOE	DMG-Q6E-0	NFL Quarterback Club (USA, Europe)	US,EUR	
+DMG-QD-USA	DMG-QDA-1	Donkey Kong (World) (Rev 1) (SGB Enhanced)	JP,US,EUR	
+DMG-QD-USA-1	DMG-QDA-1	Donkey Kong (World) (Rev 1) (SGB Enhanced)	JP,US,EUR	
+DMG-QQJ	DMG-QQJ-1	Puyo Puyo (Japan) (Rev 1) (SGB Enhanced)	JP	
+DMG-QX-SCN	DMG-QXA-0	QIX (World)	JP,US,EUR	
+DMG-QX-USA	DMG-QXA-0	QIX (World)	JP,US,EUR	
+DMG-QXA	DMG-QXA-0	QIX (World)	JP,US,EUR	
+DMG-R4-EUR	DMG-R4X-0	Mega Man IV (Europe)	EUR	
+DMG-RA-FAH	DMG-RAE-0	Gargoyle's Quest (USA, Europe)	US,EUR	
+DMG-RA-NOE	DMG-RAE-0	Gargoyle's Quest (USA, Europe)	US,EUR	
+DMG-RAJ	DMG-RAJ-0	Red Arremer - Makaimura Gaiden (Japan)	JP	
+DMG-RC-EUR	DMG-RCE-0	Super R.C. Pro-Am (USA, Europe)	US,EUR	
+DMG-RC-USA-1	DMG-RCE-0	Super R.C. Pro-Am (USA, Europe)	US,EUR	
+DMG-RE-FAH	DMG-REE-0	R-Type (USA, Europe)	US,EUR	
+DMG-REA	DMG-REA-0	R-Type (Japan)	JP	
+DMG-RJ-EUR	DMG-RJX-0	B.C. Kid 2 (Europe) (SGB Enhanced)	EUR	
+DMG-RW-AUS	DMG-RWX-0	Mega Man - Dr. Wily's Revenge (Europe)	EUR	
+DMG-RW-EUR	DMG-RWX-0	Mega Man - Dr. Wily's Revenge (Europe)	EUR	
+DMG-RW-FAH	DMG-RWX-0	Mega Man - Dr. Wily's Revenge (Europe)	EUR	
+DMG-RW-USA	DMG-RWE-0	Mega Man - Dr. Wily's Revenge (USA)	US	
+DMG-RW-USA-1	DMG-RWE-0	Mega Man - Dr. Wily's Revenge (USA)	US	
+DMG-RZ-FAH	DMG-RZX-0	R-Type II (Europe)	EUR	
+DMG-S3-USA	DMG-S3E-0	Spot - The Video Game (USA)	US	
+DMG-SAJ	DMG-SAJ-0	Makai Toushi Sa-Ga (Japan)	JP	
+DMG-SO-USA	DMG-SOE-1	Boxxle (USA, Europe) (Rev 1)	US,EUR	
+DMG-SP-USA-1	DMG-SPE-0	Space Invaders (USA) (SGB Enhanced)	US	
+DMG-SS-USA	DMG-SSA-0	SolarStriker (World)	JP,US,EUR	
+DMG-SSA	DMG-SSA-0	SolarStriker (World)	JP,US,EUR	
+DMG-SV-USA	DMG-SVE-0	Malibu Beach Volleyball (USA)	US	
+DMG-SVJ	DMG-SVJ-0	Seaside Volley (Japan)	JP	
+DMG-T4-FRG	DMG-T4X-0	Trip World (Europe)	EUR	
+DMG-TN-USA-1	DMG-TNA-0	Tennis (World)	JP,US,EUR	
+DMG-TR-ASI	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-EUR	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-FAH	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-NOE	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-SCN-1	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-UKV	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-USA	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TR-USA-2	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TRA	DMG-TRA-1	Tetris (World) (Rev 1)	JP,US,EUR	
+DMG-TS-NOE	DMG-TSE-0	Bart Simpson's Escape from Camp Deadly (USA, Europe)	US,EUR	
+DMG-TX-FAH	DMG-TXE-0	Tiny Toon Adventures - Babs' Big Break (USA, Europe)	US,EUR	
+DMG-TZ-FAH	DMG-TZE-0	Terminator 2 - Judgment Day (USA, Europe)	US,EUR	
+DMG-UF-USA	DMG-UFX-1	Smurfs, The (USA, Europe) (En,Fr,De) (Rev 1) (SGB Enhanced)	US,EUR	en,fr,de
+DMG-UH-EUR	DMG-UHE-0	Prehistorik Man (USA, Europe)	US,EUR	
+DMG-UUJ	DMG-UUJ-0	Yu Yu Hakusho (Japan)	JP	
+DMG-V2A	DMG-V2A-0	Flappy Special (Japan)	JP	
+DMG-VPHE-USA	DMG-VPHE-0	Pokemon Pinball (USA, Australia) (Rumble Version) (SGB Enhanced) (GB Compatible)	US,AU	
+DMG-VPHE-USA-1	DMG-VPHE-0	Pokemon Pinball (USA, Australia) (Rumble Version) (SGB Enhanced) (GB Compatible)	US,AU	
+DMG-VPHJ-JPN	DMG-VPHJ-0	Pokemon Pinball (Japan) (Rumble Version) (SGB Enhanced) (GB Compatible)	JP	
+DMG-VPHP-EUR	DMG-VPHP-0	Pokemon Pinball (Europe) (En,Fr,De,Es,It) (Rumble Version) (SGB Enhanced) (GB Compatible)	EUR	en,fr,de,es,it
+DMG-VU-FAH	DMG-VUA-0	Dr. Mario (World)	JP,US,EUR	
+DMG-VU-ITA	DMG-VUA-1	Dr. Mario (World) (Rev 1)	JP,US,EUR	
+DMG-VU-NOE	DMG-VUA-0	Dr. Mario (World)	JP,US,EUR	
+DMG-VU-UKV	DMG-VUA-1	Dr. Mario (World) (Rev 1)	JP,US,EUR	
+DMG-VU-USA	DMG-VUA-0	Dr. Mario (World)	JP,US,EUR	
+DMG-VU-USA-2	DMG-VUA-1	Dr. Mario (World) (Rev 1)	JP,US,EUR	
+DMG-VUA	DMG-VUA-0	Dr. Mario (World)	JP,US,EUR	
+DMG-W2-EUR	DMG-W2X-0	Mega Man II (Europe)	EUR	
+DMG-W2-FAH	DMG-W2X-0	Mega Man II (Europe)	EUR	
+DMG-W2-USA-1	DMG-W2E-0	Mega Man II (USA)	US	
+DMG-W3-FAH	DMG-W3X-0	Mega Man III (Europe)	EUR	
+DMG-W3-SCN	DMG-W3X-0	Mega Man III (Europe)	EUR	
+DMG-W6J	DMG-W6J-0	Wizardry Gaiden III - Yami no Seiten (Japan)	JP	
+DMG-WJ-EUR	DMG-WJA-0	Wario Land - Super Mario Land 3 (World)	JP,US,EUR	
+DMG-WJ-SCN	DMG-WJA-0	Wario Land - Super Mario Land 3 (World)	JP,US,EUR	
+DMG-WJ-UKV	DMG-WJA-0	Wario Land - Super Mario Land 3 (World)	JP,US,EUR	
+DMG-WJ-USA	DMG-WJA-0	Wario Land - Super Mario Land 3 (World)	JP,US,EUR	
+DMG-WJ-USA-1	DMG-WJA-0	Wario Land - Super Mario Land 3 (World)	JP,US,EUR	
+DMG-WM-EUR	DMG-WMX-0	Mega Man V (Europe) (SGB Enhanced)	EUR	
+DMG-WS-USA-1	DMG-WSE-1	Star Wars (USA, Europe) (Rev 1)	US,EUR	
+DMG-WW-AUS	DMG-WWE-0	Wizards & Warriors X - The Fortress of Fear (USA, Europe)	US,EUR	
+DMG-WW-UKV	DMG-WWE-0	Wizards & Warriors X - The Fortress of Fear (USA, Europe)	US,EUR	
+DMG-XCA	DMG-XCA-0	Power Mission (Japan)	JP	
+DMG-XG-FAH	DMG-XGE-0	Spider-Man - X-Men - Arcade's Revenge (USA, Europe)	US,EUR	
+DMG-XT-UKV	DMG-XTX-0	Top Ranking Tennis (Europe)	EUR	
+DMG-YK-EUR	DMG-YKY-0	Soccer (Europe, Australia) (En,Fr,De) (SGB Enhanced)	EUR,AU	en,fr,de
+DMG-YK-UKV-1	DMG-YKY-0	Soccer (Europe, Australia) (En,Fr,De) (SGB Enhanced)	EUR,AU	en,fr,de
+DMG-YO-AUS	DMG-YOX-0	Mario & Yoshi (Europe)	EUR	
+DMG-YO-USA	DMG-YOE-0	Yoshi (USA)	US	
+DMG-YOJ	DMG-YOJ-0	Yoshi no Tamago (Japan)	JP	
+DMG-YT-AUS	DMG-YTE-0	Donkey Kong Land (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-YT-EUR	DMG-YTE-0	Donkey Kong Land (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-YT-USA-1	DMG-YTE-0	Donkey Kong Land (USA, Europe) (SGB Enhanced)	US,EUR	
+DMG-YTJ-JPN	DMG-YTJ-0	Super Donkey Kong GB (Japan) (SGB Enhanced)	JP	
+DMG-ZAA	DMG-ZAA-0	Chikyuu Kaihou Gun ZAS (Japan) (En)	JP	en
+DMG-ZK-EUR	DMG-ZKE-0	Tarzan - Lord of the Jungle (USA, Europe)	US,EUR	
+DMG-ZL-FRA	DMG-ZLF-0	Legend of Zelda, The - Link's Awakening (France)	FR	
+DMG-ZL-UKV	DMG-ZLE-0	Legend of Zelda, The - Link's Awakening (USA, Europe)	US,EUR	
+DMG-ZL-USA	DMG-ZLE-0	Legend of Zelda, The - Link's Awakening (USA, Europe)	US,EUR	
+DMG-ZL-USA-3	DMG-ZLE-2	Legend of Zelda, The - Link's Awakening (USA, Europe) (Rev 2)	US,EUR	
+DMG-ZLJ	DMG-ZLJ-0	Zelda no Densetsu - Yume o Miru Shima (Japan)	JP	
+DMG-ZZJ-1	DMG-ZZJ-0	Shanghai (Japan) (Activision)	JP	
+DNG-NE-USA	DMG-NEE-0	Gradius - The Interstellar Assault (USA)	US	

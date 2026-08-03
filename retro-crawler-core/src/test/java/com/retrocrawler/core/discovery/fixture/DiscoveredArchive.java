@@ -1,9 +1,10 @@
 package com.retrocrawler.core.discovery.fixture;
 
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 
-@RetroArchive(id = "discovered_model", locations = "/this/path/is/not-read-during-model-creation",
-		findClues = @RetroArchive.LookAt(pathName = EmptyClueFinder.class))
+@RetroCollection(id = "discovered_model", locations = "/this/path/is/not-read-during-model-creation")
+@RetroClues(fromFolderName = EmptyClueFinder.class)
 class DiscoveredArchive {
 	// Annotation marker type.
 }

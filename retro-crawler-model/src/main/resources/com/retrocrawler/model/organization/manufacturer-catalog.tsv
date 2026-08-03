@@ -1,0 +1,8 @@
+# Minimal manufacturer catalog
+# Sources: ASUS company profile and official-site notice
+# Source URLs: https://www.asus.com/event/investor/about_profile ; https://www.asus.com/terms_of_use_notice_privacy_policy/official-site/
+# Retrieved: 2026-08-03
+# This independently sourced default deliberately contains no TRW identifier or assets.
+# trw_id is optional per row and is intended for private catalog overrides.
+name	full_name	trw_id
+ASUS	ASUSTeK Computer Inc.	

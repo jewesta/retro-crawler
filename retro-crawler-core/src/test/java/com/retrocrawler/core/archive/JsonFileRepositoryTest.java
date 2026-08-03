@@ -9,14 +9,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.util.ReadmeWriter;
 
 class JsonFileRepositoryTest {
@@ -46,9 +52,9 @@ class JsonFileRepositoryTest {
 		assertTrue(Files.exists(repositoryDirectory.resolve(ReadmeWriter.README_TXT)));
 
 		final Archive retrieved = repository.retrieve(ArchiveId.of("test_archive")).orElseThrow();
-		assertEquals(id, retrieved.getId());
-		assertEquals(1, retrieved.getBuckets().size());
-		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.getBuckets().get(0).getBasePath());
+		assertEquals(id, retrieved.id());
+		assertEquals(1, retrieved.buckets().size());
+		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.buckets().get(0).basePath());
 	}
 
 	@Test
@@ -60,7 +66,29 @@ class JsonFileRepositoryTest {
 		repository.stowaway(archive(id, "second"));
 
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
-		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.getBuckets().get(0).getBasePath());
+		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.buckets().get(0).basePath());
+	}
+
+	@Test
+	void preservesMissingValueCluesUsingEstablishedEmptyArrayFormat() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("missing_value");
+		final Artifact artifact = new Artifact(Set.of(Clue.missingValue("sn")));
+		final ArchiveNode root = new ArchiveNode("root", artifact, null);
+		repository.stowaway(Archive.of(id, List.of(Bucket.of(temporaryDirectory.resolve("root"), root))));
+
+		final JsonNode json = new ObjectMapper()
+				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
+		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root().artifact();
+		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
+
+		assertEquals(2, json.path("version").asInt());
+		assertTrue(storedClue.isArray());
+		assertTrue(storedClue.isEmpty());
+		assertEquals("sn", clue.key());
+		assertTrue(clue.isMissingValue());
 	}
 
 	@Test
@@ -105,6 +133,21 @@ class JsonFileRepositoryTest {
 				repositoryDirectory.resolve("archive_requested.json"));
 
 		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("requested")));
+	}
+
+	@Test
+	void rejectsAnOlderCacheWhoseFileCluesMayContainAbsolutePaths() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("old_paths");
+		repository.stowaway(archive(id, "root"));
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_paths.json");
+		final ObjectMapper mapper = new ObjectMapper();
+		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
+		json.put("version", 1);
+		mapper.writeValue(jsonPath.toFile(), json);
+
+		assertThrows(RepositoryException.class, () -> repository.retrieve(id));
 	}
 
 	private Archive archive(final ArchiveId id, final String folder) {

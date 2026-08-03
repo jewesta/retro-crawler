@@ -25,11 +25,15 @@ public class ArchiveNode {
 		this.children = children;
 	}
 
-	public Artifact getArtifact() {
+	public Artifact artifact() {
 		return artifact;
 	}
 
-	public List<ArchiveNode> getChildren() {
+	public String folder() {
+		return folder;
+	}
+
+	public List<ArchiveNode> children() {
 		return children;
 	}
 

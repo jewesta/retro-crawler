@@ -1,5 +1,6 @@
 package com.retrocrawler.core.archive.clues;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,15 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * A model-independent bundle of {@link Clue clues} observed at one archive
+ * location.
+ * <p>
+ * Artifacts form the rebuildable repository representation. They contain raw
+ * evidence, never resolved facts or gear. Resolution may derive an effective
+ * clue view but must leave the artifact unchanged so that another model can
+ * reinterpret the same cached evidence.
+ */
 public class Artifact {
 
 	@JsonIgnore
@@ -33,26 +43,29 @@ public class Artifact {
 			throw new IllegalArgumentException(
 					"Clues cannot be empty. The existence of an artifact implies that there is at least one clue.");
 		}
-		this.clues = clues;
+		this.clues = new HashSet<>(clues);
 	}
 
-	public Set<Clue> getClues() {
-		return clues;
+	/**
+	 * Returns an unmodifiable view of the raw clues.
+	 */
+	public Set<Clue> clues() {
+		return Collections.unmodifiableSet(clues);
 	}
 
 	@JsonAnyGetter
 	protected Map<String, Object> jsonGetter() {
-		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::getKey, clue -> {
+		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::key, clue -> {
 			switch (clue.size()) {
 			case 0:
-				return null;
+				return List.of();
 			case 1:
 				/*
 				 * This makes the JSON a bit smaller and less verbose.
 				 */
-				return clue.getValue().iterator().next();
+				return clue.value().iterator().next();
 			default:
-				return clue.getValue();
+				return clue.value();
 			}
 		}));
 	}

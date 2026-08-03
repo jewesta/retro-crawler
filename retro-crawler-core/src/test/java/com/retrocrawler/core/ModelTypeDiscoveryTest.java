@@ -22,7 +22,7 @@ class ModelTypeDiscoveryTest {
 	void discoversAnnotatedTypesRecursivelyBelowBasePackage() {
 		final Model model = Model.from(FIXTURE_PACKAGE);
 
-		assertEquals("discovered_model", model.getArchiveDescriptor().getId().get());
+		assertEquals("discovered_model", model.archiveDescriptor().id().value());
 	}
 
 	@Test
@@ -34,8 +34,7 @@ class ModelTypeDiscoveryTest {
 
 	@Test
 	void rejectsBlankBasePackage() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.from("  "));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.from("  "));
 
 		assertEquals("basePackage must not be blank.", failure.getMessage());
 	}
@@ -45,7 +44,7 @@ class ModelTypeDiscoveryTest {
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
 				() -> Model.from("com.retrocrawler.core.discovery.missing"));
 
-		assertEquals("No types annotated with @RetroArchive or @RetroGear found in base package "
+		assertEquals("No types annotated with @RetroCollection or @RetroGear found in base package "
 				+ "'com.retrocrawler.core.discovery.missing'.", failure.getMessage());
 	}
 }

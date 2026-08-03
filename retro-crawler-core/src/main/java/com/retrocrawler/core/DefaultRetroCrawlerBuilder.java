@@ -3,6 +3,7 @@ package com.retrocrawler.core;
 import java.util.Objects;
 
 import com.retrocrawler.core.archive.ArchiveDigger;
+import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Repository;
 
 final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
@@ -10,6 +11,8 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 	private Model model;
 
 	private Repository repository;
+
+	private CrawlPlanning crawlPlanning;
 
 	@Override
 	public RetroCrawler.Builder model(final Model model) {
@@ -30,6 +33,15 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 	}
 
 	@Override
+	public RetroCrawler.Builder crawlPlanning(final CrawlPlanning planning) {
+		if (this.crawlPlanning != null) {
+			throw new IllegalStateException("Crawl planning is already configured.");
+		}
+		this.crawlPlanning = Objects.requireNonNull(planning, "planning");
+		return this;
+	}
+
+	@Override
 	public RetroCrawler build() {
 		if (model == null) {
 			throw new IllegalStateException("Missing required model configuration.");
@@ -38,7 +50,8 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 			throw new IllegalStateException("Missing required repository configuration.");
 		}
 
-		final ArchiveDigger digger = new ArchiveDigger(model.getArchiveDescriptor(), model.archivePathClueFinder());
-		return new RetroCrawlerImpl(model.getArchiveDescriptor(), digger, model.gearResolver(), repository);
+		final CrawlPlanning effectivePlanning = crawlPlanning == null ? CrawlPlanning.defaults() : crawlPlanning;
+		final ArchiveDigger digger = new ArchiveDigger(model, effectivePlanning);
+		return new RetroCrawlerImpl(model.archiveDescriptor(), digger, model.gearResolver(), repository);
 	}
 }

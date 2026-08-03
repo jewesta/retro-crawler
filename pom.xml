@@ -12,8 +12,9 @@
 
 	<modules>
 		<module>retro-crawler-core</module>
-		<module>retro-crawler-doc</module>
+		<module>retro-crawler-model</module>
 		<module>retro-crawler-demo</module>
+		<module>retro-crawler-mycollection</module>
 		<module>retro-crawler-app</module>
 		<module>retro-crawler-cli</module>
 	</modules>
@@ -64,7 +65,7 @@
 			<dependency>
 				<groupId>com.tngtech.archunit</groupId>
 				<artifactId>archunit-junit5</artifactId>
-				<version>1.3.0</version>
+				<version>1.4.2</version>
 			</dependency>
 			<dependency>
 				<groupId>com.drewnoakes</groupId>

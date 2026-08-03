@@ -12,6 +12,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.util.Descriptor;
 import com.retrocrawler.core.util.Reflection;
@@ -41,28 +42,40 @@ public class GearDescriptor implements Descriptor {
 		this.idField = idField;
 	}
 
-	public Class<?> getType() {
+	public Class<?> type() {
 		return type;
 	}
 
-	public GearMatcher getMatcher() {
+	public GearMatcher matcher() {
 		return matcher;
 	}
 
-	public Map<String, FactDescriptor> getAttributes() {
+	public Map<String, FactDescriptor> attributes() {
 		return attributes;
 	}
 
-	public Optional<Field> getAnyAttributeField() {
+	public Optional<Field> anyAttributeField() {
 		return Optional.ofNullable(anyAttributeField);
 	}
 
-	public AnyAttributeMode getAnyAttributeMode() {
+	public AnyAttributeMode anyAttributeMode() {
 		return anyAttributeMode;
 	}
 
-	public Optional<Field> getIdField() {
+	public Optional<Field> idField() {
 		return Optional.ofNullable(idField);
+	}
+
+	public Optional<String> idAttributeKey() {
+		if (idField == null) {
+			return Optional.empty();
+		}
+		for (final Map.Entry<String, FactDescriptor> entry : attributes.entrySet()) {
+			if (entry.getValue().field().equals(idField)) {
+				return Optional.of(entry.getKey());
+			}
+		}
+		return Optional.of(InternalClueKeys.ID);
 	}
 
 	public static Optional<GearDescriptor> of(final Class<?> type) {
@@ -114,25 +127,21 @@ public class GearDescriptor implements Descriptor {
 
 				final RetroFact fact = field.getAnnotation(RetroFact.class);
 
-				if (retroId != null && fact != null && fact.optional()) {
-					throw new IllegalArgumentException(TypeName.simple(RetroId.class) + " must not be used on optional "
-							+ TypeName.simple(RetroFact.class) + " field: " + field + " in " + TypeName.full(type));
-				}
-
 				if (fact == null) {
 					/*
-					 * Standalone @RetroId is allowed, but it is not an attribute.
+					 * Standalone @RetroId is allowed, but it is not an
+					 * attribute.
 					 */
 					continue;
 				}
 
 				final FactDescriptor incoming = new FactDescriptor(fact, field);
 
-				final String key = incoming.getKey();
+				final String key = incoming.key();
 				final FactDescriptor existing = attributes.putIfAbsent(key, incoming);
 				if (existing != null) {
-					assertNonContradictingAttribute(existing.getField().getDeclaringClass(),
-							incoming.getField().getDeclaringClass(), key, existing, incoming);
+					assertNonContradictingAttribute(existing.field().getDeclaringClass(),
+							incoming.field().getDeclaringClass(), key, existing, incoming);
 				}
 			}
 		}
@@ -176,19 +185,20 @@ public class GearDescriptor implements Descriptor {
 		}
 
 		final boolean sameOptional = a.isOptional() == b.isOptional();
-		final boolean sameFieldType = a.getField().getType().equals(b.getField().getType());
+		final boolean sameFieldType = a.field().getType().equals(b.field().getType());
 
-		final Class<?> aGeneric = a.getSingleGenericArgument().orElse(null);
-		final Class<?> bGeneric = b.getSingleGenericArgument().orElse(null);
+		final Class<?> aGeneric = a.singleGenericArgument().orElse(null);
+		final Class<?> bGeneric = b.singleGenericArgument().orElse(null);
 		final boolean sameGenericType = Objects.equals(aGeneric, bGeneric);
 
 		final FactDescriptor fa = a;
 		final FactDescriptor fb = b;
 
 		final boolean sameStrict = fa.isStrict() == fb.isStrict();
-		final boolean sameParser = fa.getParser().equals(fb.getParser());
+		final boolean sameContextual = fa.isContextual() == fb.isContextual();
+		final boolean sameParser = fa.parser().equals(fb.parser());
 
-		if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameParser) {
+		if (sameOptional && sameFieldType && sameGenericType && sameStrict && sameContextual && sameParser) {
 			return;
 		}
 
@@ -197,10 +207,11 @@ public class GearDescriptor implements Descriptor {
 		final StringBuilder details = new StringBuilder();
 		details.append("optional=").append(fa.isOptional()).append(" vs ").append(fb.isOptional());
 		details.append(", strict=").append(fa.isStrict()).append(" vs ").append(fb.isStrict());
-		details.append(", parser=").append(TypeName.full(fa.getParser())).append(" vs ")
-				.append(TypeName.full(fb.getParser()));
-		details.append(", fieldType=").append(TypeName.full(fa.getField().getType())).append(" vs ")
-				.append(TypeName.full(fb.getField().getType()));
+		details.append(", contextual=").append(fa.isContextual()).append(" vs ").append(fb.isContextual());
+		details.append(", parser=").append(TypeName.full(fa.parser())).append(" vs ")
+				.append(TypeName.full(fb.parser()));
+		details.append(", fieldType=").append(TypeName.full(fa.field().getType())).append(" vs ")
+				.append(TypeName.full(fb.field().getType()));
 		details.append(", genericType=").append(aGeneric == null ? "null" : TypeName.full(aGeneric)).append(" vs ")
 				.append(bGeneric == null ? "null" : TypeName.full(bGeneric));
 
@@ -222,8 +233,8 @@ public class GearDescriptor implements Descriptor {
 		}
 		/*
 		 * Note: Due to type erasure we cannot reliably enforce Map<String,
-		 * RetroAttribute> at runtime. We at least ensure it is a Map and let the
-		 * assignment logic validate key/value types.
+		 * RetroAttribute> at runtime. We at least ensure it is a Map and let
+		 * the assignment logic validate key/value types.
 		 */
 	}
 }

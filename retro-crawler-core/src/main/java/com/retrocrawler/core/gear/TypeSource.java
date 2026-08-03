@@ -5,6 +5,6 @@ import java.util.Set;
 @FunctionalInterface
 public interface TypeSource {
 
-	Set<Class<?>> getTypes();
+	Set<Class<?>> types();
 
 }

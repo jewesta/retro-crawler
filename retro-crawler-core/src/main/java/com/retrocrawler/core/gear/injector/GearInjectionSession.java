@@ -22,44 +22,44 @@ final class GearInjectionSession {
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
 
 		/*
-		 * We start with all attributes and remove successfully assigned (injected)
-		 * facts along the way. What remains in the end are all clues (because only
-		 * facts will ever get injected) and facts which the current gear didn't request
-		 * (meaning: No related annotation).
+		 * We start with all attributes and remove successfully assigned
+		 * (injected) facts along the way. What remains in the end are all clues
+		 * (because only facts will ever get injected) and facts which the
+		 * current gear didn't request (meaning: No related annotation).
 		 * 
-		 * In the end the AnyAttributeMode will decide what is actually used. We collect
-		 * this information in any case, if not for statistical reasons.
+		 * In the end the AnyAttributeMode will decide what is actually used. We
+		 * collect this information in any case, if not for statistical reasons.
 		 */
-		this.unassigned = attributes.getAll();
+		this.unassigned = attributes.all();
 	}
 
-	GearDescriptor getDescriptor() {
+	GearDescriptor descriptor() {
 		return descriptor;
 	}
 
-	Class<?> getGearType() {
-		return descriptor.getType();
+	Class<?> gearType() {
+		return descriptor.type();
 	}
 
-	Object getGear() {
+	Object gear() {
 		return gear;
 	}
 
-	RetroAttributes getAttributes() {
+	RetroAttributes attributes() {
 		return attributes;
 	}
 
 	/**
 	 * @param attribute
-	 * @return the attribute that got marked. If <code>null</code> is returned then
-	 *         no attribute was marked unassigned. That could mean it was already
-	 *         marked or it doesn't exist.
+	 * @return the attribute that got marked. If <code>null</code> is returned
+	 *         then no attribute was marked unassigned. That could mean it was
+	 *         already marked or it doesn't exist.
 	 */
 	RetroAttribute markAssigned(final RetroAttribute attribute) {
-		return unassigned.remove(attribute.getKey());
+		return unassigned.remove(attribute.key());
 	}
 
-	Map<String, RetroAttribute> getUnassigned() {
+	Map<String, RetroAttribute> unassigned() {
 		// Return copy to protect the original map
 		return new LinkedHashMap<>(unassigned);
 	}

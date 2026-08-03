@@ -4,8 +4,14 @@ import java.io.IOException;
 import java.util.List;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.CrawlPlanning;
+import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
-import com.retrocrawler.core.util.Monitor;
+import com.retrocrawler.core.gear.FlatListFactory;
+import com.retrocrawler.core.gear.GearTreeFactory;
+import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.Stash;
+import com.retrocrawler.core.stash.StashFactory;
 
 public interface RetroCrawler {
 
@@ -24,9 +30,16 @@ public interface RetroCrawler {
 		Builder model(Model model);
 
 		/**
-		 * Configures where extracted clue archives are stowed away and retrieved.
+		 * Configures where extracted clue archives are stowed away and
+		 * retrieved.
 		 */
 		Builder repository(Repository repository);
+
+		/**
+		 * Configures the bounded analysis sweep used to create approximate
+		 * crawl regions. Defaults are used when omitted.
+		 */
+		Builder crawlPlanning(CrawlPlanning planning);
 
 		/**
 		 * Validates the required composition and creates the crawler.
@@ -34,26 +47,27 @@ public interface RetroCrawler {
 		RetroCrawler build();
 	}
 
-	ArchiveDescriptor getArchiveDescriptor();
+	ArchiveDescriptor archiveDescriptor();
 
-	<R, N, G> R crawl(Monitor monitor, boolean reindex, GearTreeFactory<R, N, G> factory) throws IOException;
+	<R, N, G> R crawl(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
+			throws IOException;
 
 	/**
-	 * Convenience method that builds a hierarchical {@link GearArchive} for the
-	 * given gear type.
+	 * Convenience method that builds a hierarchical {@link Stash} for the given
+	 * gear type.
 	 */
-	default <G> GearArchive<G> crawlArchive(final Monitor monitor, final boolean reindex, final Class<G> gearType)
-			throws IOException {
-		return crawl(monitor, reindex, new GearArchiveFactory<>(gearType));
+	default <G> Stash<G> crawlStash(final Progressor progressor, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawl(progressor, reindexScope, new StashFactory<>(gearType));
 	}
 
 	/**
-	 * Convenience method that returns a flat list of all matching gear across all
-	 * buckets (legacy behavior).
+	 * Convenience method that returns a flat list of all matching gear across
+	 * all buckets (legacy behavior).
 	 */
-	default <G> List<G> crawlGear(final Monitor monitor, final boolean reindex, final Class<G> gearType)
+	default <G> List<G> crawlGear(final Progressor progressor, final ReindexScope reindexScope, final Class<G> gearType)
 			throws IOException {
-		return crawl(monitor, reindex, new FlatListFactory<>(gearType));
+		return crawl(progressor, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 }

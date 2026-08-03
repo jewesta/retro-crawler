@@ -22,20 +22,20 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 	public GearSpecialist(final GearDescriptor descriptor) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		/*
-		 * Order is important! The AnyAttributeInjector must come last because it
-		 * (potentially) injects what the other injectors skipped.
+		 * Order is important! The AnyAttributeInjector must come last because
+		 * it (potentially) injects what the other injectors skipped.
 		 */
 		this.injectors = List.of(new DeclaredFactsInjector(adapter), new StandaloneIdInjector(adapter),
 				new AnyAttributeInjector());
 	}
 
-	public GearDescriptor getGearDefinition() {
+	public GearDescriptor gearDefinition() {
 		return descriptor;
 	}
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		return descriptor.getMatcher().matches(context);
+		return descriptor.matcher().matches(context);
 	}
 
 	@Override
@@ -44,7 +44,7 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		final RetroAttributes attributes = Objects.requireNonNull(context.attributes(), "attributes");
 
 		// The birth of a new gear
-		final Object gear = Reflection.newInstance(descriptor.getType());
+		final Object gear = Reflection.newInstance(descriptor.type());
 		final GearInjectionSession session = new GearInjectionSession(descriptor, gear, attributes);
 		for (final Injector injector : injectors) {
 			injector.inject(session);

@@ -3,9 +3,10 @@ package com.retrocrawler.core.archive;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
-import com.retrocrawler.core.annotation.RetroArchive;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.util.Descriptor;
 import com.retrocrawler.core.util.TypeName;
 
@@ -20,18 +21,18 @@ public class ArchiveDescriptor implements Descriptor {
 	public ArchiveDescriptor(final ArchiveId id, final String name, final Collection<Path> paths) {
 		this.id = Objects.requireNonNull(id, "id");
 		this.name = Objects.requireNonNull(name, "name");
-		this.paths = Objects.requireNonNull(paths, "paths");
+		this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
 	}
 
-	public ArchiveId getId() {
+	public ArchiveId id() {
 		return id;
 	}
 
-	public String getName() {
+	public String name() {
 		return name;
 	}
 
-	public Collection<Path> getPaths() {
+	public Collection<Path> paths() {
 		return paths;
 	}
 
@@ -41,15 +42,27 @@ public class ArchiveDescriptor implements Descriptor {
 		return new ArchiveDescriptor(id, name, paths);
 	}
 
-	public static final ArchiveDescriptor of(final RetroArchive archive) {
-		final ArchiveId id = ArchiveId.of(archive.id());
-		final String name = archive.name().isBlank() ? id.get() : archive.name().trim();
-		final Collection<String> pathNames = Arrays.stream(archive.locations()).map(String::trim).toList();
-		if (pathNames.isEmpty()) {
+	public static final ArchiveDescriptor of(final RetroCollection collection) {
+		Objects.requireNonNull(collection, "collection");
+		final Collection<Path> paths = Arrays.stream(collection.locations()).map(String::trim).map(Path::of).toList();
+		return fromPaths(collection, paths);
+	}
+
+	public static final ArchiveDescriptor of(final RetroCollection collection, final ArchiveRoots archiveRoots) {
+		Objects.requireNonNull(archiveRoots, "archiveRoots");
+		return fromPaths(collection, archiveRoots.paths());
+	}
+
+	private static ArchiveDescriptor fromPaths(final RetroCollection collection, final Collection<Path> paths) {
+		Objects.requireNonNull(collection, "collection");
+		final List<Path> immutablePaths = List.copyOf(Objects.requireNonNull(paths, "paths"));
+		final ArchiveId id = ArchiveId.of(collection.id());
+		final String name = collection.name().isBlank() ? id.value() : collection.name().trim();
+		if (immutablePaths.isEmpty()) {
 			throw new IllegalArgumentException(
-					"A " + TypeName.simple(RetroArchive.class) + " requires at least one location to be set.");
+					"A " + TypeName.simple(RetroCollection.class) + " requires at least one location to be set.");
 		}
-		return valueOf(id, name, pathNames);
+		return new ArchiveDescriptor(id, name, immutablePaths);
 	}
 
 }

@@ -9,15 +9,15 @@ public class DuplicateClueException extends RetroCrawlerException {
 		super();
 	}
 
-	public DuplicateClueException(String message, Throwable cause) {
+	public DuplicateClueException(final String message, final Throwable cause) {
 		super(message, cause);
 	}
 
-	public DuplicateClueException(String message) {
+	public DuplicateClueException(final String message) {
 		super(message);
 	}
 
-	public DuplicateClueException(Throwable cause) {
+	public DuplicateClueException(final Throwable cause) {
 		super(cause);
 	}
 

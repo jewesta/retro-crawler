@@ -20,11 +20,10 @@
 			<artifactId>retro-crawler-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!-- For ISBN handling -->
 		<dependency>
-			<groupId>de.creativecouple.validation</groupId>
-			<artifactId>fast-isbn</artifactId>
-			<version>1.1.1</version>
+			<groupId>com.retrocrawler</groupId>
+			<artifactId>retro-crawler-model</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<!-- Testing -->
 		<dependency>

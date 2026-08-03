@@ -12,8 +12,9 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Works in tandem with {@link RetroFact} or stand alone. When used in tandem
  * guarantees that the id produced by the {@link FactParser} is unique among all
- * elements in the same {@link Archive}. In this case the value can also not be
- * optional. When used alone the type must be String and an artificial Id is
+ * resolved gear in the same {@link Archive}. The fact may be optional;
+ * uniqueness is enforced when an id is present. Id values must implement value
+ * equality. When used alone the type must be String and an artificial Id is
  * injected.
  */
 @Retention(RetentionPolicy.RUNTIME)

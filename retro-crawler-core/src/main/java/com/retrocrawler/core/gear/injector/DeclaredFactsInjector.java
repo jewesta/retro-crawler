@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.FactDescriptor;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -18,22 +19,22 @@ final class DeclaredFactsInjector implements Injector {
 
 	@Override
 	public void inject(final GearInjectionSession session) {
-		final GearDescriptor definition = session.getDescriptor();
-		for (final Entry<String, FactDescriptor> entry : definition.getAttributes().entrySet()) {
+		final GearDescriptor definition = session.descriptor();
+		for (final Entry<String, FactDescriptor> entry : definition.attributes().entrySet()) {
 			final String key = entry.getKey();
 			final FactDescriptor descriptor = entry.getValue();
-			final Field field = descriptor.getField();
+			final Field field = descriptor.field();
 
-			final RetroAttribute attribute = session.getAttributes().get(key);
+			final RetroAttribute attribute = session.attributes().get(key);
 
-			if (attribute == null) {
-				AttributeAsserter.assertMissingAllowed(session.getGearType(), descriptor, key);
+			if (!(attribute instanceof Fact)) {
+				AttributeAsserter.assertMissingAllowed(session.gearType(), descriptor, key);
 				continue;
 			}
 
-			final Object inject = adapter.adaptAttributeToField(session.getGearType(), field, key, attribute);
+			final Object inject = adapter.adaptAttributeToField(session.gearType(), field, key, attribute);
 			Objects.requireNonNull(inject, "inject");
-			FieldSetter.setField(session.getGear(), field, inject);
+			FieldSetter.setField(session.gear(), field, inject);
 			session.markAssigned(attribute);
 		}
 	}
