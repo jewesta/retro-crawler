@@ -15,7 +15,8 @@
 	<packaging>jar</packaging>
 	
 	<properties>
-		<vaadin.version>24.3.2</vaadin.version>
+		<spring-boot.version>4.1.0</spring-boot.version>
+		<vaadin.version>25.2.5</vaadin.version>
 	</properties>
 
 	<dependencies>
@@ -36,6 +37,11 @@
 		<dependency>
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin-dev</artifactId>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.parttio</groupId>
@@ -62,15 +68,10 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Testing -->
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>com.drewnoakes</groupId>
 			<artifactId>metadata-extractor</artifactId>
+			<version>2.21.0</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -81,7 +82,7 @@
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
-				<version>3.2.0</version>
+				<version>${spring-boot.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -98,16 +99,10 @@
 	<build>
 		<defaultGoal>spring-boot:run</defaultGoal>
 		<plugins>
-			<!-- For running main methods -->
-			<!-- Default RetroCrawlerCli via mvn -DskipTests exec:java -->
-			<!-- Others via mvn -DskipTests exec:java -Dexec.mainClass=my.other.TypeWithMainMethod -->
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.5.0</version>
-				<configuration>
-					<mainClass>com.retrocrawler.app.cli.RetroCrawlerCli</mainClass>
-				</configuration>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
 			</plugin>
 		</plugins>
 	</build>

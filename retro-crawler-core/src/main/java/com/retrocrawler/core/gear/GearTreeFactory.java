@@ -1,5 +1,7 @@
 package com.retrocrawler.core.gear;
 
+import java.nio.file.Path;
+
 import com.retrocrawler.core.archive.clues.Bucket;
 
 /**
@@ -41,6 +43,25 @@ public interface GearTreeFactory<R, N, G> {
 	 * @return a node handle that will be passed as parent for its children
 	 */
 	N addNode(N parent, G gear);
+
+	/**
+	 * Called for every produced gear node together with its source path.
+	 * <p>
+	 * The default implementation preserves compatibility with factories that do
+	 * not need archive-location information.
+	 *
+	 * @param parent
+	 *            the parent node handle, or null if this is a root in its
+	 *            bucket
+	 * @param gear
+	 *            the resolved gear instance
+	 * @param sourcePath
+	 *            the path of the artifact that produced the gear
+	 * @return a node handle that will be passed as parent for its children
+	 */
+	default N addNode(final N parent, final G gear, final Path sourcePath) {
+		return addNode(parent, gear);
+	}
 
 	/**
 	 * Called after the whole crawl.

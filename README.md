@@ -5,7 +5,7 @@
 If you are like us then you have your collection organized as files and folders. This is simple, pragmatic and backup-friendly. Because of this, RetroCrawler is designed specifically for collections that were **not originally structured as databases** — such as retro computer hardware documentation (pictures, manuals, drivers), software archives, ROM libraries or document repositories.
 
 RetroCrawler does not require specific schemas, metadata files, or folder layouts.
-Instead, you can use your own personal already existing folder structure, provide context via `ClueFinder`s, `FactParser`s and `GearMatcher`s and ReroCrawler **infers structure from context** using a two-phase pipeline.
+Instead, you can use your own personal already existing folder structure, provide context via `ClueFinder`s, `FactParser`s and `GearMatcher`s and RetroCrawler **infers structure from context** using a two-phase pipeline.
 
 ---
 

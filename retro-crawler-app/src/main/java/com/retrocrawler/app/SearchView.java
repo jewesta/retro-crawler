@@ -1,10 +1,10 @@
 package com.retrocrawler.app;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,15 +26,16 @@ import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
-import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -45,7 +46,7 @@ import com.vaadin.flow.data.provider.hierarchy.TreeDataProvider;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
-import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.streams.DownloadHandler;
 
 @PageTitle("Retro Crawler")
 @Route(value = "retrocrawler", layout = MainLayout.class)
@@ -68,9 +69,9 @@ public class SearchView extends HorizontalLayout {
 
 	public static final String INDEX_FAILED = "Indexing failed.";
 
-	private TreeData<MyKnownGear> parts;
+	private TreeData<VaadinGearNode> parts;
 
-	private final TreeGrid<MyKnownGear> treeGrid = new TreeGrid<>();
+	private final TreeGrid<VaadinGearNode> treeGrid = new TreeGrid<>();
 
 	private final VerticalLayout contentArea = new VerticalLayout();
 
@@ -85,6 +86,8 @@ public class SearchView extends HorizontalLayout {
 	private Progressor progressor;
 
 	private final Map<ArchiveId, RetroCrawler> retroCrawler;
+
+	private final LocalArchiveFolderOpener folderOpener = new LocalArchiveFolderOpener();
 
 	private ArchiveId activeArchiveId;
 
@@ -129,24 +132,12 @@ public class SearchView extends HorizontalLayout {
 		//
 		//		mainLayout.add(searchArea);
 
-		treeGrid.addHierarchyColumn(p -> p.getTitle() != null ? p.getTitle() : "<unknown>").setHeader("Title")
-				.setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
-		treeGrid.addComponentColumn(p -> new Anchor("file://" + p.getFolderName(), p.id + "")).setWidth("100px")
-				.setHeader("Id").setResizable(true);
-		treeGrid.addComponentColumn(p -> p.getPicFront().map(path -> {
-			/*
-			 * The StreamResource allows for loading the image from the local
-			 * file system.
-			 */
+		treeGrid.addHierarchyColumn(p -> p.gear().getTitle() != null ? p.gear().getTitle() : "<unknown>")
+				.setHeader("Title").setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
+		treeGrid.addComponentColumn(this::openFolderButton).setWidth("100px").setHeader("Id").setResizable(true);
+		treeGrid.addComponentColumn(p -> p.gear().getPicFront().map(path -> {
 			final String fileName = path.getFileName().toString();
-			final StreamResource resource = new StreamResource(fileName, () -> {
-				try {
-					return new FileInputStream(path.toFile());
-				} catch (final FileNotFoundException e) {
-					return null;
-				}
-			});
-			final Image image = new Image(resource, fileName);
+			final Image image = new Image(DownloadHandler.forFile(path.toFile()).inline(), fileName);
 			image.setMaxHeight("3em");
 			image.setMaxWidth("4em");
 
@@ -158,12 +149,12 @@ public class SearchView extends HorizontalLayout {
 			wrapper.setWidthFull();
 			return wrapper;
 		}).orElse(null)).setWidth("100px").setHeader("Image");
-		treeGrid.addColumn(MyKnownGear::getFolderName).setWidth("100%").setResizable(true).setHeader("Folder Name");
+		treeGrid.addColumn(p -> p.gear().getFolderName()).setWidth("100%").setResizable(true).setHeader("Folder Name");
 
 		treeGrid.setHeightFull();
 		treeGrid.addClassName("retro-treegrid");
 		treeGrid.addSelectionListener(event -> {
-			final Set<MyKnownGear> selected = event.getAllSelectedItems();
+			final Set<VaadinGearNode> selected = event.getAllSelectedItems();
 			switch (selected.size()) {
 			case 1:
 				drawer.setVisible(true);
@@ -268,6 +259,25 @@ public class SearchView extends HorizontalLayout {
 		return button;
 	}
 
+	private Button openFolderButton(final VaadinGearNode node) {
+		final Button button = new Button(node.gear().id.toString());
+		button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+		button.setTooltipText("Open archive folder");
+		button.addClickListener(event -> openArchiveFolder(node.sourcePath()));
+		return button;
+	}
+
+	private void openArchiveFolder(final Path sourcePath) {
+		final Collection<Path> archiveRoots = retroCrawler.values().stream()
+				.flatMap(crawler -> crawler.archiveDescriptor().paths().stream()).toList();
+		try {
+			folderOpener.open(sourcePath, archiveRoots);
+		} catch (final IOException | IllegalArgumentException failure) {
+			logger.warning("Could not open archive folder: " + failure.getMessage());
+			Notification.show("Could not open archive folder: " + failure.getMessage(), 5000, Position.MIDDLE);
+		}
+	}
+
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final Progressor activeProgressor = createProgressor(ui);
 		this.progressor = activeProgressor;
@@ -302,13 +312,13 @@ public class SearchView extends HorizontalLayout {
 		}));
 	}
 
-	public void setParts(final TreeData<MyKnownGear> tree) {
-		final TreeDataProvider<MyKnownGear> partsProvider = new TreeDataProvider<>(tree);
+	private void setParts(final TreeData<VaadinGearNode> tree) {
+		final TreeDataProvider<VaadinGearNode> partsProvider = new TreeDataProvider<>(tree);
 		treeGrid.setDataProvider(partsProvider);
 		this.parts = tree;
 	}
 
-	public TreeData<MyKnownGear> getParts() {
+	private TreeData<VaadinGearNode> getParts() {
 		return parts;
 	}
 
