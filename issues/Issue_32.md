@@ -58,6 +58,14 @@ defaults, while `RetroCrawler.Builder` accepts an alternate source.
 - [x] Documented provider behavior and updated the README example.
 - [x] Ran focused, reactor, and packaged verification.
 
+As a follow-up provider, `ZipArchiveSource` crawls a local ZIP file directly
+without extraction. The ZIP path is both the configured source location and
+the logical root address. The provider indexes the central directory once per
+session, creates folders implied by nested file entries, and uses the same
+session-owned accessor contract for entry content. Malformed entry names that
+escape the root, use non-portable separators, duplicate paths, or create
+file/folder collisions are rejected when the session opens.
+
 The crawl planner and digger now operate on provider handles and listings rather
 than interpreting source addresses through `Files`. `ArchiveManager` owns the
 session lifetime for both complete and partial re-indexing, including provider
@@ -83,6 +91,9 @@ change was required.
   passed.
 - Focused core verification passed: 32 tests covering the source contracts,
   source-driven digging, builder composition, and archive management.
+- ZIP verification passed: six provider contract and malformed-archive tests,
+  plus an end-to-end crawl test that reads a nested clue without extraction.
+- The complete core suite passed with 180 tests.
 - `mvn test` passed for the complete seven-module reactor.
 - `mvn clean install` passed for the complete seven-module reactor and packaged
   module boundaries.

@@ -171,6 +171,22 @@ RetroCrawler crawler = RetroCrawler.builder()
         .build();
 ```
 
+ZIP archives can be crawled directly without extracting them. Select
+`ZipArchiveSource` and configure each archive root as the path of a local ZIP
+file:
+
+```java
+RetroCrawler crawler = RetroCrawler.builder()
+        .model(model)
+        .repository(repository)
+        .archiveSource(new ZipArchiveSource())
+        .build();
+```
+
+The ZIP path is the logical archive root. Entry names become descendant source
+paths, and folders omitted from the ZIP directory are inferred from their
+children.
+
 A session supplies its root folder and classified direct listings while
 RetroCrawler retains control of planning and depth-first traversal. File
 content is optional. When available, the session invokes a generic

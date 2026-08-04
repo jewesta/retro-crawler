@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +17,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
@@ -29,11 +33,15 @@ import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
+import com.retrocrawler.core.archive.source.ZipArchiveSource;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerSourceTest {
 
 	private static final Path ROOT = Path.of("/provider/archive");
+
+	@TempDir
+	private Path temporaryDirectory;
 
 	@Test
 	void crawlsAndInspectsAProviderWhosePathsDoNotExistLocally() throws IOException {
@@ -64,9 +72,32 @@ class ArchiveDiggerSourceTest {
 		assertTrue(source.sessionClosed);
 	}
 
+	@Test
+	void crawlsAZipArchiveWithoutExtractingIt() throws IOException {
+		final Path zip = temporaryDirectory.resolve("collection.zip");
+		try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(zip))) {
+			output.putNextEntry(new ZipEntry("gear/evidence.txt"));
+			output.write("zipped evidence".getBytes(StandardCharsets.UTF_8));
+			output.closeEntry();
+		}
+		final ArchiveDigger digger = digger(zip, new ZipArchiveSource(), contentFinder(new AtomicBoolean()));
+
+		final ArchiveNode archive = digger.dig(zip, new Progressor());
+
+		final ArchiveNode gear = archive.children().getFirst();
+		assertNotNull(gear.artifact());
+		assertEquals(Set.of("zipped evidence"), clue(gear, "content").value());
+		assertFalse(Files.exists(temporaryDirectory.resolve("gear")));
+	}
+
 	private static ArchiveDigger digger(final ArchiveSource source, final FileContentClueFinder contentFinder) {
+		return digger(ROOT, source, contentFinder);
+	}
+
+	private static ArchiveDigger digger(final Path root, final ArchiveSource source,
+			final FileContentClueFinder contentFinder) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test",
-				List.of(ROOT));
+				List.of(root));
 		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
 				name -> "gear".equals(name) ? Set.of(Clue.of("kind", "gear")) : Set.of(), List.of(contentFinder),
 				List.of());
