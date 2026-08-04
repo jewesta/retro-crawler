@@ -1,15 +1,19 @@
 package com.retrocrawler.core.archive;
 
-import java.nio.file.Path;
 import java.util.Objects;
 
-record ArchiveDigTarget(Path root, Path path) {
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveSession;
+
+record ArchiveDigTarget(ArchiveSession session, ArchiveFolder root, ArchiveFolder folder) {
 
 	ArchiveDigTarget {
+		Objects.requireNonNull(session, "session");
 		Objects.requireNonNull(root, "root");
-		Objects.requireNonNull(path, "path");
-		if (!path.startsWith(root)) {
-			throw new IllegalArgumentException("Expected archive path '" + path + "' to be below root '" + root + "'.");
+		Objects.requireNonNull(folder, "folder");
+		if (!folder.path().normalize().startsWith(root.path().normalize())) {
+			throw new IllegalArgumentException(
+					"Expected archive path '" + folder.path() + "' to be below root '" + root.path() + "'.");
 		}
 	}
 }

@@ -11,7 +11,7 @@ import com.retrocrawler.demo.AttributeNames;
 
 public class ImageClueFinder implements FileNameClueFinder {
 
-	// Path objects are guaranteed to represent files
+	// Paths are source addresses already classified as files by the provider.
 	@Override
 	public Set<Clue> find(final Collection<Path> files) {
 		final Set<Clue> clues = new HashSet<>();

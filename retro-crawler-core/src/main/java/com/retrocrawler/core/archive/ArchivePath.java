@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * One filesystem folder being inspected, with the root that defines portable
- * archive-relative paths.
+ * One archive folder being inspected, with the root that defines portable
+ * archive-relative source paths.
  */
 public record ArchivePath(Path root, Path path, List<Path> children) {
 

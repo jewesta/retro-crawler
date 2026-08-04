@@ -1,30 +1,25 @@
 package com.retrocrawler.app;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
-import com.retrocrawler.core.archive.ArchiveDescriptor;
-import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
-import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
@@ -47,6 +42,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
 
 @PageTitle("Retro Crawler")
 @Route(value = "retrocrawler", layout = MainLayout.class)
@@ -79,38 +75,33 @@ public class SearchView extends HorizontalLayout {
 
 	private final SplitLayout splitLayout = new SplitLayout(contentArea, drawer);
 
-	private final ComboBox<ArchiveDescriptor> archives = new ComboBox<>();
+	private final ComboBox<DemoArchive> archives = new ComboBox<>();
 
 	private final Paragraph messageBar = new Paragraph();
 
 	private Progressor progressor;
 
-	private final Map<ArchiveId, RetroCrawler> retroCrawler;
+	private final List<DemoArchive> demoArchives;
 
-	private final LocalArchiveFolderOpener folderOpener = new LocalArchiveFolderOpener();
-
-	private ArchiveId activeArchiveId;
+	private DemoArchive activeArchive;
 
 	private final Image drums = drums(0);
 
 	public SearchView() {
 		setHeightFull();
 		final Repository repository = new JsonFileRepository();
-		this.retroCrawler = Arrays.stream(DemoModels.values()).map(model -> createCrawler(model, repository))
-				.collect(Collectors.toUnmodifiableMap(rc -> rc.archiveDescriptor().id(), Function.identity()));
-		activeArchiveId = retroCrawler.keySet().iterator().next();
-	}
-
-	private static RetroCrawler createCrawler(final DemoModels demoModel, final Repository repository) {
-		final Model model = Model.from(demoModel.getBasePackage());
-		final RetroCrawler retroCrawler = RetroCrawler.builder().model(model).repository(repository).build();
-		final ArchiveDescriptor descriptor = retroCrawler.archiveDescriptor();
+		final List<DemoArchive> configuredArchives = new ArrayList<>();
 		try {
-			DemoFiles.copyToWorkDirectory(descriptor);
+			for (final DemoModels model : DemoModels.values()) {
+				for (final DemoArchiveSource source : DemoArchiveSource.values()) {
+					configuredArchives.add(DemoArchive.create(model, source, repository));
+				}
+			}
 		} catch (final IOException e) {
-			throw new IllegalStateException("Failed to copy demo data to work directory.");
+			throw new IllegalStateException("Failed to materialize demo archive data.", e);
 		}
-		return retroCrawler;
+		demoArchives = List.copyOf(configuredArchives);
+		activeArchive = demoArchives.getFirst();
 	}
 
 	@Override
@@ -135,20 +126,7 @@ public class SearchView extends HorizontalLayout {
 		treeGrid.addHierarchyColumn(p -> p.gear().getTitle() != null ? p.gear().getTitle() : "<unknown>")
 				.setHeader("Title").setSortable(true).setWidth("400px").setResizable(true).setFrozen(true);
 		treeGrid.addComponentColumn(this::openFolderButton).setWidth("100px").setHeader("Id").setResizable(true);
-		treeGrid.addComponentColumn(p -> p.gear().getPicFront().map(path -> {
-			final String fileName = path.getFileName().toString();
-			final Image image = new Image(DownloadHandler.forFile(path.toFile()).inline(), fileName);
-			image.setMaxHeight("3em");
-			image.setMaxWidth("4em");
-
-			final HorizontalLayout wrapper = new HorizontalLayout(image);
-			wrapper.setPadding(false);
-			wrapper.setSpacing(false);
-			wrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-			wrapper.setAlignItems(FlexComponent.Alignment.CENTER);
-			wrapper.setWidthFull();
-			return wrapper;
-		}).orElse(null)).setWidth("100px").setHeader("Image");
+		treeGrid.addComponentColumn(node -> archiveImage(node).orElse(null)).setWidth("100px").setHeader("Image");
 		treeGrid.addColumn(p -> p.gear().getFolderName()).setWidth("100%").setResizable(true).setHeader("Folder Name");
 
 		treeGrid.setHeightFull();
@@ -171,8 +149,7 @@ public class SearchView extends HorizontalLayout {
 		final Button crawl = retroButton("Reindex");
 		crawl.addClickListener(event -> {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
-			final ArchiveDescriptor location = archives.getValue();
-			activeArchiveId = location.id();
+			activeArchive = Objects.requireNonNull(archives.getValue(), "selected archive");
 			refreshAsync(eventUI, ReindexScope.all());
 		});
 
@@ -188,12 +165,9 @@ public class SearchView extends HorizontalLayout {
 		final Button collapse = retroButton("Collapse All");
 		collapse.addClickListener(event -> treeGrid.collapse(getParts().getRootItems()));
 
-		// final List<ArchiveDescriptor> repoLocationList = getLocations();
-		final List<ArchiveDescriptor> repoLocationList = retroCrawler.values().stream()
-				.map(RetroCrawler::archiveDescriptor).toList();
-		archives.setItems(repoLocationList);
-		archives.setItemLabelGenerator(ArchiveDescriptor::name);
-		archives.setValue(repoLocationList.get(0));
+		archives.setItems(demoArchives);
+		archives.setItemLabelGenerator(DemoArchive::label);
+		archives.setValue(activeArchive);
 
 		messageBar.setMaxWidth("100%");
 		messageBar.getStyle().set("overflow", "hidden");
@@ -262,16 +236,20 @@ public class SearchView extends HorizontalLayout {
 	private Button openFolderButton(final VaadinGearNode node) {
 		final Button button = new Button(node.gear().id.toString());
 		button.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-		button.setTooltipText("Open archive folder");
-		button.addClickListener(event -> openArchiveFolder(node.sourcePath()));
+		final DemoArchive archive = activeArchive;
+		if (archive.folderOpener().isPresent()) {
+			button.setTooltipText("Open archive folder");
+			button.addClickListener(event -> openArchiveFolder(archive, node.sourcePath()));
+		} else {
+			button.setEnabled(false);
+			button.setTooltipText("This archive source does not expose local folders");
+		}
 		return button;
 	}
 
-	private void openArchiveFolder(final Path sourcePath) {
-		final Collection<Path> archiveRoots = retroCrawler.values().stream()
-				.flatMap(crawler -> crawler.archiveDescriptor().paths().stream()).toList();
+	private void openArchiveFolder(final DemoArchive archive, final Path sourcePath) {
 		try {
-			folderOpener.open(sourcePath, archiveRoots);
+			archive.folderOpener().orElseThrow().open(sourcePath, archive.crawler().archiveDescriptor().paths());
 		} catch (final IOException | IllegalArgumentException failure) {
 			logger.warning("Could not open archive folder: " + failure.getMessage());
 			Notification.show("Could not open archive folder: " + failure.getMessage(), 5000, Position.MIDDLE);
@@ -280,12 +258,12 @@ public class SearchView extends HorizontalLayout {
 
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final Progressor activeProgressor = createProgressor(ui);
+		final RetroCrawler crawler = activeArchive.crawler();
 		this.progressor = activeProgressor;
 		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				final RetroCrawler activeCrawler = retroCrawler.get(activeArchiveId);
-				return activeCrawler.crawl(activeProgressor, reindexScope, new VaadinTreeDataFactory());
+				return crawler.crawl(activeProgressor, reindexScope, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -299,6 +277,32 @@ public class SearchView extends HorizontalLayout {
 				failureException.printStackTrace();
 			});
 			return null;
+		});
+	}
+
+	private Optional<Component> archiveImage(final VaadinGearNode node) {
+		final RetroCrawler crawler = activeArchive.crawler();
+		return node.gear().getPicFront().map(path -> {
+			final String fileName = path.getFileName().toString();
+			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
+				final Optional<byte[]> content = crawler.inspect(path, InputStream::readAllBytes);
+				if (content.isEmpty()) {
+					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);
+				}
+				final byte[] bytes = content.get();
+				return new DownloadResponse(new ByteArrayInputStream(bytes), fileName, "image/jpeg", bytes.length);
+			}).inline();
+			final Image image = new Image(download, fileName);
+			image.setMaxHeight("3em");
+			image.setMaxWidth("4em");
+
+			final HorizontalLayout wrapper = new HorizontalLayout(image);
+			wrapper.setPadding(false);
+			wrapper.setSpacing(false);
+			wrapper.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+			wrapper.setAlignItems(FlexComponent.Alignment.CENTER);
+			wrapper.setWidthFull();
+			return wrapper;
 		});
 	}
 

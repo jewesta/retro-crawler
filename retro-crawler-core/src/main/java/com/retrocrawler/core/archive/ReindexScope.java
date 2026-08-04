@@ -8,7 +8,7 @@ import java.util.Objects;
 
 /**
  * Selects which part of a stored clue archive should be rebuilt from its
- * filesystem source.
+ * configured source.
  */
 public final class ReindexScope {
 

@@ -1,8 +1,10 @@
 package com.retrocrawler.core;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,12 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.source.ArchiveFile;
+import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveListing;
+import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearTreeFactory;
@@ -38,18 +46,65 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 	private final Configuration configuration;
 
+	private final ArchiveSource source;
+
 	// package-private: only factories construct this
 	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver,
-			final Configuration configuration, final Repository repository) {
+			final Configuration configuration, final Repository repository, final ArchiveSource source) {
 		this.archiveDescriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.manager = new ArchiveManager(descriptor, digger, repository);
 		this.resolver = Objects.requireNonNull(resolver, "resolver");
 		this.configuration = Objects.requireNonNull(configuration, "configuration");
+		this.source = Objects.requireNonNull(source, "source");
 	}
 
 	@Override
 	public ArchiveDescriptor archiveDescriptor() {
 		return archiveDescriptor;
+	}
+
+	@Override
+	public <T> Optional<T> inspect(final Path sourcePath, final ArchiveFileAccessor<T> inspector) throws IOException {
+		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
+		Objects.requireNonNull(inspector, "inspector");
+		final Path configuredRoot = rootFor(requested);
+
+		try (ArchiveSession session = source.open(configuredRoot)) {
+			ArchiveFolder current = Objects.requireNonNull(session.root(), "session.root()");
+			final Path sourceRoot = current.path().normalize();
+			if (!requested.startsWith(sourceRoot)) {
+				throw new IllegalArgumentException(
+						"Source path '" + sourcePath + "' is not below session root '" + current.path() + "'.");
+			}
+
+			final Path relative = sourceRoot.relativize(requested);
+			if (relative.toString().isEmpty()) {
+				throw new NoSuchFileException(sourcePath.toString(), null,
+						"Source address identifies an archive root.");
+			}
+
+			for (int index = 0; index < relative.getNameCount(); index++) {
+				final ArchiveListing listing = Objects.requireNonNull(session.list(current), "session.list(folder)");
+				final Path expected = current.path().resolve(relative.getName(index)).normalize();
+				final boolean terminal = index == relative.getNameCount() - 1;
+				if (terminal) {
+					final ArchiveFile file = listing.files().stream()
+							.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst()
+							.orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
+					return session.access(file, inspector);
+				}
+				current = listing.folders().stream().filter(candidate -> candidate.path().normalize().equals(expected))
+						.findFirst().orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
+			}
+		}
+		throw new NoSuchFileException(sourcePath.toString());
+	}
+
+	private Path rootFor(final Path sourcePath) {
+		return archiveDescriptor.paths().stream().filter(root -> sourcePath.startsWith(root.normalize()))
+				.max(Comparator.comparingInt(root -> root.normalize().getNameCount()))
+				.orElseThrow(() -> new IllegalArgumentException(
+						"Source path is outside the configured archives: " + sourcePath));
 	}
 
 	@Override

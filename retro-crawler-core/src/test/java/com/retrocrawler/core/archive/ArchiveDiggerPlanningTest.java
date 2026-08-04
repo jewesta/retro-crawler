@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressSnapshot;
 import com.retrocrawler.core.progress.ProgressStage;
@@ -35,8 +36,13 @@ class ArchiveDiggerPlanningTest {
 		final List<ProgressSnapshot> events = new ArrayList<>();
 		final Progressor progressor = Progressor.observing(events::add);
 
-		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
-		final ArchiveNode archive = digger.dig(root, plan, progressor);
+		final ArchiveDigPlan plan;
+		final ArchiveNode archive;
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			plan = digger.plan(List.of(target), progressor);
+			archive = digger.dig(target, plan, progressor);
+		}
 
 		assertEquals(2, plan.analyzedDepth());
 		assertEquals(4, plan.totalRegions());
@@ -57,11 +63,15 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(second.resolve("three"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(100, 2, 100, Duration.ofMinutes(1)));
 
-		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), new Progressor());
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			final ArchiveDigPlan plan = digger.plan(List.of(target), new Progressor());
+			final ArchiveDigTarget secondTarget = digger.target(session, second, new Progressor()).orElseThrow();
 
-		assertEquals(2, plan.analyzedDepth());
-		assertEquals(1, plan.totalRegions());
-		assertTrue(plan.isRegionRoot(root, second));
+			assertEquals(2, plan.analyzedDepth());
+			assertEquals(1, plan.totalRegions());
+			assertTrue(plan.isRegionRoot(session, secondTarget.folder()));
+		}
 	}
 
 	@Test
@@ -69,10 +79,13 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(root.resolve("known"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
-		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
-		Files.createDirectory(root.resolve("created-after-planning"));
-
-		final ArchiveNode archive = digger.dig(root, plan, progressor);
+		final ArchiveNode archive;
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			final ArchiveDigPlan plan = digger.plan(List.of(target), progressor);
+			Files.createDirectory(root.resolve("created-after-planning"));
+			archive = digger.dig(target, plan, progressor);
+		}
 
 		assertEquals(List.of("known"), archive.children().stream().map(ArchiveNode::folder).toList());
 		assertFalse(archive.children().stream().anyMatch(node -> "created-after-planning".equals(node.folder())));
@@ -83,11 +96,14 @@ class ArchiveDiggerPlanningTest {
 		final Path changingEntry = Files.createFile(root.resolve("changing-entry"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
-		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
-		Files.delete(changingEntry);
-		Files.createDirectory(changingEntry);
-
-		final ArchiveNode archive = digger.dig(root, plan, progressor);
+		final ArchiveNode archive;
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			final ArchiveDigPlan plan = digger.plan(List.of(target), progressor);
+			Files.delete(changingEntry);
+			Files.createDirectory(changingEntry);
+			archive = digger.dig(target, plan, progressor);
+		}
 
 		assertTrue(archive.children() == null || archive.children().isEmpty());
 	}

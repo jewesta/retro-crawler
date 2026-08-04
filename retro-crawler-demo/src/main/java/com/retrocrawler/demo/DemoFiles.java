@@ -1,6 +1,7 @@
 package com.retrocrawler.demo;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -44,43 +45,7 @@ public final class DemoFiles {
 	 * @return the local path (existing or newly created)
 	 */
 	private static Path copyToWorkDirectory(final Path annotatedLocation) throws IOException {
-		Objects.requireNonNull(annotatedLocation, "annotatedLocation");
-
-		if (annotatedLocation.isAbsolute()) {
-			throw new IllegalArgumentException(
-					"Demo archive materialization requires a relative path but got: " + annotatedLocation);
-		}
-		if (annotatedLocation.getNameCount() == 0) {
-			throw new IllegalArgumentException("Archive path must not be empty: " + annotatedLocation);
-		}
-
-		final Path targetRoot = annotatedLocation.normalize();
-
-		// Ensure annotated path is rooted in DEMO_ARCHIVE_PARENT (first path segment).
-		if (!DEMO_ARCHIVE_PARENT.equals(targetRoot.getName(0).toString())) {
-			throw new IllegalArgumentException(
-					"Expected demo archive path to start with " + DEMO_ARCHIVE_PARENT + " but got: " + targetRoot);
-		}
-
-		// Ensure DEMO_ARCHIVE_PARENT exists and has the readme (only there).
-		final Path demoRoot = Path.of(DEMO_ARCHIVE_PARENT);
-		if (Files.exists(demoRoot) && !Files.isDirectory(demoRoot)) {
-			throw new IllegalStateException("Expected folder but found a file at: " + demoRoot.toAbsolutePath());
-		}
-		if (!Files.exists(demoRoot)) {
-			Files.createDirectories(demoRoot);
-			ReadmeWriter.writeReadme(demoRoot, "This folder is created/managed by RetroCrawler demos.\n");
-		}
-
-		// Ensure the parent dirs for the actual target exist (no readme here).
-		final Path targetParent = targetRoot.getParent();
-		if (targetParent != null) {
-			if (Files.exists(targetParent) && !Files.isDirectory(targetParent)) {
-				throw new IllegalStateException(
-						"Expected folder but found a file at: " + targetParent.toAbsolutePath());
-			}
-			Files.createDirectories(targetParent);
-		}
+		final Path targetRoot = prepareTarget(annotatedLocation);
 
 		if (Files.isDirectory(targetRoot)) {
 			/*
@@ -113,10 +78,76 @@ public final class DemoFiles {
 		return targetRoot;
 	}
 
+	/**
+	 * Ensures a single demo archive file exists in the working directory,
+	 * copying the matching classpath resource when necessary.
+	 *
+	 * @return the local file path
+	 */
+	public static Path copyFileToWorkDirectory(final Path annotatedLocation) throws IOException {
+		final Path target = prepareTarget(annotatedLocation);
+		if (Files.isRegularFile(target)) {
+			return target;
+		}
+		if (Files.exists(target)) {
+			throw new IllegalStateException("Expected file but found a folder at: " + target.toAbsolutePath());
+		}
+
+		final String classpathFile = toClasspathFolder(target);
+		final URL resource = DemoFiles.class.getResource(classpathFile);
+		if (resource == null) {
+			throw new IllegalStateException("Demo archive not found on classpath at: " + classpathFile
+					+ " (expected it in src/main/resources" + classpathFile + ")");
+		}
+		try (InputStream content = resource.openStream()) {
+			Files.copy(content, target, StandardCopyOption.REPLACE_EXISTING);
+		}
+		if (!Files.isRegularFile(target)) {
+			throw new IllegalStateException("Materialization failed, file not created: " + target.toAbsolutePath());
+		}
+		return target;
+	}
+
 	public static void copyToWorkDirectory(final ArchiveDescriptor descriptor) throws IOException {
 		for (final Path path : descriptor.paths()) {
 			copyToWorkDirectory(path);
 		}
+	}
+
+	private static Path prepareTarget(final Path annotatedLocation) throws IOException {
+		Objects.requireNonNull(annotatedLocation, "annotatedLocation");
+		if (annotatedLocation.isAbsolute()) {
+			throw new IllegalArgumentException(
+					"Demo archive materialization requires a relative path but got: " + annotatedLocation);
+		}
+		if (annotatedLocation.getNameCount() == 0) {
+			throw new IllegalArgumentException("Archive path must not be empty: " + annotatedLocation);
+		}
+
+		final Path target = annotatedLocation.normalize();
+		if (!DEMO_ARCHIVE_PARENT.equals(target.getName(0).toString())) {
+			throw new IllegalArgumentException(
+					"Expected demo archive path to start with " + DEMO_ARCHIVE_PARENT + " but got: " + target);
+		}
+
+		final Path demoRoot = Path.of(DEMO_ARCHIVE_PARENT);
+		if (Files.exists(demoRoot) && !Files.isDirectory(demoRoot)) {
+			throw new IllegalStateException("Expected folder but found a file at: " + demoRoot.toAbsolutePath());
+		}
+		if (!Files.exists(demoRoot)) {
+			Files.createDirectories(demoRoot);
+			ReadmeWriter.writeReadme(demoRoot, "This folder is created/managed by RetroCrawler demos.\n");
+		}
+
+		final Path targetParent = target.getParent();
+		if (targetParent != null) {
+			if (Files.exists(targetParent) && !Files.isDirectory(targetParent)) {
+				throw new IllegalStateException(
+						"Expected folder but found a file at: " + targetParent.toAbsolutePath());
+			}
+			Files.createDirectories(targetParent);
+		}
+		return target;
 	}
 
 	private static String toClasspathFolder(final Path relativePath) {

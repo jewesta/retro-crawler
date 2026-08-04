@@ -1,5 +1,5 @@
 /**
- * Filters that keep irrelevant filesystem paths out of an archive dig.
+ * Filters that keep irrelevant source paths out of an archive dig.
  *
  * <p>
  * {@link com.retrocrawler.core.archive.filter.ArchivePathFilter} is the
