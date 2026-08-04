@@ -2,6 +2,7 @@ package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +23,7 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
+import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
@@ -29,6 +32,12 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
+import com.retrocrawler.core.archive.source.ArchiveFile;
+import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveListing;
+import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.ProgressState;
@@ -194,6 +203,69 @@ class RetroCrawlerBuilderTest {
 				() -> builder.crawlPlanning(planning));
 
 		assertEquals("Crawl planning is already configured.", failure.getMessage());
+	}
+
+	@Test
+	void acceptsAnExplicitArchiveSource() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final ArchiveSource source = root -> {
+			throw new AssertionError("Stored archive should be reused without opening the source.");
+		};
+
+		RetroCrawler.builder().model(model).repository(new RecordingRepository()).archiveSource(source).build();
+	}
+
+	@Test
+	void suppliesTheConfiguredArchiveSourceToTheCrawler() throws IOException {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final AtomicBoolean opened = new AtomicBoolean();
+		final AtomicBoolean closed = new AtomicBoolean();
+		final ArchiveSource source = root -> {
+			opened.set(true);
+			final ArchiveFolder folder = () -> root;
+			return new ArchiveSession() {
+
+				@Override
+				public ArchiveFolder root() {
+					return folder;
+				}
+
+				@Override
+				public ArchiveListing list(final ArchiveFolder ignored) {
+					return new ArchiveListing(List.of(), List.of());
+				}
+
+				@Override
+				public <T> Optional<T> access(final ArchiveFile file, final ArchiveFileAccessor<T> accessor) {
+					throw new AssertionError("No files exist in this archive source.");
+				}
+
+				@Override
+				public void close() {
+					closed.set(true);
+				}
+			};
+		};
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
+				.archiveSource(source).build();
+
+		crawler.crawlGear(new Progressor(), ReindexScope.all(), TestGear.class);
+
+		assertTrue(opened.get());
+		assertTrue(closed.get());
+	}
+
+	@Test
+	void rejectsDuplicateArchiveSourceConfiguration() {
+		final ArchiveSource source = root -> {
+			throw new AssertionError("Source must not be opened while configuring a crawler.");
+		};
+		final RetroCrawler.Builder builder = RetroCrawler.builder().archiveSource(source);
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> builder.archiveSource(source));
+
+		assertEquals("Archive source is already configured.", failure.getMessage());
 	}
 
 	@RetroCollection(id = "factory_test", locations = "/this/path/must/not/be/crawled")

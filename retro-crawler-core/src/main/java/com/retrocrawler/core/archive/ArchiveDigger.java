@@ -2,7 +2,6 @@ package com.retrocrawler.core.archive;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -14,9 +13,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,13 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
+import com.retrocrawler.core.archive.source.ArchiveEntry;
+import com.retrocrawler.core.archive.source.ArchiveFile;
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveListing;
+import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.archive.source.ArchiveSource;
+import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
@@ -46,22 +52,72 @@ public class ArchiveDigger {
 
 	private final List<ArchivePathFilter> pathFilters;
 
+	private final ArchiveSource source;
+
 	public ArchiveDigger(final ArchiveDefinition archive) {
-		this(archive, CrawlPlanning.defaults());
+		this(archive, new FileSystemArchiveSource(), CrawlPlanning.defaults());
 	}
 
 	public ArchiveDigger(final ArchiveDefinition archive, final CrawlPlanning planning) {
+		this(archive, new FileSystemArchiveSource(), planning);
+	}
+
+	public ArchiveDigger(final ArchiveDefinition archive, final ArchiveSource source) {
+		this(archive, source, CrawlPlanning.defaults());
+	}
+
+	public ArchiveDigger(final ArchiveDefinition archive, final ArchiveSource source, final CrawlPlanning planning) {
 		Objects.requireNonNull(archive, "archive");
 		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
 		this.clueFinder = Objects.requireNonNull(archive.archivePathClueFinder(), "archive.archivePathClueFinder()");
+		this.source = Objects.requireNonNull(source, "source");
 		this.planning = Objects.requireNonNull(planning, "planning");
 		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
-		final ArchiveDigTarget target = new ArchiveDigTarget(path, path);
-		final ArchiveDigPlan plan = plan(List.of(target), progressor);
-		return dig(path, plan, progressor);
+		try (ArchiveSession session = open(path)) {
+			final ArchiveDigTarget target = rootTarget(session);
+			final ArchiveDigPlan plan = plan(List.of(target), progressor);
+			return dig(target, plan, progressor);
+		}
+	}
+
+	ArchiveSession open(final Path root) throws IOException {
+		return source.open(Objects.requireNonNull(root, "root"));
+	}
+
+	ArchiveDigTarget rootTarget(final ArchiveSession session) throws IOException {
+		Objects.requireNonNull(session, "session");
+		final ArchiveFolder root = Objects.requireNonNull(session.root(), "session.root()");
+		return new ArchiveDigTarget(session, root, root);
+	}
+
+	Optional<ArchiveDigTarget> target(final ArchiveSession session, final Path path, final Progressor progressor)
+			throws IOException {
+		Objects.requireNonNull(session, "session");
+		Objects.requireNonNull(path, "path");
+		Objects.requireNonNull(progressor, "progressor");
+		final ArchiveFolder root = Objects.requireNonNull(session.root(), "session.root()");
+		final Path normalizedRoot = root.path().normalize();
+		final Path normalizedPath = path.normalize();
+		if (!normalizedPath.startsWith(normalizedRoot)) {
+			throw new IllegalArgumentException(
+					"Expected archive path '" + path + "' to be below root '" + root.path() + "'.");
+		}
+
+		ArchiveFolder current = root;
+		for (final Path folderName : normalizedRoot.relativize(normalizedPath)) {
+			progressor.throwIfCancelled();
+			final Path expected = current.path().resolve(folderName).normalize();
+			final Optional<ArchiveFolder> child = sourceListing(session, current).folders().stream()
+					.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
+			if (child.isEmpty()) {
+				return Optional.empty();
+			}
+			current = child.get();
+		}
+		return Optional.of(new ArchiveDigTarget(session, root, current));
 	}
 
 	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Progressor progressor) throws IOException {
@@ -71,17 +127,14 @@ public class ArchiveDigger {
 
 		final List<ArchiveDigPlan.Region> initialRegions = new ArrayList<>();
 		for (final ArchiveDigTarget target : targets) {
-			if (!Files.isDirectory(target.path())) {
-				throw new IllegalArgumentException("Expected a folder but got: " + target.path());
-			}
-			initialRegions.add(new ArchiveDigPlan.Region(target.root(), target.path()));
+			initialRegions.add(new ArchiveDigPlan.Region(target.session(), target.root(), target.folder()));
 		}
 		if (initialRegions.isEmpty()) {
 			throw new IllegalArgumentException("At least one archive dig target is required.");
 		}
 
 		final long started = System.nanoTime();
-		final Map<Path, FolderListing> analyzedListings = new LinkedHashMap<>();
+		final Map<ArchiveDigPlan.FolderKey, FolderListing> analyzedListings = new LinkedHashMap<>();
 		List<ArchiveDigPlan.Region> frontier = initialRegions;
 		int depth = 0;
 		reportPlanning(progressor, depth, frontier.size(), false);
@@ -89,8 +142,8 @@ public class ArchiveDigger {
 		while (frontier.size() < planning.targetRegions() && depth < planning.maximumDepth()) {
 			progressor.throwIfCancelled();
 
-			final Set<Path> unanalyzed = frontier.stream().map(ArchiveDigPlan.Region::path)
-					.filter(path -> !analyzedListings.containsKey(path))
+			final Set<ArchiveDigPlan.FolderKey> unanalyzed = frontier.stream().map(ArchiveDigPlan.Region::key)
+					.filter(key -> !analyzedListings.containsKey(key))
 					.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
 			if (analyzedListings.size() + unanalyzed.size() > planning.maximumAnalyzedDirectories()
 					|| planningTimeExceeded(started)) {
@@ -101,17 +154,19 @@ public class ArchiveDigger {
 			boolean expanded = false;
 			for (final ArchiveDigPlan.Region region : frontier) {
 				progressor.throwIfCancelled();
-				FolderListing listing = analyzedListings.get(region.path());
+				FolderListing listing = analyzedListings.get(region.key());
 				if (listing == null) {
-					listing = FolderListing.from(list(region.path()));
-					analyzedListings.put(region.path(), listing);
+					listing = list(region.session(), region.folder());
+					analyzedListings.put(region.key(), listing);
 				}
-				final List<Path> directories = listing.folders();
+				final List<ArchiveFolder> directories = listing.folders();
 				if (directories.isEmpty()) {
 					next.add(region);
 				} else {
 					expanded = true;
-					directories.stream().map(path -> new ArchiveDigPlan.Region(region.root(), path)).forEach(next::add);
+					directories.stream()
+							.map(folder -> new ArchiveDigPlan.Region(region.session(), region.root(), folder))
+							.forEach(next::add);
 				}
 			}
 
@@ -140,96 +195,85 @@ public class ArchiveDigger {
 		progressor.indeterminate(ProgressStage.PLANNING, message);
 	}
 
-	private List<Path> list(final Path path) throws IOException {
-		/*
-		 * Need a try-with to close the stream or else the JVM will sooner or
-		 * later crash with a java.io.IOException: Too many open files.
-		 */
-		try (Stream<Path> files = Files.list(path)) {
-			final Stream<Path> accepted = pathFilters.isEmpty() ? files : files.filter(this::accept);
-			return accepted.sorted(Comparator.comparing(Path::toString)).toList();
-		}
+	private FolderListing list(final ArchiveSession session, final ArchiveFolder folder) throws IOException {
+		final ArchiveListing listing = sourceListing(session, folder);
+		final List<ArchiveFolder> folders = listing.folders().stream().filter(this::accept)
+				.sorted(Comparator.comparing(entry -> entry.path().toString())).toList();
+		final List<ArchiveFile> files = listing.files().stream().filter(this::accept)
+				.sorted(Comparator.comparing(entry -> entry.path().toString())).toList();
+		return new FolderListing(folders, files);
 	}
 
-	private boolean accept(final Path path) {
-		return pathFilters.stream().allMatch(filter -> filter.accept(path));
-	}
-
-	ArchiveNode dig(final Path root, final ArchiveDigPlan plan, final Progressor progressor) throws IOException {
-		return dig(root, root, plan, progressor);
-	}
-
-	ArchiveNode dig(final Path root, final Path path, final ArchiveDigPlan plan, final Progressor progressor)
+	private static ArchiveListing sourceListing(final ArchiveSession session, final ArchiveFolder folder)
 			throws IOException {
-		if (!Files.isDirectory(root)) {
-			throw new IllegalArgumentException("Expected a folder but got: " + root);
+		final ArchiveListing listing = Objects.requireNonNull(session.list(folder), "session.list(folder)");
+		final Set<Path> paths = new HashSet<>();
+		for (final ArchiveEntry entry : java.util.stream.Stream
+				.concat(listing.folders().stream(), listing.files().stream()).toList()) {
+			final Path entryPath = Objects.requireNonNull(entry, "archive listing entry").path().normalize();
+			if (!Objects.equals(folder.path().normalize(), entryPath.getParent())) {
+				throw new IllegalArgumentException("Archive source returned entry '" + entry.path()
+						+ "' outside the direct listing of folder '" + folder.path() + "'.");
+			}
+			if (!paths.add(entryPath)) {
+				throw new IllegalArgumentException(
+						"Archive source returned a duplicate direct entry at: " + entry.path());
+			}
 		}
-		if (!Files.isDirectory(path)) {
-			throw new IllegalArgumentException("Expected a folder but got: " + path);
-		}
-		if (!path.startsWith(root)) {
-			throw new IllegalArgumentException("Expected archive path '" + path + "' to be below root '" + root + "'.");
-		}
-		return digFolder(root, path, plan, progressor, false).node();
+		return listing;
 	}
 
-	private Set<Clue> createSyntheticClues(final Path root, final Path path) {
+	private boolean accept(final ArchiveEntry entry) {
+		return pathFilters.stream().allMatch(filter -> filter.accept(entry.path()));
+	}
+
+	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Progressor progressor)
+			throws IOException {
+		Objects.requireNonNull(target, "target");
+		if (!target.folder().path().normalize().startsWith(target.root().path().normalize())) {
+			throw new IllegalArgumentException("Expected archive path '" + target.folder().path()
+					+ "' to be below root '" + target.root().path() + "'.");
+		}
+		return digFolder(target.session(), target.root(), target.folder(), plan, progressor, false).node();
+	}
+
+	private Set<Clue> createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
 		final Set<Clue> clues = new HashSet<>();
 
-		// The artificial id based on a hash of the relative path
 		final String archiveId = descriptor.id().value();
-		final String relative = root.relativize(path).toString().replace('\\', '/');
+		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
 		final String basis = archiveId + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
-		// 16 bytes -> 32 hex chars. Usually plenty, much smaller than full paths.
 		final String id = Hashes.toHex(hash, 16);
 		clues.add(Clue.internal(InternalClueKeys.ID, id));
-
-		// The folder name without parent folder path
-		final String folder = path.getFileName().toString();
-		clues.add(Clue.internal(InternalClueKeys.FOLDER, folder));
+		clues.add(Clue.internal(InternalClueKeys.FOLDER, folder.name()));
 
 		return clues;
 	}
 
-	/**
-	 * @param root
-	 *            Guaranteed to be a folder (not a file)
-	 * @param path
-	 *            Guaranteed to be a folder (not a file)
-	 * @param progressor
-	 * @return
-	 * @throws IOException
-	 */
-	private DigResult digFolder(final Path root, final Path path, final ArchiveDigPlan plan,
-			final Progressor progressor, final boolean parentInsideRegion) throws IOException {
-		final String pathName;
-		if (path.equals(root)) {
-			// A bucket supplies the runtime root; the cached tree begins at archive ".".
-			pathName = ".";
-		} else {
-			pathName = path.getFileName().toString();
-		}
+	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
+			final ArchiveDigPlan plan, final Progressor progressor, final boolean parentInsideRegion)
+			throws IOException {
+		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
 		progressor.throwIfCancelled();
-		final boolean startsRegion = plan.isRegionRoot(root, path);
+		final boolean startsRegion = plan.isRegionRoot(session, folder);
 		final boolean insideRegion = parentInsideRegion || startsRegion;
-		plan.reportCurrent(path, insideRegion, progressor);
+		plan.reportCurrent(folder, insideRegion, progressor);
 
-		FolderListing listing = plan.listing(path).orElse(null);
+		FolderListing listing = plan.listing(session, folder).orElse(null);
 		if (listing == null) {
-			listing = FolderListing.from(list(path));
+			listing = list(session, folder);
 		}
 
-		final ArchivePath archivePath = new ArchivePath(root, path, listing.entries());
-		final Set<Clue> localClues = clueFinder.find(archivePath, listing.files(), progressor);
+		final Set<Clue> localClues = clueFinder.find(root, folder, listing.files(), session, progressor);
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
-		for (final Path child : listing.folders()) {
-			children.add(digFolder(root, child, plan, progressor, insideRegion));
+		for (final ArchiveFolder child : listing.folders()) {
+			children.add(digFolder(session, root, child, plan, progressor, insideRegion));
 		}
 
-		final ArchiveFolderView folderView = folderView(path, listing.files(), children, progressor);
+		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
 		final Set<Clue> clues = clueFinder.enrich(localClues, folderView, progressor);
 		progressor.throwIfCancelled();
 
@@ -238,33 +282,28 @@ public class ArchiveDigger {
 			artifact = null;
 		} else {
 			final Set<Clue> effectiveClues = new HashSet<>(clues);
-			final Set<Clue> syntheticClues = createSyntheticClues(root, path);
-			effectiveClues.addAll(syntheticClues);
+			effectiveClues.addAll(createSyntheticClues(root, folder));
 			artifact = new Artifact(effectiveClues);
-			logger.info("Found artifact at: " + root.relativize(path).toString());
+			logger.info("Found artifact at: " + root.path().relativize(folder.path()));
 		}
 
 		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
 		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
 		final ArchiveNode result = new ArchiveNode(pathName, artifact, effectiveChildren);
 		if (startsRegion) {
-			plan.completeRegion(path, progressor);
+			plan.completeRegion(folder, progressor);
 		}
 		return new DigResult(result, folderView);
 	}
 
-	private static ArchiveFolderView folderView(final Path path, final List<Path> files, final List<DigResult> children,
-			final Progressor progressor) {
+	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
+			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
 		final List<ArchiveFolderView> metadataFolders = children.stream()
 				.filter(child -> child.node().artifact() == null).map(DigResult::folderView).toList();
-		final List<ArchiveFileView> fileViews = files.stream().map(file -> new DefaultArchiveFileView(file, progressor))
-				.map(ArchiveFileView.class::cast).toList();
-		return new DefaultArchiveFolderView(folderName(path), metadataFolders, fileViews);
-	}
-
-	private static String folderName(final Path path) {
-		final Path fileName = path.getFileName();
-		return fileName == null ? path.toString() : fileName.toString();
+		final List<ArchiveFileView> fileViews = files.stream()
+				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
+				.toList();
+		return new DefaultArchiveFolderView(folder.name(), metadataFolders, fileViews);
 	}
 
 	private record DigResult(ArchiveNode node, ArchiveFolderView folderView) {
@@ -280,28 +319,30 @@ public class ArchiveDigger {
 		}
 	}
 
-	private record DefaultArchiveFileView(Path path, Progressor progressor) implements ArchiveFileView {
+	private record DefaultArchiveFileView(ArchiveSession session, ArchiveFile file, Progressor progressor)
+			implements ArchiveFileView {
 
 		private DefaultArchiveFileView {
-			Objects.requireNonNull(path, "path");
+			Objects.requireNonNull(session, "session");
+			Objects.requireNonNull(file, "file");
 			Objects.requireNonNull(progressor, "progressor");
 		}
 
 		@Override
 		public String name() {
-			return path.getFileName().toString();
+			return file.name();
 		}
 
 		@Override
-		public <T> T peek(final Function<? super InputStream, ? extends T> inspector) {
+		public <T> Optional<T> peek(final Function<? super InputStream, ? extends T> inspector) {
 			Objects.requireNonNull(inspector, "inspector");
 			progressor.throwIfCancelled();
-			try (InputStream in = Files.newInputStream(path)) {
-				final T result = inspector.apply(in);
+			try {
+				final Optional<T> result = session.access(file, inspector::apply);
 				progressor.throwIfCancelled();
 				return result;
 			} catch (final IOException e) {
-				throw new ClueFileIOException("Could not inspect clue file at: " + path, e);
+				throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
+import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.FlatListFactory;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.progress.Progressor;
@@ -40,6 +41,12 @@ public interface RetroCrawler {
 		 * crawl regions. Defaults are used when omitted.
 		 */
 		Builder crawlPlanning(CrawlPlanning planning);
+
+		/**
+		 * Configures the provider used to inspect every archive root. The NIO
+		 * filesystem source is used when omitted.
+		 */
+		Builder archiveSource(ArchiveSource source);
 
 		/**
 		 * Validates the required composition and creates the crawler.

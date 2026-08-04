@@ -9,10 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.ArchivePath;
+import com.retrocrawler.core.archive.source.ArchiveFile;
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Reflection;
 
@@ -81,6 +85,15 @@ public class ArchivePathClueFinder {
 		}
 	}
 
+	private static Optional<Set<Clue>> from(final FileContentClueFinder finder, final ArchiveSession session,
+			final ArchiveFile file) {
+		try {
+			return session.access(file, finder::find);
+		} catch (final IOException e) {
+			throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
+		}
+	}
+
 	public Set<Clue> find(final ArchivePath node, final Progressor progressor) {
 		final List<Path> files = node.children().stream().filter(Files::isRegularFile).toList();
 		return find(node, files, progressor);
@@ -128,6 +141,51 @@ public class ArchivePathClueFinder {
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
 			final Set<Clue> fileNameClues = finder.find(relativeFiles);
 			clues = merge(clues, fileNameClues);
+		}
+		return clues;
+	}
+
+	/**
+	 * Runs local clue finders against entries supplied by an archive source.
+	 */
+	public Set<Clue> find(final ArchiveFolder root, final ArchiveFolder folder, final List<ArchiveFile> files,
+			final ArchiveSession session, final Progressor progressor) {
+		Objects.requireNonNull(root, "root");
+		Objects.requireNonNull(folder, "folder");
+		Objects.requireNonNull(files, "files");
+		Objects.requireNonNull(session, "session");
+		Objects.requireNonNull(progressor, "progressor");
+
+		Set<Clue> clues;
+		if (folderNameClueFinder == null) {
+			clues = new HashSet<>();
+		} else {
+			clues = merge(new HashSet<>(), folderNameClueFinder.find(folder.name()));
+		}
+		if (files.isEmpty()) {
+			return clues;
+		}
+
+		if (!fileContentClueFinders.isEmpty()) {
+			for (final ArchiveFile file : files) {
+				for (final FileContentClueFinder finder : fileContentClueFinders) {
+					if (!finder.matches(file.name())) {
+						continue;
+					}
+					progressor.throwIfCancelled();
+					final Optional<Set<Clue>> fileContentClues = from(finder, session, file);
+					if (fileContentClues.isPresent()) {
+						clues = merge(clues, fileContentClues.get());
+					}
+				}
+			}
+		}
+
+		final Path normalizedRoot = root.path().normalize();
+		final List<Path> relativeFiles = files.stream().map(file -> normalizedRoot.relativize(file.path().normalize()))
+				.toList();
+		for (final FileNameClueFinder finder : fileNameClueFinders) {
+			clues = merge(clues, finder.find(relativeFiles));
 		}
 		return clues;
 	}

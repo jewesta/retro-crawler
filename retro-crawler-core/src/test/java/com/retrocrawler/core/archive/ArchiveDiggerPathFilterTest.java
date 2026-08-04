@@ -20,6 +20,7 @@ import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
+import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerPathFilterTest {
@@ -40,8 +41,13 @@ class ArchiveDiggerPathFilterTest {
 				new IgnoreQNAPSystemPaths());
 		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
-		final ArchiveDigPlan plan = digger.plan(List.of(new ArchiveDigTarget(root, root)), progressor);
-		final ArchiveNode result = digger.dig(root, plan, progressor);
+		final ArchiveNode result;
+		final ArchiveDigPlan plan;
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			plan = digger.plan(List.of(target), progressor);
+			result = digger.dig(target, plan, progressor);
+		}
 
 		assertEquals(1, plan.totalRegions());
 		assertEquals(List.of("Visible folder"), result.children().stream().map(ArchiveNode::folder).toList());

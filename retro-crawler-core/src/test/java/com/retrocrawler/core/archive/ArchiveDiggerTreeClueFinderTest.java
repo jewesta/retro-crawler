@@ -92,7 +92,7 @@ class ArchiveDiggerTreeClueFinderTest {
 			}
 			for (final ArchiveFileView file : child.files()) {
 				if ("Konversation.txt".equals(file.name())) {
-					clues.add(Clue.of("origin-detail", file.peek(this::read)));
+					file.peek(this::read).ifPresent(value -> clues.add(Clue.of("origin-detail", value)));
 				}
 			}
 		}

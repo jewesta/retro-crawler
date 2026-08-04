@@ -1,6 +1,7 @@
 package com.retrocrawler.core.archive.clues;
 
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -19,6 +20,12 @@ public interface ArchiveFileView {
 	 * The supplied stream is valid only for the duration of the inspector call
 	 * and must not be closed or retained by the inspector.
 	 */
-	<T> T peek(Function<? super InputStream, ? extends T> inspector);
+	/**
+	 * Inspects this file when its archive source exposes content.
+	 *
+	 * @return the non-null inspection result, or empty when content is
+	 *         unavailable
+	 */
+	<T> Optional<T> peek(Function<? super InputStream, ? extends T> inspector);
 
 }

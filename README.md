@@ -50,7 +50,8 @@ Most clue finders inspect only the current folder name or its direct files.
 Collections with meaningful metadata subtrees may additionally configure
 `TreeClueFinder`s. These run depth-first in post-order through a transient
 `ArchiveFolderView`, may inspect file content lazily through
-`ArchiveFileView.peek(...)`, and return clues for the current folder. Child
+`ArchiveFileView.peek(...)` when the configured source exposes it, and return
+clues for the current folder. Child
 folders that already established an artifact are pruned from the view, so a
 finder cannot cross into another potential collection part.
 
@@ -91,8 +92,8 @@ RetroCrawler's collection and gear model can be configured via annotations:
 
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
 
-Filesystem noise can be pruned before entries are classified or supplied to
-clue finders. The bundled opt-in filter ignores every dot-prefixed entry and
+Source noise can be pruned before entries are supplied to clue finders. The
+bundled opt-in filter ignores every dot-prefixed entry and
 common operating-system or NAS service entries such as `Thumbs.db`,
 `__MACOSX`, `@Recycle`, and `System Volume Information`:
 
@@ -153,6 +154,36 @@ all keys must occur exactly once, while their order is arbitrary.
 
 ---
 
+## Archive Sources
+
+Archive traversal is provided by an application-selected `ArchiveSource`.
+`FileSystemArchiveSource` is the default and uses the NIO filesystem associated
+with each configured root `Path`; existing applications require no additional
+configuration.
+
+Other hierarchical providers can open an `ArchiveSession` for the same roots:
+
+```java
+RetroCrawler crawler = RetroCrawler.builder()
+        .model(model)
+        .repository(repository)
+        .archiveSource(myArchiveSource)
+        .build();
+```
+
+A session supplies its root folder and classified direct listings while
+RetroCrawler retains control of planning and depth-first traversal. File
+content is optional. When available, the session invokes a generic
+`ArchiveFileAccessor` synchronously and closes the supplied `InputStream`
+before returning its result. An empty result means that content was not
+available and content-based clue finders contribute no clue for that file.
+
+Source paths remain hierarchical addresses used for relative clues, cache
+relocation, and partial re-indexing; providers must not require them to be
+locally accessible.
+
+---
+
 ## Optional Shared Model
 
 RetroCrawler remains a bring-your-own-type framework. The optional
@@ -193,7 +224,9 @@ Repository repository = new InMemoryRepository();
 An in-memory repository does not write to the filesystem and starts empty after
 an application restart.
 
-A missing stored archive causes the filesystem archive to be crawled. If a stored archive cannot be retrieved, RetroCrawler reports the repository failure and rebuilds it from the filesystem source.
+A missing stored archive causes the configured source to be crawled. If a
+stored archive cannot be retrieved, RetroCrawler reports the repository failure
+and rebuilds it from that source.
 
 ---
 
