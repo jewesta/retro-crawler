@@ -1,5 +1,6 @@
 package com.retrocrawler.model.temporal;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Clock;
@@ -19,11 +20,11 @@ class YearParserTest {
 	void acceptsOnlyFourDigitYearsFrom1950ThroughTheCurrentYear() {
 		final YearParser parser = new YearParser(DURING_2026);
 
-		assertEquals(Year.of(1950), parser.parse("1950").value().orElseThrow());
-		assertEquals(Year.of(2026), parser.parse("2026").value().orElseThrow());
-		assertEquals(Confidence.STRONG, parser.parse("1989").confidence());
-		assertEquals(Confidence.NONE, parser.parse("1949").confidence());
-		assertEquals(Confidence.NONE, parser.parse("2027").confidence());
-		assertEquals(Confidence.NONE, parser.parse("89").confidence());
+		assertEquals(Year.of(1950), parser.parse("1950", CONTEXT).value().orElseThrow());
+		assertEquals(Year.of(2026), parser.parse("2026", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.STRONG, parser.parse("1989", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("1949", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("2027", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("89", CONTEXT).confidence());
 	}
 }

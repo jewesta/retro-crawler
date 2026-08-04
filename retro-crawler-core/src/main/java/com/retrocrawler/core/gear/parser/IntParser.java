@@ -5,7 +5,7 @@ import com.retrocrawler.core.gear.RatedFact;
 public class IntParser implements FactParser<Integer> {
 
 	@Override
-	public RatedFact<Integer> parse(final String rawValue) {
+	public RatedFact<Integer> parse(final String rawValue, final ParseContext context) {
 		Integer integer;
 		try {
 			integer = Integer.valueOf(rawValue);

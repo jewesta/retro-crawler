@@ -2,13 +2,17 @@ package com.retrocrawler.core;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.IllformedLocaleException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,14 +50,17 @@ public final class Model implements ArchiveDefinition {
 
 	private final ArchiveDescriptor archiveDescriptor;
 	private final ArchivePathClueFinder archivePathClueFinder;
+	private final Configuration configuration;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
 	private final List<ArchivePathFilter> pathFilters;
 
 	private Model(final ArchiveDescriptor archiveDescriptor, final ArchivePathClueFinder archivePathClueFinder,
-			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
+			final Configuration configuration, final GearResolver gearResolver, final Path workingDirectory,
+			final List<ArchivePathFilter> pathFilters) {
 		this.archiveDescriptor = Objects.requireNonNull(archiveDescriptor, "archiveDescriptor");
 		this.archivePathClueFinder = Objects.requireNonNull(archivePathClueFinder, "archivePathClueFinder");
+		this.configuration = Objects.requireNonNull(configuration, "configuration");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
 		this.workingDirectory = workingDirectory;
 		this.pathFilters = List.copyOf(pathFilters);
@@ -128,6 +135,10 @@ public final class Model implements ArchiveDefinition {
 		return archivePathClueFinder;
 	}
 
+	public Configuration configuration() {
+		return configuration;
+	}
+
 	GearResolver gearResolver() {
 		return gearResolver;
 	}
@@ -140,7 +151,8 @@ public final class Model implements ArchiveDefinition {
 	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots,
 			final Path runtimeWorkingDirectory, final List<ArchivePathFilter> runtimePathFilters,
 			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeCatalogConfigurations,
-			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> runtimeParserFactories) {
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> runtimeParserFactories,
+			final Consumer<Configuration.Builder> runtimeConfiguration) {
 		Objects.requireNonNull(types, "types");
 
 		final Set<Class<?>> immutableTypes = types.stream()
@@ -164,12 +176,44 @@ public final class Model implements ArchiveDefinition {
 				: runtimePathFilters;
 		final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = effectiveCatalogConfigurations(
 				declaration.type(), runtimeCatalogConfigurations);
+		final Configuration configuration = effectiveConfiguration(collection, runtimeConfiguration);
 		final RetroFactDefaultParser defaultParsers = declaration.type().getAnnotation(RetroFactDefaultParser.class);
 		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
 				catalogConfigurations, defaultParsers, runtimeParserFactories);
 
-		return new Model(descriptor, clueFinder, gearResolver, workingDirectory, pathFilters);
+		return new Model(descriptor, clueFinder, configuration, gearResolver, workingDirectory, pathFilters);
+	}
+
+	private static Configuration effectiveConfiguration(final RetroCollection collection,
+			final Consumer<Configuration.Builder> runtimeConfiguration) {
+		final Configuration.Builder annotationDefaults = Configuration.builder();
+		final String configuredLocale = collection.locale().trim();
+		if (!configuredLocale.isEmpty()) {
+			try {
+				annotationDefaults.locale(new Locale.Builder().setLanguageTag(configuredLocale).build());
+			} catch (final IllformedLocaleException e) {
+				throw new IllegalArgumentException(
+						"Invalid locale on " + TypeName.simple(RetroCollection.class) + ": " + configuredLocale, e);
+			}
+		}
+		final String configuredTimeZone = collection.timeZone().trim();
+		if (!configuredTimeZone.isEmpty()) {
+			try {
+				annotationDefaults.timeZone(ZoneId.of(configuredTimeZone));
+			} catch (final DateTimeException e) {
+				throw new IllegalArgumentException(
+						"Invalid timeZone on " + TypeName.simple(RetroCollection.class) + ": " + configuredTimeZone, e);
+			}
+		}
+
+		final Configuration annotationConfiguration = annotationDefaults.build();
+		if (runtimeConfiguration == null) {
+			return annotationConfiguration;
+		}
+		final Configuration.Builder runtimeOverrides = annotationConfiguration.toBuilder();
+		runtimeConfiguration.accept(runtimeOverrides);
+		return runtimeOverrides.build();
 	}
 
 	private static CollectionDeclaration collectionDeclaration(final Set<Class<?>> types) {
@@ -246,6 +290,7 @@ public final class Model implements ArchiveDefinition {
 		private List<ArchivePathFilter> pathFilters;
 		private final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = new LinkedHashMap<>();
 		private final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories = new LinkedHashMap<>();
+		private Consumer<Configuration.Builder> configuration;
 
 		private Builder() {
 		}
@@ -330,6 +375,18 @@ public final class Model implements ArchiveDefinition {
 		}
 
 		/**
+		 * Overrides collection-wide interpretation configuration after
+		 * annotation defaults have been applied.
+		 */
+		public Builder configuration(final Consumer<Configuration.Builder> customizer) {
+			if (configuration != null) {
+				throw new IllegalStateException("Configuration is already configured.");
+			}
+			configuration = Objects.requireNonNull(customizer, "customizer");
+			return this;
+		}
+
+		/**
 		 * Overrides the catalog used by a catalog-backed parser if that parser
 		 * is selected by a discovered fact declaration.
 		 */
@@ -379,7 +436,7 @@ public final class Model implements ArchiveDefinition {
 				throw new IllegalStateException("Model types must be configured before building a model.");
 			}
 			return create(types, archiveRoots, workingDirectory, pathFilters, Map.copyOf(catalogConfigurations),
-					Map.copyOf(parserFactories));
+					Map.copyOf(parserFactories), configuration);
 		}
 	}
 }

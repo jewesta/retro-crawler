@@ -4,6 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +27,9 @@ import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.InstantParser;
 import com.retrocrawler.core.gear.parser.IntParser;
+import com.retrocrawler.core.gear.parser.LocalDateParser;
 import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.Reflection;
@@ -221,6 +225,20 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 					parserFactories);
 		}
 
+		if (fieldType == Instant.class) {
+			final Class<? extends FactParser<Instant>> parserType = defaultParsers == null ? InstantParser.class
+					: defaultParsers.instant();
+			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+					parserFactories);
+		}
+
+		if (fieldType == LocalDate.class) {
+			final Class<? extends FactParser<LocalDate>> parserType = defaultParsers == null ? LocalDateParser.class
+					: defaultParsers.localDate();
+			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+					parserFactories);
+		}
+
 		if (fieldType == Path.class) {
 			final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
 					: defaultParsers.path();
@@ -258,6 +276,18 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			if (elementType == Path.class) {
 				final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
 						: defaultParsers.path();
+				return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+						parserFactories);
+			}
+			if (elementType == Instant.class) {
+				final Class<? extends FactParser<Instant>> parserType = defaultParsers == null ? InstantParser.class
+						: defaultParsers.instant();
+				return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
+						parserFactories);
+			}
+			if (elementType == LocalDate.class) {
+				final Class<? extends FactParser<LocalDate>> parserType = defaultParsers == null ? LocalDateParser.class
+						: defaultParsers.localDate();
 				return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
 						parserFactories);
 			}

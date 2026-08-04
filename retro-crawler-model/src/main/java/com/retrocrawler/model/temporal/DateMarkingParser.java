@@ -9,6 +9,7 @@ import java.util.Objects;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /** Parses role-neutral date markings in canonical ISO forms. */
 public final class DateMarkingParser implements FactParser<DateMarking> {
@@ -26,7 +27,7 @@ public final class DateMarkingParser implements FactParser<DateMarking> {
 	}
 
 	@Override
-	public RatedFact<DateMarking> parse(final String rawValue) {
+	public RatedFact<DateMarking> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -59,7 +60,7 @@ public final class DateMarkingParser implements FactParser<DateMarking> {
 			return noMatch();
 		}
 
-		final RatedFact<YearWeek> week = yearWeekParser.parse(value);
+		final RatedFact<YearWeek> week = yearWeekParser.parse(value, context);
 		return week.value().map(parsed -> RatedFact.exact(DateMarking.of(parsed)))
 				.orElseGet(DateMarkingParser::noMatch);
 	}

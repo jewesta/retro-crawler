@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.appearance.ColorParser;
 
@@ -16,8 +17,8 @@ public final class CollectionColorParser implements FactParser<Color> {
 	private final ColorParser delegate = new ColorParser();
 
 	@Override
-	public RatedFact<Color> parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : canonical(rawValue));
+	public RatedFact<Color> parse(final String rawValue, final ParseContext context) {
+		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 
 	private static String canonical(final String rawValue) {

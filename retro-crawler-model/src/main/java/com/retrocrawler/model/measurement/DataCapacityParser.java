@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class DataCapacityParser implements FactParser<DataCapacity> {
 
@@ -15,7 +16,7 @@ public final class DataCapacityParser implements FactParser<DataCapacity> {
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<DataCapacity> parse(final String rawValue) {
+	public RatedFact<DataCapacity> parse(final String rawValue, final ParseContext context) {
 		return parseValue(rawValue).map(RatedFact::exact)
 				.orElseGet(() -> RatedFact.none("Expected a positive data capacity with a KB, MB, GB, or TB unit."));
 	}

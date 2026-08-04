@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.commerce.Money;
 
 /**
@@ -20,7 +21,7 @@ public final class MoneyParser implements FactParser<Money> {
 	private static final Pattern MONEY = Pattern.compile("^(\\d+(?:[.,]\\d{1,2})?)\\s*([A-Za-z]{3})?$");
 
 	@Override
-	public RatedFact<Money> parse(final String rawValue) {
+	public RatedFact<Money> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a non-null monetary amount.");
 		}

@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English package-seal observations.
@@ -11,7 +12,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class SealStateParser implements FactParser<SealState> {
 
 	@Override
-	public RatedFact<SealState> parse(final String rawValue) {
+	public RatedFact<SealState> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +22,7 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
@@ -29,16 +32,25 @@ import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.InstantParser;
 import com.retrocrawler.core.gear.parser.IntParser;
+import com.retrocrawler.core.gear.parser.LocalDateParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 
 class ModelParserFactoryTest {
 
+	private static final Path ARCHIVE_ROOT = Path.of("/archive");
+	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
+			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+
 	@BeforeEach
 	void resetParserObservations() {
 		AnnotationStringParser.instances = 0;
 		AnnotationIntegerParser.instances = 0;
+		AnnotationInstantParser.instances = 0;
+		AnnotationLocalDateParser.instances = 0;
 		AnnotationPathParser.instances = 0;
 		AnnotationEnumParser.enumTypes.clear();
 		FactorySelectedEnumParser.instances = 0;
@@ -50,6 +62,8 @@ class ModelParserFactoryTest {
 
 		assertEquals(2, AnnotationStringParser.instances);
 		assertEquals(2, AnnotationIntegerParser.instances);
+		assertEquals(2, AnnotationInstantParser.instances);
+		assertEquals(2, AnnotationLocalDateParser.instances);
 		assertEquals(2, AnnotationPathParser.instances);
 	}
 
@@ -60,7 +74,7 @@ class ModelParserFactoryTest {
 		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
 
 		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "custom-on")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 
@@ -68,12 +82,16 @@ class ModelParserFactoryTest {
 	void builderFactoriesConstructDefaultAndExplicitParsersPerEffectiveFactKey() {
 		final Map<String, FactParser<String>> strings = new HashMap<>();
 		final Map<String, FactParser<Integer>> integers = new HashMap<>();
+		final Map<String, FactParser<Instant>> instants = new HashMap<>();
+		final Map<String, FactParser<LocalDate>> localDates = new HashMap<>();
 		final Map<String, FactParser<Path>> paths = new HashMap<>();
 		final List<String> explicitKeys = new ArrayList<>();
 
 		Model.builder().typesFrom(Set.of(BuiltInDefaultsCollection.class, FactoryFactGear.class))
 				.parserFactory(StringParser.class, key -> strings.computeIfAbsent(key, KeyedStringParser::new))
 				.parserFactory(IntParser.class, key -> integers.computeIfAbsent(key, KeyedIntegerParser::new))
+				.parserFactory(InstantParser.class, key -> instants.computeIfAbsent(key, KeyedInstantParser::new))
+				.parserFactory(LocalDateParser.class, key -> localDates.computeIfAbsent(key, KeyedLocalDateParser::new))
 				.parserFactory(PathParser.class, key -> paths.computeIfAbsent(key, KeyedPathParser::new))
 				.parserFactory(ExplicitStringParser.class, key -> {
 					explicitKeys.add(key);
@@ -84,6 +102,10 @@ class ModelParserFactoryTest {
 		assertNotSame(strings.get("first"), strings.get("renamed"));
 		assertEquals(Set.of("count", "primitiveCount"), integers.keySet());
 		assertNotSame(integers.get("count"), integers.get("primitiveCount"));
+		assertEquals(Set.of("createdAt", "observedAt"), instants.keySet());
+		assertNotSame(instants.get("createdAt"), instants.get("observedAt"));
+		assertEquals(Set.of("releaseDate", "importantDates"), localDates.keySet());
+		assertNotSame(localDates.get("releaseDate"), localDates.get("importantDates"));
 		assertEquals(Set.of("photo", "attachments"), paths.keySet());
 		assertNotSame(paths.get("photo"), paths.get("attachments"));
 		assertEquals(List.of("explicit"), explicitKeys);
@@ -117,7 +139,7 @@ class ModelParserFactoryTest {
 		assertEquals(0, FactorySelectedEnumParser.instances);
 
 		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "factory-value")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 
@@ -143,8 +165,8 @@ class ModelParserFactoryTest {
 
 	@Test
 	void rejectsAFactoryForTheAutoDetectionMarkerItself() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.builder().parserFactory(AutoDetectParser.class, key -> RatedFact::exact));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.builder()
+				.parserFactory(AutoDetectParser.class, key -> (rawValue, context) -> RatedFact.exact(rawValue)));
 
 		assertTrue(failure.getMessage().contains(AutoDetectParser.class.getSimpleName()));
 	}
@@ -152,6 +174,7 @@ class ModelParserFactoryTest {
 	@RetroCollection(id = "annotation_default_parsers", locations = "/not/read")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(string = AnnotationStringParser.class, integer = AnnotationIntegerParser.class,
+			instant = AnnotationInstantParser.class, localDate = AnnotationLocalDateParser.class,
 			path = AnnotationPathParser.class)
 	public static final class AnnotatedDefaultsCollection {
 	}
@@ -189,6 +212,18 @@ class ModelParserFactoryTest {
 		private int primitiveCount;
 
 		@RetroFact
+		private Instant createdAt;
+
+		@RetroFact
+		private Set<Instant> observedAt;
+
+		@RetroFact
+		private LocalDate releaseDate;
+
+		@RetroFact
+		private Set<LocalDate> importantDates;
+
+		@RetroFact
 		private Path photo;
 
 		@RetroFact
@@ -212,6 +247,18 @@ class ModelParserFactoryTest {
 
 		@RetroFact(optional = false)
 		private int primitiveCount;
+
+		@RetroFact
+		private Instant createdAt;
+
+		@RetroFact
+		private Set<Instant> observedAt;
+
+		@RetroFact
+		private LocalDate releaseDate;
+
+		@RetroFact
+		private Set<LocalDate> importantDates;
 
 		@RetroFact
 		private Path photo;
@@ -267,7 +314,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}
@@ -281,7 +328,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<Integer> parse(final String rawValue) {
+		public RatedFact<Integer> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(Integer.valueOf(rawValue));
 		}
 	}
@@ -295,8 +342,36 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue) {
+		public RatedFact<Path> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(Path.of(rawValue));
+		}
+	}
+
+	public static final class AnnotationInstantParser implements FactParser<Instant> {
+
+		private static int instances;
+
+		public AnnotationInstantParser() {
+			instances++;
+		}
+
+		@Override
+		public RatedFact<Instant> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(Instant.parse(rawValue));
+		}
+	}
+
+	public static final class AnnotationLocalDateParser implements FactParser<LocalDate> {
+
+		private static int instances;
+
+		public AnnotationLocalDateParser() {
+			instances++;
+		}
+
+		@Override
+		public RatedFact<LocalDate> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(LocalDate.parse(rawValue));
 		}
 	}
 
@@ -319,7 +394,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<EnumState> parse(final String rawValue) {
+		public RatedFact<EnumState> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.none("The builder factory should replace this parser.");
 		}
 	}
@@ -327,7 +402,7 @@ class ModelParserFactoryTest {
 	private static final class FactoryReplacementEnumParser implements FactParser<EnumState> {
 
 		@Override
-		public RatedFact<EnumState> parse(final String rawValue) {
+		public RatedFact<EnumState> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(EnumState.ON);
 		}
 	}
@@ -335,7 +410,7 @@ class ModelParserFactoryTest {
 	private record KeyedStringParser(String key) implements FactParser<String> {
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}
@@ -343,7 +418,7 @@ class ModelParserFactoryTest {
 	private record KeyedIntegerParser(String key) implements FactParser<Integer> {
 
 		@Override
-		public RatedFact<Integer> parse(final String rawValue) {
+		public RatedFact<Integer> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(Integer.valueOf(rawValue));
 		}
 	}
@@ -351,8 +426,24 @@ class ModelParserFactoryTest {
 	private record KeyedPathParser(String key) implements FactParser<Path> {
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue) {
+		public RatedFact<Path> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(Path.of(rawValue));
+		}
+	}
+
+	private record KeyedInstantParser(String key) implements FactParser<Instant> {
+
+		@Override
+		public RatedFact<Instant> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(Instant.parse(rawValue));
+		}
+	}
+
+	private record KeyedLocalDateParser(String key) implements FactParser<LocalDate> {
+
+		@Override
+		public RatedFact<LocalDate> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(LocalDate.parse(rawValue));
 		}
 	}
 
@@ -365,7 +456,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(key + ":" + rawValue);
 		}
 	}

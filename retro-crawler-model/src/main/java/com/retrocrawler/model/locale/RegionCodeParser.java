@@ -4,11 +4,12 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class RegionCodeParser implements FactParser<RegionCode> {
 
 	@Override
-	public RatedFact<RegionCode> parse(final String rawValue) {
+	public RatedFact<RegionCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

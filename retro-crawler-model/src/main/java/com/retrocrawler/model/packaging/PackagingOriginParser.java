@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English packaging-origin observations.
@@ -11,7 +12,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class PackagingOriginParser implements FactParser<PackagingOrigin> {
 
 	@Override
-	public RatedFact<PackagingOrigin> parse(final String rawValue) {
+	public RatedFact<PackagingOrigin> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

@@ -5,13 +5,14 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class TrackDensityParser implements FactParser<TrackDensity> {
 
 	private static final Pattern TRACKS_PER_INCH = Pattern.compile("^(\\d+)\\s*TPI$", Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<TrackDensity> parse(final String rawValue) {
+	public RatedFact<TrackDensity> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a positive track density in TPI.");
 		}

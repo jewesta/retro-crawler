@@ -8,8 +8,8 @@ import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Confidence;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.util.RetroAttribute;
 
 public class FactFinder {
@@ -57,11 +57,7 @@ public class FactFinder {
 		return contextual;
 	}
 
-	public Optional<Fact> find(final Clue clue) {
-		return find(clue, FactParseContext.detached());
-	}
-
-	public Optional<Fact> find(final Clue clue, final FactParseContext context) {
+	public Optional<Fact> find(final Clue clue, final ParseContext context) {
 		Objects.requireNonNull(context, "context");
 		final Set<String> raws = clue.value();
 		if (raws.isEmpty()) {
@@ -109,11 +105,7 @@ public class FactFinder {
 		return Collection.class.isAssignableFrom(fieldType) || RetroAttribute.class.isAssignableFrom(fieldType);
 	}
 
-	public RatedFact<?> parse(final String raw) {
-		return parser.parse(raw);
-	}
-
-	public RatedFact<?> parse(final String raw, final FactParseContext context) {
+	public RatedFact<?> parse(final String raw, final ParseContext context) {
 		return parser.parse(raw, context);
 	}
 

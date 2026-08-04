@@ -4,6 +4,7 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.condition.ItemCondition;
 import com.retrocrawler.model.condition.ItemConditionParser;
 
@@ -16,8 +17,8 @@ public final class CollectionItemConditionParser implements FactParser<ItemCondi
 	private final ItemConditionParser delegate = new ItemConditionParser();
 
 	@Override
-	public RatedFact<ItemCondition> parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : canonical(rawValue));
+	public RatedFact<ItemCondition> parse(final String rawValue, final ParseContext context) {
+		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 
 	private static String canonical(final String rawValue) {

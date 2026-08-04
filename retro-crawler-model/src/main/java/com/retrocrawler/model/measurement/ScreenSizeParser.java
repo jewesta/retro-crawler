@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class ScreenSizeParser implements FactParser<ScreenSize> {
 
@@ -13,7 +14,7 @@ public final class ScreenSizeParser implements FactParser<ScreenSize> {
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<ScreenSize> parse(final String rawValue) {
+	public RatedFact<ScreenSize> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
