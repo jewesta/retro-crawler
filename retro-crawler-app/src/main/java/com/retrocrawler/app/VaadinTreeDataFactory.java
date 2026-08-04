@@ -5,9 +5,9 @@ import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 
-public final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<MyKnownGear>, MyKnownGear, MyKnownGear> {
+final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<VaadinGearNode>, VaadinGearNode, MyKnownGear> {
 
-	private final TreeData<MyKnownGear> data = new TreeData<>();
+	private final TreeData<VaadinGearNode> data = new TreeData<>();
 
 	@Override
 	public Class<MyKnownGear> gearType() {
@@ -25,13 +25,20 @@ public final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<MyK
 	}
 
 	@Override
-	public MyKnownGear addNode(final MyKnownGear parent, final MyKnownGear gear) {
-		data.addItem(parent, gear);
-		return gear;
+	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear) {
+		throw new IllegalStateException("The Vaadin tree requires the Gear source path.");
 	}
 
 	@Override
-	public TreeData<MyKnownGear> build() {
+	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear,
+			final java.nio.file.Path sourcePath) {
+		final VaadinGearNode node = new VaadinGearNode(gear, sourcePath);
+		data.addItem(parent, node);
+		return node;
+	}
+
+	@Override
+	public TreeData<VaadinGearNode> build() {
 		return data;
 	}
 }

@@ -9,7 +9,7 @@ public final class ReadmeWriter {
 
 	public static final String README_TXT = "readme.txt";
 
-	public static final String NOTICE_TEMPORARY_FOLDER_DO_NOT_COMMIT = "Automatically created temporary folder. Can be deled any time. Do not commit.";
+	public static final String NOTICE_TEMPORARY_FOLDER_DO_NOT_COMMIT = "Automatically created temporary folder. Can be deleted at any time. Do not commit.";
 
 	private ReadmeWriter() {
 		// utility class

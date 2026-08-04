@@ -25,13 +25,23 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<classgraph.version>4.8.184</classgraph.version>
-		<slf4j.version>2.0.13</slf4j.version>
+		<jackson.version>2.21.4</jackson.version>
+		<junit.version>6.0.3</junit.version>
+		<slf4j.version>2.0.18</slf4j.version>
 	</properties>
 
 	<!-- This does NOT add dependencies. It just unifies dependency versions
 	across all modules. For that reason setting a <scope> does not make sense. -->
 	<dependencyManagement>
 		<dependencies>
+			<!-- Testing -->
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${junit.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<!-- Logging -->
 			<dependency>
 				<groupId>org.slf4j</groupId>
@@ -45,9 +55,9 @@
 			</dependency>
 			<!-- JSON serialization / deserialisation for archive cache -->
 			<dependency>
-				<groupId>com.fasterxml.jackson.dataformat</groupId>
-				<artifactId>jackson-dataformat-xml</artifactId>
-				<version>2.16.1</version>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson.version}</version>
 			</dependency>
 			<!-- Annotation type discovery -->
 			<dependency>
@@ -55,34 +65,27 @@
 				<artifactId>classgraph</artifactId>
 				<version>${classgraph.version}</version>
 			</dependency>
-			<!-- Testing -->
-			<dependency>
-				<groupId>org.junit.jupiter</groupId>
-				<artifactId>junit-jupiter</artifactId>
-				<version>5.14.1</version>
-			</dependency>
 			<!-- Code analysis lib to enforce code guidelines -->
 			<dependency>
 				<groupId>com.tngtech.archunit</groupId>
 				<artifactId>archunit-junit5</artifactId>
 				<version>1.4.2</version>
 			</dependency>
-			<dependency>
-				<groupId>com.drewnoakes</groupId>
-				<artifactId>metadata-extractor</artifactId>
-				<version>2.18.0</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
+	<dependencies>
+		<!-- All reactor modules use JUnit Jupiter as their test framework. -->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
 	<build>
 		<pluginManagement>
 			<plugins>
-				<plugin>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-maven-plugin</artifactId>
-					<version>4.0.1</version>
-				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>

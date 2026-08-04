@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
@@ -46,6 +48,56 @@ class RetroCrawlerBuilderTest {
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, result.buckets().size());
+	}
+
+	@Test
+	void suppliesArtifactSourcePathToTreeFactory() throws IOException {
+		final Path root = Path.of("/this/path/must/not/be/crawled");
+		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
+		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
+				List.of(new ArchiveNode("shelf", artifact, List.of())));
+		final Repository repository = new FixedArchiveRepository(
+				Archive.of(ArchiveId.of("factory_test"), List.of(Bucket.of(root, archiveRoot))));
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
+		final List<Path> sourcePaths = new ArrayList<>();
+		final GearTreeFactory<List<Path>, TestGear, TestGear> factory = new GearTreeFactory<>() {
+
+			@Override
+			public Class<TestGear> gearType() {
+				return TestGear.class;
+			}
+
+			@Override
+			public void beginBucket(final Bucket bucket) {
+				// no-op
+			}
+
+			@Override
+			public void endBucket(final Bucket bucket) {
+				// no-op
+			}
+
+			@Override
+			public TestGear addNode(final TestGear parent, final TestGear gear) {
+				throw new AssertionError("Expected the source-path overload.");
+			}
+
+			@Override
+			public TestGear addNode(final TestGear parent, final TestGear gear, final Path sourcePath) {
+				sourcePaths.add(sourcePath);
+				return gear;
+			}
+
+			@Override
+			public List<Path> build() {
+				return List.copyOf(sourcePaths);
+			}
+		};
+
+		final List<Path> result = crawler.crawl(new Progressor(), ReindexScope.none(), factory);
+
+		assertEquals(List.of(root.resolve("shelf")), result);
 	}
 
 	@Test
@@ -181,6 +233,19 @@ class RetroCrawlerBuilderTest {
 			retrieveCount++;
 			final Path root = Path.of("/this/path/must/not/be/crawled");
 			return Optional.of(Archive.of(id, List.of(Bucket.of(root, new ArchiveNode(".", null, null)))));
+		}
+	}
+
+	private record FixedArchiveRepository(Archive archive) implements Repository {
+
+		@Override
+		public void stowaway(final Archive ignored) {
+			throw new AssertionError("Archive should have been retrieved without crawling.");
+		}
+
+		@Override
+		public Optional<Archive> retrieve(final ArchiveId id) {
+			return Optional.of(archive);
 		}
 	}
 

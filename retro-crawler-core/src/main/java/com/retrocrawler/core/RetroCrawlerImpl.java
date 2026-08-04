@@ -28,7 +28,7 @@ import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
-public class RetroCrawlerImpl implements RetroCrawler {
+class RetroCrawlerImpl implements RetroCrawler {
 
 	private final ArchiveDescriptor archiveDescriptor;
 
@@ -150,7 +150,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 		final N nextParent;
 		if (resolved.isPresent() && gearType.isInstance(resolved.get())) {
 			final G typed = gearType.cast(resolved.get());
-			nextParent = factory.addNode(parent, typed);
+			nextParent = factory.addNode(parent, typed, node.sourcePath());
 		} else {
 			nextParent = parent;
 		}
@@ -184,7 +184,7 @@ public class RetroCrawlerImpl implements RetroCrawler {
 						progressor));
 			}
 		}
-		return new ResolvedArchiveNode(resolution, List.copyOf(children));
+		return new ResolvedArchiveNode(resolution, sourcePath, List.copyOf(children));
 	}
 
 	private static final class ResolutionProgress {
@@ -212,7 +212,8 @@ public class RetroCrawlerImpl implements RetroCrawler {
 	private record ResolvedBucket(Bucket bucket, ResolvedArchiveNode root) {
 	}
 
-	private record ResolvedArchiveNode(Optional<GearResolution> resolution, List<ResolvedArchiveNode> children) {
+	private record ResolvedArchiveNode(Optional<GearResolution> resolution, Path sourcePath,
+			List<ResolvedArchiveNode> children) {
 	}
 
 	private static final class RetroIdRegistry {
