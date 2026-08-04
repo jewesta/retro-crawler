@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 import java.nio.file.Path;
 
 import com.retrocrawler.core.gear.parser.EnumParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.PathParser;
@@ -30,5 +31,7 @@ public @interface RetroFactDefaultParser {
 
 	/** The default for {@link Path} facts and collections of paths. */
 	Class<? extends FactParser<Path>> path() default PathParser.class;
+
+	Class<? extends EnumFactParser> enumeration() default EnumParser.class;
 
 }

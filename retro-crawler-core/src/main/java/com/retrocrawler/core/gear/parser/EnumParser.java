@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import com.retrocrawler.core.gear.RatedFact;
 
-public class EnumParser<T extends Enum<T>> implements FactParser<T> {
+public class EnumParser<T extends Enum<T>> implements EnumFactParser<T> {
 
 	private final Class<T> enumType;
 
