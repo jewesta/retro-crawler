@@ -25,9 +25,6 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
-import com.retrocrawler.core.archive.ArchiveDefinition;
-import com.retrocrawler.core.archive.ArchiveDescriptor;
-import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.gear.GearResolver;
@@ -43,22 +40,27 @@ import com.retrocrawler.core.util.TypeName;
 /**
  * An immutable, annotation-derived description of a collection and how its
  * archive artifacts are interpreted as gear.
+ * <p>
+ * A model is deliberately free of archive locations. One crawler applies one
+ * model to every archive registered with it.
  */
-public final class Model implements ArchiveDefinition {
+public final class Model {
 
 	private static final GearResolverFactory GEAR_RESOLVER_FACTORY = new GearResolverFactory();
 
-	private final ArchiveDescriptor archiveDescriptor;
+	private final String collectionId;
+	private final String collectionName;
 	private final ArchivePathClueFinder archivePathClueFinder;
 	private final Configuration configuration;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
 	private final List<ArchivePathFilter> pathFilters;
 
-	private Model(final ArchiveDescriptor archiveDescriptor, final ArchivePathClueFinder archivePathClueFinder,
-			final Configuration configuration, final GearResolver gearResolver, final Path workingDirectory,
-			final List<ArchivePathFilter> pathFilters) {
-		this.archiveDescriptor = Objects.requireNonNull(archiveDescriptor, "archiveDescriptor");
+	private Model(final String collectionId, final String collectionName,
+			final ArchivePathClueFinder archivePathClueFinder, final Configuration configuration,
+			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
+		this.collectionId = Objects.requireNonNull(collectionId, "collectionId");
+		this.collectionName = Objects.requireNonNull(collectionName, "collectionName");
 		this.archivePathClueFinder = Objects.requireNonNull(archivePathClueFinder, "archivePathClueFinder");
 		this.configuration = Objects.requireNonNull(configuration, "configuration");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
@@ -83,26 +85,10 @@ public final class Model implements ArchiveDefinition {
 	}
 
 	/**
-	 * Discovers model types in the given package while supplying collection
-	 * locations as runtime deployment configuration.
-	 */
-	public static Model from(final String basePackage, final ArchiveRoots archiveRoots) {
-		return builder().typesFrom(basePackage).locations(archiveRoots).build();
-	}
-
-	/**
 	 * Reflects on the caller-supplied set of RetroCrawler model types.
 	 */
 	public static Model from(final Set<Class<?>> types) {
 		return builder().typesFrom(types).build();
-	}
-
-	/**
-	 * Reflects on caller-supplied model types while supplying collection
-	 * locations as runtime deployment configuration.
-	 */
-	public static Model from(final Set<Class<?>> types, final ArchiveRoots archiveRoots) {
-		return builder().typesFrom(types).locations(archiveRoots).build();
 	}
 
 	/**
@@ -113,24 +99,20 @@ public final class Model implements ArchiveDefinition {
 		return builder().typesFrom(source).build();
 	}
 
-	/**
-	 * Reflects on application-supplied model types while supplying collection
-	 * locations as runtime deployment configuration.
-	 */
-	public static Model from(final TypeSource source, final ArchiveRoots archiveRoots) {
-		return builder().typesFrom(source).locations(archiveRoots).build();
+	/** The declared identity of the collection this model interprets. */
+	public String collectionId() {
+		return collectionId;
 	}
 
-	@Override
-	public ArchiveDescriptor archiveDescriptor() {
-		return archiveDescriptor;
+	/** The declared display name of the collection, defaulting to its id. */
+	public String collectionName() {
+		return collectionName;
 	}
 
 	public Optional<Path> workingDirectory() {
 		return Optional.ofNullable(workingDirectory);
 	}
 
-	@Override
 	public ArchivePathClueFinder archivePathClueFinder() {
 		return archivePathClueFinder;
 	}
@@ -143,13 +125,12 @@ public final class Model implements ArchiveDefinition {
 		return gearResolver;
 	}
 
-	@Override
 	public List<ArchivePathFilter> pathFilters() {
 		return pathFilters;
 	}
 
-	private static Model create(final Set<Class<?>> types, final ArchiveRoots archiveRoots,
-			final Path runtimeWorkingDirectory, final List<ArchivePathFilter> runtimePathFilters,
+	private static Model create(final Set<Class<?>> types, final Path runtimeWorkingDirectory,
+			final List<ArchivePathFilter> runtimePathFilters,
 			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> runtimeCatalogConfigurations,
 			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> runtimeParserFactories,
 			final Consumer<Configuration.Builder> runtimeConfiguration) {
@@ -167,8 +148,6 @@ public final class Model implements ArchiveDefinition {
 					+ TypeName.simple(RetroCollection.class) + " type " + declaration.type().getName() + ".");
 		}
 
-		final ArchiveDescriptor descriptor = archiveRoots == null ? ArchiveDescriptor.of(collection)
-				: ArchiveDescriptor.of(collection, archiveRoots);
 		final Path workingDirectory = runtimeWorkingDirectory == null ? annotationWorkingDirectory(collection)
 				: runtimeWorkingDirectory;
 		final List<ArchivePathFilter> pathFilters = runtimePathFilters == null
@@ -182,7 +161,13 @@ public final class Model implements ArchiveDefinition {
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
 				catalogConfigurations, defaultParsers, runtimeParserFactories);
 
-		return new Model(descriptor, clueFinder, configuration, gearResolver, workingDirectory, pathFilters);
+		final String collectionId = collection.id().trim();
+		if (collectionId.isEmpty()) {
+			throw new IllegalArgumentException(TypeName.simple(RetroCollection.class) + " requires a collection id.");
+		}
+		final String collectionName = collection.name().isBlank() ? collectionId : collection.name().trim();
+		return new Model(collectionId, collectionName, clueFinder, configuration, gearResolver, workingDirectory,
+				pathFilters);
 	}
 
 	private static Configuration effectiveConfiguration(final RetroCollection collection,
@@ -285,7 +270,6 @@ public final class Model implements ArchiveDefinition {
 	public static final class Builder {
 
 		private Set<Class<?>> types;
-		private ArchiveRoots archiveRoots;
 		private Path workingDirectory;
 		private List<ArchivePathFilter> pathFilters;
 		private final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations = new LinkedHashMap<>();
@@ -317,31 +301,6 @@ public final class Model implements ArchiveDefinition {
 		public Builder typesFrom(final TypeSource source) {
 			Objects.requireNonNull(source, "source");
 			return typesFrom(Objects.requireNonNull(source.types(), "source.types()"));
-		}
-
-		/**
-		 * Overrides the collection locations declared by
-		 * {@link RetroCollection}.
-		 */
-		public Builder locations(final Path... rootPaths) {
-			return locations(ArchiveRoots.from(rootPaths));
-		}
-
-		/**
-		 * Overrides the collection locations declared by
-		 * {@link RetroCollection}.
-		 */
-		public Builder locations(final Collection<Path> rootPaths) {
-			return locations(ArchiveRoots.from(rootPaths));
-		}
-
-		/**
-		 * Overrides the collection locations declared by
-		 * {@link RetroCollection}.
-		 */
-		public Builder locations(final ArchiveRoots roots) {
-			archiveRoots = Objects.requireNonNull(roots, "roots");
-			return this;
 		}
 
 		/**
@@ -435,7 +394,7 @@ public final class Model implements ArchiveDefinition {
 			if (types == null) {
 				throw new IllegalStateException("Model types must be configured before building a model.");
 			}
-			return create(types, archiveRoots, workingDirectory, pathFilters, Map.copyOf(catalogConfigurations),
+			return create(types, workingDirectory, pathFilters, Map.copyOf(catalogConfigurations),
 					Map.copyOf(parserFactories), configuration);
 		}
 	}

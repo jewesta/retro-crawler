@@ -171,7 +171,7 @@ class ModelParserFactoryTest {
 		assertTrue(failure.getMessage().contains(AutoDetectParser.class.getSimpleName()));
 	}
 
-	@RetroCollection(id = "annotation_default_parsers", locations = "/not/read")
+	@RetroCollection(id = "annotation_default_parsers")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(string = AnnotationStringParser.class, integer = AnnotationIntegerParser.class,
 			instant = AnnotationInstantParser.class, localDate = AnnotationLocalDateParser.class,
@@ -179,18 +179,18 @@ class ModelParserFactoryTest {
 	public static final class AnnotatedDefaultsCollection {
 	}
 
-	@RetroCollection(id = "built_in_default_parsers", locations = "/not/read")
+	@RetroCollection(id = "built_in_default_parsers")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class BuiltInDefaultsCollection {
 	}
 
-	@RetroCollection(id = "annotation_default_enum_parser", locations = "/not/read")
+	@RetroCollection(id = "annotation_default_enum_parser")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = AnnotationEnumParser.class)
 	public static final class AnnotatedEnumDefaultsCollection {
 	}
 
-	@RetroCollection(id = "factory_default_enum_parser", locations = "/not/read")
+	@RetroCollection(id = "factory_default_enum_parser")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = FactorySelectedEnumParser.class)
 	public static final class FactoryEnumDefaultsCollection {

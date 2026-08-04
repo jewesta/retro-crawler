@@ -23,12 +23,11 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.GearTreeFactory;
@@ -42,6 +41,8 @@ import com.retrocrawler.core.util.RetroAttribute;
 
 class RetroIdValidationTest {
 
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
+
 	private static final Progressor SILENT_PROGRESSOR = new Progressor();
 
 	@TempDir
@@ -51,7 +52,7 @@ class RetroIdValidationTest {
 	void permitsMissingOptionalFactBackedRetroId() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("gear-without-id"));
 
-		final List<TestGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
+		final List<TestGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().catalogId);
@@ -64,14 +65,51 @@ class RetroIdValidationTest {
 		final RecordingFactory factory = new RecordingFactory();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler().crawl(SILENT_PROGRESSOR, ReindexScope.all(), factory));
+				() -> crawler().crawlAll(SILENT_PROGRESSOR, ReindexScope.all(), factory));
 
 		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
 		assertTrue(paths.contains(first.toString()));
 		assertTrue(paths.contains(second.toString()));
 		assertTrue(failure.getMessage().contains("200001"));
-		assertEquals(0, factory.beginBucketCount);
+		assertEquals(0, factory.beginArchiveCount);
+	}
+
+	@Test
+	void reportsADuplicateRetroIdAcrossSeveralArchives() throws IOException {
+		final Path firstRoot = Files.createDirectories(archiveRoot.resolve("first"));
+		final Path secondRoot = Files.createDirectories(archiveRoot.resolve("second"));
+		final Path first = Files.createDirectories(firstRoot.resolve("id-200001"));
+		final Path second = Files.createDirectories(secondRoot.resolve("id-200001"));
+		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new MemoryRepository())
+				.archive(ArchiveDescriptor.of(ArchiveId.of("first"), firstRoot))
+				.archive(ArchiveDescriptor.of(ArchiveId.of("second"), secondRoot)).build();
+
+		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
+				() -> crawler.crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class));
+
+		final List<String> paths = failure.duplicates().get("200001");
+		assertEquals(2, paths.size());
+		assertTrue(paths.contains(first.toString()));
+		assertTrue(paths.contains(second.toString()));
+	}
+
+	@Test
+	void acceptsADuplicateRetroIdWhenOnlyOneArchiveIsCrawled() throws IOException {
+		final Path firstRoot = Files.createDirectories(archiveRoot.resolve("first"));
+		final Path secondRoot = Files.createDirectories(archiveRoot.resolve("second"));
+		Files.createDirectories(firstRoot.resolve("id-200001"));
+		Files.createDirectories(secondRoot.resolve("id-200001"));
+		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
+		final ArchiveId firstId = ArchiveId.of("first");
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new MemoryRepository())
+				.archive(ArchiveDescriptor.of(firstId, firstRoot))
+				.archive(ArchiveDescriptor.of(ArchiveId.of("second"), secondRoot)).build();
+
+		final List<TestGear> gear = crawler.crawlGear(firstId, SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
+
+		assertEquals(1, gear.size());
 	}
 
 	@Test
@@ -80,7 +118,7 @@ class RetroIdValidationTest {
 		Files.createDirectories(archiveRoot.resolve("id-200002"));
 		final List<ProgressSnapshot> events = new java.util.ArrayList<>();
 
-		crawler().crawlGear(Progressor.observing(events::add), ReindexScope.all(), TestGear.class);
+		crawler().crawlAllGear(Progressor.observing(events::add), ReindexScope.all(), TestGear.class);
 
 		final List<ProgressSnapshot> resolving = events.stream()
 				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();
@@ -93,8 +131,9 @@ class RetroIdValidationTest {
 	}
 
 	private RetroCrawler crawler() {
-		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class), ArchiveRoots.from(archiveRoot));
-		return RetroCrawler.builder().model(model).repository(new MemoryRepository()).build();
+		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
+		return RetroCrawler.builder().model(model).repository(new MemoryRepository())
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 	}
 
 	@RetroCollection(id = "retro_id_validation")
@@ -150,7 +189,7 @@ class RetroIdValidationTest {
 
 	private static final class RecordingFactory implements GearTreeFactory<List<TestGear>, TestGear, TestGear> {
 
-		private int beginBucketCount;
+		private int beginArchiveCount;
 
 		@Override
 		public Class<TestGear> gearType() {
@@ -158,12 +197,12 @@ class RetroIdValidationTest {
 		}
 
 		@Override
-		public void beginBucket(final Bucket bucket) {
-			beginBucketCount++;
+		public void beginArchive(final ArchiveDescriptor archive) {
+			beginArchiveCount++;
 		}
 
 		@Override
-		public void endBucket(final Bucket bucket) {
+		public void endArchive(final ArchiveDescriptor archive) {
 			// Nothing to record.
 		}
 

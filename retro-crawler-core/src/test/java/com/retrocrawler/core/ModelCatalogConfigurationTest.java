@@ -126,13 +126,13 @@ class ModelCatalogConfigurationTest {
 		}
 	}
 
-	@RetroCollection(id = "catalog_configuration", locations = "/not/read")
+	@RetroCollection(id = "catalog_configuration")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactCatalog(parser = TestCatalogParser.class, catalogFile = "annotation.tsv")
 	public static final class AnnotatedCollection {
 	}
 
-	@RetroCollection(id = "default_catalog_configuration", locations = "/not/read")
+	@RetroCollection(id = "default_catalog_configuration")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class DefaultConfiguredCollection {
 	}

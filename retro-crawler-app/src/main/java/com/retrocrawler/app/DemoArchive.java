@@ -1,7 +1,6 @@
 package com.retrocrawler.app;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,13 +27,12 @@ record DemoArchive(String label, RetroCrawler crawler, ArchiveDescriptor archive
 		Objects.requireNonNull(repository, "repository");
 
 		final Model model = Model.from(demoModel.getBasePackage());
-		final ArchiveDescriptor declaredArchive = model.archiveDescriptor();
+		final ArchiveDescriptor declaredArchive = demoModel.getArchive();
 		final RetroCrawler.Builder builder = RetroCrawler.builder().model(model).repository(repository);
 		final List<ConfiguredArchive> configuredArchives = new ArrayList<>();
 		for (final DemoArchiveSource sourceOption : DemoArchiveSource.values()) {
-			final List<Path> roots = sourceOption.roots(declaredArchive);
-			sourceOption.materialize(declaredArchive, roots);
-			final ArchiveDescriptor archive = sourceOption.archive(declaredArchive, roots);
+			final ArchiveDescriptor archive = sourceOption.archive(declaredArchive);
+			sourceOption.materialize(archive);
 			builder.archive(archive, sourceOption.createSource());
 			configuredArchives.add(new ConfiguredArchive(sourceOption, archive));
 		}

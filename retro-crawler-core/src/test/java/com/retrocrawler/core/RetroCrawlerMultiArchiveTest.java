@@ -29,6 +29,8 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.ArchiveGear;
+import com.retrocrawler.core.stash.Stash;
 
 class RetroCrawlerMultiArchiveTest {
 
@@ -74,36 +76,55 @@ class RetroCrawlerMultiArchiveTest {
 	}
 
 	@Test
-	void requiresArchiveSelectionWhenSeveralArchivesAreConfigured() {
-		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
+	void crawlsEveryRegisteredArchiveInOnePass() throws IOException {
+		final RecordingSource firstSource = new RecordingSource();
+		final RecordingSource secondSource = new RecordingSource();
+		final RetroCrawler crawler = crawler(firstSource, secondSource);
 
-		final IllegalStateException descriptorFailure = assertThrows(IllegalStateException.class,
-				crawler::archiveDescriptor);
-		final IllegalStateException crawlFailure = assertThrows(IllegalStateException.class,
-				() -> crawler.crawlGear(new Progressor(), ReindexScope.none(), RetroCrawlerBuilderTest.TestGear.class));
+		final Stash<RetroCrawlerBuilderTest.TestGear> stash = crawler.crawlAllStash(new Progressor(),
+				ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
 
-		assertEquals("Expected one archive but this crawler has 2. Select an archive by id.",
-				descriptorFailure.getMessage());
-		assertEquals(descriptorFailure.getMessage(), crawlFailure.getMessage());
+		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
+		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
+		assertEquals(List.of(FIRST, SECOND), stash.archives().stream().map(ArchiveGear::archive).toList());
 	}
 
 	@Test
-	void rejectsDuplicateArchiveIdsAndMixedDefaultSourceComposition() {
+	void routesASubtreeReindexToTheArchiveThatContainsIt() throws IOException {
+		final RecordingSource firstSource = new RecordingSource();
+		final RecordingSource secondSource = new RecordingSource();
+		final RetroCrawler crawler = crawler(firstSource, secondSource);
+		crawler.crawlAllGear(new Progressor(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		firstSource.openedRoots.clear();
+		secondSource.openedRoots.clear();
+
+		crawler.crawlAllGear(new Progressor(), ReindexScope.subtree(SECOND_ROOT),
+				RetroCrawlerBuilderTest.TestGear.class);
+
+		assertTrue(firstSource.openedRoots.isEmpty());
+		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
+	}
+
+	@Test
+	void rejectsASubtreeBelowNoRegisteredArchive() {
+		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
+
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> crawler.crawlAllGear(new Progressor(), ReindexScope.subtree(Path.of("remote/third")),
+						RetroCrawlerBuilderTest.TestGear.class));
+
+		assertEquals("Archive subtree is not below the root of any registered archive: remote/third",
+				failure.getMessage());
+	}
+
+	@Test
+	void rejectsDuplicateArchiveIds() {
 		final RetroCrawler.Builder duplicate = RetroCrawler.builder().archive(FIRST, new RecordingSource());
 
 		final IllegalArgumentException duplicateFailure = assertThrows(IllegalArgumentException.class,
 				() -> duplicate.archive(descriptor("first", SECOND_ROOT), new RecordingSource()));
-		final RetroCrawler.Builder mixed = RetroCrawler.builder().archiveSource(new RecordingSource());
-		final IllegalStateException mixedFailure = assertThrows(IllegalStateException.class,
-				() -> mixed.archive(FIRST, new RecordingSource()));
-		final RetroCrawler.Builder reverseMixed = RetroCrawler.builder().archive(FIRST, new RecordingSource());
-		final IllegalStateException reverseMixedFailure = assertThrows(IllegalStateException.class,
-				() -> reverseMixed.archiveSource(new RecordingSource()));
 
 		assertEquals("Archive is already configured: first", duplicateFailure.getMessage());
-		assertEquals("Explicit archives cannot be combined with a default archive source.", mixedFailure.getMessage());
-		assertEquals("A default archive source cannot be combined with explicit archives.",
-				reverseMixedFailure.getMessage());
 	}
 
 	@Test
@@ -138,7 +159,7 @@ class RetroCrawlerMultiArchiveTest {
 	}
 
 	private static ArchiveDescriptor descriptor(final String id, final Path root) {
-		return new ArchiveDescriptor(ArchiveId.of(id), id, List.of(root));
+		return new ArchiveDescriptor(ArchiveId.of(id), id, root);
 	}
 
 	private static ArchiveSource contentSource(final Path root, final String value) {

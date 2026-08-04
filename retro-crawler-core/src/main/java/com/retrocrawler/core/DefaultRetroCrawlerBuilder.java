@@ -20,8 +20,6 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 
 	private CrawlPlanning crawlPlanning;
 
-	private ArchiveSource archiveSource;
-
 	private final Map<ArchiveId, ArchiveBinding> archives = new LinkedHashMap<>();
 
 	@Override
@@ -52,27 +50,12 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 	}
 
 	@Override
-	public RetroCrawler.Builder archiveSource(final ArchiveSource source) {
-		if (archiveSource != null) {
-			throw new IllegalStateException("Archive source is already configured.");
-		}
-		if (!archives.isEmpty()) {
-			throw new IllegalStateException("A default archive source cannot be combined with explicit archives.");
-		}
-		archiveSource = Objects.requireNonNull(source, "source");
-		return this;
-	}
-
-	@Override
 	public RetroCrawler.Builder archive(final ArchiveDescriptor archive) {
 		return archive(archive, new FileSystemArchiveSource());
 	}
 
 	@Override
 	public RetroCrawler.Builder archive(final ArchiveDescriptor archive, final ArchiveSource source) {
-		if (archiveSource != null) {
-			throw new IllegalStateException("Explicit archives cannot be combined with a default archive source.");
-		}
 		final ArchiveBinding binding = new ArchiveBinding(archive, source);
 		if (archives.putIfAbsent(binding.descriptor().id(), binding) != null) {
 			throw new IllegalArgumentException("Archive is already configured: " + binding.descriptor().id());
@@ -88,15 +71,11 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 		if (repository == null) {
 			throw new IllegalStateException("Missing required repository configuration.");
 		}
+		if (archives.isEmpty()) {
+			throw new IllegalStateException("At least one archive must be configured.");
+		}
 
 		final CrawlPlanning effectivePlanning = crawlPlanning == null ? CrawlPlanning.defaults() : crawlPlanning;
-		final List<ArchiveBinding> effectiveArchives;
-		if (archives.isEmpty()) {
-			final ArchiveSource effectiveSource = archiveSource == null ? new FileSystemArchiveSource() : archiveSource;
-			effectiveArchives = List.of(new ArchiveBinding(model.archiveDescriptor(), effectiveSource));
-		} else {
-			effectiveArchives = List.copyOf(archives.values());
-		}
-		return new RetroCrawlerImpl(model, effectiveArchives, effectivePlanning, repository);
+		return new RetroCrawlerImpl(model, List.copyOf(archives.values()), effectivePlanning, repository);
 	}
 }

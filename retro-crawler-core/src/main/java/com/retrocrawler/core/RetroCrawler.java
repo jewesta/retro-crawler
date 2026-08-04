@@ -19,10 +19,19 @@ import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.stash.StashFactory;
 
+/**
+ * Applies one shared model to the archives registered with it.
+ * <p>
+ * Every archive has exactly one root, its own source provider, its own
+ * repository entry, and its own crawl lifecycle. Aggregation across archives is
+ * a crawler operation: {@code crawlAll} resolves every registered archive in
+ * one pass and validates Retro ID uniqueness across all of them.
+ */
 public interface RetroCrawler {
 
 	/**
-	 * Starts explicit composition of a crawler from a model and repository.
+	 * Starts explicit composition of a crawler from a model, a repository, and
+	 * at least one archive.
 	 */
 	static Builder builder() {
 		return new DefaultRetroCrawlerBuilder();
@@ -31,7 +40,8 @@ public interface RetroCrawler {
 	interface Builder {
 
 		/**
-		 * Configures the annotation-derived collection model.
+		 * Configures the annotation-derived collection model shared by every
+		 * registered archive.
 		 */
 		Builder model(Model model);
 
@@ -48,20 +58,12 @@ public interface RetroCrawler {
 		Builder crawlPlanning(CrawlPlanning planning);
 
 		/**
-		 * Configures the provider for the model's annotation-derived default
-		 * archive. The NIO filesystem source is used when omitted.
-		 */
-		Builder archiveSource(ArchiveSource source);
-
-		/**
-		 * Registers an archive that uses the default filesystem source.
-		 * Registering explicit archives replaces the model's default archive
-		 * for this crawler.
+		 * Registers an archive that is exposed by the NIO filesystem source.
 		 */
 		Builder archive(ArchiveDescriptor archive);
 
 		/**
-		 * Registers an archive and the provider that exposes its roots. Archive
+		 * Registers an archive and the provider that exposes its root. Archive
 		 * IDs must be unique within one crawler.
 		 */
 		Builder archive(ArchiveDescriptor archive, ArchiveSource source);
@@ -75,83 +77,78 @@ public interface RetroCrawler {
 	/** All archives registered with this crawler, in composition order. */
 	List<ArchiveDescriptor> archives();
 
-	/** Returns the registered archive with the given identity. */
+	/**
+	 * Returns the registered archive with the given identity.
+	 *
+	 * @throws IllegalArgumentException
+	 *             if no such archive is registered
+	 */
 	ArchiveDescriptor archive(ArchiveId archiveId);
 
 	/**
-	 * Returns the sole registered archive.
-	 *
-	 * @throws IllegalStateException
-	 *             if this crawler does not have exactly one archive
-	 */
-	default ArchiveDescriptor archiveDescriptor() {
-		final List<ArchiveDescriptor> archives = archives();
-		if (archives.size() != 1) {
-			throw new IllegalStateException(
-					"Expected one archive but this crawler has " + archives.size() + ". Select an archive by id.");
-		}
-		return archives.getFirst();
-	}
-
-	/**
-	 * Synchronously inspects the content of a file at one of this crawler's
-	 * source addresses.
+	 * Synchronously inspects the content of a file at one of the selected
+	 * archive's source paths.
 	 * <p>
-	 * The selected archive source opens and closes both the session and the
-	 * content stream. The inspector must neither close nor retain the supplied
-	 * stream. An empty result means that the source recognizes the file but
-	 * does not expose its content.
+	 * The accessor receives an open stream that is closed as soon as it
+	 * returns. Escaping streams must not be retained.
 	 *
+	 * @return the inspected value, or an empty optional if the archive source
+	 *         cannot expose the file content
 	 * @throws NoSuchFileException
-	 *             if the address does not identify a file in the archive source
+	 *             if the archive source has no file at the address
 	 * @throws IllegalArgumentException
-	 *             if the address is outside this crawler's configured archive
-	 *             roots
+	 *             if the address is outside the selected archive's root
 	 */
-	default <T> Optional<T> inspect(final Path sourcePath, final ArchiveFileAccessor<T> inspector) throws IOException {
-		return inspect(archiveDescriptor().id(), sourcePath, inspector);
-	}
-
-	/** Inspects a source file in the selected archive. */
 	<T> Optional<T> inspect(ArchiveId archiveId, Path sourcePath, ArchiveFileAccessor<T> inspector) throws IOException;
-
-	default <R, N, G> R crawl(final Progressor progressor, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(archiveDescriptor().id(), progressor, reindexScope, factory);
-	}
 
 	/** Crawls and resolves the selected archive through the shared model. */
 	<R, N, G> R crawl(ArchiveId archiveId, Progressor progressor, ReindexScope reindexScope,
 			GearTreeFactory<R, N, G> factory) throws IOException;
 
 	/**
-	 * Convenience method that builds a hierarchical {@link Stash} for the given
-	 * gear type.
+	 * Crawls and resolves every registered archive in one pass.
+	 * <p>
+	 * Retro ID uniqueness is validated across all archives. A subtree reindex
+	 * scope is routed to the archive whose root contains each requested path;
+	 * archives without a requested subtree reuse their stored clue archive.
 	 */
-	default <G> Stash<G> crawlStash(final Progressor progressor, final ReindexScope reindexScope,
-			final Class<G> gearType) throws IOException {
-		return crawl(progressor, reindexScope, new StashFactory<>(gearType));
-	}
+	<R, N, G> R crawlAll(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
+			throws IOException;
 
-	/** Builds a hierarchical stash from the selected archive. */
+	/**
+	 * Convenience method that builds a hierarchical {@link Stash} from the
+	 * selected archive.
+	 */
 	default <G> Stash<G> crawlStash(final ArchiveId archiveId, final Progressor progressor,
 			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
 		return crawl(archiveId, progressor, reindexScope, new StashFactory<>(gearType));
 	}
 
 	/**
-	 * Convenience method that returns a flat list of all matching gear across
-	 * all buckets (legacy behavior).
+	 * Convenience method that builds one hierarchical {@link Stash} across
+	 * every registered archive.
 	 */
-	default <G> List<G> crawlGear(final Progressor progressor, final ReindexScope reindexScope, final Class<G> gearType)
-			throws IOException {
-		return crawl(progressor, reindexScope, new FlatListFactory<>(gearType));
+	default <G> Stash<G> crawlAllStash(final Progressor progressor, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawlAll(progressor, reindexScope, new StashFactory<>(gearType));
 	}
 
-	/** Returns matching gear from the selected archive as a flat list. */
+	/**
+	 * Convenience method that returns matching gear from the selected archive
+	 * as a flat list.
+	 */
 	default <G> List<G> crawlGear(final ArchiveId archiveId, final Progressor progressor,
 			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
 		return crawl(archiveId, progressor, reindexScope, new FlatListFactory<>(gearType));
+	}
+
+	/**
+	 * Convenience method that returns matching gear from every registered
+	 * archive as one flat list.
+	 */
+	default <G> List<G> crawlAllGear(final Progressor progressor, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawlAll(progressor, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 }

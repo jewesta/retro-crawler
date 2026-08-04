@@ -80,7 +80,7 @@ class ArchiveDiggerPathFilterTest {
 	}
 
 	private ArchiveDescriptor descriptor() {
-		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", List.of(root));
+		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", root);
 	}
 
 	private static ArchivePathClueFinder clueFinder() {

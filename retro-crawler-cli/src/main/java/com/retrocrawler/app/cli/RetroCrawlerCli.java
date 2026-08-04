@@ -27,7 +27,9 @@ public final class RetroCrawlerCli {
 		final Args parsed = Args.parse(args);
 
 		final Model model = Model.from(DemoModels.RETRO_PC.getBasePackage());
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new JsonFileRepository()).build();
+		final ArchiveDescriptor descriptor = DemoModels.RETRO_PC.getArchive();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new JsonFileRepository())
+				.archive(descriptor).build();
 
 		final Instant start = Instant.now();
 		final Progressor progressor = Progressor.reportingMessages(System.out::println);
@@ -41,11 +43,9 @@ public final class RetroCrawlerCli {
 		 * file system we first need to extract them from the JAR file and put
 		 * them inside a local directory.
 		 * 
-		 * The local folder will be exactly what's annotated as the location in
-		 * the demo type annotated with @RetroCollection. Currently
-		 * /rc_demo_archives.
+		 * The local folder will be exactly the archive root registered with the
+		 * crawler. Currently /rc_demo_archives.
 		 */
-		final ArchiveDescriptor descriptor = crawler.archiveDescriptor();
 		System.out.println("Creating local demo archive for " + descriptor.name());
 		DemoFiles.copyToWorkDirectory(descriptor);
 		System.out.println("Local archive files created.");
@@ -53,7 +53,7 @@ public final class RetroCrawlerCli {
 		System.out.println("Reindex scope: " + parsed.reindexScope);
 
 		System.out.println();
-		final Stash<MyRetroGear> stash = crawler.crawlStash(progressor, parsed.reindexScope, MyRetroGear.class);
+		final Stash<MyRetroGear> stash = crawler.crawlAllStash(progressor, parsed.reindexScope, MyRetroGear.class);
 
 		final Duration dur = Duration.between(start, Instant.now());
 

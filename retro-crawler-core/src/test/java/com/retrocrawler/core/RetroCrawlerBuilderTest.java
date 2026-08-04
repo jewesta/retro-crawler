@@ -21,6 +21,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -29,7 +30,6 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
@@ -47,28 +47,34 @@ import com.retrocrawler.core.util.RetroAttribute;
 
 class RetroCrawlerBuilderTest {
 
+	private static final Path ROOT = Path.of("/this/path/must/not/be/crawled");
+
+	private static final ArchiveDescriptor ARCHIVE = ArchiveDescriptor.of(ArchiveId.of("factory_test"), ROOT);
+
 	@Test
 	void suppliesConfiguredRepositoryToCrawler() throws IOException {
 		final RecordingRepository repository = new RecordingRepository();
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
+				.build();
 
-		final Stash<TestGear> result = crawler.crawlStash(new Progressor(), ReindexScope.none(), TestGear.class);
+		final Stash<TestGear> result = crawler.crawlAllStash(new Progressor(), ReindexScope.none(), TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
-		assertEquals(1, result.buckets().size());
+		assertEquals(1, result.archives().size());
+		assertEquals(ARCHIVE, result.archives().getFirst().archive());
 	}
 
 	@Test
 	void suppliesArtifactSourcePathToTreeFactory() throws IOException {
-		final Path root = Path.of("/this/path/must/not/be/crawled");
 		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
 		final Repository repository = new FixedArchiveRepository(
-				Archive.of(ArchiveId.of("factory_test"), List.of(Bucket.of(root, archiveRoot))));
+				Archive.of(ArchiveId.of("factory_test"), ROOT, archiveRoot));
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
+				.build();
 		final List<Path> sourcePaths = new ArrayList<>();
 		final GearTreeFactory<List<Path>, TestGear, TestGear> factory = new GearTreeFactory<>() {
 
@@ -78,12 +84,12 @@ class RetroCrawlerBuilderTest {
 			}
 
 			@Override
-			public void beginBucket(final Bucket bucket) {
+			public void beginArchive(final ArchiveDescriptor archive) {
 				// no-op
 			}
 
 			@Override
-			public void endBucket(final Bucket bucket) {
+			public void endArchive(final ArchiveDescriptor archive) {
 				// no-op
 			}
 
@@ -104,15 +110,16 @@ class RetroCrawlerBuilderTest {
 			}
 		};
 
-		final List<Path> result = crawler.crawl(new Progressor(), ReindexScope.none(), factory);
+		final List<Path> result = crawler.crawlAll(new Progressor(), ReindexScope.none(), factory);
 
-		assertEquals(List.of(root.resolve("shelf")), result);
+		assertEquals(List.of(ROOT.resolve("shelf")), result);
 	}
 
 	@Test
 	void reportsFactoryFailureAsTerminalProgress() {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository()).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
+				.archive(ARCHIVE).build();
 		final Progressor progressor = new Progressor();
 		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
 
@@ -122,13 +129,13 @@ class RetroCrawlerBuilderTest {
 			}
 
 			@Override
-			public void beginBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
-				// No buckets in this test archive.
+			public void beginArchive(final ArchiveDescriptor archive) {
+				// Nothing to record.
 			}
 
 			@Override
-			public void endBucket(final com.retrocrawler.core.archive.clues.Bucket bucket) {
-				// No buckets in this test archive.
+			public void endArchive(final ArchiveDescriptor archive) {
+				// Nothing to record.
 			}
 
 			@Override
@@ -142,7 +149,8 @@ class RetroCrawlerBuilderTest {
 			}
 		};
 
-		assertThrows(IllegalStateException.class, () -> crawler.crawl(progressor, ReindexScope.none(), failingFactory));
+		assertThrows(IllegalStateException.class,
+				() -> crawler.crawlAll(progressor, ReindexScope.none(), failingFactory));
 		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
 		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
 	}
@@ -150,7 +158,7 @@ class RetroCrawlerBuilderTest {
 	@Test
 	void requiresModel() {
 		final IllegalStateException failure = assertThrows(IllegalStateException.class,
-				() -> RetroCrawler.builder().repository(new RecordingRepository()).build());
+				() -> RetroCrawler.builder().repository(new RecordingRepository()).archive(ARCHIVE).build());
 
 		assertEquals("Missing required model configuration.", failure.getMessage());
 	}
@@ -160,9 +168,19 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 
 		final IllegalStateException failure = assertThrows(IllegalStateException.class,
-				() -> RetroCrawler.builder().model(model).build());
+				() -> RetroCrawler.builder().model(model).archive(ARCHIVE).build());
 
 		assertEquals("Missing required repository configuration.", failure.getMessage());
+	}
+
+	@Test
+	void requiresAtLeastOneArchive() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+
+		final IllegalStateException failure = assertThrows(IllegalStateException.class,
+				() -> RetroCrawler.builder().model(model).repository(new RecordingRepository()).build());
+
+		assertEquals("At least one archive must be configured.", failure.getMessage());
 	}
 
 	@Test
@@ -191,7 +209,8 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final CrawlPlanning planning = new CrawlPlanning(25, 3, 200, Duration.ofSeconds(2));
 
-		RetroCrawler.builder().model(model).repository(new RecordingRepository()).crawlPlanning(planning).build();
+		RetroCrawler.builder().model(model).repository(new RecordingRepository()).archive(ARCHIVE)
+				.crawlPlanning(planning).build();
 	}
 
 	@Test
@@ -212,7 +231,7 @@ class RetroCrawlerBuilderTest {
 			throw new AssertionError("Stored archive should be reused without opening the source.");
 		};
 
-		RetroCrawler.builder().model(model).repository(new RecordingRepository()).archiveSource(source).build();
+		RetroCrawler.builder().model(model).repository(new RecordingRepository()).archive(ARCHIVE, source).build();
 	}
 
 	@Test
@@ -247,28 +266,36 @@ class RetroCrawlerBuilderTest {
 			};
 		};
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
-				.archiveSource(source).build();
+				.archive(ARCHIVE, source).build();
 
-		crawler.crawlGear(new Progressor(), ReindexScope.all(), TestGear.class);
+		crawler.crawlAllGear(new Progressor(), ReindexScope.all(), TestGear.class);
 
 		assertTrue(opened.get());
 		assertTrue(closed.get());
 	}
 
 	@Test
-	void rejectsDuplicateArchiveSourceConfiguration() {
-		final ArchiveSource source = root -> {
-			throw new AssertionError("Source must not be opened while configuring a crawler.");
-		};
-		final RetroCrawler.Builder builder = RetroCrawler.builder().archiveSource(source);
+	void rejectsDuplicateArchiveConfiguration() {
+		final RetroCrawler.Builder builder = RetroCrawler.builder().archive(ARCHIVE);
 
-		final IllegalStateException failure = assertThrows(IllegalStateException.class,
-				() -> builder.archiveSource(source));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> builder.archive(ARCHIVE));
 
-		assertEquals("Archive source is already configured.", failure.getMessage());
+		assertEquals("Archive is already configured: factory_test", failure.getMessage());
 	}
 
-	@RetroCollection(id = "factory_test", locations = "/this/path/must/not/be/crawled")
+	@Test
+	void exposesRegisteredArchivesInCompositionOrder() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final ArchiveDescriptor second = ArchiveDescriptor.of(ArchiveId.of("second"), Path.of("/second"));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
+				.archive(ARCHIVE).archive(second).build();
+
+		assertEquals(List.of(ARCHIVE, second), crawler.archives());
+		assertEquals(second, crawler.archive(ArchiveId.of("second")));
+	}
+
+	@RetroCollection(id = "factory_test")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static class TestArchiveConfiguration {
 	}
@@ -303,8 +330,7 @@ class RetroCrawlerBuilderTest {
 		@Override
 		public Optional<Archive> retrieve(final ArchiveId id) {
 			retrieveCount++;
-			final Path root = Path.of("/this/path/must/not/be/crawled");
-			return Optional.of(Archive.of(id, List.of(Bucket.of(root, new ArchiveNode(".", null, null)))));
+			return Optional.of(Archive.of(id, ROOT, new ArchiveNode(".", null, null)));
 		}
 	}
 

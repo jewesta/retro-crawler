@@ -24,7 +24,8 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -36,6 +37,8 @@ import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.Progressor;
 
 class ModelConfigurationTest {
+
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
 
 	private static final Instant FIXED_INSTANT = Instant.parse("2026-08-04T10:00:00Z");
 
@@ -128,11 +131,11 @@ class ModelConfigurationTest {
 		Files.createDirectory(archiveRoot.resolve("gear"));
 		final Clock fixedClock = Clock.fixed(FIXED_INSTANT, ZoneId.of("Europe/Berlin"));
 		final Model model = Model.builder().typesFrom(Set.of(RuntimeContextCollection.class, RuntimeContextGear.class))
-				.locations(ArchiveRoots.from(archiveRoot))
 				.configuration(config -> config.locale(Locale.GERMANY).clock(fixedClock)).build();
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository()).build();
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<RuntimeContextGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(),
+		final List<RuntimeContextGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(),
 				RuntimeContextGear.class);
 
 		assertEquals(1, gear.size());
@@ -142,23 +145,22 @@ class ModelConfigurationTest {
 		assertEquals(archiveRoot.resolve("gear"), context.currentNode().path());
 	}
 
-	@RetroCollection(id = "default_configuration", locations = "/not/read")
+	@RetroCollection(id = "default_configuration")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class DefaultConfigurationCollection {
 	}
 
-	@RetroCollection(id = "annotated_configuration", locations = "/not/read", locale = "de-DE",
-			timeZone = "Europe/Berlin")
+	@RetroCollection(id = "annotated_configuration", locale = "de-DE", timeZone = "Europe/Berlin")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class AnnotatedConfigurationCollection {
 	}
 
-	@RetroCollection(id = "invalid_locale", locations = "/not/read", locale = "de_DE")
+	@RetroCollection(id = "invalid_locale", locale = "de_DE")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class InvalidLocaleCollection {
 	}
 
-	@RetroCollection(id = "invalid_time_zone", locations = "/not/read", timeZone = "Mars/Olympus")
+	@RetroCollection(id = "invalid_time_zone", timeZone = "Mars/Olympus")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class InvalidTimeZoneCollection {
 	}

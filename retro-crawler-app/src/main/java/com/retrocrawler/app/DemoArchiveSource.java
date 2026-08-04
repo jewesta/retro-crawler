@@ -2,7 +2,6 @@ package com.retrocrawler.app;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
@@ -22,13 +21,13 @@ enum DemoArchiveSource {
 		}
 
 		@Override
-		List<Path> roots(final ArchiveDescriptor descriptor) {
-			return List.copyOf(descriptor.paths());
+		Path root(final Path declaredRoot) {
+			return declaredRoot;
 		}
 
 		@Override
-		void materialize(final ArchiveDescriptor descriptor, final List<Path> roots) throws IOException {
-			DemoFiles.copyToWorkDirectory(descriptor);
+		void materialize(final ArchiveDescriptor archive) throws IOException {
+			DemoFiles.copyToWorkDirectory(archive);
 		}
 	},
 
@@ -40,15 +39,13 @@ enum DemoArchiveSource {
 		}
 
 		@Override
-		List<Path> roots(final ArchiveDescriptor descriptor) {
-			return descriptor.paths().stream().map(DemoArchiveSource::zipPath).toList();
+		Path root(final Path declaredRoot) {
+			return zipPath(declaredRoot);
 		}
 
 		@Override
-		void materialize(final ArchiveDescriptor descriptor, final List<Path> roots) throws IOException {
-			for (final Path root : roots) {
-				DemoFiles.copyFileToWorkDirectory(root);
-			}
+		void materialize(final ArchiveDescriptor archive) throws IOException {
+			DemoFiles.copyFileToWorkDirectory(archive.root());
 		}
 	};
 
@@ -72,19 +69,22 @@ enum DemoArchiveSource {
 		return localFolders;
 	}
 
-	ArchiveDescriptor archive(final ArchiveDescriptor declaredArchive, final List<Path> roots) {
+	/**
+	 * Derives the archive this provider exposes from the demo's declared
+	 * archive.
+	 */
+	ArchiveDescriptor archive(final ArchiveDescriptor declaredArchive) {
 		Objects.requireNonNull(declaredArchive, "declaredArchive");
-		Objects.requireNonNull(roots, "roots");
 		final ArchiveId archiveId = archiveIdSuffix.isEmpty() ? declaredArchive.id()
 				: ArchiveId.of(declaredArchive.id().value() + archiveIdSuffix);
-		return new ArchiveDescriptor(archiveId, declaredArchive.name(), roots);
+		return new ArchiveDescriptor(archiveId, declaredArchive.name(), root(declaredArchive.root()));
 	}
 
 	abstract ArchiveSource createSource();
 
-	abstract List<Path> roots(ArchiveDescriptor descriptor);
+	abstract Path root(Path declaredRoot);
 
-	abstract void materialize(ArchiveDescriptor descriptor, List<Path> roots) throws IOException;
+	abstract void materialize(ArchiveDescriptor archive) throws IOException;
 
 	private static Path zipPath(final Path folder) {
 		final Path fileName = Objects.requireNonNull(folder.getFileName(), "archive root file name");

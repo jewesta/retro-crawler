@@ -34,18 +34,18 @@ public final class DemoFiles {
 	 * <p>
 	 * Demo contract:
 	 * <ul>
-	 * <li>{@code annotatedLocation} is the location configured in
-	 * {@code @RetroCollection}, e.g. {@code Path.of("archives/retro_pc")}</li>
+	 * <li>{@code archivePath} is the archive root registered with the crawler,
+	 * e.g. {@code Path.of("rc_demo_archives/retro_pc")}</li>
 	 * <li>If the folder exists locally: do nothing</li>
 	 * <li>Otherwise: attempt to copy it from classpath at
-	 * {@code "/" + annotatedLocation}</li>
+	 * {@code "/" + archivePath}</li>
 	 * <li>Fail if the classpath folder does not exist</li>
 	 * </ul>
 	 *
 	 * @return the local path (existing or newly created)
 	 */
-	private static Path copyToWorkDirectory(final Path annotatedLocation) throws IOException {
-		final Path targetRoot = prepareTarget(annotatedLocation);
+	public static Path copyToWorkDirectory(final Path archivePath) throws IOException {
+		final Path targetRoot = prepareTarget(archivePath);
 
 		if (Files.isDirectory(targetRoot)) {
 			/*
@@ -84,8 +84,8 @@ public final class DemoFiles {
 	 *
 	 * @return the local file path
 	 */
-	public static Path copyFileToWorkDirectory(final Path annotatedLocation) throws IOException {
-		final Path target = prepareTarget(annotatedLocation);
+	public static Path copyFileToWorkDirectory(final Path archivePath) throws IOException {
+		final Path target = prepareTarget(archivePath);
 		if (Files.isRegularFile(target)) {
 			return target;
 		}
@@ -109,22 +109,20 @@ public final class DemoFiles {
 	}
 
 	public static void copyToWorkDirectory(final ArchiveDescriptor descriptor) throws IOException {
-		for (final Path path : descriptor.paths()) {
-			copyToWorkDirectory(path);
-		}
+		copyToWorkDirectory(Objects.requireNonNull(descriptor, "descriptor").root());
 	}
 
-	private static Path prepareTarget(final Path annotatedLocation) throws IOException {
-		Objects.requireNonNull(annotatedLocation, "annotatedLocation");
-		if (annotatedLocation.isAbsolute()) {
+	private static Path prepareTarget(final Path archivePath) throws IOException {
+		Objects.requireNonNull(archivePath, "archivePath");
+		if (archivePath.isAbsolute()) {
 			throw new IllegalArgumentException(
-					"Demo archive materialization requires a relative path but got: " + annotatedLocation);
+					"Demo archive materialization requires a relative path but got: " + archivePath);
 		}
-		if (annotatedLocation.getNameCount() == 0) {
-			throw new IllegalArgumentException("Archive path must not be empty: " + annotatedLocation);
+		if (archivePath.getNameCount() == 0) {
+			throw new IllegalArgumentException("Archive path must not be empty: " + archivePath);
 		}
 
-		final Path target = annotatedLocation.normalize();
+		final Path target = archivePath.normalize();
 		if (!DEMO_ARCHIVE_PARENT.equals(target.getName(0).toString())) {
 			throw new IllegalArgumentException(
 					"Expected demo archive path to start with " + DEMO_ARCHIVE_PARENT + " but got: " + target);

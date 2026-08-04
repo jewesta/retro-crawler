@@ -3,11 +3,12 @@ package com.retrocrawler.core.archive;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
 
 class InMemoryRepositoryTest {
 
@@ -54,7 +55,7 @@ class InMemoryRepositoryTest {
 	}
 
 	private static Archive archive(final String id) {
-		return Archive.of(ArchiveId.of(id), List.of());
+		return Archive.of(ArchiveId.of(id), Path.of(id), new ArchiveNode(id, null, null));
 	}
 
 }

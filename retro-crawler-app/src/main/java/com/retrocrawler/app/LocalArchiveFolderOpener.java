@@ -5,7 +5,6 @@ import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Objects;
 
 final class LocalArchiveFolderOpener {
@@ -26,20 +25,13 @@ final class LocalArchiveFolderOpener {
 		this.openAction = Objects.requireNonNull(openAction, "openAction");
 	}
 
-	void open(final Path sourcePath, final Collection<Path> archiveRoots) throws IOException {
+	void open(final Path sourcePath, final Path archiveRoot) throws IOException {
 		Objects.requireNonNull(sourcePath, "sourcePath");
-		Objects.requireNonNull(archiveRoots, "archiveRoots");
+		Objects.requireNonNull(archiveRoot, "archiveRoot");
 
 		final Path target = requireDirectory(sourcePath);
-		boolean belowArchiveRoot = false;
-		for (final Path archiveRoot : archiveRoots) {
-			if (target.startsWith(requireDirectory(archiveRoot))) {
-				belowArchiveRoot = true;
-				break;
-			}
-		}
-		if (!belowArchiveRoot) {
-			throw new IllegalArgumentException("Refusing to open a folder outside the configured archives: " + target);
+		if (!target.startsWith(requireDirectory(archiveRoot))) {
+			throw new IllegalArgumentException("Refusing to open a folder outside the configured archive: " + target);
 		}
 
 		openAction.open(target);

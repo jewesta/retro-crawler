@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.util.ReadmeWriter;
 
@@ -53,8 +51,7 @@ class JsonFileRepositoryTest {
 
 		final Archive retrieved = repository.retrieve(ArchiveId.of("test_archive")).orElseThrow();
 		assertEquals(id, retrieved.id());
-		assertEquals(1, retrieved.buckets().size());
-		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.buckets().get(0).basePath());
+		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.basePath());
 	}
 
 	@Test
@@ -66,7 +63,7 @@ class JsonFileRepositoryTest {
 		repository.stowaway(archive(id, "second"));
 
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
-		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.buckets().get(0).basePath());
+		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.basePath());
 	}
 
 	@Test
@@ -76,12 +73,12 @@ class JsonFileRepositoryTest {
 		final ArchiveId id = ArchiveId.of("missing_value");
 		final Artifact artifact = new Artifact(Set.of(Clue.missingValue("sn")));
 		final ArchiveNode root = new ArchiveNode("root", artifact, null);
-		repository.stowaway(Archive.of(id, List.of(Bucket.of(temporaryDirectory.resolve("root"), root))));
+		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
-		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
-		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root().artifact();
+		final JsonNode storedClue = json.at("/root/artifact/sn");
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
 		assertEquals(2, json.path("version").asInt());
@@ -152,8 +149,7 @@ class JsonFileRepositoryTest {
 
 	private Archive archive(final ArchiveId id, final String folder) {
 		final ArchiveNode root = new ArchiveNode(folder, null, null);
-		final Bucket bucket = Bucket.of(temporaryDirectory.resolve(folder), root);
-		return Archive.of(id, List.of(bucket));
+		return Archive.of(id, temporaryDirectory.resolve(folder), root);
 	}
 
 }

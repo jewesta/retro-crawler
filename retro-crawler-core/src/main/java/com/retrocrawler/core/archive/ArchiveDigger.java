@@ -105,6 +105,9 @@ public class ArchiveDigger {
 			throw new IllegalArgumentException(
 					"Expected archive path '" + path + "' to be below root '" + root.path() + "'.");
 		}
+		if (normalizedPath.equals(normalizedRoot)) {
+			return Optional.of(new ArchiveDigTarget(session, root, root));
+		}
 
 		ArchiveFolder current = root;
 		for (final Path folderName : normalizedRoot.relativize(normalizedPath)) {

@@ -1,18 +1,25 @@
 package com.retrocrawler.mycollection;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.retrocrawler.core.DuplicateRetroIdException;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
-import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.FixedStepProgressMonitor;
@@ -25,6 +32,10 @@ import com.retrocrawler.mycollection.gear.MyGear;
 /**
  * Explicit local smoke-crawl entry point. Archive roots and the private clue
  * cache remain external runtime configuration.
+ * <p>
+ * Every root in the roots file becomes one separately identified archive on the
+ * crawler. The crawl resolves all of them in one pass, so Retro ID uniqueness
+ * is validated across the whole collection.
  */
 public final class MyCollectionSmokeCrawl {
 
@@ -38,16 +49,18 @@ public final class MyCollectionSmokeCrawl {
 					+ "[--reindex|--reuse-cache|--reindex-subtree <path>...]");
 		}
 
-		final ArchiveRoots roots = ArchiveRoots.load(Path.of(arguments[0]));
+		final List<ArchiveDescriptor> archives = archives(Path.of(arguments[0]));
 		final Path cacheDirectory = Path.of(arguments[1]);
 		final ReindexScope reindexScope = reindexScope(arguments);
-		final Model model = Model.from(AttributeNames.class.getPackageName(), roots);
-		final RetroCrawler crawler = RetroCrawler.builder().model(model)
-				.repository(new JsonFileRepository(cacheDirectory)).build();
+		final Model model = Model.from(AttributeNames.class.getPackageName());
+		final RetroCrawler.Builder builder = RetroCrawler.builder().model(model)
+				.repository(new JsonFileRepository(cacheDirectory));
+		archives.forEach(builder::archive);
+		final RetroCrawler crawler = builder.build();
 		final Progressor progressor = Progressor.observing(new CompactProgressPrinter());
 
 		try {
-			final List<MyGear> gear = crawler.crawlGear(progressor, reindexScope, MyGear.class);
+			final List<MyGear> gear = crawler.crawlAllGear(progressor, reindexScope, MyGear.class);
 			Files.deleteIfExists(cacheDirectory.resolve("duplicate-retro-ids.txt"));
 			printSummary(gear);
 		} catch (final DuplicateRetroIdException failure) {
@@ -57,6 +70,50 @@ public final class MyCollectionSmokeCrawl {
 					+ occurrences + "\treport=" + report);
 			throw new IllegalStateException("Duplicate Retro IDs detected; see private report: " + report);
 		}
+	}
+
+	/**
+	 * Reads one archive root per line and registers each as its own archive.
+	 * Archive IDs are derived from the root's own name so that stored clue
+	 * archives stay stable across runs.
+	 */
+	private static List<ArchiveDescriptor> archives(final Path rootsFile) throws java.io.IOException {
+		final List<String> lines = Files.readAllLines(rootsFile, StandardCharsets.UTF_8);
+		final List<ArchiveDescriptor> archives = new ArrayList<>();
+		final Set<String> usedIds = new LinkedHashSet<>();
+
+		for (int index = 0; index < lines.size(); index++) {
+			final String line = lines.get(index).trim();
+			if (line.isEmpty()) {
+				continue;
+			}
+			final Path root;
+			try {
+				root = Path.of(line);
+			} catch (final InvalidPathException e) {
+				throw new IllegalArgumentException(
+						"Invalid archive root on line " + (index + 1) + " of " + rootsFile + ": " + line, e);
+			}
+			archives.add(new ArchiveDescriptor(ArchiveId.of(uniqueId(root, usedIds)), root.toString(), root));
+		}
+
+		if (archives.isEmpty()) {
+			throw new IllegalArgumentException("At least one archive root is required in: " + rootsFile);
+		}
+		return List.copyOf(archives);
+	}
+
+	private static String uniqueId(final Path root, final Set<String> usedIds) {
+		final Path fileName = root.getFileName();
+		final String base = fileName == null ? "archive"
+				: fileName.toString().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
+		final String prefix = base.isEmpty() ? "archive" : base;
+		String candidate = prefix;
+		int suffix = 2;
+		while (!usedIds.add(candidate)) {
+			candidate = prefix + "_" + suffix++;
+		}
+		return candidate;
 	}
 
 	private static ReindexScope reindexScope(final String[] arguments) {

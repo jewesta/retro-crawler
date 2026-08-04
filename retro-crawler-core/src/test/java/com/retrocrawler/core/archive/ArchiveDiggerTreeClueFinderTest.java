@@ -108,7 +108,7 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	private ArchiveDescriptor descriptor() {
-		return new ArchiveDescriptor(ArchiveId.of("tree_clue_finder_test"), "Tree clue finder test", List.of(root));
+		return new ArchiveDescriptor(ArchiveId.of("tree_clue_finder_test"), "Tree clue finder test", root);
 	}
 
 	private static ArchiveNode child(final ArchiveNode parent, final String folder) {

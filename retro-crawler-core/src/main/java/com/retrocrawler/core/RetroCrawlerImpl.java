@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,6 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -96,44 +95,41 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final RegisteredArchive archive = registeredArchive(archiveId);
 		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
 		Objects.requireNonNull(inspector, "inspector");
-		final Path configuredRoot = rootFor(archive.descriptor(), requested);
+		final Path configuredRoot = archive.descriptor().root();
+		if (!requested.startsWith(configuredRoot.normalize())) {
+			throw new IllegalArgumentException(
+					"Source path is outside archive '" + archive.descriptor().id() + "': " + sourcePath);
+		}
 
 		try (ArchiveSession session = archive.source().open(configuredRoot)) {
 			ArchiveFolder current = Objects.requireNonNull(session.root(), "session.root()");
 			final Path sourceRoot = current.path().normalize();
 			if (!requested.startsWith(sourceRoot)) {
-				throw new IllegalArgumentException(
-						"Source path '" + sourcePath + "' is not below session root '" + current.path() + "'.");
+				throw new IllegalArgumentException("Source path is outside the opened archive root: " + sourcePath);
 			}
 
 			final Path relative = sourceRoot.relativize(requested);
-			if (relative.toString().isEmpty()) {
-				throw new NoSuchFileException(sourcePath.toString(), null,
-						"Source address identifies an archive root.");
-			}
-
 			for (int index = 0; index < relative.getNameCount(); index++) {
-				final ArchiveListing listing = Objects.requireNonNull(session.list(current), "session.list(folder)");
 				final Path expected = current.path().resolve(relative.getName(index)).normalize();
-				final boolean terminal = index == relative.getNameCount() - 1;
-				if (terminal) {
-					final ArchiveFile file = listing.files().stream()
-							.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst()
-							.orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
-					return session.access(file, inspector);
+				final boolean last = index == relative.getNameCount() - 1;
+				final ArchiveListing listing = Objects.requireNonNull(session.list(current), "session.list(folder)");
+				if (last) {
+					final Optional<ArchiveFile> file = listing.files().stream()
+							.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
+					if (file.isPresent()) {
+						return session.access(file.get(), inspector);
+					}
+					throw new NoSuchFileException(sourcePath.toString());
 				}
-				current = listing.folders().stream().filter(candidate -> candidate.path().normalize().equals(expected))
-						.findFirst().orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
+				final Optional<ArchiveFolder> folder = listing.folders().stream()
+						.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
+				if (folder.isEmpty()) {
+					throw new NoSuchFileException(sourcePath.toString());
+				}
+				current = folder.get();
 			}
 		}
 		throw new NoSuchFileException(sourcePath.toString());
-	}
-
-	private static Path rootFor(final ArchiveDescriptor descriptor, final Path sourcePath) {
-		return descriptor.paths().stream().filter(root -> sourcePath.startsWith(root.normalize()))
-				.max(Comparator.comparingInt(root -> root.normalize().getNameCount()))
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Source path is outside archive '" + descriptor.id() + "': " + sourcePath));
 	}
 
 	private RegisteredArchive registeredArchive(final ArchiveId archiveId) {
@@ -148,56 +144,97 @@ class RetroCrawlerImpl implements RetroCrawler {
 	@Override
 	public <R, N, G> R crawl(final ArchiveId archiveId, final Progressor progressor, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
+		return crawl(List.of(registeredArchive(archiveId)), progressor, reindexScope, factory);
+	}
 
-		final RegisteredArchive archive = registeredArchive(archiveId);
+	@Override
+	public <R, N, G> R crawlAll(final Progressor progressor, final ReindexScope reindexScope,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
+		return crawl(archives.values(), progressor, reindexScope, factory);
+	}
+
+	private <R, N, G> R crawl(final Collection<RegisteredArchive> selected, final Progressor progressor,
+			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
+
 		Objects.requireNonNull(progressor, "progressor");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
 		progressor.throwIfCancelled();
 
 		try {
-			return crawlToCompletion(archive, progressor, reindexScope, factory);
+			return crawlToCompletion(selected, progressor, reindexScope, factory);
 		} catch (final IOException | RuntimeException failure) {
 			reportFailure(progressor, failure);
 			throw failure;
 		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final RegisteredArchive registeredArchive, final Progressor progressor,
+	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Progressor progressor,
 			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
+		final boolean route = selected.size() > 1;
+		if (route) {
+			requireRoutableSubtrees(selected, reindexScope);
+		}
 
-		final Archive archive = registeredArchive.manager().archive(progressor, reindexScope);
+		final List<CrawledArchive> crawled = new ArrayList<>();
+		for (final RegisteredArchive registered : selected) {
+			progressor.throwIfCancelled();
+			final ReindexScope scope = route ? routedScope(registered.descriptor(), reindexScope) : reindexScope;
+			crawled.add(new CrawledArchive(registered.descriptor(), registered.manager().archive(progressor, scope)));
+		}
+
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
-		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
-		final long artifactCount = archive.buckets().stream().map(Bucket::root)
-				.mapToLong(RetroCrawlerImpl::countArtifacts).sum();
+		final long artifactCount = crawled.stream().mapToLong(archive -> countArtifacts(archive.clues().root())).sum();
 		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
 
-		for (final Bucket bucket : archive.buckets()) {
+		final List<ResolvedArchive> resolvedArchives = new ArrayList<>();
+		for (final CrawledArchive archive : crawled) {
 			progressor.throwIfCancelled();
-			final ArchiveNode root = bucket.root();
-			final Path archiveRoot = Path.of(bucket.basePath());
-			final ResolvedArchiveNode resolvedRoot = root == null ? null
-					: resolve(root, archiveRoot, archiveRoot, retroIds, resolutionProgress, progressor);
-			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
+			final Path archiveRoot = Path.of(archive.clues().basePath());
+			final ResolvedArchiveNode resolvedRoot = resolve(archive.clues().root(), archiveRoot, archiveRoot, retroIds,
+					resolutionProgress, progressor);
+			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot));
 		}
 
 		retroIds.assertUnique();
 
-		for (final ResolvedBucket resolvedBucket : resolvedBuckets) {
+		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
 			progressor.throwIfCancelled();
-			final Bucket bucket = resolvedBucket.bucket();
-			factory.beginBucket(bucket);
-			if (resolvedBucket.root() != null) {
-				emitCompressed(resolvedBucket.root(), null, factory, gearType, progressor);
-			}
-			factory.endBucket(bucket);
+			factory.beginArchive(resolvedArchive.descriptor());
+			emitCompressed(resolvedArchive.root(), null, factory, gearType, progressor);
+			factory.endArchive(resolvedArchive.descriptor());
 		}
 
 		final R result = factory.build();
 		progressor.complete("Crawl complete.");
 		return result;
+	}
+
+	private static void requireRoutableSubtrees(final Collection<RegisteredArchive> selected,
+			final ReindexScope reindexScope) {
+		if (reindexScope.kind() != ReindexScope.Kind.SUBTREES) {
+			return;
+		}
+		for (final Path requestedPath : reindexScope.paths()) {
+			final Path normalized = requestedPath.normalize();
+			final boolean routable = selected.stream()
+					.anyMatch(archive -> normalized.startsWith(archive.descriptor().root().normalize()));
+			if (!routable) {
+				throw new IllegalArgumentException(
+						"Archive subtree is not below the root of any registered archive: " + requestedPath);
+			}
+		}
+	}
+
+	private static ReindexScope routedScope(final ArchiveDescriptor descriptor, final ReindexScope reindexScope) {
+		if (reindexScope.kind() != ReindexScope.Kind.SUBTREES) {
+			return reindexScope;
+		}
+		final Path root = descriptor.root().normalize();
+		final List<Path> routed = reindexScope.paths().stream().filter(path -> path.normalize().startsWith(root))
+				.toList();
+		return routed.isEmpty() ? ReindexScope.none() : ReindexScope.subtrees(routed);
 	}
 
 	private static String failureDescription(final Throwable failure) {
@@ -303,7 +340,10 @@ class RetroCrawlerImpl implements RetroCrawler {
 		}
 	}
 
-	private record ResolvedBucket(Bucket bucket, ResolvedArchiveNode root) {
+	private record CrawledArchive(ArchiveDescriptor descriptor, Archive clues) {
+	}
+
+	private record ResolvedArchive(ArchiveDescriptor descriptor, ResolvedArchiveNode root) {
 	}
 
 	private record ResolvedArchiveNode(Optional<GearResolution> resolution, Path sourcePath,

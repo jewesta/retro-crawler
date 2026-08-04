@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.gear.GearTreeFactory;
 
 public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFactory.MutableNode<G>, G> {
 
 	private final Class<G> gearType;
 
-	private final List<BucketBuild<G>> buckets = new ArrayList<>();
+	private final List<ArchiveBuild<G>> archives = new ArrayList<>();
 
-	private BucketBuild<G> currentBucket;
+	private ArchiveBuild<G> currentArchive;
 
 	public StashFactory(final Class<G> gearType) {
 		this.gearType = Objects.requireNonNull(gearType, "gearType");
@@ -25,39 +25,39 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 	}
 
 	@Override
-	public void beginBucket(final Bucket bucket) {
-		Objects.requireNonNull(bucket, "bucket");
-		if (currentBucket != null) {
-			throw new IllegalStateException("beginBucket called while previous bucket is still open.");
+	public void beginArchive(final ArchiveDescriptor archive) {
+		Objects.requireNonNull(archive, "archive");
+		if (currentArchive != null) {
+			throw new IllegalStateException("beginArchive called while previous archive is still open.");
 		}
-		currentBucket = new BucketBuild<>(bucket);
+		currentArchive = new ArchiveBuild<>(archive);
 	}
 
 	@Override
-	public void endBucket(final Bucket bucket) {
-		Objects.requireNonNull(bucket, "bucket");
-		if (currentBucket == null) {
-			throw new IllegalStateException("endBucket called without a matching beginBucket.");
+	public void endArchive(final ArchiveDescriptor archive) {
+		Objects.requireNonNull(archive, "archive");
+		if (currentArchive == null) {
+			throw new IllegalStateException("endArchive called without a matching beginArchive.");
 		}
-		if (!currentBucket.bucket.equals(bucket)) {
-			throw new IllegalStateException("endBucket called with a different bucket than beginBucket.");
+		if (!currentArchive.archive.equals(archive)) {
+			throw new IllegalStateException("endArchive called with a different archive than beginArchive.");
 		}
-		buckets.add(currentBucket);
-		currentBucket = null;
+		archives.add(currentArchive);
+		currentArchive = null;
 	}
 
 	@Override
 	public MutableNode<G> addNode(final MutableNode<G> parent, final G gear) {
 		Objects.requireNonNull(gear, "gear");
-		if (currentBucket == null) {
-			throw new IllegalStateException("addNode called outside of beginBucket/endBucket. Expected: "
+		if (currentArchive == null) {
+			throw new IllegalStateException("addNode called outside of beginArchive/endArchive. Expected: "
 					+ GearTreeFactory.class.getSimpleName());
 		}
 
 		final MutableNode<G> node = new MutableNode<>(gear);
 
 		if (parent == null) {
-			currentBucket.roots.add(node);
+			currentArchive.roots.add(node);
 		} else {
 			parent.children.add(node);
 		}
@@ -67,17 +67,17 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 
 	@Override
 	public Stash<G> build() {
-		if (currentBucket != null) {
-			throw new IllegalStateException("build called while a bucket is still open.");
+		if (currentArchive != null) {
+			throw new IllegalStateException("build called while an archive is still open.");
 		}
 
-		final List<GearBucket<G>> resultBuckets = new ArrayList<>();
-		for (final BucketBuild<G> bucketBuild : buckets) {
-			final List<GearNode<G>> roots = toImmutableNodes(bucketBuild.roots);
-			resultBuckets.add(new GearBucket<>(bucketBuild.bucket, roots));
+		final List<ArchiveGear<G>> resultArchives = new ArrayList<>();
+		for (final ArchiveBuild<G> archiveBuild : archives) {
+			final List<GearNode<G>> roots = toImmutableNodes(archiveBuild.roots);
+			resultArchives.add(new ArchiveGear<>(archiveBuild.archive, roots));
 		}
 
-		return new Stash<>(resultBuckets);
+		return new Stash<>(resultArchives);
 	}
 
 	private static <G> List<GearNode<G>> toImmutableNodes(final List<MutableNode<G>> nodes) {
@@ -96,14 +96,14 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 		return new GearNode<>(node.gear, children);
 	}
 
-	private static final class BucketBuild<G> {
+	private static final class ArchiveBuild<G> {
 
-		private final Bucket bucket;
+		private final ArchiveDescriptor archive;
 
 		private final List<MutableNode<G>> roots = new ArrayList<>();
 
-		private BucketBuild(final Bucket bucket) {
-			this.bucket = bucket;
+		private ArchiveBuild(final ArchiveDescriptor archive) {
+			this.archive = archive;
 		}
 	}
 

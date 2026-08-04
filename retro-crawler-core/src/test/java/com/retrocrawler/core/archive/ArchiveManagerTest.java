@@ -19,7 +19,6 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressCancelledException;
@@ -47,19 +46,18 @@ class ArchiveManagerTest {
 	}
 
 	@Test
-	void rebindsStoredBucketsToTheCurrentlyConfiguredRoots() throws IOException {
+	void rebindsAStoredArchiveToItsCurrentlyConfiguredRoot() throws IOException {
 		final Path configuredRoot = temporaryDirectory.resolve("desktop-mount");
 		final ArchiveDescriptor descriptor = descriptor(configuredRoot);
 		final ArchiveNode storedRoot = new ArchiveNode(".", null, null);
-		final Archive stored = Archive.of(descriptor.id(),
-				List.of(Bucket.of(Path.of("/nas-container/archive"), storedRoot)));
+		final Archive stored = Archive.of(descriptor.id(), Path.of("/nas-container/archive"), storedRoot);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 
 		final Archive rebound = manager(descriptor, repository).archive(progressor, ReindexScope.none());
 
 		assertNotSame(stored, rebound);
-		assertSame(storedRoot, rebound.buckets().getFirst().root());
-		assertEquals(configuredRoot.toString(), rebound.buckets().getFirst().basePath());
+		assertSame(storedRoot, rebound.root());
+		assertEquals(configuredRoot.toString(), rebound.basePath());
 		assertEquals(0, repository.stowawayCount);
 	}
 
@@ -271,7 +269,7 @@ class ArchiveManagerTest {
 	}
 
 	private static ArchiveNode node(final Archive archive, final String... folders) {
-		ArchiveNode result = archive.buckets().getFirst().root();
+		ArchiveNode result = archive.root();
 		for (final String folder : folders) {
 			final ArchiveNode parent = result;
 			result = Optional.ofNullable(parent.children()).orElse(List.of()).stream()
@@ -290,12 +288,11 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveDescriptor descriptor(final Path archiveDirectory) {
-		return new ArchiveDescriptor(ArchiveId.of("test_archive"), "Test archive", List.of(archiveDirectory));
+		return new ArchiveDescriptor(ArchiveId.of("test_archive"), "Test archive", archiveDirectory);
 	}
 
 	private static Archive emptyStoredArchive(final ArchiveDescriptor descriptor) {
-		final Path root = descriptor.paths().iterator().next();
-		return Archive.of(descriptor.id(), List.of(Bucket.of(root, new ArchiveNode(".", null, null))));
+		return Archive.of(descriptor.id(), descriptor.root(), new ArchiveNode(".", null, null));
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {

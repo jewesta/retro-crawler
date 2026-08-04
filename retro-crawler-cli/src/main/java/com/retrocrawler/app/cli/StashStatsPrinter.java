@@ -14,7 +14,7 @@ final class StashStatsPrinter {
 
 	static void printToStdout(final StashStats stats) {
 		Objects.requireNonNull(stats, "stats");
-		System.out.println("Buckets:   " + stats.bucketCount());
+		System.out.println("Archives:  " + stats.archiveCount());
 		System.out.println("Roots:     " + stats.rootCount());
 		System.out.println("Nodes:     " + stats.nodeCount());
 		System.out.println("Leaves:    " + stats.leafCount());

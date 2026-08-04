@@ -247,7 +247,7 @@ public class SearchView extends HorizontalLayout {
 
 	private void openArchiveFolder(final DemoArchive archive, final Path sourcePath) {
 		try {
-			archive.folderOpener().orElseThrow().open(sourcePath, archive.archive().paths());
+			archive.folderOpener().orElseThrow().open(sourcePath, archive.archive().root());
 		} catch (final IOException | IllegalArgumentException failure) {
 			logger.warning("Could not open archive folder: " + failure.getMessage());
 			Notification.show("Could not open archive folder: " + failure.getMessage(), 5000, Position.MIDDLE);

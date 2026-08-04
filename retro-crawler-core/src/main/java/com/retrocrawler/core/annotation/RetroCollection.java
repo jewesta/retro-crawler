@@ -8,8 +8,11 @@ import java.lang.annotation.Target;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 
 /**
- * Declares the identity and default archive configuration of one collector's
+ * Declares the identity and interpretation configuration of one collector's
  * collection. Exactly one type in a RetroCrawler model carries this annotation.
+ * <p>
+ * Where a collection is stored is deployment configuration rather than model
+ * vocabulary. Archives and their roots are registered on the crawler.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -22,12 +25,6 @@ public @interface RetroCollection {
 	 * {@link #id()} is used.
 	 */
 	String name() default "";
-
-	/**
-	 * A collection can consist of several hierarchical roots. Locations may be
-	 * omitted when they are supplied explicitly while constructing the model.
-	 */
-	String[] locations() default {};
 
 	/**
 	 * Optional BCP 47 language tag used as the collection's interpretation

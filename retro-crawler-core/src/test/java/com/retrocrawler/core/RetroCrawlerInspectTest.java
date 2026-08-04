@@ -21,7 +21,8 @@ import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -34,6 +35,8 @@ import com.retrocrawler.core.archive.source.ZipArchiveSource;
 
 class RetroCrawlerInspectTest {
 
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
+
 	@TempDir
 	private Path temporaryDirectory;
 
@@ -44,7 +47,7 @@ class RetroCrawlerInspectTest {
 				"filesystem image");
 		final RetroCrawler crawler = crawler(root, new FileSystemArchiveSource());
 
-		final Optional<byte[]> content = crawler.inspect(file, InputStream::readAllBytes);
+		final Optional<byte[]> content = crawler.inspect(ARCHIVE_ID, file, InputStream::readAllBytes);
 
 		assertTrue(content.isPresent());
 		assertArrayEquals("filesystem image".getBytes(StandardCharsets.UTF_8), content.get());
@@ -60,7 +63,8 @@ class RetroCrawlerInspectTest {
 		}
 		final RetroCrawler crawler = crawler(archive, new ZipArchiveSource());
 
-		final Optional<byte[]> content = crawler.inspect(archive.resolve("gear/front.jpeg"), InputStream::readAllBytes);
+		final Optional<byte[]> content = crawler.inspect(ARCHIVE_ID, archive.resolve("gear/front.jpeg"),
+				InputStream::readAllBytes);
 
 		assertTrue(content.isPresent());
 		assertArrayEquals("zip image".getBytes(StandardCharsets.UTF_8), content.get());
@@ -101,7 +105,7 @@ class RetroCrawlerInspectTest {
 		};
 		final RetroCrawler crawler = crawler(root, source);
 
-		final Optional<Integer> result = crawler.inspect(filePath, input -> {
+		final Optional<Integer> result = crawler.inspect(ARCHIVE_ID, filePath, input -> {
 			throw new AssertionError("Unavailable content must not invoke the inspector.");
 		});
 
@@ -116,7 +120,7 @@ class RetroCrawlerInspectTest {
 		final Path missing = root.resolve("missing.jpeg");
 
 		final NoSuchFileException failure = assertThrows(NoSuchFileException.class,
-				() -> crawler.inspect(missing, InputStream::readAllBytes));
+				() -> crawler.inspect(ARCHIVE_ID, missing, InputStream::readAllBytes));
 
 		assertEquals(missing.toString(), failure.getFile());
 	}
@@ -128,26 +132,26 @@ class RetroCrawlerInspectTest {
 		final RetroCrawler crawler = crawler(root, new FileSystemArchiveSource());
 
 		final NoSuchFileException failure = assertThrows(NoSuchFileException.class,
-				() -> crawler.inspect(folder, InputStream::readAllBytes));
+				() -> crawler.inspect(ARCHIVE_ID, folder, InputStream::readAllBytes));
 
 		assertEquals(folder.toString(), failure.getFile());
 	}
 
 	@Test
-	void rejectsAddressesOutsideTheConfiguredArchiveRoots() throws IOException {
+	void rejectsAddressesOutsideTheConfiguredArchiveRoot() throws IOException {
 		final Path root = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final RetroCrawler crawler = crawler(root, ignored -> {
 			throw new AssertionError("An invalid address must not open the source.");
 		});
 
-		assertThrows(IllegalArgumentException.class,
-				() -> crawler.inspect(temporaryDirectory.resolve("outside.jpeg"), InputStream::readAllBytes));
+		assertThrows(IllegalArgumentException.class, () -> crawler.inspect(ARCHIVE_ID,
+				temporaryDirectory.resolve("outside.jpeg"), InputStream::readAllBytes));
 	}
 
 	private static RetroCrawler crawler(final Path root, final ArchiveSource source) {
 		final Model model = Model.from(
-				Set.of(RetroCrawlerBuilderTest.TestArchiveConfiguration.class, RetroCrawlerBuilderTest.TestGear.class),
-				ArchiveRoots.from(root));
-		return RetroCrawler.builder().model(model).repository(new InMemoryRepository()).archiveSource(source).build();
+				Set.of(RetroCrawlerBuilderTest.TestArchiveConfiguration.class, RetroCrawlerBuilderTest.TestGear.class));
+		return RetroCrawler.builder().model(model).repository(new InMemoryRepository())
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, root), source).build();
 	}
 }

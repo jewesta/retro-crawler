@@ -21,7 +21,8 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -39,6 +40,8 @@ import com.retrocrawler.core.util.RetroAttribute;
 
 class ContextualFactResolutionTest {
 
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
+
 	@TempDir
 	private Path archiveRoot;
 
@@ -47,11 +50,11 @@ class ContextualFactResolutionTest {
 		Files.createDirectories(archiveRoot.resolve("typed"));
 		Files.createDirectories(archiveRoot.resolve("unknown"));
 
-		final Model model = Model.from(Set.of(TestArchive.class, HardDrive.class, Mystery.class),
-				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository()).build();
+		final Model model = Model.from(Set.of(TestArchive.class, HardDrive.class, Mystery.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<BaseGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(), BaseGear.class);
+		final List<BaseGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(), BaseGear.class);
 
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());

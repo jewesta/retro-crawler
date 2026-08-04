@@ -110,7 +110,7 @@ class ArchiveDiggerPlanningTest {
 
 	private ArchiveDigger digger(final CrawlPlanning planning) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("planning_test"), "Planning test",
-				List.of(root));
+				root);
 		final ArchivePathClueFinder clues = new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)),
 				List.of(), List.of());
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), planning);

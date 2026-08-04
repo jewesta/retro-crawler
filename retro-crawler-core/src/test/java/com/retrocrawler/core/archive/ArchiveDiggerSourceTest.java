@@ -96,8 +96,7 @@ class ArchiveDiggerSourceTest {
 
 	private static ArchiveDigger digger(final Path root, final ArchiveSource source,
 			final FileContentClueFinder contentFinder) {
-		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test",
-				List.of(root));
+		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test", root);
 		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
 				name -> "gear".equals(name) ? Set.of(Clue.of("kind", "gear")) : Set.of(), List.of(contentFinder),
 				List.of());

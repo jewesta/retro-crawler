@@ -1,6 +1,6 @@
 package com.retrocrawler.app;
 
-import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
@@ -15,12 +15,12 @@ final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<VaadinGear
 	}
 
 	@Override
-	public void beginBucket(final Bucket bucket) {
+	public void beginArchive(final ArchiveDescriptor archive) {
 		// no-op
 	}
 
 	@Override
-	public void endBucket(final Bucket bucket) {
+	public void endArchive(final ArchiveDescriptor archive) {
 		// no-op
 	}
 

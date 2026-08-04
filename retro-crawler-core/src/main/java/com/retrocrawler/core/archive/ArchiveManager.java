@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -41,17 +40,14 @@ public class ArchiveManager {
 	}
 
 	private Archive fromSource(final Progressor progressor) throws IOException {
-		final Collection<Path> rootPaths = descriptor.paths();
-		final List<Bucket> buckets = new ArrayList<>();
-		try (OpenedTargets opened = openTargets(rootPaths)) {
-			final ArchiveDigPlan plan = digger.plan(opened.targets(), progressor);
-			for (int index = 0; index < opened.targets().size(); index++) {
-				progressor.throwIfCancelled();
-				final ArchiveNode rootNode = digger.dig(opened.targets().get(index), plan, progressor);
-				buckets.add(Bucket.of(opened.roots().get(index), rootNode));
-			}
+		final Path root = descriptor.root();
+		final ArchiveNode rootNode;
+		try (OpenedRoot opened = new OpenedRoot(root)) {
+			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), progressor);
+			progressor.throwIfCancelled();
+			rootNode = digger.dig(opened.target(), plan, progressor);
 		}
-		final Archive archive = Archive.of(descriptor.id(), buckets);
+		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
@@ -62,13 +58,12 @@ public class ArchiveManager {
 			throws IOException {
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedPaths);
-		final List<Path> selectedRoots = located.stream().map(LocatedSubtree::configuredRoot).distinct().toList();
-		final List<Bucket> buckets = new ArrayList<>(stored.buckets());
-		try (OpenedTargets opened = openTargets(selectedRoots)) {
+		ArchiveNode root = stored.root();
+		try (OpenedRoot opened = new OpenedRoot(descriptor.root())) {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
 			for (final LocatedSubtree subtree : located) {
-				final ArchiveDigTarget rootTarget = opened.target(subtree.configuredRoot());
-				final ArchiveDigTarget target = digger.target(rootTarget.session(), subtree.requestedPath(), progressor)
+				final ArchiveDigTarget target = digger
+						.target(opened.target().session(), subtree.requestedPath(), progressor)
 						.orElseThrow(() -> new IllegalArgumentException(
 								"Archive subtree is not an existing folder; re-index its existing parent instead: "
 										+ subtree.requestedPath()));
@@ -78,15 +73,12 @@ public class ArchiveManager {
 
 			for (int index = 0; index < located.size(); index++) {
 				progressor.throwIfCancelled();
-				final LocatedSubtree subtree = located.get(index);
 				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, progressor);
-				final Bucket storedBucket = buckets.get(subtree.bucketIndex());
-				final ArchiveNode mergedRoot = replace(storedBucket.root(), subtree.relativeFolders(), freshNode);
-				buckets.set(subtree.bucketIndex(), Bucket.of(Path.of(storedBucket.basePath()), mergedRoot));
+				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
 
-		final Archive archive = Archive.of(stored.id(), buckets);
+		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
@@ -123,12 +115,12 @@ public class ArchiveManager {
 			throw new IllegalStateException(
 					"Cannot re-index archive subtrees because no stored clue archive exists. Re-index the complete archive first.");
 		}
-		return bindToConfiguredRoots(stored.get());
+		return bindToConfiguredRoot(stored.get());
 	}
 
 	private Optional<Archive> retrieve() {
 		try {
-			return repository.retrieve(descriptor.id()).map(this::bindToConfiguredRoots);
+			return repository.retrieve(descriptor.id()).map(this::bindToConfiguredRoot);
 		} catch (final RepositoryException e) {
 			logger.warn("Could not retrieve archive '{}'. The configured archive source will be crawled again.",
 					descriptor.id(), e);
@@ -136,51 +128,31 @@ public class ArchiveManager {
 		}
 	}
 
-	private Archive bindToConfiguredRoots(final Archive stored) {
+	private Archive bindToConfiguredRoot(final Archive stored) {
 		if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(stored.version())) {
 			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version " + stored.version()
 					+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 		}
-		final List<Path> configuredRoots = List.copyOf(descriptor.paths());
-		final List<Bucket> storedBuckets = stored.buckets();
-		if (storedBuckets.size() != configuredRoots.size()) {
-			throw new RepositoryException("Stored archive '" + stored.id() + "' contains " + storedBuckets.size()
-					+ " buckets but the current configuration supplies " + configuredRoots.size() + " archive roots.");
+		final Path configuredRoot = descriptor.root();
+		if (normalize(Path.of(stored.basePath())).equals(normalize(configuredRoot))) {
+			return stored;
 		}
-
-		boolean unchanged = true;
-		final List<Bucket> bound = new ArrayList<>(storedBuckets.size());
-		for (int index = 0; index < storedBuckets.size(); index++) {
-			final Bucket storedBucket = storedBuckets.get(index);
-			final Path configuredRoot = configuredRoots.get(index);
-			if (!normalize(Path.of(storedBucket.basePath())).equals(normalize(configuredRoot))) {
-				unchanged = false;
-			}
-			bound.add(Bucket.of(configuredRoot, storedBucket.root()));
-		}
-		return unchanged ? stored : Archive.of(stored.id(), List.copyOf(bound));
+		return Archive.of(stored.id(), configuredRoot, stored.root());
 	}
 
 	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<Path> requestedPaths) {
 		final List<Path> effectivePaths = eliminateNestedPaths(requestedPaths);
-		final List<ConfiguredRoot> configuredRoots = descriptor.paths().stream()
-				.map(path -> new ConfiguredRoot(normalize(path))).toList();
+		final Path configuredRoot = normalize(descriptor.root());
 		final List<LocatedSubtree> result = new ArrayList<>();
 
 		for (final Path requestedPath : effectivePaths) {
-			final List<ConfiguredRoot> matchingRoots = configuredRoots.stream()
-					.filter(root -> requestedPath.startsWith(root.normalized())).toList();
-			if (matchingRoots.size() != 1) {
-				throw new IllegalArgumentException(
-						matchingRoots.isEmpty() ? "Archive subtree is not below a configured root: " + requestedPath
-								: "Archive subtree belongs to more than one configured root: " + requestedPath);
+			if (!requestedPath.startsWith(configuredRoot)) {
+				throw new IllegalArgumentException("Archive subtree is not below the configured root of archive '"
+						+ descriptor.id() + "': " + requestedPath);
 			}
-
-			final ConfiguredRoot configuredRoot = matchingRoots.getFirst();
-			final int bucketIndex = findBucket(stored, configuredRoot.normalized());
-			final List<String> relativeFolders = relativeFolders(configuredRoot.normalized(), requestedPath);
-			requireStoredSubtree(stored.buckets().get(bucketIndex).root(), relativeFolders, requestedPath);
-			result.add(new LocatedSubtree(bucketIndex, configuredRoot.normalized(), requestedPath, relativeFolders));
+			final List<String> relativeFolders = relativeFolders(configuredRoot, requestedPath);
+			requireStoredSubtree(stored.root(), relativeFolders, requestedPath);
+			result.add(new LocatedSubtree(requestedPath, relativeFolders));
 		}
 		return result;
 	}
@@ -205,23 +177,10 @@ public class ArchiveManager {
 		return path.normalize();
 	}
 
-	private static int findBucket(final Archive stored, final Path normalizedRoot) {
-		final List<Integer> matches = new ArrayList<>();
-		for (int index = 0; index < stored.buckets().size(); index++) {
-			final Path bucketPath = normalize(Path.of(stored.buckets().get(index).basePath()));
-			if (bucketPath.equals(normalizedRoot)) {
-				matches.add(index);
-			}
-		}
-		if (matches.size() != 1) {
-			throw new IllegalStateException(matches.isEmpty()
-					? "The stored clue archive has no bucket for configured root: " + normalizedRoot
-					: "The stored clue archive has more than one bucket for configured root: " + normalizedRoot);
-		}
-		return matches.getFirst();
-	}
-
 	private static List<String> relativeFolders(final Path root, final Path path) {
+		if (root.equals(path)) {
+			return List.of();
+		}
 		final List<String> result = new ArrayList<>();
 		root.relativize(path).forEach(folder -> result.add(folder.toString()));
 		return List.copyOf(result);
@@ -270,39 +229,17 @@ public class ArchiveManager {
 		return children.stream().filter(child -> folder.equals(child.folder())).findFirst();
 	}
 
-	private record ConfiguredRoot(Path normalized) {
-	}
+	private final class OpenedRoot implements AutoCloseable {
 
-	private OpenedTargets openTargets(final Collection<Path> roots) throws IOException {
-		return new OpenedTargets(roots);
-	}
+		private final ArchiveDigTarget target;
 
-	private final class OpenedTargets implements AutoCloseable {
-
-		private final List<Path> roots = new ArrayList<>();
-
-		private final List<ArchiveDigTarget> targets = new ArrayList<>();
-
-		private OpenedTargets(final Collection<Path> configuredRoots) throws IOException {
+		private OpenedRoot(final Path root) throws IOException {
+			final ArchiveSession session = digger.open(Objects.requireNonNull(root, "root"));
 			try {
-				for (final Path root : configuredRoots) {
-					final Path effectiveRoot = Objects.requireNonNull(root, "configured root");
-					final ArchiveSession session = digger.open(effectiveRoot);
-					try {
-						roots.add(effectiveRoot);
-						targets.add(digger.rootTarget(session));
-					} catch (final IOException | RuntimeException failure) {
-						try {
-							session.close();
-						} catch (final IOException closeFailure) {
-							failure.addSuppressed(closeFailure);
-						}
-						throw failure;
-					}
-				}
+				target = digger.rootTarget(session);
 			} catch (final IOException | RuntimeException failure) {
 				try {
-					close();
+					session.close();
 				} catch (final IOException closeFailure) {
 					failure.addSuppressed(closeFailure);
 				}
@@ -310,46 +247,17 @@ public class ArchiveManager {
 			}
 		}
 
-		private List<Path> roots() {
-			return List.copyOf(roots);
-		}
-
-		private List<ArchiveDigTarget> targets() {
-			return List.copyOf(targets);
-		}
-
-		private ArchiveDigTarget target(final Path root) {
-			final Path normalized = root.normalize();
-			for (int index = 0; index < roots.size(); index++) {
-				if (roots.get(index).normalize().equals(normalized)) {
-					return targets.get(index);
-				}
-			}
-			throw new IllegalArgumentException("Archive root was not opened: " + root);
+		private ArchiveDigTarget target() {
+			return target;
 		}
 
 		@Override
 		public void close() throws IOException {
-			IOException failure = null;
-			for (int index = targets.size() - 1; index >= 0; index--) {
-				try {
-					targets.get(index).session().close();
-				} catch (final IOException closeFailure) {
-					if (failure == null) {
-						failure = closeFailure;
-					} else {
-						failure.addSuppressed(closeFailure);
-					}
-				}
-			}
-			if (failure != null) {
-				throw failure;
-			}
+			target.session().close();
 		}
 	}
 
-	private record LocatedSubtree(int bucketIndex, Path configuredRoot, Path requestedPath,
-			List<String> relativeFolders) {
+	private record LocatedSubtree(Path requestedPath, List<String> relativeFolders) {
 	}
 
 }

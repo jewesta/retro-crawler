@@ -12,12 +12,17 @@ Instead, you can use your own personal already existing folder structure, provid
 ## Core Concepts
 
 ### Archive
-A separately identified, hierarchical collection location with one or more
-roots. The default source is a local directory tree, but providers may expose
+A separately identified, hierarchical collection holding, rooted at exactly one
+place. The default source is a local directory tree, but providers may expose
 ZIP entries, remote files, or other file-like hierarchies through the same
-archive model. One `RetroCrawler` can apply a shared model to several archives;
-each archive retains its own identity, roots, source provider, repository entry,
-and crawl lifecycle.
+archive model.
+
+One `RetroCrawler` applies a shared model to every archive registered with it.
+Each archive keeps its own identity, root, source provider, repository entry,
+and crawl lifecycle, so a collection spread across several disks, mounts, or
+media is composed as several archives rather than as several roots of one.
+Aggregation is a crawler operation: `crawlAll` resolves every archive in one
+pass and validates Retro ID uniqueness across all of them.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -105,7 +110,6 @@ common operating-system or NAS service entries such as `Thumbs.db`,
 ```java
 @RetroCollection(
         id = "my_collection",
-        locations = "my-collection",
         pathFilters = {
                 IgnoreDotPaths.class,
                 IgnoreWindowsSystemPaths.class,
@@ -136,13 +140,15 @@ Model model = Model.from("com.example.collection");
 
 Applications that need deterministic or custom discovery can instead provide a `Set<Class<?>>` or `TypeSource`.
 
+A model declares how a collection is interpreted, never where it is stored.
+Archive roots are deployment configuration and are registered on the crawler.
+
 Deployment-specific settings can override annotation defaults while the model
 is built:
 
 ```java
 Model model = Model.builder()
         .typesFrom("com.example.collection")
-        .locations(Path.of("my-collection"))
         .workingDirectory(Path.of("retro-work"))
         .factCatalog(MyCatalogParser.class,
                 configuration -> configuration.catalogFile("my-catalog.tsv"))
@@ -163,36 +169,23 @@ all keys must occur exactly once, while their order is arbitrary.
 
 Archive traversal is provided by an application-selected `ArchiveSource`.
 `FileSystemArchiveSource` is the default and uses the NIO filesystem associated
-with each configured root `Path`; existing applications require no additional
-configuration.
+with the archive's root `Path`.
 
-Other hierarchical providers can open an `ArchiveSession` for the same roots:
-
-```java
-RetroCrawler crawler = RetroCrawler.builder()
-        .model(model)
-        .repository(repository)
-        .archiveSource(myArchiveSource)
-        .build();
-```
-
-One crawler may instead register several independently identified archives.
-The model's clue finders, fact parsers, and gear resolution are shared, while
-each descriptor is paired with the provider that exposes its roots:
+Every crawler registers at least one archive. The model's clue finders, fact
+parsers, and gear resolution are shared, while each archive is paired with the
+provider that exposes its root:
 
 ```java
-ArchiveDescriptor myCollection = new ArchiveDescriptor(
-        ArchiveId.of("my_collection"),
-        "My collection",
-        List.of(Path.of("my-collection")));
+ArchiveDescriptor myCollection = ArchiveDescriptor.of(
+        ArchiveId.of("my_collection"), Path.of("my-collection"));
 ArchiveDescriptor museumCollection = new ArchiveDescriptor(
         ArchiveId.of("museum_collection"),
         "Museum collection",
-        List.of(Path.of("museum")));
+        Path.of("museum"));
 ArchiveDescriptor incomingMaterial = new ArchiveDescriptor(
         ArchiveId.of("incoming_material"),
         "Incoming material",
-        List.of(Path.of("incoming.zip")));
+        Path.of("incoming.zip"));
 
 RetroCrawler crawler = RetroCrawler.builder()
         .model(retroHardwareModel)
@@ -203,23 +196,11 @@ RetroCrawler crawler = RetroCrawler.builder()
         .build();
 ```
 
-`archive(descriptor)` selects the filesystem provider. The annotation-derived
-archive remains the default when no archive is registered explicitly, so
-existing single-archive construction is unchanged.
+`archive(descriptor)` selects the filesystem provider.
 
 ZIP archives can be crawled directly without extracting them. Select
-`ZipArchiveSource` and configure each archive root as the path of a local ZIP
-file:
-
-```java
-RetroCrawler crawler = RetroCrawler.builder()
-        .model(model)
-        .repository(repository)
-        .archiveSource(new ZipArchiveSource())
-        .build();
-```
-
-The ZIP path is the logical archive root. Entry names become descendant source
+`ZipArchiveSource` and configure the archive root as the path of a local ZIP
+file. The ZIP path is the logical archive root. Entry names become descendant source
 paths, and folders omitted from the ZIP directory are inferred from their
 children.
 
@@ -231,7 +212,8 @@ before returning its result. An empty result means that content was not
 available and content-based clue finders contribute no clue for that file.
 
 Applications can inspect a file at any source path produced by the crawler
-through the same scoped accessor contract:
+through the same scoped accessor contract. Every address is qualified by the
+archive it belongs to:
 
 ```java
 Optional<byte[]> image = crawler.inspect(
@@ -247,16 +229,21 @@ Source paths remain hierarchical addresses used for relative clues, cache
 relocation, and partial re-indexing; providers must not require them to be
 locally accessible.
 
-Crawling likewise selects the logical archive by identity:
+Crawling either selects one archive by identity or spans all of them:
 
 ```java
-Stash<RetroHardware> gear = crawler.crawlStash(
+Stash<RetroHardware> museum = crawler.crawlStash(
         museumCollection.id(), progressor, reindexScope, RetroHardware.class);
+
+Stash<RetroHardware> everything = crawler.crawlAllStash(
+        progressor, reindexScope, RetroHardware.class);
 ```
 
-The archive-unqualified `crawl...`, `inspect`, and `archiveDescriptor` methods
-remain shortcuts for a crawler with exactly one archive. They reject ambiguous
-use when several archives are registered.
+A `Stash` keeps its gear grouped per archive, so every result retains the
+archive it came from. `crawlAll` validates Retro ID uniqueness across all
+registered archives and routes a subtree reindex scope to the archive whose
+root contains each requested path; archives without a requested subtree reuse
+their stored clue archive.
 
 ---
 
@@ -315,7 +302,7 @@ view is available for simple command-line or GUI integrations:
 
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
-List<MyGear> gear = crawler.crawlGear(progressor, true, MyGear.class);
+List<MyGear> gear = crawler.crawlAllGear(progressor, ReindexScope.all(), MyGear.class);
 ```
 
 Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl

@@ -24,8 +24,8 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.DuplicateRetroIdException;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
@@ -97,6 +97,8 @@ import de.creativecouple.validation.isbn.ISBN;
 
 class MyCollectionModelTest {
 
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("my_collection");
+
 	private static final Progressor SILENT_PROGRESSOR = new Progressor();
 
 	@TempDir
@@ -104,7 +106,7 @@ class MyCollectionModelTest {
 
 	@Test
 	void configuresAllBundledArchivePathFilters() {
-		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(archiveRoot));
+		final Model model = Model.from("com.retrocrawler.mycollection");
 
 		assertEquals(
 				List.of(IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class, IgnoreMacSystemPaths.class,
@@ -120,7 +122,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Known card [AGP] [VGA] [200002] [TRW 10510]"));
 		Files.createDirectories(archiveRoot.resolve("Serial only [SN 200003]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(4, gear.size());
 
@@ -154,7 +156,7 @@ class MyCollectionModelTest {
 	void resolvesTheRetroWebAndCapacitySetFacts() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("Memory set [32MB] [Set 2 x 16MB] [TRW 10510]"));
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Memory set [32MB] [Set 2 x 16MB] [TRW 10510]");
 
 		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32), DataCapacity.Unit.MB);
@@ -174,7 +176,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Moved DDR memory [PC3200] [512MB] [200022]"));
 		Files.createDirectories(archiveRoot.resolve("Moved supply [ATX] [300W] [200023]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final MyGear board = gear(gear, "Moved board [ATX] [ISA, PCI, AGP] [TRW 10510] [200020]");
 		assertInstanceOf(Motherboard.class, board);
@@ -204,7 +206,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Second disk [96TPI] [2S-HD] [200025]"));
 		Files.createDirectories(archiveRoot.resolve("Drive with track density only [96TPI] [200026]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final Diskette first = assertInstanceOf(Diskette.class,
 				gear(gear, "First disk [3,5\"] [48TPI] [DS] [HD] [200024]"));
@@ -226,7 +228,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("First scanned manual [101534] [200030]"));
 		Files.createDirectories(archiveRoot.resolve("Second scanned manual [101534] [200031]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(2, gear.size());
 		assertTrue(gear.stream().allMatch(value -> value.getDocumentIds().equals(Set.of(new DocumentId(101534)))));
@@ -240,7 +242,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Measured object [19″]"));
 		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß, pink]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 		final MyGear floppy = gear(gear, "Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
 		assertInstanceOf(MysteryGear.class, floppy);
 		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), Unit.INCH)), floppy.getLength());
@@ -267,7 +269,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Controller [IC RC42-A] [ic Example Semiconductor 7]"));
 		Files.createDirectories(archiveRoot.resolve("Anonymous observation [RC42-A]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(Set.of(new ChipDesignation("RC42-A"), new ChipDesignation("Example Semiconductor 7")),
 				gear(gear, "Controller [IC RC42-A] [ic Example Semiconductor 7]").getChipDesignations());
@@ -281,7 +283,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Week observation [1994-KW05]"));
 		Files.createDirectories(archiveRoot.resolve("Exact date [1994-05-12]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final MyGear year = gear(gear, "Year observation [1994]");
 		assertEquals(Optional.of(DateMarking.of(Year.of(1994))), year.getDateMarking());
@@ -308,7 +310,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Faulty object [defekt] [Akkuschaden]"));
 		Files.createDirectories(archiveRoot.resolve("Partially faulty object [teildefekt] [Bruch]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(Optional.of(ItemCondition.NEW), gear(gear, "New object [Neu]").getCondition());
 		assertEquals(Optional.of(ItemCondition.USED), gear(gear, "Used object [gebraucht]").getCondition());
@@ -333,7 +335,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Opened package [geöffnet]"));
 		Files.createDirectories(archiveRoot.resolve("Original sealed package [OVP] [sealed]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final MyGear original = gear(gear, "Original package [OVP]");
 		assertEquals(Optional.of(PackagingOrigin.ORIGINAL), original.getPackagingOrigin());
@@ -366,7 +368,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("First board [200010] [trw 10510]"));
 		Files.createDirectories(archiveRoot.resolve("Second board [200011] [TRW 10510]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(2, gear.size());
 		assertTrue(gear.stream()
@@ -377,7 +379,7 @@ class MyCollectionModelTest {
 	void resolvesSharedIdentifierTypesThroughCollectionKeys() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("Network manual [MAC 00-00-C0-0D-66-AB] [ISBN 978-0-306-40615-7]"));
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Network manual [MAC 00-00-C0-0D-66-AB] [ISBN 978-0-306-40615-7]");
 
 		assertEquals(Optional.of(new MacAddress("00:00:C0:0D:66:AB")), gear.getMacAddress());
@@ -389,7 +391,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Game Boy release [DMG-A1-EUR] [200037]"));
 		Files.createDirectories(archiveRoot.resolve("PSP release [ULES-01234] [200038]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final MyGear gameBoy = gear(gear, "Game Boy release [DMG-A1-EUR] [200037]");
 		assertEquals(Set.of(new NintendoGameBoyCartridgeCode(NintendoGameBoyPlatform.GAME_BOY, "A1", "EUR")),
@@ -408,7 +410,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Ambiguous locale [DE] [200033]"));
 		Files.createDirectories(archiveRoot.resolve("Explicit locale [language DE] [region DE] [200034]"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		final MyGear unambiguous = gear(gear, "Unambiguous locale [EN] [US] [200032]");
 		assertEquals(Set.of(new LanguageCode("en")), unambiguous.getLanguages());
@@ -439,7 +441,7 @@ class MyCollectionModelTest {
 		final Path second = Files.createDirectories(archiveRoot.resolve("Duplicate B [200004]"));
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
+				() -> crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 
 		final List<String> paths = failure.duplicates().get(new RetroId(200004));
 		assertEquals(2, paths.size());
@@ -466,7 +468,7 @@ class MyCollectionModelTest {
 		final Path back = Files.createFile(folder.resolve("back.jpeg"));
 		final Path floppy = Files.createFile(folder.resolve("FD-0007 System disk.img"));
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Documented object [200005]");
 
 		assertEquals(Optional.of("This description belongs to the containing gear."), gear.getDescription());
@@ -490,16 +492,16 @@ class MyCollectionModelTest {
 		Files.createFile(gearFolder.resolve("front.jpeg"));
 		final JsonFileRepository repository = new JsonFileRepository(archiveRoot.resolve("repository"));
 
-		crawler(nasRoot, repository).crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		crawler(nasRoot, repository).crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
-		final Archive stored = repository.retrieve(ArchiveId.of("my_collection")).orElseThrow();
-		final Clue storedImage = stored.buckets().getFirst().root().children().getFirst().artifact().clues().stream()
+		final Archive stored = repository.retrieve(ARCHIVE_ID).orElseThrow();
+		final Clue storedImage = stored.root().children().getFirst().artifact().clues().stream()
 				.filter(clue -> AttributeNames.IMAGE_FRONT.equals(clue.key())).findFirst().orElseThrow();
 		assertEquals(Set.of(Path.of("Portable object [200006]", "front.jpeg").toString()), storedImage.value());
 
 		final Path desktopRoot = Files.move(nasRoot, archiveRoot.resolve("desktop-root"));
 		final MyGear rebound = gear(
-				crawler(desktopRoot, repository).crawlGear(SILENT_PROGRESSOR, ReindexScope.none(), MyGear.class),
+				crawler(desktopRoot, repository).crawlAllGear(SILENT_PROGRESSOR, ReindexScope.none(), MyGear.class),
 				"Portable object [200006]");
 
 		assertEquals(Optional.of(desktopRoot.resolve("Portable object [200006]").resolve("front.jpeg")),
@@ -517,7 +519,7 @@ class MyCollectionModelTest {
 			---
 			""");
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Lot member [200009]");
 
 		assertEquals(Optional.of("future-market.example"), gear.getSource());
@@ -531,7 +533,7 @@ class MyCollectionModelTest {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Notes only"));
 		Files.writeString(folder.resolve("retro.md"), "A note is an intentional description.");
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(1, gear.size());
 		assertInstanceOf(MysteryGear.class, gear.getFirst());
@@ -543,7 +545,7 @@ class MyCollectionModelTest {
 		Files.createDirectories(archiveRoot.resolve("Serial pending [SN]"));
 		Files.createDirectories(archiveRoot.resolve("Actually empty []"));
 
-		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
+		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(1, gear.size());
 		final MyGear serialPending = gear.getFirst();
@@ -560,7 +562,7 @@ class MyCollectionModelTest {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Acquisition source"));
 		Files.createFile(folder.resolve("listing.webloc"));
 
-		assertTrue(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class).isEmpty());
+		assertTrue(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class).isEmpty());
 	}
 
 	@Test
@@ -568,7 +570,7 @@ class MyCollectionModelTest {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: PCI\n---\n");
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Conflicting object [AGP] [200006]");
 
 		assertInstanceOf(MysteryGear.class, gear);
@@ -581,7 +583,7 @@ class MyCollectionModelTest {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Corroborated card [AGP] [VGA] [200007]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: AGP\n---\n");
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"Corroborated card [AGP] [VGA] [200007]");
 
 		assertInstanceOf(GraphicsCard.class, gear);
@@ -592,20 +594,20 @@ class MyCollectionModelTest {
 	void resolvesGermanDestinyTagsWithoutKeepingLegacySynonyms() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("[verschenkt] Passed-on object [200008]"));
 
-		final MyGear gear = gear(crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
+		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
 				"[verschenkt] Passed-on object [200008]");
 
 		assertEquals(Optional.of(Destiny.VERSCHENKT), gear.getDestiny());
 	}
 
 	private RetroCrawler crawler() {
-		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(archiveRoot));
-		return RetroCrawler.builder().model(model).repository(new MemoryRepository()).build();
+		return crawler(archiveRoot, new MemoryRepository());
 	}
 
 	private static RetroCrawler crawler(final Path root, final Repository repository) {
-		final Model model = Model.from("com.retrocrawler.mycollection", ArchiveRoots.from(root));
-		return RetroCrawler.builder().model(model).repository(repository).build();
+		final Model model = Model.from("com.retrocrawler.mycollection");
+		return RetroCrawler.builder().model(model).repository(repository)
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, root)).build();
 	}
 
 	private static MyGear gear(final List<MyGear> gear, final String folderName) {
