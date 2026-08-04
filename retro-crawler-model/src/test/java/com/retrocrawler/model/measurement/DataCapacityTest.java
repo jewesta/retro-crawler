@@ -1,5 +1,6 @@
 package com.retrocrawler.model.measurement;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,10 +17,10 @@ class DataCapacityTest {
 		final DataCapacityParser parser = new DataCapacityParser();
 
 		assertEquals(new DataCapacity(new BigDecimal("1.125"), DataCapacity.Unit.MB),
-				parser.parse("1,125MB").value().orElseThrow());
+				parser.parse("1,125MB", CONTEXT).value().orElseThrow());
 		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
-				parser.parse("32kb").value().orElseThrow());
-		assertEquals(Confidence.NONE, parser.parse("3,3V").confidence());
+				parser.parse("32kb", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.NONE, parser.parse("3,3V", CONTEXT).confidence());
 	}
 
 	@Test

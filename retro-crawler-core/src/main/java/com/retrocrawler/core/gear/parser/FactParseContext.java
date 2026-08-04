@@ -13,8 +13,6 @@ import java.util.Optional;
  */
 public record FactParseContext(Optional<Path> archiveRoot, Optional<Path> artifactPath) {
 
-	private static final FactParseContext DETACHED = new FactParseContext(Optional.empty(), Optional.empty());
-
 	public FactParseContext {
 		archiveRoot = Objects.requireNonNull(archiveRoot, "archiveRoot");
 		artifactPath = Objects.requireNonNull(artifactPath, "artifactPath");
@@ -25,10 +23,6 @@ public record FactParseContext(Optional<Path> archiveRoot, Optional<Path> artifa
 				&& !artifactPath.orElseThrow().normalize().startsWith(archiveRoot.orElseThrow().normalize())) {
 			throw new IllegalArgumentException("Artifact path must be below its archive root.");
 		}
-	}
-
-	public static FactParseContext detached() {
-		return DETACHED;
 	}
 
 	public static FactParseContext located(final Path archiveRoot, final Path artifactPath) {

@@ -6,6 +6,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /**
@@ -26,7 +27,7 @@ public final class YearParser implements FactParser<Year> {
 	}
 
 	@Override
-	public RatedFact<Year> parse(final String rawValue) {
+	public RatedFact<Year> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null || !rawValue.trim().matches("\\d{4}")) {
 			return noMatch();
 		}

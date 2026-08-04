@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.measurement.Length.Unit;
 
@@ -17,7 +18,7 @@ public final class LengthParser implements FactParser<Length> {
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<Length> parse(final String rawValue) {
+	public RatedFact<Length> parse(final String rawValue, final FactParseContext context) {
 		return parseValue(rawValue).map(RatedFact::exact)
 				.orElseGet(() -> RatedFact.none("Expected a positive metric or imperial length with a unit."));
 	}

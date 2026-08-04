@@ -57,10 +57,6 @@ public class FactFinder {
 		return contextual;
 	}
 
-	public Optional<Fact> find(final Clue clue) {
-		return find(clue, FactParseContext.detached());
-	}
-
 	public Optional<Fact> find(final Clue clue, final FactParseContext context) {
 		Objects.requireNonNull(context, "context");
 		final Set<String> raws = clue.value();
@@ -107,10 +103,6 @@ public class FactFinder {
 
 	private boolean acceptsMultipleValues() {
 		return Collection.class.isAssignableFrom(fieldType) || RetroAttribute.class.isAssignableFrom(fieldType);
-	}
-
-	public RatedFact<?> parse(final String raw) {
-		return parser.parse(raw);
 	}
 
 	public RatedFact<?> parse(final String raw, final FactParseContext context) {

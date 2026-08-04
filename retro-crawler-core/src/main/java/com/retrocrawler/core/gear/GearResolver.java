@@ -184,18 +184,8 @@ public class GearResolver {
 		return bestSoFar;
 	}
 
-	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<Object> resolve(final Artifact artifact) {
-		return resolveWithIdentity(artifact).map(GearResolution::gear);
-	}
-
 	public Optional<Object> resolve(final Artifact artifact, final FactParseContext parseContext) {
 		return resolveWithIdentity(artifact, parseContext).map(GearResolution::gear);
-	}
-
-	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact) {
-		return resolveWithIdentity(artifact, FactParseContext.detached());
 	}
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)

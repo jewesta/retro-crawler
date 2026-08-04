@@ -3,12 +3,13 @@ package com.retrocrawler.model.locale;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class RegionCodeParser implements FactParser<RegionCode> {
 
 	@Override
-	public RatedFact<RegionCode> parse(final String rawValue) {
+	public RatedFact<RegionCode> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

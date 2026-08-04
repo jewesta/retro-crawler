@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /** Parses canonical ISO week values such as {@code 1999-W18}. */
@@ -25,7 +26,7 @@ public final class YearWeekParser implements FactParser<YearWeek> {
 	}
 
 	@Override
-	public RatedFact<YearWeek> parse(final String rawValue) {
+	public RatedFact<YearWeek> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection.facts;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.mycollection.gear.GearKind;
 
@@ -8,7 +9,7 @@ import com.retrocrawler.mycollection.gear.GearKind;
 public final class GearKindParser implements FactParser<GearKind> {
 
 	@Override
-	public RatedFact<GearKind> parse(final String rawValue) {
+	public RatedFact<GearKind> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue != null && "HDD".equalsIgnoreCase(rawValue.trim())) {
 			return RatedFact.exact(GearKind.HARD_DISK_DRIVE);
 		}

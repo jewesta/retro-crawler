@@ -40,7 +40,7 @@ public class EnumParser<T extends Enum<T>> implements EnumFactParser<T> {
 	}
 
 	@Override
-	public RatedFact<T> parse(final String rawValue) {
+	public RatedFact<T> parse(final String rawValue, final FactParseContext context) {
 		for (final T constant : enumType.getEnumConstants()) {
 			if (matcher.test(constant, rawValue)) {
 				return RatedFact.exact(constant);

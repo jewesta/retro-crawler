@@ -3,6 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.FunctionalConditionParser;
@@ -16,8 +17,8 @@ public final class CollectionFunctionalConditionParser implements FactParser<Fun
 	private final FunctionalConditionParser delegate = new FunctionalConditionParser();
 
 	@Override
-	public RatedFact<FunctionalCondition> parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : canonical(rawValue));
+	public RatedFact<FunctionalCondition> parse(final String rawValue, final FactParseContext context) {
+		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 
 	private static String canonical(final String rawValue) {

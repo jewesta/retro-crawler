@@ -1,5 +1,6 @@
 package com.retrocrawler.model.identifier;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,7 +33,7 @@ class NintendoGameBoyCartridgeCatalogTest {
 
 		final NintendoGameBoyCartridgeCodeParser parser = new NintendoGameBoyCartridgeCodeParser(catalog);
 		for (final NintendoGameBoyCartridgeCode code : catalog.codes()) {
-			assertEquals(Confidence.EXACT, parser.parse(code.value()).confidence(), code::value);
+			assertEquals(Confidence.EXACT, parser.parse(code.value(), CONTEXT).confidence(), code::value);
 		}
 	}
 

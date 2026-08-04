@@ -1,5 +1,6 @@
 package com.retrocrawler.model.measurement;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,11 +19,15 @@ class LengthTest {
 	void parsesMetricAndImperialMeasurementsWithoutAssigningARole() {
 		final LengthParser parser = new LengthParser();
 
-		assertEquals(new Length(new BigDecimal("1.25"), Unit.MILLIMETER), parser.parse("1,25mm").value().orElseThrow());
-		assertEquals(new Length(new BigDecimal("50"), Unit.CENTIMETER), parser.parse("50 cm").value().orElseThrow());
-		assertEquals(new Length(new BigDecimal("2"), Unit.METER), parser.parse("2m").value().orElseThrow());
-		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH), parser.parse("2,5\"").value().orElseThrow());
-		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH), parser.parse("2.5 inches").value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("1.25"), Unit.MILLIMETER),
+				parser.parse("1,25mm", CONTEXT).value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("50"), Unit.CENTIMETER),
+				parser.parse("50 cm", CONTEXT).value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("2"), Unit.METER), parser.parse("2m", CONTEXT).value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
+				parser.parse("2,5\"", CONTEXT).value().orElseThrow());
+		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
+				parser.parse("2.5 inches", CONTEXT).value().orElseThrow());
 	}
 
 	@Test
@@ -44,7 +49,7 @@ class LengthTest {
 		for (final String invalid : new String[] {
 				"2.5", "0mm", "-2m", "50MB"
 		}) {
-			assertEquals(Confidence.NONE, parser.parse(invalid).confidence(), invalid);
+			assertEquals(Confidence.NONE, parser.parse(invalid, CONTEXT).confidence(), invalid);
 		}
 		assertFalse(LengthParser.parseValue(null).isPresent());
 		assertThrows(IllegalArgumentException.class, () -> new Length(BigDecimal.ZERO, Unit.MILLIMETER));

@@ -1,5 +1,6 @@
 package com.retrocrawler.model.temporal;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -22,21 +23,22 @@ class DateMarkingParserTest {
 	void preservesThePrecisionOfCanonicalIsoMarkings() {
 		final DateMarkingParser parser = new DateMarkingParser(DURING_2026);
 
-		assertEquals(DateMarking.of(Year.of(1994)), parser.parse("1994").value().orElseThrow());
-		assertEquals(Confidence.STRONG, parser.parse("1994").confidence());
-		assertEquals(DateMarking.of(YearMonth.of(1994, 5)), parser.parse("1994-05").value().orElseThrow());
-		assertEquals(DateMarking.of(LocalDate.of(1994, 5, 12)), parser.parse("1994-05-12").value().orElseThrow());
-		assertEquals(DateMarking.of(new YearWeek(1994, 5)), parser.parse("1994-W05").value().orElseThrow());
-		assertEquals(DateMarking.Precision.MONTH, parser.parse("1994-05").value().orElseThrow().precision());
-		assertEquals(DateMarking.Precision.WEEK, parser.parse("1994-W05").value().orElseThrow().precision());
+		assertEquals(DateMarking.of(Year.of(1994)), parser.parse("1994", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.STRONG, parser.parse("1994", CONTEXT).confidence());
+		assertEquals(DateMarking.of(YearMonth.of(1994, 5)), parser.parse("1994-05", CONTEXT).value().orElseThrow());
+		assertEquals(DateMarking.of(LocalDate.of(1994, 5, 12)),
+				parser.parse("1994-05-12", CONTEXT).value().orElseThrow());
+		assertEquals(DateMarking.of(new YearWeek(1994, 5)), parser.parse("1994-W05", CONTEXT).value().orElseThrow());
+		assertEquals(DateMarking.Precision.MONTH, parser.parse("1994-05", CONTEXT).value().orElseThrow().precision());
+		assertEquals(DateMarking.Precision.WEEK, parser.parse("1994-W05", CONTEXT).value().orElseThrow().precision());
 	}
 
 	@Test
 	void distinguishesMonthsFromWeeksAndRejectsNoncanonicalOrInvalidDates() {
 		final DateMarkingParser parser = new DateMarkingParser(DURING_2026);
 
-		assertEquals("1994-05", parser.parse("1994-05").value().orElseThrow().toString());
-		assertEquals("1994-W05", parser.parse("1994-W05").value().orElseThrow().toString());
+		assertEquals("1994-05", parser.parse("1994-05", CONTEXT).value().orElseThrow().toString());
+		assertEquals("1994-W05", parser.parse("1994-W05", CONTEXT).value().orElseThrow().toString());
 		for (final String invalid : new String[] {
 				"1994-KW05",
 				"KW05 1994",
@@ -49,7 +51,7 @@ class DateMarkingParserTest {
 				"2026-08-03",
 				"2026-W32"
 		}) {
-			assertEquals(Confidence.NONE, parser.parse(invalid).confidence(), invalid);
+			assertEquals(Confidence.NONE, parser.parse(invalid, CONTEXT).confidence(), invalid);
 		}
 	}
 

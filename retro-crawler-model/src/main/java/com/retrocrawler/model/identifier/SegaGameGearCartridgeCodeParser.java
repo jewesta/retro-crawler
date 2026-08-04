@@ -3,12 +3,13 @@ package com.retrocrawler.model.identifier;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class SegaGameGearCartridgeCodeParser implements FactParser<SegaGameGearCartridgeCode> {
 
 	@Override
-	public RatedFact<SegaGameGearCartridgeCode> parse(final String rawValue) {
+	public RatedFact<SegaGameGearCartridgeCode> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

@@ -1,5 +1,6 @@
 package com.retrocrawler.model.identifier;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
@@ -16,9 +17,9 @@ class PlayStationPortableDiscIdTest {
 		final PlayStationPortableDiscId european = new PlayStationPortableDiscId(PlayStationPortableDiscPrefix.ULES,
 				"01234");
 
-		assertEquals(european, parser.parse("ules-01234").value().orElseThrow());
-		assertEquals(european, parser.parse("ULES 01234").value().orElseThrow());
-		assertEquals(european, parser.parse("ULES01234").value().orElseThrow());
+		assertEquals(european, parser.parse("ules-01234", CONTEXT).value().orElseThrow());
+		assertEquals(european, parser.parse("ULES 01234", CONTEXT).value().orElseThrow());
+		assertEquals(european, parser.parse("ULES01234", CONTEXT).value().orElseThrow());
 		assertEquals("ULES-01234", european.toString());
 		assertEquals("ULES01234", european.toCompactString());
 		assertEquals(PlayStationPortableMarket.EUROPE, european.prefix().market());
@@ -34,12 +35,12 @@ class PlayStationPortableDiscIdTest {
 		assertEquals(PlayStationPortableMarket.KOREA, parsed("ULKS-00001").prefix().market());
 		assertEquals(PlayStationPortableMarket.ASIA, parsed("UCAS-00001").prefix().market());
 
-		assertEquals(Confidence.NONE, parser.parse("CUSA-00001").confidence());
-		assertEquals(Confidence.NONE, parser.parse("ULES-1234").confidence());
-		assertEquals(Confidence.NONE, parser.parse("ULES01234DATA").confidence());
+		assertEquals(Confidence.NONE, parser.parse("CUSA-00001", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("ULES-1234", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("ULES01234DATA", CONTEXT).confidence());
 	}
 
 	private PlayStationPortableDiscId parsed(final String rawValue) {
-		return assertInstanceOf(PlayStationPortableDiscId.class, parser.parse(rawValue).value().orElseThrow());
+		return assertInstanceOf(PlayStationPortableDiscId.class, parser.parse(rawValue, CONTEXT).value().orElseThrow());
 	}
 }

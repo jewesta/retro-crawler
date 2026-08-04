@@ -3,6 +3,7 @@ package com.retrocrawler.model.appearance;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /**
@@ -12,7 +13,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class ColorParser implements FactParser<Color> {
 
 	@Override
-	public RatedFact<Color> parse(final String rawValue) {
+	public RatedFact<Color> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

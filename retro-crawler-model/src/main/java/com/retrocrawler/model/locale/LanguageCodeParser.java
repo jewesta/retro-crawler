@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class LanguageCodeParser implements FactParser<LanguageCode> {
@@ -15,7 +16,7 @@ public final class LanguageCodeParser implements FactParser<LanguageCode> {
 			.toUnmodifiableMap(LanguageCodeParser::englishName, Function.identity(), (first, ignored) -> first));
 
 	@Override
-	public RatedFact<LanguageCode> parse(final String rawValue) {
+	public RatedFact<LanguageCode> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

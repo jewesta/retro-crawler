@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection.facts;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.measurement.Length;
 import com.retrocrawler.model.measurement.LengthParser;
@@ -11,7 +12,7 @@ public final class CollectionLengthParser implements FactParser<Length> {
 	private final LengthParser delegate = new LengthParser();
 
 	@Override
-	public RatedFact<Length> parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : rawValue.replace('\uF020', '"'));
+	public RatedFact<Length> parse(final String rawValue, final FactParseContext context) {
+		return delegate.parse(rawValue == null ? null : rawValue.replace('\uF020', '"'), context);
 	}
 }

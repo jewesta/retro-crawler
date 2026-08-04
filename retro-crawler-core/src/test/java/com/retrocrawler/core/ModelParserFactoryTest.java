@@ -28,12 +28,17 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 
 class ModelParserFactoryTest {
+
+	private static final Path ARCHIVE_ROOT = Path.of("/archive");
+	private static final FactParseContext CONTEXT = FactParseContext.located(ARCHIVE_ROOT,
+			ARCHIVE_ROOT.resolve("gear"));
 
 	@BeforeEach
 	void resetParserObservations() {
@@ -60,7 +65,7 @@ class ModelParserFactoryTest {
 		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
 
 		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "custom-on")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 
@@ -117,7 +122,7 @@ class ModelParserFactoryTest {
 		assertEquals(0, FactorySelectedEnumParser.instances);
 
 		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "factory-value")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 
@@ -143,8 +148,8 @@ class ModelParserFactoryTest {
 
 	@Test
 	void rejectsAFactoryForTheAutoDetectionMarkerItself() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.builder().parserFactory(AutoDetectParser.class, key -> RatedFact::exact));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.builder()
+				.parserFactory(AutoDetectParser.class, key -> (rawValue, context) -> RatedFact.exact(rawValue)));
 
 		assertTrue(failure.getMessage().contains(AutoDetectParser.class.getSimpleName()));
 	}
@@ -267,7 +272,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}
@@ -281,7 +286,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<Integer> parse(final String rawValue) {
+		public RatedFact<Integer> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(Integer.valueOf(rawValue));
 		}
 	}
@@ -295,7 +300,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue) {
+		public RatedFact<Path> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(Path.of(rawValue));
 		}
 	}
@@ -319,7 +324,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<EnumState> parse(final String rawValue) {
+		public RatedFact<EnumState> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.none("The builder factory should replace this parser.");
 		}
 	}
@@ -327,7 +332,7 @@ class ModelParserFactoryTest {
 	private static final class FactoryReplacementEnumParser implements FactParser<EnumState> {
 
 		@Override
-		public RatedFact<EnumState> parse(final String rawValue) {
+		public RatedFact<EnumState> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(EnumState.ON);
 		}
 	}
@@ -335,7 +340,7 @@ class ModelParserFactoryTest {
 	private record KeyedStringParser(String key) implements FactParser<String> {
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}
@@ -343,7 +348,7 @@ class ModelParserFactoryTest {
 	private record KeyedIntegerParser(String key) implements FactParser<Integer> {
 
 		@Override
-		public RatedFact<Integer> parse(final String rawValue) {
+		public RatedFact<Integer> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(Integer.valueOf(rawValue));
 		}
 	}
@@ -351,7 +356,7 @@ class ModelParserFactoryTest {
 	private record KeyedPathParser(String key) implements FactParser<Path> {
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue) {
+		public RatedFact<Path> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(Path.of(rawValue));
 		}
 	}
@@ -365,7 +370,7 @@ class ModelParserFactoryTest {
 		}
 
 		@Override
-		public RatedFact<String> parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
 			return RatedFact.exact(key + ":" + rawValue);
 		}
 	}

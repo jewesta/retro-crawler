@@ -15,14 +15,6 @@ public interface FactParser<T> {
 	 * {@link Confidence}. If the clue is keyed (not anonymous) then it is
 	 * usually much more plausible that the value meets our expectations.
 	 */
-	RatedFact<T> parse(String rawValue);
-
-	/**
-	 * Parses one raw value with its runtime archive location. Parsers whose
-	 * interpretation is location-independent inherit the traditional behavior.
-	 */
-	default RatedFact<T> parse(final String rawValue, final FactParseContext context) {
-		return parse(rawValue);
-	}
+	RatedFact<T> parse(String rawValue, FactParseContext context);
 
 }

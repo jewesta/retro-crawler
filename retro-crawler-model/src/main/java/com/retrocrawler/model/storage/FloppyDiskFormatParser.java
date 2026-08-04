@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
@@ -16,7 +17,7 @@ public final class FloppyDiskFormatParser implements FactParser<FloppyDiskFormat
 	private static final Pattern NAMED_COMBINED = Pattern.compile("^(SS|DS)(SD|DD|QD|HD|ED)$");
 
 	@Override
-	public RatedFact<FloppyDiskFormat> parse(final String rawValue) {
+	public RatedFact<FloppyDiskFormat> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

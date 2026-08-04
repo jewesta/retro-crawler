@@ -1,12 +1,13 @@
 package com.retrocrawler.model.software;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 public final class VersionParser implements FactParser<Version> {
 
 	@Override
-	public RatedFact<Version> parse(final String rawValue) {
+	public RatedFact<Version> parse(final String rawValue, final FactParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

@@ -15,14 +15,6 @@ class PathParserTest {
 	private final PathParser parser = new PathParser();
 
 	@Test
-	void retainsARelativePathDuringDetachedResolution() {
-		final RatedFact<Path> fact = parser.parse("shelf/gear/front.jpeg");
-
-		assertEquals(Confidence.EXACT, fact.confidence());
-		assertEquals(Path.of("shelf/gear/front.jpeg"), fact.value().orElseThrow());
-	}
-
-	@Test
 	void bindsARelativePathToTheCurrentlyConfiguredArchiveRoot() {
 		final Path root = Path.of("/mounted/archive");
 		final FactParseContext context = FactParseContext.located(root, root.resolve("shelf/gear"));
@@ -35,7 +27,10 @@ class PathParserTest {
 
 	@Test
 	void rejectsAbsoluteAndEscapingPaths() {
-		assertTrue(parser.parse("/outside/front.jpeg").value().isEmpty());
-		assertTrue(parser.parse("../outside/front.jpeg").value().isEmpty());
+		final Path root = Path.of("/mounted/archive");
+		final FactParseContext context = FactParseContext.located(root, root.resolve("shelf/gear"));
+
+		assertTrue(parser.parse("/outside/front.jpeg", context).value().isEmpty());
+		assertTrue(parser.parse("../outside/front.jpeg", context).value().isEmpty());
 	}
 }

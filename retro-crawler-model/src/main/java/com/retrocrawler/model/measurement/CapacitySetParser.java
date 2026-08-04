@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /**
@@ -18,7 +19,7 @@ public final class CapacitySetParser implements FactParser<CapacitySet> {
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<CapacitySet> parse(final String rawValue) {
+	public RatedFact<CapacitySet> parse(final String rawValue, final FactParseContext context) {
 		return parseValue(rawValue).map(RatedFact::exact).orElseGet(
 				() -> RatedFact.none("Expected '<member count> x <capacity per member>' or the reverse order."));
 	}

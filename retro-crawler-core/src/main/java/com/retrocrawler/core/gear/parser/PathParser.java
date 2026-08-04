@@ -17,11 +17,6 @@ import com.retrocrawler.core.gear.RatedFact;
 public final class PathParser implements FactParser<Path> {
 
 	@Override
-	public RatedFact<Path> parse(final String rawValue) {
-		return parse(rawValue, FactParseContext.detached());
-	}
-
-	@Override
 	public RatedFact<Path> parse(final String rawValue, final FactParseContext context) {
 		Objects.requireNonNull(context, "context");
 		if (rawValue == null || rawValue.isBlank()) {

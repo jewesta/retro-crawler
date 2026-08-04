@@ -90,6 +90,16 @@ adapters should likewise remain outside `retro-crawler-core`.
 - Update the issue note as work progresses; it is a working design record, not
   only a summary written after implementation.
 
+## Issue Worktrees
+
+- Implement each issue in a dedicated sibling Git worktree unless the user
+  explicitly requests a different workflow.
+- Name the worktree directory `<repository-name>-issue-<issue_number>`, for
+  example `retro-crawler-issue-28`.
+- Create the worktree branch as `issues/Issue_<issue_number>` from `main`.
+- Keep the primary repository checkout on its existing branch; do not switch it
+  to the issue branch merely to create the worktree.
+
 ## Build and Verification
 
 - The project targets Java 21 and is built as a Maven multi-module reactor.

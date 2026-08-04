@@ -1,5 +1,6 @@
 package com.retrocrawler.model.organization;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,11 +35,12 @@ class ManufacturerCatalogTest {
 	void parserReturnsExactFactsOnlyForUnambiguousCatalogNames() {
 		final ManufacturerParser parser = new ManufacturerParser();
 
-		assertEquals(new Manufacturer("ASUS", "ASUSTeK Computer Inc."), parser.parse("Asus").value().orElseThrow());
-		assertEquals(Confidence.EXACT, parser.parse("ASUSTeK Computer Inc.").confidence());
-		assertEquals(Confidence.NONE, parser.parse("Unknown Industries").confidence());
-		assertEquals(Confidence.NONE, parser.parse(" ").confidence());
-		assertEquals(Confidence.NONE, parser.parse(null).confidence());
+		assertEquals(new Manufacturer("ASUS", "ASUSTeK Computer Inc."),
+				parser.parse("Asus", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.EXACT, parser.parse("ASUSTeK Computer Inc.", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("Unknown Industries", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse(" ", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse(null, CONTEXT).confidence());
 	}
 
 	@Test
@@ -49,12 +51,12 @@ class ManufacturerCatalogTest {
 		final ManufacturerParser parser = new ManufacturerParser(external);
 
 		assertEquals(2, external.findByName("Umax").size());
-		assertEquals(Confidence.NONE, parser.parse("Umax").confidence());
-		assertTrue(parser.parse("Umax").explanation().orElseThrow().contains("ambiguous"));
-		final Manufacturer conQuest = parser.parse("ConQuest Entertainment a. s.").value().orElseThrow();
+		assertEquals(Confidence.NONE, parser.parse("Umax", CONTEXT).confidence());
+		assertTrue(parser.parse("Umax", CONTEXT).explanation().orElseThrow().contains("ambiguous"));
+		final Manufacturer conQuest = parser.parse("ConQuest Entertainment a. s.", CONTEXT).value().orElseThrow();
 		assertEquals("ConQuest Entertainment a. s.", conQuest.fullName().orElseThrow());
-		assertEquals(new Manufacturer("Solo"), parser.parse("Solo").value().orElseThrow());
-		final Manufacturer linked = parser.parse("Umax Technologies, Inc.").value().orElseThrow();
+		assertEquals(new Manufacturer("Solo"), parser.parse("Solo", CONTEXT).value().orElseThrow());
+		final Manufacturer linked = parser.parse("Umax Technologies, Inc.", CONTEXT).value().orElseThrow();
 		assertEquals("https://theretroweb.com/manufacturers/2573",
 				linked.theRetroWebReference().orElseThrow().lookupUri().toString());
 	}
