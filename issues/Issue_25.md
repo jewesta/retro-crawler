@@ -1,202 +1,193 @@
-# Issue 25: External, Configurable Fact Catalogs
+# Issue 25: Make Default Fact Parsers User Configurable
 
 ## Context
 
-RetroCrawler must keep substantial third-party catalog data out of its public
-repository unless that data is explicitly licensed for redistribution. The
-personal collection module may eventually move to a private repository, but
-the framework should first make catalog data external, user-editable, and
-replaceable without changing parser code.
+`@RetroFact` selects `AutoDetectParser` when no parser is declared explicitly.
+`GearResolverFactory` currently interprets that marker through a private,
+hard-coded `autoDetectParser(...)` method. The built-in selection is based on
+the declared field type and currently covers:
 
-The existing Nintendo Game Boy cartridge catalog is permissively licensed and
-can remain bundled. It provides the first real migration target for the generic
-catalog mechanism.
+- `String` through `StringParser`;
+- `int` and `Integer` through `IntParser`;
+- `Path` and collections of `Path` through `PathParser`;
+- enum types through a type-specific `EnumParser`.
+
+The method has carried a TODO since the initial commit to turn this behavior
+into a configurable factory so users can supply their own default parsers. The
+GitHub issue was created immediately after `PathParser` was added to the
+hard-coded defaults, which confirms that this auto-detection path is the
+issue's subject.
+
+Field-level `@RetroFact(parser = ...)` already supports explicit parser
+selection. This issue concerns what happens only when a fact leaves its parser
+at the `AutoDetectParser` default.
 
 ## Intent
 
-- Define one strict, lightweight TSV catalog format in the core.
-- Load a catalog only when a fact parser that uses it is actually selected by a
-  discovered `@RetroFact`.
-- Give catalog-backed fact parsers a standard implementation and immutable
-  catalog access.
-- Let a collection override parser defaults through annotations or runtime
-  model configuration.
-- Keep external catalogs and other crawler-owned files below a configurable
-  collection working directory.
-- Separate collection identity and locations from clue-finder configuration.
+- Extract automatic parser selection from `GearResolverFactory` into a public,
+  reusable extension point.
+- Preserve the existing built-in parser choices as the default behavior.
+- Let a collection or application replace or extend those choices through
+  model construction.
+- Keep an explicitly selected field-level parser authoritative.
+- Support decisions that require the fact key, raw field type, and generic
+  element type rather than limiting configuration to a simple raw-type map.
+- Keep parser selection deterministic and report actionable failures when no
+  default parser supports a fact declaration.
 
-## Agreed Public Vocabulary
+## Boundary With Fact Catalog Configuration
+
+Catalog selection is a separate concern. A catalog does not select a fact
+parser; it supplies data to a `CatalogFactParser` that a field has already
+selected.
+
+The catalog API has therefore been made explicit while preparing this issue:
+
+- `@RetroFactCatalog` replaces the misleading `@RetroFactParser` name.
+- Its `parser` member accepts only `CatalogFactParser<?, ?>` implementations.
+- `FactCatalogConfiguration` replaces `FactParserConfiguration`.
+- `Model.Builder.factCatalog(...)` replaces `factParser(...)`.
+
+These names reserve parser-default vocabulary for the extension point that
+Issue 25 will introduce and prevent catalog configuration from appearing to
+participate in parser selection.
+
+## Typed Parser Contract
+
+The parser SPI groundwork is independent of selecting default parsers and has
+been completed first:
+
+- `FactParser<T>` identifies the type of one interpreted fact value and returns
+  `RatedFact<T>`.
+- `RatedFact<T>` represents zero or one parsed value. A successful result
+  contains one `T`; a `NONE` result contains none.
+- One parser invocation interprets exactly one raw clue value. Only
+  `FactFinder` aggregates the independently parsed raw values into the final
+  `Fact` value set.
+- The `exact`, `strong`, and `weak` factories therefore accept one `T`. There
+  are no collection-valued parser-result factories. In particular, a
+  `FactParser<Color>` cannot accidentally return a `Set<Color>` and ask the
+  framework to flatten it.
+- `CatalogFactParser<K, T>` carries both its catalog-key type and parsed value
+  type.
+- Framework locations that intentionally aggregate unrelated parsers use
+  `FactParser<?>` and `RatedFact<?>`; concrete parsers retain their exact result
+  type.
+
+This phase does not change `AutoDetectParser` selection or introduce any
+default-parser configuration. It only gives that future extension point a
+typed parser contract to expose.
+
+## Decided Selection and Construction Model
+
+Parser selection and parser construction are separate:
+
+- `@RetroFact(parser = ...)` explicitly selects a parser class.
+- For a fact that retains `AutoDetectParser`, `@RetroFactDefaultParser` selects
+  the parser class for each supported value type. Its members are typed, for
+  example `Class<? extends FactParser<String>> string()`, and default to the
+  current built-in implementations.
+- Fixed-type defaults do not need marker roles such as `DefaultStringParser`.
+  Enum defaults use the specialized `EnumFactParser<T>` role because one
+  annotation member must accept parsers for different concrete enum types.
+  Its deliberately raw `Class<? extends EnumFactParser>` boundary is narrowed
+  using the enum type declared by each fact field.
+- The framework passes that declared enum type to a public `Class` constructor
+  when constructing an annotation-selected enum parser. It trusts the parser's
+  declared contract to return that enum type.
+- After selecting a concrete parser class, explicit and automatically selected
+  parsers otherwise use the same construction path.
+- `Model.Builder` can register a per-key construction factory for any selected
+  parser class. The public shape is:
+
+  ```java
+  <T> Builder parserFactory(
+      Class<? extends FactParser<T>> parserType,
+      Function<String, ? extends FactParser<T>> factory)
+  ```
+
+- The factory receives the effective RetroCrawler fact key. It is queried once
+  per effective key, and the resulting parser is retained by that key's
+  `FactFinder`.
+- A factory may return a different implementation of `FactParser<T>` than the
+  selected class. This allows runtime construction and replacement without
+  weakening the parsed-value type.
+- If no factory is registered for the selected class, framework construction
+  falls back to the class's supported reflective construction path.
+
+For example, both a default-selected and an explicitly selected
+`StringParser.class` are constructed through the same registration:
 
 ```java
-@RetroCollection(
-    id = "my_collection",
-    name = "My Collection",
-    locations = { "..." },
-    workingDirectory = "..."
-)
-@RetroClues(
-    fromFolderName = BracketClueFinder.class,
-    fromFileNames = { StandardImageClueFinder.class },
-    fromFileContents = { RetroMarkdownClueFinder.class }
-)
-@RetroFactParser(
-    parser = ManufacturerFactParser.class,
-    catalogFile = "manufacturers.tsv"
-)
-public final class MyCollection {
-}
+.parserFactory(StringParser.class, MyStringParser::new)
 ```
 
-- `@RetroCollection` replaces `@RetroArchive` and is present on exactly one
-  type per `Model`.
-- `@RetroClues` owns all crawl-time clue-finder configuration.
-- `PathNameClueFinder` becomes `FolderNameClueFinder`, because it receives only
-  the current folder name.
-- `@RetroFactParser` is repeatable and configures a parser for the collection.
-  It does not select or instantiate that parser.
-- Field-level `@RetroFact(parser = ...)` remains the parser-selection point.
+`parserFactory(...)` is intentionally about construction. Parser selection
+remains annotation-driven.
 
-## Catalog Format
+## Required Precedence
 
-The generic core type is `Catalog<K extends Enum<K>>`.
+1. A parser explicitly declared by `@RetroFact(parser = ...)`.
+2. The configured default parser class for a fact that retains
+   `AutoDetectParser`.
+3. The framework's built-in default parser class.
+4. For the selected class, a builder-registered construction factory.
+5. Framework reflective construction when no factory is registered.
+6. An actionable failure when selection or construction is unsupported.
 
-- UTF-8 tab-separated text.
-- Any number of `#` comment lines and blank lines.
-- The first non-comment line is the header.
-- Header cells are exactly the enum constant names.
-- Header order is arbitrary.
-- Every enum key must appear exactly once.
-- Missing, unknown, and duplicate headers are rejected.
-- Every data row must have exactly the header's number of cells.
-- Trailing empty cells are retained.
-- Catalog rows retain raw strings; domain parsers perform typed interpretation.
+An explicit field-level parser remains authoritative as the selected parser
+class. Builder configuration may customize how that selected class is
+constructed, just as it may for a default-selected class.
 
-## Parser Lifecycle
+## Open Design Questions
 
-`CatalogFactParser<K>` extends the normal `FactParser` SPI and exposes its
-`Catalog<K>`. `AbstractCatalogFactParser<K>` loads that catalog through a
-parser-scoped `CatalogLoader` and supplies the getter.
-
-The framework continues to own parser construction. A catalog parser used by a
-discovered fact is constructed with a `CatalogLoader`. A parser merely present
-on the classpath, in an annotation, or in builder configuration is not
-instantiated and causes no catalog access.
-
-Source precedence is:
-
-1. Runtime `Model.Builder` parser configuration.
-2. Collection-level `@RetroFactParser` configuration.
-3. The parser's declared default catalog.
-
-A configured catalog file is relative to `<workingDirectory>/catalogs`.
-Framework parsers may bundle their default catalog resource. If no bundled
-default exists, the loader can use the parser's default filename below the
-catalog directory. Missing required configuration fails during model creation
-once the corresponding parser is actually used.
-
-## Model Construction
-
-`Model.Builder` will own inputs needed before parser construction:
-
-- discovered or explicitly supplied model types;
-- runtime collection locations;
-- runtime working directory;
-- runtime fact-parser configuration.
-
-Annotation values are portable defaults. Builder values override them. The
-existing `RetroCrawler.Builder` continues to compose a completed model with a
-repository and crawl-planning behavior.
-
-The working directory is collection-wide and may eventually contain:
-
-```text
-<workingDirectory>/
-  catalogs/
-  cache/
-  reports/
-```
-
-Supplying it must not eagerly create, scan, or access those directories.
-
-## Clue/Fact Lifecycle
-
-- Changing `@RetroClues` changes observed evidence and requires recrawling.
-- Changing a fact parser or its catalog reinterprets the existing clue archive
-  and does not require recrawling.
-- Catalog rows and resolved facts never enter the persisted clue archive.
+- Whether configured catalog-backed defaults should use the same
+  `CatalogLoader` construction path as explicitly selected catalog parsers.
 
 ## Progress
 
-- [x] Design agreed.
-- [x] Collection and clue annotation migration.
-- [x] Generic catalog infrastructure.
-- [x] Catalog-backed parser construction.
-- [x] Model builder and override precedence.
-- [x] Game Boy catalog migration.
-- [x] Tests and documentation.
-
-## Implemented State
-
-The public API now contains:
-
-- `@RetroCollection`, `@RetroClues`, and repeatable `@RetroFactParser`.
-- `FolderNameClueFinder` and `BlindFolderNameClueFinder`.
-- `Catalog<K>`, its immutable key-addressed rows, and strict TSV validation.
-- `CatalogLoader`, `CatalogFactParser<K>`, and
-  `AbstractCatalogFactParser<K>`.
-- `FactParserConfiguration` and `Model.Builder` runtime overrides.
-
-`GearResolverFactory` recognizes catalog parsers and constructs them through a
-public `CatalogLoader` constructor. Plain fact parsers retain their public
-no-argument construction contract. Configuring `catalogFile` on a used plain
-parser is rejected explicitly.
-
-The Game Boy parser now extends `AbstractCatalogFactParser` and its typed lookup
-view is built from a generic enum-keyed `Catalog`. Direct no-argument parser use
-continues to load its licensed bundled snapshot, while framework construction
-uses the standard loader and can replace it with an external file.
-
-The demo and collection adapter use the new collection/clue annotations. The
-personal bracket parser is now `BracketClueFinder`; no private paths or catalog
-data were added.
+- [x] Recovered and documented the issue's original intent.
+- [x] Separated fact-catalog configuration vocabulary from parser selection.
+- [x] Restricted catalog overrides to `CatalogFactParser<?, ?>`
+      implementations.
+- [x] Made `FactParser<T>` and `RatedFact<T>` type-safe for one parsed value per
+      raw observation.
+- [x] Restored `FactFinder` as the sole aggregation boundary and removed
+      collection-valued parser results.
+- [x] Replaced the collection's compound color marker with separate comma-
+      delimited clue values.
+- [x] Migrated built-in, shared-model, demo, and collection parsers to typed
+      results.
+- [x] Agreed on annotation-based default-class selection and general per-key
+      builder factories for selected parser classes.
+- [x] Implemented `@RetroFactDefaultParser` for string, integer, and path
+      defaults, including collections of paths.
+- [x] Implemented the enum default through `EnumFactParser<T>`, with the
+      concrete field enum supplied during reflective parser construction.
+- [x] Implemented typed `Model.Builder.parserFactory(...)` construction for
+      both default-selected and explicitly selected parser classes.
+- [x] Added focused tests for annotation fallback, per-key factories, generic
+      replacement, explicit selection, duplicate registration, and null
+      results.
+- [ ] Update public documentation with configuration examples.
 
 ## Verification
 
-- `mvn -pl retro-crawler-core test`: 124 tests passed.
-- `mvn -pl retro-crawler-model -am test`: core and shared-model tests passed.
-- `mvn test`: all eight reactor modules passed after the API migration.
-- `mvn clean install`: all eight modules compiled, tested, packaged, and
-  installed successfully from a clean build.
+After the typed parser-contract refactor:
 
-## Manufacturer Catalog Follow-up
+- `run/prettify.sh --apply ...`: changed Java sources processed.
+- `mvn -pl retro-crawler-core,retro-crawler-model,retro-crawler-mycollection -am test`:
+  250 tests passed.
+- `mvn clean install`: all seven reactor modules and 253 tests passed.
 
-The first private catalog candidate is a manufacturer directory. Its standard
-model keeps the manufacturer identity readable while retaining a typed external
-reference needed by consumers:
+After implementing configurable fixed defaults and per-key parser factories:
 
-- `Manufacturer` contains a usual name, an optional full corporate name, and an
-  optional `TheRetroWebReference` restricted to the manufacturer category.
-- The strict catalog schema contains `name`, `full_name`, and `trw_id`; the ID
-  cell may be empty. This is a typed schema field rather than arbitrary custom
-  metadata.
-- A resolved manufacturer therefore retains enough information for a UI to
-  render the numeric TRW deep link through `TheRetroWebReference.lookupUri()`.
-- Logo paths and source URLs remain in private acquisition provenance. Unlike
-  the stable TRW identifier, they describe local files or acquisition context.
-- `ManufacturerParser` matches short and full names exactly while ignoring case
-  and surrounding whitespace. If one observed name maps to several catalog
-  entries, resolution remains explicitly ambiguous instead of choosing a row.
-- The bundled catalog contains one independently sourced ASUS identity. The
-  substantial TRW-derived snapshot remains a local override and is not added to
-  the repository.
+- `run/prettify.sh --apply ...`: all changed Java sources processed.
+- `mvn -pl retro-crawler-core test`: 146 tests passed.
+- `mvn clean install`: all seven reactor modules and 259 tests passed.
 
-The private snapshot was transformed into the strict schema with its TRW IDs
-but without its logo column. All 2,913 rows load successfully; ASUS resolves
-uniquely with a linkable reference, while the two distinct `Umax` rows preserve
-their shared short-name ambiguity.
+After enabling the configurable enum default:
 
-Follow-up verification:
-
-- `mvn -pl retro-crawler-model -am test`: 124 core and 61 model tests passed.
-- `mvn test`: all eight reactor modules passed.
-- `mvn clean install`: all eight reactor modules packaged and installed successfully.
+- `run/prettify.sh --apply ...`: all changed Java sources processed.
+- `mvn -pl retro-crawler-core test`: 148 tests passed.
+- `mvn clean install`: all seven reactor modules and 261 tests passed.

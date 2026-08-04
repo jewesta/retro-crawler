@@ -1,42 +1,24 @@
 package com.retrocrawler.model.appearance;
 
-import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /**
  * Parses portable English names for visible colors. Collection-specific
- * languages and compound spellings belong in collection adapters.
+ * languages belong in collection adapters.
  */
-public final class ColorParser implements FactParser {
+public final class ColorParser implements FactParser<Color> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Color> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
 
-		final Color direct = parseSingle(rawValue);
-		if (direct != null) {
-			return RatedFact.exact(direct);
-		}
-
-		final String[] components = rawValue.trim().split("\\s*[/\\-]\\s*", -1);
-		if (components.length < 2) {
-			return noMatch();
-		}
-		final Set<Color> colors = new LinkedHashSet<>();
-		for (final String component : components) {
-			final Color color = parseSingle(component);
-			if (color == null) {
-				return noMatch();
-			}
-			colors.add(color);
-		}
-		return colors.size() == 1 ? RatedFact.exact(colors.iterator().next()) : RatedFact.exact(Set.copyOf(colors));
+		final Color color = parseSingle(rawValue);
+		return color == null ? noMatch() : RatedFact.exact(color);
 	}
 
 	private static Color parseSingle(final String rawValue) {
@@ -65,7 +47,7 @@ public final class ColorParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<Color> noMatch() {
 		return RatedFact.none("Expected a recognized named color.");
 	}
 }

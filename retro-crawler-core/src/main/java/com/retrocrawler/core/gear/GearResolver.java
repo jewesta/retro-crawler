@@ -150,7 +150,7 @@ public class GearResolver {
 	private BestAnonymousMatch considerAnonymousCandidate(final BestAnonymousMatch bestSoFar, final FactFinder finder,
 			final String raw, final FactParseContext parseContext) {
 
-		final RatedFact rated = finder.parse(raw, parseContext);
+		final RatedFact<?> rated = finder.parse(raw, parseContext);
 		final Confidence confidence = rated.confidence();
 		if (confidence == Confidence.NONE) {
 			return bestSoFar;

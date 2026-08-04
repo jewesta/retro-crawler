@@ -8,10 +8,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Parses canonical English packaging-origin observations.
  */
-public final class PackagingOriginParser implements FactParser {
+public final class PackagingOriginParser implements FactParser<PackagingOrigin> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<PackagingOrigin> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -22,7 +22,7 @@ public final class PackagingOriginParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<PackagingOrigin> noMatch() {
 		return RatedFact.none("Expected a recognized packaging origin.");
 	}
 }

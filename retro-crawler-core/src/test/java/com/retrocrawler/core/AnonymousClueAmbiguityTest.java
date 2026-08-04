@@ -84,18 +84,18 @@ class AnonymousClueAmbiguityTest {
 		}
 	}
 
-	public static final class FirstParser implements FactParser {
+	public static final class FirstParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return "overlap".equals(rawValue) ? RatedFact.exact("first") : RatedFact.none("Not the first meaning.");
 		}
 	}
 
-	public static final class SecondParser implements FactParser {
+	public static final class SecondParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue) {
 			return "overlap".equals(rawValue) ? RatedFact.exact("second") : RatedFact.none("Not the second meaning.");
 		}
 	}

@@ -5,10 +5,10 @@ import java.util.Locale;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-public final class ExpansionBusParser implements FactParser {
+public final class ExpansionBusParser implements FactParser<ExpansionBus> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<ExpansionBus> parse(final String rawValue) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a recognized expansion bus.");
 		}

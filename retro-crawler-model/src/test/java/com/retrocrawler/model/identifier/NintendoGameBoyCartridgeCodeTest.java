@@ -66,6 +66,6 @@ class NintendoGameBoyCartridgeCodeTest {
 	}
 
 	private NintendoGameBoyCartridgeCode parsed(final String value) {
-		return (NintendoGameBoyCartridgeCode) parser.parse(value).value().orElseThrow();
+		return parser.parse(value).value().orElseThrow();
 	}
 }

@@ -10,7 +10,7 @@ import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
 /** Parses canonical ISO week values such as {@code 1999-W18}. */
-public final class YearWeekParser implements FactParser {
+public final class YearWeekParser implements FactParser<YearWeek> {
 
 	private static final Pattern ISO_WEEK = Pattern.compile("(\\d{4})-W(\\d{2})");
 
@@ -25,7 +25,7 @@ public final class YearWeekParser implements FactParser {
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<YearWeek> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -50,7 +50,7 @@ public final class YearWeekParser implements FactParser {
 		return RatedFact.exact(value);
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<YearWeek> noMatch() {
 		return RatedFact.none("Expected an ISO week from 1950 through the current week.");
 	}
 }

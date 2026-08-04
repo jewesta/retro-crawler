@@ -5,10 +5,10 @@ import java.util.Locale;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-public final class SegaGameGearCartridgeCodeParser implements FactParser {
+public final class SegaGameGearCartridgeCodeParser implements FactParser<SegaGameGearCartridgeCode> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<SegaGameGearCartridgeCode> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -19,7 +19,7 @@ public final class SegaGameGearCartridgeCodeParser implements FactParser {
 		return RatedFact.exact(new SegaGameGearCartridgeCode(normalized));
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<SegaGameGearCartridgeCode> noMatch() {
 		return RatedFact.none("Expected a four-digit Sega Game Gear cartridge code, optionally prefixed by GG.");
 	}
 }

@@ -8,14 +8,14 @@ import java.util.regex.Pattern;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
 
-public final class HardDiskDriveFormFactorParser implements FactParser {
+public final class HardDiskDriveFormFactorParser implements FactParser<HardDiskDriveFormFactor> {
 
 	private static final Pattern FORM_FACTOR = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+	public RatedFact<HardDiskDriveFormFactor> parse(final String rawValue) {
+		return parseValue(rawValue).map(RatedFact::exact).orElseGet(
 				() -> RatedFact.none("Expected a recognized hard-disk-drive form factor with an inch unit."));
 	}
 

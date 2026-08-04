@@ -14,15 +14,15 @@ import com.retrocrawler.core.gear.RatedFact;
  * resolved against the root configured for that crawler. Detached resolution
  * retains a relative path.
  */
-public final class PathParser implements FactParser {
+public final class PathParser implements FactParser<Path> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Path> parse(final String rawValue) {
 		return parse(rawValue, FactParseContext.detached());
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<Path> parse(final String rawValue, final FactParseContext context) {
 		Objects.requireNonNull(context, "context");
 		if (rawValue == null || rawValue.isBlank()) {
 			return RatedFact.none("Expected a non-empty archive-relative path.");

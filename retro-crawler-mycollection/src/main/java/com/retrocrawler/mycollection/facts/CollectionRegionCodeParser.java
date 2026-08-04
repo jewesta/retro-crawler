@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.locale.RegionCodeParser;
 
 /**
@@ -13,14 +14,14 @@ import com.retrocrawler.model.locale.RegionCodeParser;
  * to their own parsers. The collection's historical {@code EU} spelling is
  * normalized to Nintendo's {@code EUR} European release-region code.
  */
-public final class CollectionRegionCodeParser implements FactParser {
+public final class CollectionRegionCodeParser implements FactParser<RegionCode> {
 
 	private static final Set<String> OBSERVED_REGION_MARKERS = Set.of("DE", "ES", "EU", "EUR", "FR", "IT", "JP", "US");
 
 	private final RegionCodeParser delegate = new RegionCodeParser();
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<RegionCode> parse(final String rawValue) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected an established collection region marker.");
 		}

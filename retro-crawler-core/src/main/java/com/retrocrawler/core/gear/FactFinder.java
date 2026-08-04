@@ -2,7 +2,6 @@ package com.retrocrawler.core.gear;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -17,7 +16,7 @@ public class FactFinder {
 
 	private final String key;
 
-	private final FactParser parser;
+	private final FactParser<?> parser;
 
 	private final Class<?> fieldType;
 
@@ -25,11 +24,11 @@ public class FactFinder {
 
 	private final boolean contextual;
 
-	public FactFinder(final String key, final FactParser parser, final Class<?> fieldType, final boolean strict) {
+	public FactFinder(final String key, final FactParser<?> parser, final Class<?> fieldType, final boolean strict) {
 		this(key, parser, fieldType, strict, false);
 	}
 
-	public FactFinder(final String key, final FactParser parser, final Class<?> fieldType, final boolean strict,
+	public FactFinder(final String key, final FactParser<?> parser, final Class<?> fieldType, final boolean strict,
 			final boolean contextual) {
 		this.key = Objects.requireNonNull(key, "key");
 		this.parser = Objects.requireNonNull(parser, "parser");
@@ -42,7 +41,7 @@ public class FactFinder {
 		return key;
 	}
 
-	public FactParser parser() {
+	public FactParser<?> parser() {
 		return parser;
 	}
 
@@ -75,36 +74,23 @@ public class FactFinder {
 		Class<?> commonType = null;
 
 		for (final String raw : raws) {
-			final RatedFact rated = parser.parse(raw, context);
+			final RatedFact<?> rated = parser.parse(raw, context);
 
 			if (rated.confidence() == Confidence.NONE) {
 				// Not successfully parsed -> no Fact at all.
 				return Optional.empty();
 			}
 
-			final Object parsed = rated.value()
-					.orElseThrow(() -> new IllegalStateException("Parser " + parser.getClass().getSimpleName()
-							+ " returned confidence " + rated.confidence() + " but no value."));
-
-			final Collection<?> parsedValues = parsed instanceof final Collection<?> collection ? collection
-					: List.of(parsed);
-			if (parsedValues.isEmpty() || parsedValues.size() > 1 && !acceptsMultipleValues()) {
+			final Object parsedValue = rated.value().orElseThrow(() -> new IllegalStateException("Parser "
+					+ parser.getClass().getName() + " returned confidence " + rated.confidence() + " but no value."));
+			final Class<?> parsedType = parsedValue.getClass();
+			if (commonType == null) {
+				commonType = parsedType;
+			} else if (parsedType != commonType) {
+				// Mixed runtime types are not allowed in a single Fact value set.
 				return Optional.empty();
 			}
-
-			for (final Object parsedValue : parsedValues) {
-				if (parsedValue == null) {
-					return Optional.empty();
-				}
-				final Class<?> parsedType = parsedValue.getClass();
-				if (commonType == null) {
-					commonType = parsedType;
-				} else if (parsedType != commonType) {
-					// Mixed runtime types are not allowed in a single Fact value set.
-					return Optional.empty();
-				}
-				values.add(parsedValue);
-			}
+			values.add(parsedValue);
 
 			// Aggregate confidence: keep the weakest (worst) one.
 			if (rated.confidence().compareTo(overall) > 0) {
@@ -123,11 +109,11 @@ public class FactFinder {
 		return Collection.class.isAssignableFrom(fieldType) || RetroAttribute.class.isAssignableFrom(fieldType);
 	}
 
-	public RatedFact parse(final String raw) {
+	public RatedFact<?> parse(final String raw) {
 		return parser.parse(raw);
 	}
 
-	public RatedFact parse(final String raw, final FactParseContext context) {
+	public RatedFact<?> parse(final String raw, final FactParseContext context) {
 		return parser.parse(raw, context);
 	}
 

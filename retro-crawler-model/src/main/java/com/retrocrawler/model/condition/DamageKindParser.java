@@ -8,10 +8,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Parses canonical English names for specific damage kinds.
  */
-public final class DamageKindParser implements FactParser {
+public final class DamageKindParser implements FactParser<DamageKind> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<DamageKind> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -23,7 +23,7 @@ public final class DamageKindParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<DamageKind> noMatch() {
 		return RatedFact.none("Expected a recognized kind of damage.");
 	}
 }

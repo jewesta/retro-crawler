@@ -24,8 +24,8 @@ class IdentifierParsersTest {
 	@Test
 	void validatesAndNormalizesIsbn10AndIsbn13() {
 		final ISBNParser parser = new ISBNParser();
-		final ISBN isbn10 = (ISBN) parser.parse("0-306-40615-2").value().orElseThrow();
-		final ISBN isbn13 = (ISBN) parser.parse("978-0-306-40615-7").value().orElseThrow();
+		final ISBN isbn10 = parser.parse("0-306-40615-2").value().orElseThrow();
+		final ISBN isbn13 = parser.parse("978-0-306-40615-7").value().orElseThrow();
 
 		assertEquals(isbn13, isbn10);
 		assertEquals("9780306406157", isbn13.toCompactString());

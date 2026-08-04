@@ -8,10 +8,10 @@ import com.retrocrawler.core.gear.parser.FactParser;
 /**
  * Parses canonical English package-seal observations.
  */
-public final class SealStateParser implements FactParser {
+public final class SealStateParser implements FactParser<SealState> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<SealState> parse(final String rawValue) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -23,7 +23,7 @@ public final class SealStateParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<SealState> noMatch() {
 		return RatedFact.none("Expected a recognized seal state.");
 	}
 }

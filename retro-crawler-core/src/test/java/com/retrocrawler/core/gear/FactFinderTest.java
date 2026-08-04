@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.gear.parser.EnumParser;
-import com.retrocrawler.core.gear.parser.FactParser;
 
 class FactFinderTest {
 
@@ -48,19 +47,4 @@ class FactFinderTest {
 		assertTrue(finder.find(Clue.missingValue("bus")).isEmpty());
 	}
 
-	@Test
-	void flattensMultipleValuesParsedFromOneObservationForCollectionFacts() {
-		final FactParser compoundParser = raw -> RatedFact.exact(Set.of(Bus.AGP, Bus.PCI));
-		final FactFinder finder = new FactFinder("bus", compoundParser, Set.class, false);
-
-		assertEquals(Set.of(Bus.AGP, Bus.PCI), finder.find(Clue.of("bus", "AGP/PCI")).orElseThrow().value());
-	}
-
-	@Test
-	void rejectsMultipleValuesParsedFromOneObservationForScalarFacts() {
-		final FactParser compoundParser = raw -> RatedFact.exact(Set.of(Bus.AGP, Bus.PCI));
-		final FactFinder finder = new FactFinder("bus", compoundParser, Bus.class, false);
-
-		assertTrue(finder.find(Clue.of("bus", "AGP/PCI")).isEmpty());
-	}
 }

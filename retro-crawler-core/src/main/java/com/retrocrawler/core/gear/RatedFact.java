@@ -5,21 +5,33 @@ import java.util.Optional;
 
 import com.retrocrawler.core.archive.clues.Confidence;
 
-public class RatedFact {
+/**
+ * A parser result for zero or one value of a fact type.
+ *
+ * @param <T>
+ *            the type of the parsed value
+ */
+public final class RatedFact<T> {
 
-	private final Object value;
+	private final T value;
 
 	private final Confidence confidence;
 
 	private final String explanation;
 
-	private RatedFact(final Object fact, final Confidence confidence, final String explanation) {
-		this.value = fact;
-		this.confidence = Objects.requireNonNull(confidence);
+	private RatedFact(final T value, final Confidence confidence, final String explanation) {
+		this.value = value;
+		this.confidence = Objects.requireNonNull(confidence, "confidence");
 		this.explanation = explanation;
+		if (confidence == Confidence.NONE && value != null) {
+			throw new IllegalArgumentException("An unsuccessful rated fact must not contain a value.");
+		}
+		if (confidence != Confidence.NONE && value == null) {
+			throw new IllegalArgumentException("A successful rated fact must contain a value.");
+		}
 	}
 
-	public Optional<Object> value() {
+	public Optional<T> value() {
 		return Optional.ofNullable(value);
 	}
 
@@ -31,23 +43,24 @@ public class RatedFact {
 		return Optional.ofNullable(explanation);
 	}
 
-	public static RatedFact exact(final Object value) {
-		Objects.requireNonNull(value);
-		return new RatedFact(value, Confidence.EXACT, null);
+	public static <T> RatedFact<T> exact(final T value) {
+		return successful(value, Confidence.EXACT);
 	}
 
-	public static RatedFact strong(final Object value) {
-		Objects.requireNonNull(value);
-		return new RatedFact(value, Confidence.STRONG, null);
+	public static <T> RatedFact<T> strong(final T value) {
+		return successful(value, Confidence.STRONG);
 	}
 
-	public static RatedFact weak(final Object value) {
-		Objects.requireNonNull(value);
-		return new RatedFact(value, Confidence.WEAK, null);
+	public static <T> RatedFact<T> weak(final T value) {
+		return successful(value, Confidence.WEAK);
 	}
 
-	public static RatedFact none(final String explanation) {
-		return new RatedFact(null, Confidence.NONE, explanation);
+	public static <T> RatedFact<T> none(final String explanation) {
+		return new RatedFact<>(null, Confidence.NONE, explanation);
+	}
+
+	private static <T> RatedFact<T> successful(final T value, final Confidence confidence) {
+		return new RatedFact<>(Objects.requireNonNull(value, "value"), confidence, null);
 	}
 
 }
