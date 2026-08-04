@@ -12,9 +12,12 @@ Instead, you can use your own personal already existing folder structure, provid
 ## Core Concepts
 
 ### Archive
-A rooted, hierarchical source that contains a collection. The default source is
-a local directory tree, but providers may expose ZIP entries, remote files, or
-other file-like hierarchies through the same archive model.
+A separately identified, hierarchical collection location with one or more
+roots. The default source is a local directory tree, but providers may expose
+ZIP entries, remote files, or other file-like hierarchies through the same
+archive model. One `RetroCrawler` can apply a shared model to several archives;
+each archive retains its own identity, roots, source provider, repository entry,
+and crawl lifecycle.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -173,6 +176,37 @@ RetroCrawler crawler = RetroCrawler.builder()
         .build();
 ```
 
+One crawler may instead register several independently identified archives.
+The model's clue finders, fact parsers, and gear resolution are shared, while
+each descriptor is paired with the provider that exposes its roots:
+
+```java
+ArchiveDescriptor myCollection = new ArchiveDescriptor(
+        ArchiveId.of("my_collection"),
+        "My collection",
+        List.of(Path.of("my-collection")));
+ArchiveDescriptor museumCollection = new ArchiveDescriptor(
+        ArchiveId.of("museum_collection"),
+        "Museum collection",
+        List.of(Path.of("museum")));
+ArchiveDescriptor incomingMaterial = new ArchiveDescriptor(
+        ArchiveId.of("incoming_material"),
+        "Incoming material",
+        List.of(Path.of("incoming.zip")));
+
+RetroCrawler crawler = RetroCrawler.builder()
+        .model(retroHardwareModel)
+        .repository(repository)
+        .archive(myCollection)
+        .archive(museumCollection, sshArchiveSource)
+        .archive(incomingMaterial, new ZipArchiveSource())
+        .build();
+```
+
+`archive(descriptor)` selects the filesystem provider. The annotation-derived
+archive remains the default when no archive is registered explicitly, so
+existing single-archive construction is unchanged.
+
 ZIP archives can be crawled directly without extracting them. Select
 `ZipArchiveSource` and configure each archive root as the path of a local ZIP
 file:
@@ -200,7 +234,8 @@ Applications can inspect a file at any source path produced by the crawler
 through the same scoped accessor contract:
 
 ```java
-Optional<byte[]> image = crawler.inspect(sourcePath, InputStream::readAllBytes);
+Optional<byte[]> image = crawler.inspect(
+        incomingMaterial.id(), sourcePath, InputStream::readAllBytes);
 ```
 
 The crawler resolves the address through its configured source and closes the
@@ -211,6 +246,17 @@ folder address raises `NoSuchFileException`.
 Source paths remain hierarchical addresses used for relative clues, cache
 relocation, and partial re-indexing; providers must not require them to be
 locally accessible.
+
+Crawling likewise selects the logical archive by identity:
+
+```java
+Stash<RetroHardware> gear = crawler.crawlStash(
+        museumCollection.id(), progressor, reindexScope, RetroHardware.class);
+```
+
+The archive-unqualified `crawl...`, `inspect`, and `archiveDescriptor` methods
+remain shortcuts for a crawler with exactly one archive. They reject ambiguous
+use when several archives are registered.
 
 ---
 

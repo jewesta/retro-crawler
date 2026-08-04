@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,16 +12,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.retrocrawler.core.archive.ArchiveDefinition;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -38,38 +44,61 @@ import com.retrocrawler.core.util.PathNames;
 
 class RetroCrawlerImpl implements RetroCrawler {
 
-	private final ArchiveDescriptor archiveDescriptor;
+	private final List<ArchiveDescriptor> archiveDescriptors;
 
-	private final ArchiveManager manager;
+	private final Map<ArchiveId, RegisteredArchive> archives;
 
 	private final GearResolver resolver;
 
 	private final Configuration configuration;
 
-	private final ArchiveSource source;
-
 	// package-private: only factories construct this
-	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver,
-			final Configuration configuration, final Repository repository, final ArchiveSource source) {
-		this.archiveDescriptor = Objects.requireNonNull(descriptor, "descriptor");
-		this.manager = new ArchiveManager(descriptor, digger, repository);
-		this.resolver = Objects.requireNonNull(resolver, "resolver");
-		this.configuration = Objects.requireNonNull(configuration, "configuration");
-		this.source = Objects.requireNonNull(source, "source");
+	RetroCrawlerImpl(final Model model, final List<ArchiveBinding> archiveBindings, final CrawlPlanning planning,
+			final Repository repository) {
+		Objects.requireNonNull(model, "model");
+		Objects.requireNonNull(archiveBindings, "archiveBindings");
+		Objects.requireNonNull(planning, "planning");
+		Objects.requireNonNull(repository, "repository");
+		this.resolver = model.gearResolver();
+		this.configuration = model.configuration();
+
+		final Map<ArchiveId, RegisteredArchive> configured = new LinkedHashMap<>();
+		for (final ArchiveBinding binding : archiveBindings) {
+			final ArchiveDescriptor descriptor = binding.descriptor();
+			final ArchiveDigger digger = new ArchiveDigger(new ModelArchiveDefinition(descriptor, model),
+					binding.source(), planning);
+			final RegisteredArchive archive = new RegisteredArchive(descriptor,
+					new ArchiveManager(descriptor, digger, repository), binding.source());
+			if (configured.putIfAbsent(descriptor.id(), archive) != null) {
+				throw new IllegalArgumentException("Archive is already configured: " + descriptor.id());
+			}
+		}
+		if (configured.isEmpty()) {
+			throw new IllegalArgumentException("At least one archive must be configured.");
+		}
+		this.archives = Collections.unmodifiableMap(configured);
+		this.archiveDescriptors = configured.values().stream().map(RegisteredArchive::descriptor).toList();
 	}
 
 	@Override
-	public ArchiveDescriptor archiveDescriptor() {
-		return archiveDescriptor;
+	public List<ArchiveDescriptor> archives() {
+		return archiveDescriptors;
 	}
 
 	@Override
-	public <T> Optional<T> inspect(final Path sourcePath, final ArchiveFileAccessor<T> inspector) throws IOException {
+	public ArchiveDescriptor archive(final ArchiveId archiveId) {
+		return registeredArchive(archiveId).descriptor();
+	}
+
+	@Override
+	public <T> Optional<T> inspect(final ArchiveId archiveId, final Path sourcePath,
+			final ArchiveFileAccessor<T> inspector) throws IOException {
+		final RegisteredArchive archive = registeredArchive(archiveId);
 		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
 		Objects.requireNonNull(inspector, "inspector");
-		final Path configuredRoot = rootFor(requested);
+		final Path configuredRoot = rootFor(archive.descriptor(), requested);
 
-		try (ArchiveSession session = source.open(configuredRoot)) {
+		try (ArchiveSession session = archive.source().open(configuredRoot)) {
 			ArchiveFolder current = Objects.requireNonNull(session.root(), "session.root()");
 			final Path sourceRoot = current.path().normalize();
 			if (!requested.startsWith(sourceRoot)) {
@@ -100,35 +129,45 @@ class RetroCrawlerImpl implements RetroCrawler {
 		throw new NoSuchFileException(sourcePath.toString());
 	}
 
-	private Path rootFor(final Path sourcePath) {
-		return archiveDescriptor.paths().stream().filter(root -> sourcePath.startsWith(root.normalize()))
+	private static Path rootFor(final ArchiveDescriptor descriptor, final Path sourcePath) {
+		return descriptor.paths().stream().filter(root -> sourcePath.startsWith(root.normalize()))
 				.max(Comparator.comparingInt(root -> root.normalize().getNameCount()))
 				.orElseThrow(() -> new IllegalArgumentException(
-						"Source path is outside the configured archives: " + sourcePath));
+						"Source path is outside archive '" + descriptor.id() + "': " + sourcePath));
+	}
+
+	private RegisteredArchive registeredArchive(final ArchiveId archiveId) {
+		Objects.requireNonNull(archiveId, "archiveId");
+		final RegisteredArchive archive = archives.get(archiveId);
+		if (archive == null) {
+			throw new IllegalArgumentException("Unknown archive: " + archiveId);
+		}
+		return archive;
 	}
 
 	@Override
-	public <R, N, G> R crawl(final Progressor progressor, final ReindexScope reindexScope,
+	public <R, N, G> R crawl(final ArchiveId archiveId, final Progressor progressor, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
 
+		final RegisteredArchive archive = registeredArchive(archiveId);
 		Objects.requireNonNull(progressor, "progressor");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
 		progressor.throwIfCancelled();
 
 		try {
-			return crawlToCompletion(progressor, reindexScope, factory);
+			return crawlToCompletion(archive, progressor, reindexScope, factory);
 		} catch (final IOException | RuntimeException failure) {
 			reportFailure(progressor, failure);
 			throw failure;
 		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final Progressor progressor, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
+	private <R, N, G> R crawlToCompletion(final RegisteredArchive registeredArchive, final Progressor progressor,
+			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 
-		final Archive archive = manager.archive(progressor, reindexScope);
+		final Archive archive = registeredArchive.manager().archive(progressor, reindexScope);
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
 		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
 		final long artifactCount = archive.buckets().stream().map(Bucket::root)
@@ -269,6 +308,23 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 	private record ResolvedArchiveNode(Optional<GearResolution> resolution, Path sourcePath,
 			List<ResolvedArchiveNode> children) {
+	}
+
+	private record RegisteredArchive(ArchiveDescriptor descriptor, ArchiveManager manager, ArchiveSource source) {
+	}
+
+	private record ModelArchiveDefinition(ArchiveDescriptor archiveDescriptor, Model model)
+			implements ArchiveDefinition {
+
+		@Override
+		public ArchivePathClueFinder archivePathClueFinder() {
+			return model.archivePathClueFinder();
+		}
+
+		@Override
+		public List<ArchivePathFilter> pathFilters() {
+			return model.pathFilters();
+		}
 	}
 
 	private static final class RetroIdRegistry {

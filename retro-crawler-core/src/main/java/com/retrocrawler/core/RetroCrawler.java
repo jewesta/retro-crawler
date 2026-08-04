@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
@@ -47,10 +48,23 @@ public interface RetroCrawler {
 		Builder crawlPlanning(CrawlPlanning planning);
 
 		/**
-		 * Configures the provider used to inspect every archive root. The NIO
-		 * filesystem source is used when omitted.
+		 * Configures the provider for the model's annotation-derived default
+		 * archive. The NIO filesystem source is used when omitted.
 		 */
 		Builder archiveSource(ArchiveSource source);
+
+		/**
+		 * Registers an archive that uses the default filesystem source.
+		 * Registering explicit archives replaces the model's default archive
+		 * for this crawler.
+		 */
+		Builder archive(ArchiveDescriptor archive);
+
+		/**
+		 * Registers an archive and the provider that exposes its roots. Archive
+		 * IDs must be unique within one crawler.
+		 */
+		Builder archive(ArchiveDescriptor archive, ArchiveSource source);
 
 		/**
 		 * Validates the required composition and creates the crawler.
@@ -58,7 +72,26 @@ public interface RetroCrawler {
 		RetroCrawler build();
 	}
 
-	ArchiveDescriptor archiveDescriptor();
+	/** All archives registered with this crawler, in composition order. */
+	List<ArchiveDescriptor> archives();
+
+	/** Returns the registered archive with the given identity. */
+	ArchiveDescriptor archive(ArchiveId archiveId);
+
+	/**
+	 * Returns the sole registered archive.
+	 *
+	 * @throws IllegalStateException
+	 *             if this crawler does not have exactly one archive
+	 */
+	default ArchiveDescriptor archiveDescriptor() {
+		final List<ArchiveDescriptor> archives = archives();
+		if (archives.size() != 1) {
+			throw new IllegalStateException(
+					"Expected one archive but this crawler has " + archives.size() + ". Select an archive by id.");
+		}
+		return archives.getFirst();
+	}
 
 	/**
 	 * Synchronously inspects the content of a file at one of this crawler's
@@ -75,10 +108,21 @@ public interface RetroCrawler {
 	 *             if the address is outside this crawler's configured archive
 	 *             roots
 	 */
-	<T> Optional<T> inspect(Path sourcePath, ArchiveFileAccessor<T> inspector) throws IOException;
+	default <T> Optional<T> inspect(final Path sourcePath, final ArchiveFileAccessor<T> inspector) throws IOException {
+		return inspect(archiveDescriptor().id(), sourcePath, inspector);
+	}
 
-	<R, N, G> R crawl(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
-			throws IOException;
+	/** Inspects a source file in the selected archive. */
+	<T> Optional<T> inspect(ArchiveId archiveId, Path sourcePath, ArchiveFileAccessor<T> inspector) throws IOException;
+
+	default <R, N, G> R crawl(final Progressor progressor, final ReindexScope reindexScope,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
+		return crawl(archiveDescriptor().id(), progressor, reindexScope, factory);
+	}
+
+	/** Crawls and resolves the selected archive through the shared model. */
+	<R, N, G> R crawl(ArchiveId archiveId, Progressor progressor, ReindexScope reindexScope,
+			GearTreeFactory<R, N, G> factory) throws IOException;
 
 	/**
 	 * Convenience method that builds a hierarchical {@link Stash} for the given
@@ -89,6 +133,12 @@ public interface RetroCrawler {
 		return crawl(progressor, reindexScope, new StashFactory<>(gearType));
 	}
 
+	/** Builds a hierarchical stash from the selected archive. */
+	default <G> Stash<G> crawlStash(final ArchiveId archiveId, final Progressor progressor,
+			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
+		return crawl(archiveId, progressor, reindexScope, new StashFactory<>(gearType));
+	}
+
 	/**
 	 * Convenience method that returns a flat list of all matching gear across
 	 * all buckets (legacy behavior).
@@ -96,6 +146,12 @@ public interface RetroCrawler {
 	default <G> List<G> crawlGear(final Progressor progressor, final ReindexScope reindexScope, final Class<G> gearType)
 			throws IOException {
 		return crawl(progressor, reindexScope, new FlatListFactory<>(gearType));
+	}
+
+	/** Returns matching gear from the selected archive as a flat list. */
+	default <G> List<G> crawlGear(final ArchiveId archiveId, final Progressor progressor,
+			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
+		return crawl(archiveId, progressor, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 }

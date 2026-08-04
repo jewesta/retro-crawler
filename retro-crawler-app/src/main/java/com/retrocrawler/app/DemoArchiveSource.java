@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
 import com.retrocrawler.core.archive.source.ZipArchiveSource;
@@ -13,7 +14,7 @@ import com.retrocrawler.demo.DemoFiles;
 
 enum DemoArchiveSource {
 
-	FILE_SYSTEM("File system", true) {
+	FILE_SYSTEM("File system", "", true) {
 
 		@Override
 		ArchiveSource createSource() {
@@ -31,7 +32,7 @@ enum DemoArchiveSource {
 		}
 	},
 
-	ZIP("ZIP archive", false) {
+	ZIP("ZIP archive", "_zip", false) {
 
 		@Override
 		ArchiveSource createSource() {
@@ -53,10 +54,13 @@ enum DemoArchiveSource {
 
 	private final String label;
 
+	private final String archiveIdSuffix;
+
 	private final boolean localFolders;
 
-	DemoArchiveSource(final String label, final boolean localFolders) {
+	DemoArchiveSource(final String label, final String archiveIdSuffix, final boolean localFolders) {
 		this.label = label;
+		this.archiveIdSuffix = archiveIdSuffix;
 		this.localFolders = localFolders;
 	}
 
@@ -66,6 +70,14 @@ enum DemoArchiveSource {
 
 	boolean localFolders() {
 		return localFolders;
+	}
+
+	ArchiveDescriptor archive(final ArchiveDescriptor declaredArchive, final List<Path> roots) {
+		Objects.requireNonNull(declaredArchive, "declaredArchive");
+		Objects.requireNonNull(roots, "roots");
+		final ArchiveId archiveId = archiveIdSuffix.isEmpty() ? declaredArchive.id()
+				: ArchiveId.of(declaredArchive.id().value() + archiveIdSuffix);
+		return new ArchiveDescriptor(archiveId, declaredArchive.name(), roots);
 	}
 
 	abstract ArchiveSource createSource();

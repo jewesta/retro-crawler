@@ -93,9 +93,7 @@ public class SearchView extends HorizontalLayout {
 		final List<DemoArchive> configuredArchives = new ArrayList<>();
 		try {
 			for (final DemoModels model : DemoModels.values()) {
-				for (final DemoArchiveSource source : DemoArchiveSource.values()) {
-					configuredArchives.add(DemoArchive.create(model, source, repository));
-				}
+				configuredArchives.addAll(DemoArchive.create(model, repository));
 			}
 		} catch (final IOException e) {
 			throw new IllegalStateException("Failed to materialize demo archive data.", e);
@@ -249,7 +247,7 @@ public class SearchView extends HorizontalLayout {
 
 	private void openArchiveFolder(final DemoArchive archive, final Path sourcePath) {
 		try {
-			archive.folderOpener().orElseThrow().open(sourcePath, archive.crawler().archiveDescriptor().paths());
+			archive.folderOpener().orElseThrow().open(sourcePath, archive.archive().paths());
 		} catch (final IOException | IllegalArgumentException failure) {
 			logger.warning("Could not open archive folder: " + failure.getMessage());
 			Notification.show("Could not open archive folder: " + failure.getMessage(), 5000, Position.MIDDLE);
@@ -257,13 +255,15 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
+		final DemoArchive archive = activeArchive;
 		final Progressor activeProgressor = createProgressor(ui);
-		final RetroCrawler crawler = activeArchive.crawler();
+		final RetroCrawler crawler = archive.crawler();
 		this.progressor = activeProgressor;
 		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return crawler.crawl(activeProgressor, reindexScope, new VaadinTreeDataFactory());
+				return crawler.crawl(archive.archive().id(), activeProgressor, reindexScope,
+						new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -281,11 +281,13 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	private Optional<Component> archiveImage(final VaadinGearNode node) {
-		final RetroCrawler crawler = activeArchive.crawler();
+		final DemoArchive archive = activeArchive;
+		final RetroCrawler crawler = archive.crawler();
 		return node.gear().getPicFront().map(path -> {
 			final String fileName = path.getFileName().toString();
 			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
-				final Optional<byte[]> content = crawler.inspect(path, InputStream::readAllBytes);
+				final Optional<byte[]> content = crawler.inspect(archive.archive().id(), path,
+						InputStream::readAllBytes);
 				if (content.isEmpty()) {
 					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);
 				}

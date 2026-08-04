@@ -24,14 +24,18 @@ class DemoArchiveSourceTest {
 
 	@Test
 	void keepsDeclaredRootsForTheFilesystemProvider() {
-		assertEquals(List.of(FOLDER), DemoArchiveSource.FILE_SYSTEM.roots(ARCHIVE));
+		final List<Path> roots = DemoArchiveSource.FILE_SYSTEM.roots(ARCHIVE);
+		assertEquals(List.of(FOLDER), roots);
+		assertEquals(ArchiveId.of("demo"), DemoArchiveSource.FILE_SYSTEM.archive(ARCHIVE, roots).id());
 		assertInstanceOf(FileSystemArchiveSource.class, DemoArchiveSource.FILE_SYSTEM.createSource());
 		assertTrue(DemoArchiveSource.FILE_SYSTEM.localFolders());
 	}
 
 	@Test
 	void mapsDeclaredFoldersToAdjacentZipFiles() {
-		assertEquals(List.of(Path.of("rc_demo_archives/retro_pc.zip")), DemoArchiveSource.ZIP.roots(ARCHIVE));
+		final List<Path> roots = DemoArchiveSource.ZIP.roots(ARCHIVE);
+		assertEquals(List.of(Path.of("rc_demo_archives/retro_pc.zip")), roots);
+		assertEquals(ArchiveId.of("demo_zip"), DemoArchiveSource.ZIP.archive(ARCHIVE, roots).id());
 		assertInstanceOf(ZipArchiveSource.class, DemoArchiveSource.ZIP.createSource());
 		assertFalse(DemoArchiveSource.ZIP.localFolders());
 	}
