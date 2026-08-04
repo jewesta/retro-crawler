@@ -20,11 +20,14 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
+import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.PathParser;
@@ -37,6 +40,8 @@ class ModelParserFactoryTest {
 		AnnotationStringParser.instances = 0;
 		AnnotationIntegerParser.instances = 0;
 		AnnotationPathParser.instances = 0;
+		AnnotationEnumParser.enumTypes.clear();
+		FactorySelectedEnumParser.instances = 0;
 	}
 
 	@Test
@@ -46,6 +51,17 @@ class ModelParserFactoryTest {
 		assertEquals(2, AnnotationStringParser.instances);
 		assertEquals(2, AnnotationIntegerParser.instances);
 		assertEquals(2, AnnotationPathParser.instances);
+	}
+
+	@Test
+	void annotationSelectsTheDefaultEnumParserAndSuppliesTheDeclaredEnumType() {
+		final Model model = Model.from(Set.of(AnnotatedEnumDefaultsCollection.class, EnumFactGear.class));
+
+		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
+
+		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "custom-on")));
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		assertEquals(EnumState.ON, gear.state());
 	}
 
 	@Test
@@ -88,6 +104,24 @@ class ModelParserFactoryTest {
 	}
 
 	@Test
+	void builderFactoryOverridesAnAnnotationSelectedDefaultEnumParserClass() {
+		final List<String> keys = new ArrayList<>();
+
+		final Model model = Model.builder().typesFrom(Set.of(FactoryEnumDefaultsCollection.class, EnumFactGear.class))
+				.parserFactory(FactorySelectedEnumParser.class, key -> {
+					keys.add(key);
+					return new FactoryReplacementEnumParser();
+				}).build();
+
+		assertEquals(List.of("state"), keys);
+		assertEquals(0, FactorySelectedEnumParser.instances);
+
+		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "factory-value")));
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact).orElseThrow();
+		assertEquals(EnumState.ON, gear.state());
+	}
+
+	@Test
 	void rejectsDuplicateFactoriesForTheSameSelectedParserClass() {
 		final Model.Builder builder = Model.builder().parserFactory(StringParser.class, KeyedStringParser::new);
 
@@ -125,6 +159,18 @@ class ModelParserFactoryTest {
 	@RetroCollection(id = "built_in_default_parsers", locations = "/not/read")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class BuiltInDefaultsCollection {
+	}
+
+	@RetroCollection(id = "annotation_default_enum_parser", locations = "/not/read")
+	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroFactDefaultParser(enumeration = AnnotationEnumParser.class)
+	public static final class AnnotatedEnumDefaultsCollection {
+	}
+
+	@RetroCollection(id = "factory_default_enum_parser", locations = "/not/read")
+	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroFactDefaultParser(enumeration = FactorySelectedEnumParser.class)
+	public static final class FactoryEnumDefaultsCollection {
 	}
 
 	@RetroGear(AnyGearMatcher.class)
@@ -193,6 +239,25 @@ class ModelParserFactoryTest {
 		}
 	}
 
+	private enum EnumState {
+		ON,
+		OFF
+	}
+
+	@RetroGear(AnyGearMatcher.class)
+	public static final class EnumFactGear {
+
+		@RetroFact
+		private EnumState state;
+
+		public EnumFactGear() {
+		}
+
+		EnumState state() {
+			return state;
+		}
+	}
+
 	public static final class AnnotationStringParser implements FactParser<String> {
 
 		private static int instances;
@@ -232,6 +297,38 @@ class ModelParserFactoryTest {
 		@Override
 		public RatedFact<Path> parse(final String rawValue) {
 			return RatedFact.exact(Path.of(rawValue));
+		}
+	}
+
+	public static final class AnnotationEnumParser<T extends Enum<T>> extends EnumParser<T> {
+
+		private static final List<Class<?>> enumTypes = new ArrayList<>();
+
+		public AnnotationEnumParser(final Class<T> enumType) {
+			super(enumType, (constant, raw) -> ("custom-" + constant.name()).equalsIgnoreCase(raw));
+			enumTypes.add(enumType);
+		}
+	}
+
+	public static final class FactorySelectedEnumParser implements EnumFactParser<EnumState> {
+
+		private static int instances;
+
+		public FactorySelectedEnumParser(final Class<EnumState> enumType) {
+			instances++;
+		}
+
+		@Override
+		public RatedFact<EnumState> parse(final String rawValue) {
+			return RatedFact.none("The builder factory should replace this parser.");
+		}
+	}
+
+	private static final class FactoryReplacementEnumParser implements FactParser<EnumState> {
+
+		@Override
+		public RatedFact<EnumState> parse(final String rawValue) {
+			return RatedFact.exact(EnumState.ON);
 		}
 	}
 

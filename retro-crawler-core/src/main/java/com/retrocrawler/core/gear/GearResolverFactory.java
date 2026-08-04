@@ -21,6 +21,7 @@ import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
 import com.retrocrawler.core.gear.parser.FactParser;
@@ -167,6 +168,34 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 	}
 
+	private static FactParser<?> configuredEnumParser(final String key, final Class<?> enumType,
+			final Class<? extends EnumFactParser> parserType,
+			final Map<Class<? extends FactParser<?>>, Function<String, ? extends FactParser<?>>> parserFactories) {
+		final Function<String, ? extends FactParser<?>> factory = parserFactories.get(parserType);
+		if (factory != null) {
+			return Objects.requireNonNull(factory.apply(key),
+					"Parser factory for " + parserType.getName() + " returned null for key '" + key + "'.");
+		}
+
+		try {
+			final Constructor<? extends EnumFactParser> constructor = parserType.getConstructor(Class.class);
+			return constructor.newInstance(enumType);
+		} catch (final NoSuchMethodException e) {
+			throw new IllegalArgumentException("Default enum fact parser " + parserType.getName()
+					+ " must have a public constructor accepting Class.", e);
+		} catch (final InstantiationException | IllegalAccessException e) {
+			throw new IllegalArgumentException("Cannot instantiate default enum fact parser: " + parserType.getName(),
+					e);
+		} catch (final InvocationTargetException e) {
+			final Throwable cause = e.getCause();
+			if (cause instanceof final RuntimeException runtime) {
+				throw runtime;
+			}
+			throw new IllegalArgumentException("Cannot instantiate default enum fact parser: " + parserType.getName(),
+					cause);
+		}
+	}
+
 	private static FactParser<?> autoDetectParser(final String key, final FactDescriptor attrDef,
 			final Path workingDirectory,
 			final Map<Class<? extends CatalogFactParser<?, ?>>, FactCatalogConfiguration> catalogConfigurations,
@@ -200,11 +229,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 
 		if (fieldType.isEnum()) {
-			@SuppressWarnings({
-					"unchecked", "rawtypes"
-			})
-			final Class<? extends Enum> enumType = (Class<? extends Enum>) fieldType;
-			return new EnumParser<>(enumType, true);
+			@SuppressWarnings("rawtypes")
+			final Class<? extends EnumFactParser> parserType = defaultParsers == null ? EnumParser.class
+					: defaultParsers.enumeration();
+			return configuredEnumParser(key, fieldType, parserType, parserFactories);
 		}
 
 		if (java.util.EnumSet.class.isAssignableFrom(fieldType)) {

@@ -87,9 +87,16 @@ Parser selection and parser construction are separate:
   the parser class for each supported value type. Its members are typed, for
   example `Class<? extends FactParser<String>> string()`, and default to the
   current built-in implementations.
-- Default parsers do not need marker roles such as `DefaultStringParser`.
-  After selecting a concrete parser class, explicit and automatically selected
-  parsers use the same construction path.
+- Fixed-type defaults do not need marker roles such as `DefaultStringParser`.
+  Enum defaults use the specialized `EnumFactParser<T>` role because one
+  annotation member must accept parsers for different concrete enum types.
+  Its deliberately raw `Class<? extends EnumFactParser>` boundary is narrowed
+  using the enum type declared by each fact field.
+- The framework passes that declared enum type to a public `Class` constructor
+  when constructing an annotation-selected enum parser. It trusts the parser's
+  declared contract to return that enum type.
+- After selecting a concrete parser class, explicit and automatically selected
+  parsers otherwise use the same construction path.
 - `Model.Builder` can register a per-key construction factory for any selected
   parser class. The public shape is:
 
@@ -134,7 +141,6 @@ constructed, just as it may for a default-selected class.
 
 ## Open Design Questions
 
-- The exact annotation and factory shape for type-dependent enum parsing.
 - Whether configured catalog-backed defaults should use the same
   `CatalogLoader` construction path as explicitly selected catalog parsers.
 
@@ -156,6 +162,8 @@ constructed, just as it may for a default-selected class.
       builder factories for selected parser classes.
 - [x] Implemented `@RetroFactDefaultParser` for string, integer, and path
       defaults, including collections of paths.
+- [x] Implemented the enum default through `EnumFactParser<T>`, with the
+      concrete field enum supplied during reflective parser construction.
 - [x] Implemented typed `Model.Builder.parserFactory(...)` construction for
       both default-selected and explicitly selected parser classes.
 - [x] Added focused tests for annotation fallback, per-key factories, generic
@@ -177,3 +185,9 @@ After implementing configurable fixed defaults and per-key parser factories:
 - `run/prettify.sh --apply ...`: all changed Java sources processed.
 - `mvn -pl retro-crawler-core test`: 146 tests passed.
 - `mvn clean install`: all seven reactor modules and 259 tests passed.
+
+After enabling the configurable enum default:
+
+- `run/prettify.sh --apply ...`: all changed Java sources processed.
+- `mvn -pl retro-crawler-core test`: 148 tests passed.
+- `mvn clean install`: all seven reactor modules and 261 tests passed.
