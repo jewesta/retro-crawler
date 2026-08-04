@@ -15,6 +15,6 @@ public interface FactParser<T> {
 	 * {@link Confidence}. If the clue is keyed (not anonymous) then it is
 	 * usually much more plausible that the value meets our expectations.
 	 */
-	RatedFact<T> parse(String rawValue, FactParseContext context);
+	RatedFact<T> parse(String rawValue, ParseContext context);
 
 }

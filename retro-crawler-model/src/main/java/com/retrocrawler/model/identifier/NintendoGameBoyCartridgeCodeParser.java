@@ -7,7 +7,7 @@ import java.util.Objects;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
-import com.retrocrawler.core.gear.parser.FactParseContext;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class NintendoGameBoyCartridgeCodeParser
 		extends AbstractCatalogFactParser<NintendoGameBoyCartridgeCatalogKey, NintendoGameBoyCartridgeCode> {
@@ -29,7 +29,7 @@ public final class NintendoGameBoyCartridgeCodeParser
 	}
 
 	@Override
-	public RatedFact<NintendoGameBoyCartridgeCode> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<NintendoGameBoyCartridgeCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

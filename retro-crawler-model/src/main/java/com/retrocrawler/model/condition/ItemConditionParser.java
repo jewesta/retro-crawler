@@ -3,8 +3,8 @@ package com.retrocrawler.model.condition;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses the canonical English names of broad item conditions.
@@ -12,7 +12,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class ItemConditionParser implements FactParser<ItemCondition> {
 
 	@Override
-	public RatedFact<ItemCondition> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<ItemCondition> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

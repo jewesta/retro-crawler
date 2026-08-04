@@ -32,8 +32,8 @@ import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -130,7 +130,7 @@ class ContextualFactResolutionTest {
 	public static final class KindParser implements FactParser<String> {
 
 		@Override
-		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return "HDD".equals(rawValue) ? RatedFact.exact("hard-drive")
 					: RatedFact.none("Expected the hard-drive type marker.");
 		}
@@ -139,7 +139,7 @@ class ContextualFactResolutionTest {
 	public static final class GenericLengthParser implements FactParser<String> {
 
 		@Override
-		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return "2.5\"".equals(rawValue) ? RatedFact.exact("generic-length")
 					: RatedFact.none("Expected a generic length.");
 		}
@@ -148,7 +148,7 @@ class ContextualFactResolutionTest {
 	public static final class HardDriveFormFactorParser implements FactParser<String> {
 
 		@Override
-		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return "2.5\"".equals(rawValue) ? RatedFact.exact("hard-drive-form-factor")
 					: RatedFact.none("Expected a hard-drive form factor.");
 		}

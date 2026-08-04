@@ -3,8 +3,8 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.PackagingOriginParser;
 
@@ -17,7 +17,7 @@ public final class CollectionPackagingOriginParser implements FactParser<Packagi
 	private final PackagingOriginParser delegate = new PackagingOriginParser();
 
 	@Override
-	public RatedFact<PackagingOrigin> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<PackagingOrigin> parse(final String rawValue, final ParseContext context) {
 		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 

@@ -11,8 +11,10 @@ import java.util.Currency;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.Configuration;
+import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Confidence;
-import com.retrocrawler.core.gear.parser.FactParseContext;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
@@ -36,8 +38,8 @@ import com.retrocrawler.mycollection.catalog.Tested;
 class CollectionFactParsersTest {
 
 	private static final Path ARCHIVE_ROOT = Path.of("/archive");
-	private static final FactParseContext CONTEXT = FactParseContext.located(ARCHIVE_ROOT,
-			ARCHIVE_ROOT.resolve("gear"));
+	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
+			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 
 	@Test
 	void adaptsGermanCalendarWeeksWithoutMakingMonthsAmbiguous() {

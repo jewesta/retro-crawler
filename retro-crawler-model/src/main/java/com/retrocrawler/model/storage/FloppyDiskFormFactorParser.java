@@ -6,8 +6,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class FloppyDiskFormFactorParser implements FactParser<FloppyDiskFormFactor> {
 
@@ -15,7 +15,7 @@ public final class FloppyDiskFormFactorParser implements FactParser<FloppyDiskFo
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact<FloppyDiskFormFactor> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<FloppyDiskFormFactor> parse(final String rawValue, final ParseContext context) {
 		return parseValue(rawValue).map(RatedFact::exact).orElseGet(
 				() -> RatedFact.none("Expected a recognized nominal floppy-disk form factor with an inch unit."));
 	}

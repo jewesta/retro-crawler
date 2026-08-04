@@ -1,8 +1,8 @@
 package com.retrocrawler.model.hardware;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses a nonblank, explicitly identified chip designation without assuming a
@@ -14,7 +14,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class ChipDesignationParser implements FactParser<ChipDesignation> {
 
 	@Override
-	public RatedFact<ChipDesignation> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<ChipDesignation> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null || rawValue.isBlank()) {
 			return RatedFact.none("Expected a nonblank chip designation.");
 		}

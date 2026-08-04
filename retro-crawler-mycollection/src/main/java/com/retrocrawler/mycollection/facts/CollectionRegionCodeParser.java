@@ -4,8 +4,8 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.locale.RegionCodeParser;
 
@@ -22,7 +22,7 @@ public final class CollectionRegionCodeParser implements FactParser<RegionCode> 
 	private final RegionCodeParser delegate = new RegionCodeParser();
 
 	@Override
-	public RatedFact<RegionCode> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<RegionCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected an established collection region marker.");
 		}

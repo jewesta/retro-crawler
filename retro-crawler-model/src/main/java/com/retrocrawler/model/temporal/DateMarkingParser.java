@@ -8,8 +8,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /** Parses role-neutral date markings in canonical ISO forms. */
 public final class DateMarkingParser implements FactParser<DateMarking> {
@@ -27,7 +27,7 @@ public final class DateMarkingParser implements FactParser<DateMarking> {
 	}
 
 	@Override
-	public RatedFact<DateMarking> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<DateMarking> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

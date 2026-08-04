@@ -4,8 +4,8 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.LanguageCodeParser;
 
@@ -22,7 +22,7 @@ public final class CollectionLanguageCodeParser implements FactParser<LanguageCo
 	private final LanguageCodeParser delegate = new LanguageCodeParser();
 
 	@Override
-	public RatedFact<LanguageCode> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<LanguageCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null || !OBSERVED_LANGUAGE_MARKERS.contains(rawValue.trim().toUpperCase(Locale.ROOT))) {
 			return RatedFact.none("Expected an established collection language marker.");
 		}

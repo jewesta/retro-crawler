@@ -6,8 +6,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses plausible four-digit years without treating future numbers as dates.
@@ -27,7 +27,7 @@ public final class YearParser implements FactParser<Year> {
 	}
 
 	@Override
-	public RatedFact<Year> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<Year> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null || !rawValue.trim().matches("\\d{4}")) {
 			return noMatch();
 		}

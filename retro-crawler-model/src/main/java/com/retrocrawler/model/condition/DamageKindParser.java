@@ -3,8 +3,8 @@ package com.retrocrawler.model.condition;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English names for specific damage kinds.
@@ -12,7 +12,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class DamageKindParser implements FactParser<DamageKind> {
 
 	@Override
-	public RatedFact<DamageKind> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<DamageKind> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}

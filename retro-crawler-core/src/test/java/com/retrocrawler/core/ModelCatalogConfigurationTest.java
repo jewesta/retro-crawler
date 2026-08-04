@@ -29,7 +29,7 @@ import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
-import com.retrocrawler.core.gear.parser.FactParseContext;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class ModelCatalogConfigurationTest {
@@ -121,7 +121,7 @@ class ModelCatalogConfigurationTest {
 		}
 
 		@Override
-		public RatedFact<String> parse(final String rawValue, final FactParseContext context) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}

@@ -3,8 +3,8 @@ package com.retrocrawler.model.appearance;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParseContext;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses portable English names for visible colors. Collection-specific
@@ -13,7 +13,7 @@ import com.retrocrawler.core.gear.parser.FactParser;
 public final class ColorParser implements FactParser<Color> {
 
 	@Override
-	public RatedFact<Color> parse(final String rawValue, final FactParseContext context) {
+	public RatedFact<Color> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
