@@ -40,8 +40,13 @@ outside tests and did not represent a runtime requirement.
   zone. Existing `DateMarking` remains the appropriate shared value for partial
   evidence such as only a year, month, or ISO week.
 - `Instant` represents an exact point on the time line. Offset-bearing ISO input
-  and epoch milliseconds are suitable defaults; a date-only value must not be
-  silently assigned a time zone.
+  and explicitly defined epoch milliseconds are the default representations; a
+  local date or date-time value is never silently assigned a time zone.
+- `LocalDateParser` always accepts strict ISO dates. It also accepts the JDK's
+  localized full, long, medium, and short date patterns for the configured
+  locale, plus the locale's numeric field order with dots, dashes, or slashes.
+  Numeric dates require a four-digit year. The configured locale deliberately
+  decides values such as `01/02/2024`.
 - Interpretation configuration is general parser configuration, not date-parser
   configuration.
 - The parser invocation context is the extension seam for both general
@@ -86,21 +91,20 @@ outside tests and did not represent a runtime requirement.
       annotation, then builder precedence.
 - [x] Passed the same effective configuration and a located runtime node to
       every parser invocation.
-- [ ] Add default `LocalDate` and `Instant` parser selection.
-- [ ] Add focused construction, locale, ambiguity, and temporal parsing tests.
-- [ ] Update public documentation and verification results.
+- [x] Added default `LocalDate` and `Instant` parser selection for scalar and
+      collection-valued facts.
+- [x] Added focused construction, locale, ambiguity, and temporal parsing tests.
+- [x] Updated public parser and annotation documentation.
 
 ## Open Questions
 
-- Whether localized parsing should initially cover only numeric and JDK
-  localized date styles or also add explicit textual formatter patterns beyond
-  what the JDK localized styles provide.
-- Whether epoch milliseconds should be accepted by the default `Instant` parser
-  or require an explicitly selected parser because an unadorned integer has no
-  intrinsic unit.
+- Whether future versions should add explicit textual formatter patterns beyond
+  the numeric variants and localized styles supplied by the JDK.
 
 ## Verification
 
 - Canonical `prettify` formatter applied to all changed Java sources.
-- `mvn test`: reactor successful, 268 tests run with no failures or errors.
+- `mvn test`: reactor successful, 277 tests run with no failures or errors.
 - Focused configuration/context tests: 8 tests run with no failures or errors.
+- Focused temporal parser and default-selection tests: 17 tests run with no
+  failures or errors.
