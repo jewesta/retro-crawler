@@ -3,15 +3,22 @@ package com.retrocrawler.core.gear;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.Configuration;
+import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.gear.parser.EnumParser;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 class FactFinderTest {
+
+	private static final Path ARCHIVE_ROOT = Path.of("/archive");
+	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
+			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 
 	private enum Bus {
 		AGP,
@@ -24,43 +31,29 @@ class FactFinderTest {
 	void leavesConflictingValuesUnresolvedForScalarFacts() {
 		final FactFinder finder = new FactFinder("bus", parser, Bus.class, false);
 
-		assertTrue(finder.find(Clue.of("bus", Set.of("AGP", "PCI"))).isEmpty());
+		assertTrue(finder.find(Clue.of("bus", Set.of("AGP", "PCI")), CONTEXT).isEmpty());
 	}
 
 	@Test
 	void acceptsMultipleValuesForCollectionFacts() {
 		final FactFinder finder = new FactFinder("bus", parser, Set.class, false);
 
-		assertEquals(Set.of(Bus.AGP, Bus.PCI), finder.find(Clue.of("bus", Set.of("AGP", "PCI"))).orElseThrow().value());
+		assertEquals(Set.of(Bus.AGP, Bus.PCI),
+				finder.find(Clue.of("bus", Set.of("AGP", "PCI")), CONTEXT).orElseThrow().value());
 	}
 
 	@Test
 	void collapsesDifferentSpellingsThatParseToTheSameScalarValue() {
 		final FactFinder finder = new FactFinder("bus", parser, Bus.class, false);
 
-		assertEquals(Set.of(Bus.AGP), finder.find(Clue.of("bus", Set.of("AGP", "agp"))).orElseThrow().value());
+		assertEquals(Set.of(Bus.AGP), finder.find(Clue.of("bus", Set.of("AGP", "agp")), CONTEXT).orElseThrow().value());
 	}
 
 	@Test
 	void doesNotCreateAFactWithoutAValue() {
 		final FactFinder finder = new FactFinder("bus", parser, Bus.class, false);
 
-		assertTrue(finder.find(Clue.missingValue("bus")).isEmpty());
+		assertTrue(finder.find(Clue.missingValue("bus"), CONTEXT).isEmpty());
 	}
 
-	@Test
-	void flattensMultipleValuesParsedFromOneObservationForCollectionFacts() {
-		final FactParser compoundParser = raw -> RatedFact.exact(Set.of(Bus.AGP, Bus.PCI));
-		final FactFinder finder = new FactFinder("bus", compoundParser, Set.class, false);
-
-		assertEquals(Set.of(Bus.AGP, Bus.PCI), finder.find(Clue.of("bus", "AGP/PCI")).orElseThrow().value());
-	}
-
-	@Test
-	void rejectsMultipleValuesParsedFromOneObservationForScalarFacts() {
-		final FactParser compoundParser = raw -> RatedFact.exact(Set.of(Bus.AGP, Bus.PCI));
-		final FactFinder finder = new FactFinder("bus", compoundParser, Bus.class, false);
-
-		assertTrue(finder.find(Clue.of("bus", "AGP/PCI")).isEmpty());
-	}
 }

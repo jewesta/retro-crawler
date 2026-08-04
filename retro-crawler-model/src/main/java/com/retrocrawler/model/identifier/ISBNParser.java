@@ -2,13 +2,14 @@ package com.retrocrawler.model.identifier;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 import de.creativecouple.validation.isbn.ISBN;
 
-public final class ISBNParser implements FactParser {
+public final class ISBNParser implements FactParser<ISBN> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<ISBN> parse(final String rawValue, final ParseContext context) {
 		try {
 			return RatedFact.exact(ISBN.valueOf(rawValue));
 		} catch (final NumberFormatException e) {

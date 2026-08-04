@@ -230,8 +230,8 @@ The current annotations configure:
   - File-name clue finders
   - File-content clue finders
   - Folder-tree clue finders
-- `@RetroFactParser`
-  - Collection-specific overrides for a selected fact parser
+- `@RetroFactCatalog`
+  - Collection-specific catalog overrides for a selected catalog fact parser
 - `@RetroGear`
   - Gear type
   - Gear matcher implementation
@@ -353,10 +353,10 @@ configuration will require explicit rules for:
 - When the combined configuration becomes immutable.
 
 Prefer deterministic behavior and actionable validation errors over implicit
-last-write-wins behavior. Issue 25 introduces the first deliberately narrow
+last-write-wins behavior. Issue 24 introduces the first deliberately narrow
 `Model.builder()` slice: it selects the same annotation-derived types as
 `Model.from(...)` while overriding runtime locations, working directory, and
-standard fact-parser configuration. Annotation-free fact and Gear registration
+catalog-backed fact-parser configuration. Annotation-free fact and Gear registration
 remains deferred.
 
 ## Relationship to Issue 17

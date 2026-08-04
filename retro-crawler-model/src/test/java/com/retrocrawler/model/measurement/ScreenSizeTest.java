@@ -1,5 +1,6 @@
 package com.retrocrawler.model.measurement;
 
+import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -15,10 +16,10 @@ class ScreenSizeTest {
 	void parsesUnitQualifiedDisplayDiagonalsAsStrongEvidence() {
 		final ScreenSizeParser parser = new ScreenSizeParser();
 
-		assertEquals(new ScreenSize(BigDecimal.valueOf(19)), parser.parse("19″").value().orElseThrow());
-		assertEquals(new ScreenSize(new BigDecimal("14.1")), parser.parse("14,1 inch").value().orElseThrow());
-		assertEquals(Confidence.STRONG, parser.parse("19\"").confidence());
-		assertEquals(Confidence.NONE, parser.parse("19").confidence());
+		assertEquals(new ScreenSize(BigDecimal.valueOf(19)), parser.parse("19″", CONTEXT).value().orElseThrow());
+		assertEquals(new ScreenSize(new BigDecimal("14.1")), parser.parse("14,1 inch", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.STRONG, parser.parse("19\"", CONTEXT).confidence());
+		assertEquals(Confidence.NONE, parser.parse("19", CONTEXT).confidence());
 		assertThrows(IllegalArgumentException.class, () -> new ScreenSize(BigDecimal.ZERO));
 	}
 }

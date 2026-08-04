@@ -238,7 +238,7 @@ class MyCollectionModelTest {
 				archiveRoot.resolve("Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]"));
 		Files.createDirectories(archiveRoot.resolve("Hard drive [HDD] [2,5″]"));
 		Files.createDirectories(archiveRoot.resolve("Measured object [19″]"));
-		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß-pink]"));
+		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß, pink]"));
 
 		final List<MyGear> gear = crawler().crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 		final MyGear floppy = gear(gear, "Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
@@ -258,7 +258,7 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), Unit.INCH)), measured.getLength());
 		assertEquals(Optional.empty(), measured.getScreenSize());
 
-		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß-pink]");
+		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß, pink]");
 		assertEquals(Set.of(Color.BLACK, Color.WHITE, Color.PINK), colored.getColors());
 	}
 

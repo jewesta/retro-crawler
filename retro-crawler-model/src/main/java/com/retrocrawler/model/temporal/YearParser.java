@@ -7,11 +7,12 @@ import java.util.Objects;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses plausible four-digit years without treating future numbers as dates.
  */
-public final class YearParser implements FactParser {
+public final class YearParser implements FactParser<Year> {
 
 	public static final Year MINIMUM_YEAR = Year.of(1950);
 
@@ -26,7 +27,7 @@ public final class YearParser implements FactParser {
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Year> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null || !rawValue.trim().matches("\\d{4}")) {
 			return noMatch();
 		}
@@ -44,7 +45,7 @@ public final class YearParser implements FactParser {
 		return RatedFact.strong(year);
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<Year> noMatch() {
 		return RatedFact.none("Expected a four-digit year from 1950 through the current year.");
 	}
 }

@@ -12,7 +12,7 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
-import com.retrocrawler.core.gear.parser.FactParseContext;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.core.util.Sonar;
 
@@ -42,8 +42,7 @@ public class GearResolver {
 	private record BestAnonymousMatch(String key, Confidence confidence, boolean contextual, boolean ambiguous) {
 	}
 
-	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue,
-			final FactParseContext parseContext) {
+	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue, final ParseContext parseContext) {
 		final String key = clue.key();
 
 		if (resolved.containsKey(key)) {
@@ -64,8 +63,8 @@ public class GearResolver {
 	@SuppressWarnings({
 			Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE
 	})
-	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue,
-			final FactParseContext parseContext, final Set<String> allowedContextualKeys) {
+	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue, final ParseContext parseContext,
+			final Set<String> allowedContextualKeys) {
 		final Set<String> raws = clue.value();
 		String resolvedKey = null;
 		for (final String raw : raws) {
@@ -109,7 +108,7 @@ public class GearResolver {
 
 	private static void reconcile(final RetroAttributes resolved, final String resolvedKey,
 			final RetroAttribute existing, final Clue incoming, final FactFinder finder,
-			final FactParseContext parseContext) {
+			final ParseContext parseContext) {
 
 		final Set<String> combinedValues = new HashSet<>(incoming.value());
 		if (existing instanceof final Fact fact) {
@@ -135,7 +134,7 @@ public class GearResolver {
 		}
 	}
 
-	private BestAnonymousMatch findBestAnonymousMatch(final String raw, final FactParseContext parseContext,
+	private BestAnonymousMatch findBestAnonymousMatch(final String raw, final ParseContext parseContext,
 			final Set<String> allowedContextualKeys) {
 		BestAnonymousMatch best = null;
 		for (final FactFinder finder : factFinders.values()) {
@@ -148,9 +147,9 @@ public class GearResolver {
 	}
 
 	private BestAnonymousMatch considerAnonymousCandidate(final BestAnonymousMatch bestSoFar, final FactFinder finder,
-			final String raw, final FactParseContext parseContext) {
+			final String raw, final ParseContext parseContext) {
 
-		final RatedFact rated = finder.parse(raw, parseContext);
+		final RatedFact<?> rated = finder.parse(raw, parseContext);
 		final Confidence confidence = rated.confidence();
 		if (confidence == Confidence.NONE) {
 			return bestSoFar;
@@ -184,22 +183,12 @@ public class GearResolver {
 		return bestSoFar;
 	}
 
-	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<Object> resolve(final Artifact artifact) {
-		return resolveWithIdentity(artifact).map(GearResolution::gear);
-	}
-
-	public Optional<Object> resolve(final Artifact artifact, final FactParseContext parseContext) {
+	public Optional<Object> resolve(final Artifact artifact, final ParseContext parseContext) {
 		return resolveWithIdentity(artifact, parseContext).map(GearResolution::gear);
 	}
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact) {
-		return resolveWithIdentity(artifact, FactParseContext.detached());
-	}
-
-	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final FactParseContext parseContext) {
+	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final ParseContext parseContext) {
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(parseContext, "parseContext");
 
@@ -272,7 +261,7 @@ public class GearResolver {
 		return Optional.of(new GearResolution(newGear, retroId));
 	}
 
-	private RetroAttributes resolveAttributes(final Set<Clue> clues, final FactParseContext parseContext,
+	private RetroAttributes resolveAttributes(final Set<Clue> clues, final ParseContext parseContext,
 			final Set<String> allowedContextualKeys) {
 		final RetroAttributes attributes = new RetroAttributes();
 		for (final Clue clue : clues) {

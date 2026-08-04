@@ -4,14 +4,13 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Standard collection-specific configuration understood by fact-parser
- * extension points.
+ * Immutable collection-specific configuration for a catalog-backed fact parser.
  */
-public final class FactParserConfiguration {
+public final class FactCatalogConfiguration {
 
 	private final String catalogFile;
 
-	private FactParserConfiguration(final String catalogFile) {
+	private FactCatalogConfiguration(final String catalogFile) {
 		this.catalogFile = catalogFile;
 	}
 
@@ -37,11 +36,11 @@ public final class FactParserConfiguration {
 			return this;
 		}
 
-		public FactParserConfiguration build() {
+		public FactCatalogConfiguration build() {
 			if (catalogFile == null) {
-				throw new IllegalStateException("At least one fact parser setting is required.");
+				throw new IllegalStateException("At least one fact catalog setting is required.");
 			}
-			return new FactParserConfiguration(catalogFile);
+			return new FactCatalogConfiguration(catalogFile);
 		}
 	}
 }

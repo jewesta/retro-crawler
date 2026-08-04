@@ -82,9 +82,9 @@ RetroCrawler's collection and gear model can be configured via annotations:
 - `@RetroFact`
   Declares how a field is populated from a clue.
 
-- `@RetroFactParser`
-  Optionally overrides collection-specific configuration for a fact parser.
-  It does not select or instantiate that parser.
+- `@RetroFactCatalog`
+  Optionally overrides the catalog used by a catalog-backed fact parser. It
+  does not select or instantiate that parser.
 
 - `@RetroAnyAttribute`
   Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
@@ -138,7 +138,7 @@ Model model = Model.builder()
         .typesFrom("com.example.collection")
         .locations(Path.of("my-collection"))
         .workingDirectory(Path.of("retro-work"))
-        .factParser(MyCatalogParser.class,
+        .factCatalog(MyCatalogParser.class,
                 configuration -> configuration.catalogFile("my-catalog.tsv"))
         .build();
 ```

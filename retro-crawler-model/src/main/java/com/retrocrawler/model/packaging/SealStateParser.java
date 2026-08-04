@@ -4,14 +4,15 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English package-seal observations.
  */
-public final class SealStateParser implements FactParser {
+public final class SealStateParser implements FactParser<SealState> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<SealState> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -23,7 +24,7 @@ public final class SealStateParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<SealState> noMatch() {
 		return RatedFact.none("Expected a recognized seal state.");
 	}
 }

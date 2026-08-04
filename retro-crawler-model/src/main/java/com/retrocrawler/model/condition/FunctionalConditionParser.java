@@ -4,14 +4,15 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English functional-condition observations.
  */
-public final class FunctionalConditionParser implements FactParser {
+public final class FunctionalConditionParser implements FactParser<FunctionalCondition> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<FunctionalCondition> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -24,7 +25,7 @@ public final class FunctionalConditionParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<FunctionalCondition> noMatch() {
 		return RatedFact.none("Expected a recognized functional condition.");
 	}
 }

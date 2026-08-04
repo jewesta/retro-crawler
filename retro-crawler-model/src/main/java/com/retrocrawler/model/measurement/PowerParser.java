@@ -7,13 +7,14 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class PowerParser implements FactParser {
+public final class PowerParser implements FactParser<Power> {
 
 	private static final Pattern POWER = Pattern.compile("([0-9]+(?:[.,][0-9]+)?)\\s*W");
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Power> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a positive electrical power in watts.");
 		}

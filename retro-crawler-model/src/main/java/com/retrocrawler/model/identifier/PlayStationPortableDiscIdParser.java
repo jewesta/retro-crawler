@@ -6,13 +6,14 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class PlayStationPortableDiscIdParser implements FactParser {
+public final class PlayStationPortableDiscIdParser implements FactParser<PlayStationPortableDiscId> {
 
 	private static final Pattern DISC_ID = Pattern.compile("^([A-Z]{4})[- ]?(\\d{5})$");
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<PlayStationPortableDiscId> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -23,11 +24,11 @@ public final class PlayStationPortableDiscIdParser implements FactParser {
 		}
 
 		return PlayStationPortableDiscPrefix.fromCode(matcher.group(1))
-				.<RatedFact> map(prefix -> RatedFact.exact(new PlayStationPortableDiscId(prefix, matcher.group(2))))
+				.map(prefix -> RatedFact.exact(new PlayStationPortableDiscId(prefix, matcher.group(2))))
 				.orElseGet(PlayStationPortableDiscIdParser::noMatch);
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<PlayStationPortableDiscId> noMatch() {
 		return RatedFact.none("Expected a known physical PlayStation Portable disc ID.");
 	}
 }

@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
@@ -21,7 +22,7 @@ import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearTreeFactory;
-import com.retrocrawler.core.gear.parser.FactParseContext;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -35,12 +36,15 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 	private final GearResolver resolver;
 
+	private final Configuration configuration;
+
 	// package-private: only factories construct this
 	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver,
-			final Repository repository) {
+			final Configuration configuration, final Repository repository) {
 		this.archiveDescriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.manager = new ArchiveManager(descriptor, digger, repository);
 		this.resolver = Objects.requireNonNull(resolver, "resolver");
+		this.configuration = Objects.requireNonNull(configuration, "configuration");
 	}
 
 	@Override
@@ -165,7 +169,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.artifact();
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
-				: resolver.resolveWithIdentity(artifact, FactParseContext.located(archiveRoot, sourcePath));
+				: resolver.resolveWithIdentity(artifact,
+						new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
 		resolution.ifPresent(value -> retroIds.register(value, sourcePath));
 		if (artifact != null) {
 			progress.complete(sourcePath);

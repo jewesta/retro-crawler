@@ -6,17 +6,18 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
 
-public final class FloppyDiskFormatParser implements FactParser {
+public final class FloppyDiskFormatParser implements FactParser<FloppyDiskFormat> {
 
 	private static final Pattern NUMERIC_COMBINED = Pattern.compile("^([12])S([124])D$");
 	private static final Pattern NUMERIC_AND_NAMED = Pattern.compile("^([12])S(SD|DD|QD|HD|ED)$");
 	private static final Pattern NAMED_COMBINED = Pattern.compile("^(SS|DS)(SD|DD|QD|HD|ED)$");
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<FloppyDiskFormat> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -78,7 +79,7 @@ public final class FloppyDiskFormatParser implements FactParser {
 		};
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<FloppyDiskFormat> noMatch() {
 		return RatedFact.none("Expected SS/DS sides, SD/DD/QD/HD/ED density, or a conventional combination.");
 	}
 }

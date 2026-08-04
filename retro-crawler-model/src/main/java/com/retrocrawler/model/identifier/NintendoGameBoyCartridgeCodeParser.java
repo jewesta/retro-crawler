@@ -7,9 +7,10 @@ import java.util.Objects;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 public final class NintendoGameBoyCartridgeCodeParser
-		extends AbstractCatalogFactParser<NintendoGameBoyCartridgeCatalogKey> {
+		extends AbstractCatalogFactParser<NintendoGameBoyCartridgeCatalogKey, NintendoGameBoyCartridgeCode> {
 
 	private final NintendoGameBoyCartridgeCatalog cartridgeCatalog;
 
@@ -28,7 +29,7 @@ public final class NintendoGameBoyCartridgeCodeParser
 	}
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<NintendoGameBoyCartridgeCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -74,7 +75,7 @@ public final class NintendoGameBoyCartridgeCodeParser
 		return true;
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<NintendoGameBoyCartridgeCode> noMatch() {
 		return RatedFact.none("Expected a plausible Nintendo Game Boy-family cartridge label code.");
 	}
 }

@@ -6,19 +6,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.CatalogFactParser;
 
 /**
- * Overrides collection-specific configuration for a fact parser selected by a
+ * Overrides the catalog used by a catalog-backed fact parser selected by a
  * field-level {@link RetroFact}. This annotation does not itself select or
  * instantiate the parser.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Repeatable(RetroFactParser.Container.class)
-public @interface RetroFactParser {
+@Repeatable(RetroFactCatalog.Container.class)
+public @interface RetroFactCatalog {
 
-	Class<? extends FactParser> parser();
+	Class<? extends CatalogFactParser<?, ?>> parser();
 
 	/**
 	 * Catalog file relative to the collection working directory's
@@ -30,6 +30,6 @@ public @interface RetroFactParser {
 	@Target(ElementType.TYPE)
 	@interface Container {
 
-		RetroFactParser[] value();
+		RetroFactCatalog[] value();
 	}
 }

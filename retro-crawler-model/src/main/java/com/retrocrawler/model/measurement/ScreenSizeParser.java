@@ -6,14 +6,15 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class ScreenSizeParser implements FactParser {
+public final class ScreenSizeParser implements FactParser<ScreenSize> {
 
 	private static final Pattern SCREEN_SIZE = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<ScreenSize> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -34,7 +35,7 @@ public final class ScreenSizeParser implements FactParser {
 		}
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<ScreenSize> noMatch() {
 		return RatedFact.none("Expected a positive screen diagonal with an inch unit.");
 	}
 }

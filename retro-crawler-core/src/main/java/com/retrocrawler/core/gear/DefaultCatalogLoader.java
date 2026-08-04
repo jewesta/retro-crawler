@@ -13,7 +13,7 @@ import java.util.Objects;
 
 import com.retrocrawler.core.catalog.Catalog;
 import com.retrocrawler.core.catalog.CatalogLoader;
-import com.retrocrawler.core.gear.parser.FactParserConfiguration;
+import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
 
 final class DefaultCatalogLoader implements CatalogLoader {
 
@@ -21,10 +21,10 @@ final class DefaultCatalogLoader implements CatalogLoader {
 
 	private final Class<?> parserType;
 	private final Path workingDirectory;
-	private final FactParserConfiguration configuration;
+	private final FactCatalogConfiguration configuration;
 
 	DefaultCatalogLoader(final Class<?> parserType, final Path workingDirectory,
-			final FactParserConfiguration configuration) {
+			final FactCatalogConfiguration configuration) {
 		this.parserType = Objects.requireNonNull(parserType, "parserType");
 		this.workingDirectory = workingDirectory;
 		this.configuration = configuration;

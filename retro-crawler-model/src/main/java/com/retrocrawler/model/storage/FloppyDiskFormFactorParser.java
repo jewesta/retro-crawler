@@ -7,15 +7,16 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class FloppyDiskFormFactorParser implements FactParser {
+public final class FloppyDiskFormFactorParser implements FactParser<FloppyDiskFormFactor> {
 
 	private static final Pattern DECIMAL_INCHES = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+	public RatedFact<FloppyDiskFormFactor> parse(final String rawValue, final ParseContext context) {
+		return parseValue(rawValue).map(RatedFact::exact).orElseGet(
 				() -> RatedFact.none("Expected a recognized nominal floppy-disk form factor with an inch unit."));
 	}
 

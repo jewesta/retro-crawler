@@ -4,19 +4,21 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.model.condition.ItemCondition;
 import com.retrocrawler.model.condition.ItemConditionParser;
 
 /**
  * Maps the collection's German condition markers to the portable item condition
  * vocabulary.
  */
-public final class CollectionItemConditionParser implements FactParser {
+public final class CollectionItemConditionParser implements FactParser<ItemCondition> {
 
 	private final ItemConditionParser delegate = new ItemConditionParser();
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : canonical(rawValue));
+	public RatedFact<ItemCondition> parse(final String rawValue, final ParseContext context) {
+		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 
 	private static String canonical(final String rawValue) {

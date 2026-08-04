@@ -21,7 +21,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
-import com.retrocrawler.core.annotation.RetroFactParser;
+import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
@@ -29,7 +29,7 @@ import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
-import com.retrocrawler.core.gear.parser.StringParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class ModelCatalogConfigurationTest {
@@ -53,13 +53,14 @@ class ModelCatalogConfigurationTest {
 	}
 
 	@Test
-	void builderParserConfigurationOverridesTheAnnotation() throws IOException {
+	void builderCatalogConfigurationOverridesTheAnnotation() throws IOException {
 		writeCatalog("annotation.tsv", "from annotation");
 		writeCatalog("builder.tsv", "from builder");
 
 		Model.builder().typesFrom(Set.of(AnnotatedCollection.class, CatalogGear.class))
 				.workingDirectory(temporaryDirectory)
-				.factParser(TestCatalogParser.class, configuration -> configuration.catalogFile("builder.tsv")).build();
+				.factCatalog(TestCatalogParser.class, configuration -> configuration.catalogFile("builder.tsv"))
+				.build();
 
 		assertEquals("from builder", TestCatalogParser.loadedValue);
 	}
@@ -94,20 +95,10 @@ class ModelCatalogConfigurationTest {
 	void rejectsCatalogPathsThatEscapeTheCatalogDirectory() {
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> Model.builder()
 				.typesFrom(Set.of(AnnotatedCollection.class, CatalogGear.class)).workingDirectory(temporaryDirectory)
-				.factParser(TestCatalogParser.class, configuration -> configuration.catalogFile("../outside.tsv"))
+				.factCatalog(TestCatalogParser.class, configuration -> configuration.catalogFile("../outside.tsv"))
 				.build());
 
 		assertTrue(failure.getMessage().contains("relative path"));
-	}
-
-	@Test
-	void rejectsCatalogConfigurationForAUsedPlainFactParser() {
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> Model.builder().typesFrom(Set.of(DefaultConfiguredCollection.class, PlainParserGear.class))
-						.factParser(StringParser.class, configuration -> configuration.catalogFile("not-supported.tsv"))
-						.build());
-
-		assertTrue(failure.getMessage().contains("does not implement CatalogFactParser"));
 	}
 
 	private void writeCatalog(final String fileName, final String value) throws IOException {
@@ -120,7 +111,7 @@ class ModelCatalogConfigurationTest {
 		value
 	}
 
-	public static final class TestCatalogParser extends AbstractCatalogFactParser<Key> {
+	public static final class TestCatalogParser extends AbstractCatalogFactParser<Key, String> {
 
 		private static String loadedValue;
 
@@ -130,14 +121,14 @@ class ModelCatalogConfigurationTest {
 		}
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return RatedFact.exact(rawValue);
 		}
 	}
 
 	@RetroCollection(id = "catalog_configuration", locations = "/not/read")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
-	@RetroFactParser(parser = TestCatalogParser.class, catalogFile = "annotation.tsv")
+	@RetroFactCatalog(parser = TestCatalogParser.class, catalogFile = "annotation.tsv")
 	public static final class AnnotatedCollection {
 	}
 
@@ -163,16 +154,6 @@ class ModelCatalogConfigurationTest {
 		private final Map<String, RetroAttribute> attributes = new HashMap<>();
 
 		public GearWithoutFacts() {
-		}
-	}
-
-	@RetroGear(AnyGearMatcher.class)
-	public static final class PlainParserGear {
-
-		@RetroFact(parser = StringParser.class)
-		private String value;
-
-		public PlainParserGear() {
 		}
 	}
 

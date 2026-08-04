@@ -8,17 +8,18 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.measurement.Length.Unit;
 
 /** Parses metric and imperial scalar lengths without assigning them a role. */
-public final class LengthParser implements FactParser {
+public final class LengthParser implements FactParser<Length> {
 
 	private static final Pattern LENGTH = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(mm|cm|m|\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact> map(RatedFact::exact)
+	public RatedFact<Length> parse(final String rawValue, final ParseContext context) {
+		return parseValue(rawValue).map(RatedFact::exact)
 				.orElseGet(() -> RatedFact.none("Expected a positive metric or imperial length with a unit."));
 	}
 

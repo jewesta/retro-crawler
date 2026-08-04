@@ -4,16 +4,18 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.model.temporal.DateMarking;
 import com.retrocrawler.model.temporal.DateMarkingParser;
 
 /** Maps the collection's German calendar-week notation to canonical ISO. */
-public final class CollectionDateMarkingParser implements FactParser {
+public final class CollectionDateMarkingParser implements FactParser<DateMarking> {
 
 	private final DateMarkingParser delegate = new DateMarkingParser();
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return delegate.parse(rawValue == null ? null : canonical(rawValue));
+	public RatedFact<DateMarking> parse(final String rawValue, final ParseContext context) {
+		return delegate.parse(rawValue == null ? null : canonical(rawValue), context);
 	}
 
 	private static String canonical(final String rawValue) {

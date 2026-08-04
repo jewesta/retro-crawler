@@ -30,6 +30,18 @@ public @interface RetroCollection {
 	String[] locations() default {};
 
 	/**
+	 * Optional BCP 47 language tag used as the collection's interpretation
+	 * locale. The host's format locale is used when omitted.
+	 */
+	String locale() default "";
+
+	/**
+	 * Optional {@link java.time.ZoneId} identifier used as the collection's
+	 * time zone. The host's system time zone is used when omitted.
+	 */
+	String timeZone() default "";
+
+	/**
 	 * Filters deciding which filesystem entries belong to the archive. An entry
 	 * must be accepted by every configured filter.
 	 */

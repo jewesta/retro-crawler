@@ -4,11 +4,12 @@ import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class VideoConnectorParser implements FactParser {
+public final class VideoConnectorParser implements FactParser<VideoConnector> {
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<VideoConnector> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a recognized video connector.");
 		}

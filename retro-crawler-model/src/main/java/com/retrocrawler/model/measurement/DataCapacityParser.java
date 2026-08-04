@@ -8,15 +8,16 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class DataCapacityParser implements FactParser {
+public final class DataCapacityParser implements FactParser<DataCapacity> {
 
 	private static final Pattern CAPACITY = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(KB|MB|GB|TB)$",
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact> map(RatedFact::exact)
+	public RatedFact<DataCapacity> parse(final String rawValue, final ParseContext context) {
+		return parseValue(rawValue).map(RatedFact::exact)
 				.orElseGet(() -> RatedFact.none("Expected a positive data capacity with a KB, MB, GB, or TB unit."));
 	}
 

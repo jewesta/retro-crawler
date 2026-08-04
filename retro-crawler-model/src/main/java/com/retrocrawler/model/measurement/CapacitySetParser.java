@@ -6,11 +6,12 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses uniform capacity sets in either count-first or capacity-first order.
  */
-public final class CapacitySetParser implements FactParser {
+public final class CapacitySetParser implements FactParser<CapacitySet> {
 
 	private static final Pattern COUNT_FIRST = Pattern.compile("^(\\d+)\\s*[x×]\\s*(.+)$", Pattern.CASE_INSENSITIVE);
 
@@ -18,8 +19,8 @@ public final class CapacitySetParser implements FactParser {
 			Pattern.CASE_INSENSITIVE);
 
 	@Override
-	public RatedFact parse(final String rawValue) {
-		return parseValue(rawValue).<RatedFact> map(RatedFact::exact).orElseGet(
+	public RatedFact<CapacitySet> parse(final String rawValue, final ParseContext context) {
+		return parseValue(rawValue).map(RatedFact::exact).orElseGet(
 				() -> RatedFact.none("Expected '<member count> x <capacity per member>' or the reverse order."));
 	}
 

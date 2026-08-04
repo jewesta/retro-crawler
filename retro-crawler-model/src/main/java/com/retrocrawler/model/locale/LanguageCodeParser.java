@@ -8,14 +8,15 @@ import java.util.stream.Collectors;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class LanguageCodeParser implements FactParser {
+public final class LanguageCodeParser implements FactParser<LanguageCode> {
 
 	private static final Map<String, String> ENGLISH_NAMES = Arrays.stream(Locale.getISOLanguages()).collect(Collectors
 			.toUnmodifiableMap(LanguageCodeParser::englishName, Function.identity(), (first, ignored) -> first));
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<LanguageCode> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return noMatch();
 		}
@@ -32,7 +33,7 @@ public final class LanguageCodeParser implements FactParser {
 		return Locale.forLanguageTag(code).getDisplayLanguage(Locale.ENGLISH).toLowerCase(Locale.ROOT);
 	}
 
-	private static RatedFact noMatch() {
+	private static RatedFact<LanguageCode> noMatch() {
 		return RatedFact.none("Expected an ISO 639-1 language code or English language name.");
 	}
 }

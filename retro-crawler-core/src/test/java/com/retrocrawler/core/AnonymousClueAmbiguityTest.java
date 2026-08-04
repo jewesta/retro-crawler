@@ -28,6 +28,7 @@ import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -84,18 +85,18 @@ class AnonymousClueAmbiguityTest {
 		}
 	}
 
-	public static final class FirstParser implements FactParser {
+	public static final class FirstParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return "overlap".equals(rawValue) ? RatedFact.exact("first") : RatedFact.none("Not the first meaning.");
 		}
 	}
 
-	public static final class SecondParser implements FactParser {
+	public static final class SecondParser implements FactParser<String> {
 
 		@Override
-		public RatedFact parse(final String rawValue) {
+		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			return "overlap".equals(rawValue) ? RatedFact.exact("second") : RatedFact.none("Not the second meaning.");
 		}
 	}

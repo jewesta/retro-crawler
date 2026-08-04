@@ -8,19 +8,20 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.commerce.Money;
 
 /**
  * Parses the collection's monetary convention, including its default currency.
  */
-public final class MoneyParser implements FactParser {
+public final class MoneyParser implements FactParser<Money> {
 
 	private static final Currency DEFAULT_CURRENCY = Currency.getInstance("EUR");
 
 	private static final Pattern MONEY = Pattern.compile("^(\\d+(?:[.,]\\d{1,2})?)\\s*([A-Za-z]{3})?$");
 
 	@Override
-	public RatedFact parse(final String rawValue) {
+	public RatedFact<Money> parse(final String rawValue, final ParseContext context) {
 		if (rawValue == null) {
 			return RatedFact.none("Expected a non-null monetary amount.");
 		}
