@@ -14,13 +14,11 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.demo.DemoModels;
 
-record DemoArchive(String label, RetroCrawler crawler, ArchiveSourceFileReader fileReader,
-		Optional<LocalArchiveFolderOpener> folderOpener) {
+record DemoArchive(String label, RetroCrawler crawler, Optional<LocalArchiveFolderOpener> folderOpener) {
 
 	DemoArchive {
 		Objects.requireNonNull(label, "label");
 		Objects.requireNonNull(crawler, "crawler");
-		Objects.requireNonNull(fileReader, "fileReader");
 		Objects.requireNonNull(folderOpener, "folderOpener");
 	}
 
@@ -43,6 +41,6 @@ record DemoArchive(String label, RetroCrawler crawler, ArchiveSourceFileReader f
 				? Optional.of(new LocalArchiveFolderOpener())
 				: Optional.empty();
 		return new DemoArchive(crawler.archiveDescriptor().name() + " — " + sourceOption.label(), crawler,
-				new ArchiveSourceFileReader(source, roots), folderOpener);
+				folderOpener);
 	}
 }

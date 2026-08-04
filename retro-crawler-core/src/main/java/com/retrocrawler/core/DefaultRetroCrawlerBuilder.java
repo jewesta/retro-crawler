@@ -67,6 +67,6 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 		final ArchiveSource effectiveSource = archiveSource == null ? new FileSystemArchiveSource() : archiveSource;
 		final ArchiveDigger digger = new ArchiveDigger(model, effectiveSource, effectivePlanning);
 		return new RetroCrawlerImpl(model.archiveDescriptor(), digger, model.gearResolver(), model.configuration(),
-				repository);
+				repository, effectiveSource);
 	}
 }

@@ -12,7 +12,9 @@ Instead, you can use your own personal already existing folder structure, provid
 ## Core Concepts
 
 ### Archive
-A directory tree on disk that serves as the data source.
+A rooted, hierarchical source that contains a collection. The default source is
+a local directory tree, but providers may expose ZIP entries, remote files, or
+other file-like hierarchies through the same archive model.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -193,6 +195,18 @@ content is optional. When available, the session invokes a generic
 `ArchiveFileAccessor` synchronously and closes the supplied `InputStream`
 before returning its result. An empty result means that content was not
 available and content-based clue finders contribute no clue for that file.
+
+Applications can inspect a file at any source path produced by the crawler
+through the same scoped accessor contract:
+
+```java
+Optional<byte[]> image = crawler.inspect(sourcePath, InputStream::readAllBytes);
+```
+
+The crawler resolves the address through its configured source and closes the
+short-lived session as well as the content stream. `Optional.empty()` means the
+provider recognizes the file but does not expose its content; a missing or
+folder address raises `NoSuchFileException`.
 
 Source paths remain hierarchical addresses used for relative clues, cache
 relocation, and partial re-indexing; providers must not require them to be

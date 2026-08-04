@@ -2,6 +2,7 @@ package com.retrocrawler.app;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -280,11 +281,11 @@ public class SearchView extends HorizontalLayout {
 	}
 
 	private Optional<Component> archiveImage(final VaadinGearNode node) {
-		final ArchiveSourceFileReader fileReader = activeArchive.fileReader();
+		final RetroCrawler crawler = activeArchive.crawler();
 		return node.gear().getPicFront().map(path -> {
 			final String fileName = path.getFileName().toString();
 			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
-				final Optional<byte[]> content = fileReader.read(path);
+				final Optional<byte[]> content = crawler.inspect(path, InputStream::readAllBytes);
 				if (content.isEmpty()) {
 					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);
 				}

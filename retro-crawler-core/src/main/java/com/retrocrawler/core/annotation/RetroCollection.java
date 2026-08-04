@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 
 /**
- * Declares the identity and default filesystem configuration of one collector's
+ * Declares the identity and default archive configuration of one collector's
  * collection. Exactly one type in a RetroCrawler model carries this annotation.
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -24,8 +24,8 @@ public @interface RetroCollection {
 	String name() default "";
 
 	/**
-	 * A collection can consist of several folders. Locations may be omitted
-	 * when they are supplied explicitly while constructing the model.
+	 * A collection can consist of several hierarchical roots. Locations may be
+	 * omitted when they are supplied explicitly while constructing the model.
 	 */
 	String[] locations() default {};
 
@@ -42,7 +42,7 @@ public @interface RetroCollection {
 	String timeZone() default "";
 
 	/**
-	 * Filters deciding which filesystem entries belong to the archive. An entry
+	 * Filters deciding which source entries belong to the archive. An entry
 	 * must be accepted by every configured filter.
 	 */
 	Class<? extends ArchivePathFilter>[] pathFilters() default {};

@@ -7,7 +7,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 /**
  * Stores extracted clue archives.
  * <p>
- * The configured filesystem archive remains RetroCrawler's source of truth. A
+ * The configured archive source remains RetroCrawler's source of truth. A
  * repository holds the rebuildable result of crawling that source.
  */
 public interface Repository {
