@@ -66,6 +66,14 @@ session-owned accessor contract for entry content. Malformed entry names that
 escape the root, use non-portable separators, duplicate paths, or create
 file/folder collisions are rejected when the session opens.
 
+The Vaadin demo app now composes one crawler per demo model and source option.
+Its archive selector exposes both filesystem and ZIP variants of Retro PC,
+using a runtime root override for the adjacent `retro_pc.zip`. Image previews
+are loaded through a provider-neutral file reader that reopens a short-lived
+session, locates the source file, and copies its content within the scoped
+accessor call. The local-folder action remains available for filesystem roots
+and is explicitly disabled for sources that do not expose local folders.
+
 The crawl planner and digger now operate on provider handles and listings rather
 than interpreting source addresses through `Files`. `ArchiveManager` owns the
 session lifetime for both complete and partial re-indexing, including provider
@@ -94,6 +102,13 @@ change was required.
 - ZIP verification passed: six provider contract and malformed-archive tests,
   plus an end-to-end crawl test that reads a nested clue without extraction.
 - The complete core suite passed with 180 tests.
+- The packaged `retro_pc.zip` demo crawl passed and resolved a known gear image
+  to its synthetic ZIP source address.
+- The app suite passed with nine tests, including filesystem and ZIP content
+  reads plus source-option mapping.
+- Browser smoke testing selected the ZIP variant, completed a re-index, decoded
+  seven visible JPEG previews through source access, disabled local-folder
+  actions, and reported no browser errors.
 - `mvn test` passed for the complete seven-module reactor.
 - `mvn clean install` passed for the complete seven-module reactor and packaged
   module boundaries.

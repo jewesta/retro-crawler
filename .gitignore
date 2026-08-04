@@ -41,5 +41,8 @@ retro-crawler-app/error-screenshots/
 # RetroCrawler auto generated temp files
 # ======================
 **/rc_demo_archives/
+!retro-crawler-demo/src/main/resources/rc_demo_archives/
+retro-crawler-demo/src/main/resources/rc_demo_archives/*
+!retro-crawler-demo/src/main/resources/rc_demo_archives/retro_pc.zip
 **/cache/
 /.metadata/
