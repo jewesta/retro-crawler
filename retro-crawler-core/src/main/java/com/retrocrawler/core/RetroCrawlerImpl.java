@@ -218,7 +218,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
 			progressor.throwIfCancelled();
 			factory.beginArchive(resolvedArchive.descriptor());
-			emitCompressed(resolvedArchive.root(), null, factory, gearType, progressor);
+			emitCompressed(resolvedArchive.descriptor().id(), resolvedArchive.root(), null, factory, gearType,
+					progressor);
 			factory.endArchive(resolvedArchive.descriptor());
 		}
 
@@ -287,7 +288,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 	 * not resolve or type does not match: emit nothing, keep same parent for
 	 * children (lifting)
 	 */
-	private <R, N, G> void emitCompressed(final ResolvedArchiveNode node, final N parent,
+	private <R, N, G> void emitCompressed(final ArchiveId archiveId, final ResolvedArchiveNode node, final N parent,
 			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Progressor progressor) {
 
 		progressor.throwIfCancelled();
@@ -296,7 +297,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final N nextParent;
 		if (resolved.isPresent() && gearType.isInstance(resolved.get())) {
 			final G typed = gearType.cast(resolved.get());
-			nextParent = factory.addNode(parent, typed, node.source());
+			final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
+			nextParent = factory.addNode(parent, typed, source);
 		} else {
 			nextParent = parent;
 		}
@@ -306,7 +308,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			return;
 		}
 		for (final ResolvedArchiveNode child : children) {
-			emitCompressed(child, nextParent, factory, gearType, progressor);
+			emitCompressed(archiveId, child, nextParent, factory, gearType, progressor);
 		}
 	}
 
@@ -315,11 +317,12 @@ class RetroCrawlerImpl implements RetroCrawler {
 			final Progressor progressor) {
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.artifact();
-		final ARI source = ARI.of(collectionId, archiveId, archiveRoot.relativize(sourcePath));
+		final Path relativeSourcePath = archiveRoot.relativize(sourcePath);
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
 				: resolver.resolveWithIdentity(artifact,
 						new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
-		resolution.ifPresent(value -> retroIds.register(value, source));
+		resolution.ifPresent(value -> value.retroId()
+				.ifPresent(id -> retroIds.register(id, ARI.of(collectionId, archiveId, relativeSourcePath))));
 		if (artifact != null) {
 			progress.complete(sourcePath);
 		}
@@ -332,7 +335,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 						progress, progressor));
 			}
 		}
-		return new ResolvedArchiveNode(resolution, source, List.copyOf(children));
+		return new ResolvedArchiveNode(resolution, relativeSourcePath, List.copyOf(children));
 	}
 
 	private static final class ResolutionProgress {
@@ -363,8 +366,9 @@ class RetroCrawlerImpl implements RetroCrawler {
 	private record ResolvedArchive(ArchiveDescriptor descriptor, ResolvedArchiveNode root) {
 	}
 
-	private record ResolvedArchiveNode(Optional<GearResolution> resolution, ARI source,
-			List<ResolvedArchiveNode> children) {
+	private record ResolvedArchiveNode(Optional<GearResolution> resolution,
+			// Retained as a Path to avoid constructing an ARI for every archive node.
+			Path relativeSourcePath, List<ResolvedArchiveNode> children) {
 	}
 
 	private record RegisteredArchive(ArchiveDescriptor descriptor, ArchiveManager manager, ArchiveSource source) {
@@ -388,9 +392,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 		private final Map<Object, List<String>> occurrences = new LinkedHashMap<>();
 
-		private void register(final GearResolution resolution, final ARI source) {
-			resolution.retroId().ifPresent(
-					id -> occurrences.computeIfAbsent(id, ignored -> new ArrayList<>()).add(source.toString()));
+		private void register(final Object retroId, final ARI source) {
+			occurrences.computeIfAbsent(retroId, ignored -> new ArrayList<>()).add(source.toString());
 		}
 
 		private void assertUnique() {
