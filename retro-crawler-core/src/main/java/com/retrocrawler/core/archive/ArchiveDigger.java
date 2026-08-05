@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -316,10 +317,15 @@ public class ArchiveDigger {
 		final FolderOutcome outcome;
 		if (clues.isEmpty()) {
 			artifact = null;
-			outcome = FolderOutcome.NO_CLUES;
+			outcome = new FolderOutcome.MetadataFolder(folderView);
 		} else {
 			artifact = new Artifact(reporting(relativeFolder, () -> clues.and(createSyntheticClues(root, folder))));
-			outcome = FolderOutcome.ARTIFACT;
+			/*
+			 * The view is deliberately not carried. This folder is another
+			 * item's evidence, so there must be nothing here for an ancestor to
+			 * read.
+			 */
+			outcome = new FolderOutcome.EstablishedArtifact();
 			logger.info("Found artifact at: " + relativeFolder);
 		}
 
@@ -329,7 +335,7 @@ public class ArchiveDigger {
 		if (startsRegion) {
 			plan.completeRegion(folder, progressor);
 		}
-		return new DigResult(result, folderView, outcome);
+		return new DigResult(result, outcome);
 	}
 
 	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
@@ -342,15 +348,16 @@ public class ArchiveDigger {
 		 * Removing this filter would let a parent be classified by what its
 		 * children are.
 		 *
-		 * The question asked is what the crawl positively established about a
-		 * child, not whether it happens to carry an artifact. Those coincide
-		 * today, but only because a folder the crawl could not read aborts the
-		 * whole dig. A child left in an unknown state is not a metadata folder,
-		 * so FolderOutcome answers this once rather than every caller inferring
-		 * it from a null artifact.
+		 * Pruning is structural rather than a check anyone has to remember: a
+		 * child that established an artifact carries no view, so there is
+		 * nothing here to take. An outcome that established nothing carries none
+		 * either, and this switch stops compiling until it says so.
 		 */
-		final List<ArchiveFolderView> metadataFolders = children.stream().filter(DigResult::isMetadataFolder)
-				.map(DigResult::folderView).toList();
+		final List<ArchiveFolderView> metadataFolders = children.stream().map(DigResult::outcome)
+				.flatMap(outcome -> switch (outcome) {
+				case FolderOutcome.MetadataFolder metadata -> Stream.of(metadata.view());
+				case FolderOutcome.EstablishedArtifact ignored -> Stream.<ArchiveFolderView>empty();
+				}).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
 				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
 				.toList();
@@ -358,49 +365,40 @@ public class ArchiveDigger {
 	}
 
 	/**
-	 * What the crawl established about one folder, and therefore whether it is a
-	 * metadata folder an ancestor's tree finder may look inside.
+	 * What the crawl established about one folder, and with it whatever an
+	 * ancestor's tree finder is allowed to read from that folder.
 	 * <p>
-	 * Metadata status must be established, never inferred. Only a folder the
-	 * crawl positively read and found no clue in qualifies; anything else stays
-	 * opaque, including a folder whose state the crawl never determined.
-	 * Collecting clue failures instead of aborting the dig will add exactly such
-	 * a state, and adding a constant here forces the question to be answered
-	 * rather than left to a null check that would silently say yes.
+	 * Metadata status is established, never inferred, and the readable view
+	 * travels with the finding rather than beside it. A folder that established
+	 * an artifact has no view to hand up, so an ancestor cannot reach into
+	 * another item's evidence even by mistake — the artifact boundary that
+	 * design principle 10 depends on is structural instead of a filter someone
+	 * has to remember to apply.
+	 * <p>
+	 * Collecting clue failures instead of aborting the dig will add a state that
+	 * established nothing and therefore carries no view either. Because this
+	 * type is sealed, every exhaustive switch over it stops compiling until that
+	 * case is handled.
 	 */
-	private enum FolderOutcome {
+	private sealed interface FolderOutcome {
 
-		/** Positively read, no clue found: the folder holds no item of its own. */
-		NO_CLUES(true),
+		/**
+		 * Positively read, no clue found: the folder holds no item of its own,
+		 * so an ancestor's tree finder may read through it.
+		 */
+		record MetadataFolder(ArchiveFolderView view) implements FolderOutcome {
+		}
 
 		/**
 		 * Established an artifact, so its clues are another item's evidence.
 		 * Whether that evidence ever resolves into gear is a later,
 		 * model-dependent question the digger neither knows nor needs.
 		 */
-		ARTIFACT(false);
-
-		private final boolean metadataFolder;
-
-		FolderOutcome(final boolean metadataFolder) {
-			this.metadataFolder = metadataFolder;
-		}
-
-		boolean isMetadataFolder() {
-			return metadataFolder;
+		record EstablishedArtifact() implements FolderOutcome {
 		}
 	}
 
-	private record DigResult(ArchiveNode node, ArchiveFolderView folderView, FolderOutcome outcome) {
-
-		/**
-		 * Whether this child carries no item of its own, so an ancestor's tree
-		 * finder may read through it. The outcome owns the answer; this only
-		 * saves the caller a hop.
-		 */
-		boolean isMetadataFolder() {
-			return outcome.isMetadataFolder();
-		}
+	private record DigResult(ArchiveNode node, FolderOutcome outcome) {
 	}
 
 	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders, List<ArchiveFileView> files)

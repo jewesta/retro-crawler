@@ -380,13 +380,26 @@ it should, so the crawl report itself fills with findings the recovery caused
 and real ones may be masked. Under fail-fast this cannot happen, because the
 parent is never built.
 
-`FolderOutcome` now answers the question once, and only `NO_CLUES` is a metadata
-folder. Adding a state for a failed folder forces its answer to be declared
-in the enum constructor rather than left to a null check that would silently say
-yes. This changes no behaviour today; it removes the coincidence that would have
-made the change dangerous. Verified by mutating the filter to accept every
-child, which fails
-`ArchiveDiggerTreeClueFinderTest.findsParentCluesPostOrderThroughMetadataFoldersWithoutCrossingArtifactBoundaries`.
+`FolderOutcome` now answers the question once. It began as an enum carrying a
+boolean, which still left `DigResult` holding a folder view that was meaningless
+for a child that had established an artifact — the view was carried up and then
+discarded by a filter. An invariant guarded by a filter someone must remember is
+the same shape as the `Set<Clue>` problem, so the type absorbed it: a sealed
+`FolderOutcome` whose `MetadataFolder` carries the readable view and whose
+`EstablishedArtifact` carries nothing. A folder that is another item's evidence
+has no view to hand up, so an ancestor cannot read one by mistake and pruning
+stops being a check at all. `DigResult` is now `(node, outcome)`.
+
+Sealing it also strengthens the forcing function. An enum constant obliged a new
+state to answer a boolean in the constructor; a sealed type stops every
+exhaustive switch compiling until the new case is handled. Verified by adding a
+`Failed` record, which fails compilation with "switch does not cover all
+possible input values" — exactly the reminder the crawl-report work will want.
+
+This changes no behaviour today; it removes the coincidence that would have made
+the change dangerous. The behavioural rule is covered by
+`ArchiveDiggerTreeClueFinderTest.findsParentCluesPostOrderThroughMetadataFoldersWithoutCrossingArtifactBoundaries`,
+confirmed by mutating the earlier filter to accept every child.
 
 ### Open: a repository cannot forget or enumerate
 

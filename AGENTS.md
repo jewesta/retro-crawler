@@ -119,9 +119,12 @@ These instructions apply to the entire repository.
    Metadata-folder status is established, never inferred. Only a folder the
    crawl positively read and found no clue in is one, and only such a folder may
    be read through by an ancestor's tree finder; a folder in any other state,
-   including one the crawl never determined, stays opaque. `FolderOutcome`
-   answers this once, so a new state has to declare its answer instead of
-   falling through an `artifact == null` check that would silently say yes.
+   including one the crawl never determined, stays opaque. Keep this structural:
+   a `FolderOutcome` carries the readable view only when it has established the
+   right to offer one, so a folder holding another item's evidence has nothing
+   to hand up and the boundary cannot be crossed by a forgotten check. The type
+   is sealed, so a new outcome stops every switch over it compiling until it
+   declares what it offers.
 
 ## Repository Structure
 
