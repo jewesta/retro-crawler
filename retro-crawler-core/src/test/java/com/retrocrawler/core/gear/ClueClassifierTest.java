@@ -1,7 +1,7 @@
 package com.retrocrawler.core.gear;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -9,6 +9,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 
 class ClueClassifierTest {
 
@@ -24,13 +25,11 @@ class ClueClassifierTest {
 	}
 
 	@Test
-	void letsARealValueReplaceAMissingValueFromAnotherFinder() {
+	void rejectsARealValueAndMissingValueFromSeparateClues() {
 		final ClueClassifier classifier = new ClueClassifier(Set.of("sn"));
 
-		final Set<Clue> clues = classifier.classify(Set.of(Clue.of("SN"), Clue.of("sn", "12345")));
-
-		assertEquals(Set.of("12345"), clue(clues, "sn").value());
-		assertFalse(clue(clues, "sn").isMissingValue());
+		assertThrows(DuplicateClueException.class,
+				() -> classifier.classify(Set.of(Clue.of("SN"), Clue.of("sn", "12345"))));
 	}
 
 	private static Clue clue(final Set<Clue> clues, final String key) {

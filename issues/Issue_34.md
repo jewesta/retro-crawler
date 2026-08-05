@@ -253,19 +253,31 @@ decision and a failure cannot cite a path.
 thing. Now that ARIs exist, the synthetic id is a candidate for replacement
 rather than a fixture.
 
-### Open: the artifact clue-key invariant is unenforced
+### Decision: one clue per key is a hard invariant
 
-`Clue` overrides neither `equals` nor `hashCode`, so the `Set<Clue>` inside
-`Artifact` deduplicates by identity and two clues may share a key.
-`Artifact.jsonGetter` then collects to a map keyed by `Clue::key` and throws
-`IllegalStateException` on the duplicate — at stowaway time, after the expensive
-crawl that caching exists to avoid repeating.
+The original crawler rejected a second clue with the same key. Issue 24
+replaced that rule with value merging without an explicit design decision from
+the project owner. That change was reversed here.
 
-This is not live on the default path, because `ArchivePathClueFinder.merge` folds
-by key first. The invariant lives in a collaborator rather than in the type that
-depends on it, and `Artifact(Set<Clue>)` is public. `DuplicateClueException`
-exists and is thrown nowhere, which suggests the check was intended on `Artifact`
-and never landed.
+A clue may contain several values supplied by one authority. Two distinct
+clues may not claim the same key within an artifact, even when their values
+agree. Merging them would erase the important difference between one source
+asserting a multi-valued property and two sources disagreeing about ownership
+or value. This is particularly dangerous for collection-valued facts, where a
+folder asserting `AGP` and a metadata file asserting `PCI` could otherwise be
+accepted as the apparently valid set `{AGP, PCI}`.
+
+The invariant is enforced while clues are collected and again by the public
+`Artifact(Set<Clue>)` boundary. Resolution rejects an anonymous observation
+that is interpreted as a semantic key already claimed by an explicitly keyed
+clue. Any number of clue finders may contribute anonymous clues because those
+observations claim no semantic key. Several anonymous clues may later form one
+multi-valued fact, such as `[DS] [HD]` or `[schwarz] [weiß, pink]`.
+A random collision between generated anonymous keys is not a semantic
+duplicate; the incoming clue receives a fresh anonymous key and both
+observations survive. `Clue` deliberately retains identity equality so that
+conflicting observations remain visible long enough to be rejected rather than
+being silently discarded by a `Set`.
 
 ### Open: a repository cannot forget or enumerate
 
@@ -318,7 +330,7 @@ The principle was enforced and tested but was not among the design principles in
 tree finders rather than as the rule it protects. That omission was
 load-bearing: this review read the entire core and proposed relaxing the
 constraint, which is exactly the failure an unstated principle invites. It is
-now design principle 9 in `AGENTS.md`, and the pruning filter carries a comment
+now design principle 10 in `AGENTS.md`, and the pruning filter carries a comment
 naming what it protects so it cannot be mistaken for an optimization.
 
 ## Consequences for Existing Deployments
@@ -351,14 +363,16 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Remove `ArchivePath` and the two dead `ArchivePathClueFinder.find`
       overloads it served.
 - [x] Move `Confidence` from `archive.clues` to `gear`.
-- [x] Record location-as-relation as design principle 9 and document the
+- [x] Record location-as-relation as design principle 10 and document the
       artifact-boundary pruning it depends on.
 - [x] Define the artifact as the deliberate clue-provenance boundary.
 - [x] Timestamp every archive subtree and preserve crawl history across partial
       reindexing.
-- [ ] Follow-up issues for the open review findings: artifact location, the
-      artifact clue-key invariant, repository removal and enumeration, and value
-      ordering.
+- [x] Restore one clue per explicit key, reject explicit-versus-anonymous
+      semantic competition, and preserve arbitrary anonymous clues from any
+      number of finders.
+- [ ] Follow-up issues for the remaining open review findings: artifact
+      location, repository removal and enumeration, and value ordering.
 - [x] Run focused and reactor verification.
 
 ## Verification
@@ -371,7 +385,7 @@ file resource values from archive-root-relative to artifact-relative, and format
   tests, 0 failures, 0 errors. The count dropped with the tests covering the
   removed types; no remaining test needed adjusting, which is the expected
   result for types nothing referenced.
-- Re-verified after documenting design principle 9: `mvn test` passed for the
+- Re-verified after documenting design principle 10: `mvn test` passed for the
   full reactor with 314 tests, 0 failures, 0 errors, and the canonical
   `prettify` assertion passed for `ArchiveDigger`.
 - Re-verified after making file resources artifact-relative: canonical
@@ -381,6 +395,12 @@ file resource values from archive-root-relative to artifact-relative, and format
 - Re-verified after timestamping archive nodes: canonical `prettify` passed for
   all 7 affected Java sources, and `mvn clean install` passed for the full
   seven-module reactor with 319 tests, 0 failures, and 0 errors.
+- Re-verified after restoring the clue-key invariant: canonical `prettify`
+  assertion passed for all 10 affected Java sources, and `mvn clean install`
+  passed for the full seven-module reactor with 324 tests, 0 failures, and 0
+  errors. The repository-wide formatter assertion found only an unrelated
+  pending Javadoc change in `RetroCrawler.java`, which this work deliberately
+  left untouched.
 - Note for worktree-based work: `prettify` validates a repository root with
   `Files.isDirectory(repo.resolve(".git"))`, which no Git worktree satisfies
   because its `.git` is a file. The assertion above was obtained by running

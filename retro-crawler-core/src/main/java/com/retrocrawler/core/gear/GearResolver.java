@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
@@ -45,7 +46,7 @@ public class GearResolver {
 		final String key = clue.key();
 
 		if (resolved.containsKey(key)) {
-			return;
+			rejectDuplicateSemanticKey(key, resolved.get(key), clue);
 		}
 
 		final FactFinder finder = factFinders.get(key);
@@ -102,29 +103,35 @@ public class GearResolver {
 			return;
 		}
 
-		reconcile(resolved, resolvedKey, existing, clue, finder, parseContext);
-	}
-
-	private static void reconcile(final RetroAttributes resolved, final String resolvedKey,
-			final RetroAttribute existing, final Clue incoming, final FactFinder finder,
-			final ParseContext parseContext) {
-
-		final Set<String> combinedValues = new HashSet<>(incoming.value());
-		if (existing instanceof final Fact fact) {
-			combinedValues.addAll(fact.source().value());
-		} else if (existing instanceof final Clue clue) {
-			combinedValues.addAll(clue.value());
-		}
-
-		final Clue combined = Clue.of(resolvedKey, Set.copyOf(combinedValues));
-		final Optional<Fact> combinedFact = finder.find(combined, parseContext);
-		if (existing instanceof final Fact fact && combinedFact.isPresent()
-				&& fact.value().equals(combinedFact.get().value())) {
-			// The new observation corroborates the already resolved fact.
+		if (existing instanceof final Fact fact && fact.source().isAnonymous()) {
+			reconcileAnonymousClues(resolved, resolvedKey, fact, clue, finder, parseContext);
 			return;
 		}
 
-		resolved.replace(combinedFact.<RetroAttribute> map(Function.identity()).orElse(combined));
+		rejectDuplicateSemanticKey(resolvedKey, existing, clue);
+	}
+
+	private static void reconcileAnonymousClues(final RetroAttributes resolved, final String resolvedKey,
+			final Fact existing, final Clue incoming, final FactFinder finder, final ParseContext parseContext) {
+		final Set<String> combinedValues = new HashSet<>(existing.source().value());
+		combinedValues.addAll(incoming.value());
+
+		final Clue combinedAnonymous = Clue.of(Set.copyOf(combinedValues));
+		final Optional<Fact> combinedFact = finder.find(combinedAnonymous, parseContext);
+		if (combinedFact.isPresent() && existing.value().equals(combinedFact.get().value())) {
+			return;
+		}
+
+		final RetroAttribute combined = combinedFact.<RetroAttribute> map(Function.identity())
+				.orElseGet(() -> Clue.of(resolvedKey, Set.copyOf(combinedValues)));
+		resolved.replace(combined);
+	}
+
+	private static void rejectDuplicateSemanticKey(final String key, final RetroAttribute existing,
+			final Clue incoming) {
+		final Clue previous = existing instanceof final Fact fact ? fact.source() : (Clue) existing;
+		throw new DuplicateClueException("More than one clue resolves to semantic key '" + key + "'. First clue: "
+				+ previous + ", duplicate clue: " + incoming + ".");
 	}
 
 	private void putAnonymousClueIfUseful(final RetroAttributes resolved, final Clue clue) {

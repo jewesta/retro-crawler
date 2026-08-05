@@ -68,7 +68,21 @@ These instructions apply to the entire repository.
    must not mutate the cached artifact. Model and parser changes must therefore
    be able to reinterpret an existing clue archive without re-indexing.
 
-9. **Express gear relation through archive location, never through
+9. **Give every clue key exactly one authority per artifact.**
+   A single clue may deliberately contain several values, but two distinct
+   clues must never claim the same key within one artifact. Different finders
+   are independent sources, not corroborating authorities: a folder name and a
+   metadata file supplying the same key is an archive consistency error even
+   when their values agree. Never merge their values or let source order choose
+   a winner. Any number of clue finders may emit anonymous clues: anonymous
+   clues claim no semantic key, coexist under distinct generated keys, and may
+   later contribute to the same fact. During resolution, an anonymous
+   observation must not compete with a clue that already explicitly claims its
+   semantic key. Generated anonymous-key collisions are the sole key-level
+   exception; re-key the incoming anonymous clue because its key carries no
+   semantics.
+
+10. **Express gear relation through archive location, never through
    hierarchy-derived type.**
    A physical item is in exactly one place at a time, and so is a folder. That
    isomorphism is why RetroCrawler models gear relation as archive location:

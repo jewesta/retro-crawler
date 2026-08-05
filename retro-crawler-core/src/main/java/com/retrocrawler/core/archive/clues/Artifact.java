@@ -1,6 +1,5 @@
 package com.retrocrawler.core.archive.clues;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class Artifact {
 
 	@JsonIgnore
-	private final Set<Clue> clues;
+	private final ClueAccumulator clues;
 
 	/**
 	 * {@link JsonAnySetter} is not compatible with constructor injection via
@@ -33,7 +32,7 @@ public class Artifact {
 	 */
 	protected Artifact() {
 		// Jackson
-		this.clues = new HashSet<>();
+		this.clues = new ClueAccumulator();
 	}
 
 	public Artifact(final Set<Clue> clues) {
@@ -43,19 +42,19 @@ public class Artifact {
 			throw new IllegalArgumentException(
 					"Clues cannot be empty. The existence of an artifact implies that there is at least one clue.");
 		}
-		this.clues = new HashSet<>(clues);
+		this.clues = new ClueAccumulator(clues);
 	}
 
 	/**
-	 * Returns an unmodifiable view of the raw clues.
+	 * Returns the raw clues as an immutable set.
 	 */
 	public Set<Clue> clues() {
-		return Collections.unmodifiableSet(clues);
+		return clues.clues();
 	}
 
 	@JsonAnyGetter
 	protected Map<String, Object> jsonGetter() {
-		return clues.stream().collect(Collectors.toUnmodifiableMap(Clue::key, clue -> {
+		return clues.clues().stream().collect(Collectors.toUnmodifiableMap(Clue::key, clue -> {
 			switch (clue.size()) {
 			case 0:
 				return List.of();
@@ -85,7 +84,7 @@ public class Artifact {
 
 	@Override
 	public String toString() {
-		return clues.toString();
+		return clues.clues().toString();
 	}
 
 }

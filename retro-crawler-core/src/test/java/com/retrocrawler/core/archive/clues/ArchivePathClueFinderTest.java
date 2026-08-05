@@ -1,6 +1,7 @@
 package com.retrocrawler.core.archive.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -51,6 +52,34 @@ class ArchivePathClueFinderTest {
 		assertEquals(2, keys.size());
 		assertTrue(keys.contains("_deadbeef"));
 		assertTrue(keys.stream().allMatch(key -> key.matches("_[a-z0-9]{8}")));
+	}
+
+	@Test
+	void rejectsMoreThanOneNamedClueForTheSameKey() {
+		final Clue first = Clue.of("bus", "ISA");
+		final Clue second = Clue.of("bus", "PCI");
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(ignored -> Set.of(), List.of(), List.of());
+
+		assertThrows(DuplicateClueException.class,
+				() -> finder.enrich(Set.of(first, second), emptyFolder(), new Progressor()));
+	}
+
+	@Test
+	void keepsAnonymousCluesFromDifferentFinders() {
+		final ArchiveFolder root = () -> Path.of("/archive");
+		final ArchiveFolder folder = () -> root.path().resolve("folder");
+		final FolderNameClueFinder folderFinder = ignored -> Set.of(Clue.of("folder observation"));
+		final TreeClueFinder treeFinder = ignored -> Set.of(Clue.of("tree observation"));
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(folderFinder, List.of(), List.of(),
+				List.of(treeFinder));
+		final Progressor progressor = new Progressor();
+		final Set<Clue> localClues = finder.find(folder, List.of(), emptySession(root), progressor);
+
+		final Set<Clue> clues = finder.enrich(localClues, emptyFolder(), progressor);
+
+		assertEquals(Set.of("folder observation", "tree observation"),
+				clues.stream().flatMap(clue -> clue.value().stream()).collect(Collectors.toSet()));
+		assertEquals(2, clues.stream().map(Clue::key).distinct().count());
 	}
 
 	private static ArchiveFolderView emptyFolder() {

@@ -32,6 +32,7 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreLinuxSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreMacSystemPaths;
@@ -267,13 +268,13 @@ class MyCollectionModelTest {
 
 	@Test
 	void resolvesOnlyExplicitlyKeyedChipDesignationsAndAllowsSeveral() throws IOException {
-		Files.createDirectories(archiveRoot.resolve("Controller [IC RC42-A] [ic Example Semiconductor 7]"));
+		Files.createDirectories(archiveRoot.resolve("Controller [IC RC42-A, Example Semiconductor 7]"));
 		Files.createDirectories(archiveRoot.resolve("Anonymous observation [RC42-A]"));
 
 		final List<MyGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class);
 
 		assertEquals(Set.of(new ChipDesignation("RC42-A"), new ChipDesignation("Example Semiconductor 7")),
-				gear(gear, "Controller [IC RC42-A] [ic Example Semiconductor 7]").getChipDesignations());
+				gear(gear, "Controller [IC RC42-A, Example Semiconductor 7]").getChipDesignations());
 		assertTrue(gear(gear, "Anonymous observation [RC42-A]").getChipDesignations().isEmpty());
 	}
 
@@ -569,28 +570,21 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void combinesExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
+	void rejectsConflictingExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: PCI\n---\n");
 
-		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
-				"Conflicting object [AGP] [200006]");
-
-		assertInstanceOf(MysteryGear.class, gear);
-		assertEquals(Set.of(ExpansionBus.AGP, ExpansionBus.PCI), gear.getExpansionBuses());
-		assertFalse(gear.getAttributes().containsKey(AttributeNames.BUS));
+		assertThrows(DuplicateClueException.class,
+				() -> crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 	}
 
 	@Test
-	void collapsesCorroboratingFolderAndMarkdownValues() throws IOException {
+	void rejectsCorroboratingExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Corroborated card [AGP] [VGA] [200007]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: AGP\n---\n");
 
-		final MyGear gear = gear(crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class),
-				"Corroborated card [AGP] [VGA] [200007]");
-
-		assertInstanceOf(GraphicsCard.class, gear);
-		assertEquals(Set.of(ExpansionBus.AGP), gear.getExpansionBuses());
+		assertThrows(DuplicateClueException.class,
+				() -> crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 	}
 
 	@Test

@@ -36,6 +36,18 @@ A raw key–value observation derived from:
 
 Clues are always **string-based** and may contain multiple values. This is a raw representation of a **potential** property of a piece in your collection.
 
+Within one artifact, every clue key has exactly one authority. One clue may
+contain several values, but separate clues from different finders must not
+claim the same explicit key. An anonymous observation must likewise not compete
+with an explicitly keyed clue after resolution discovers its meaning.
+RetroCrawler rejects that archive inconsistency even when the values agree; it
+never merges observations from separate authorities into one clue.
+
+Anonymous clues are deliberately different: they claim no semantic key. Any
+number of clue finders may contribute anonymous clues to one artifact, and all
+of those observations survive under distinct generated keys. Resolution may
+later interpret several of them as values of the same fact.
+
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
 Gear types are **not** required to implement framework interfaces and require only a no-arg constructor. It's "bring your own type".

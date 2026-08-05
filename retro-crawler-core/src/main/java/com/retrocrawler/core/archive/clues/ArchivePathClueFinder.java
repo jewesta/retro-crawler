@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,45 +45,10 @@ public class ArchivePathClueFinder {
 		}
 	}
 
-	private static Set<Clue> merge(final Set<Clue> existing, final Set<Clue> incoming) {
-		// Short-circuit
-		if (incoming.isEmpty()) {
-			return existing;
-		}
-		// We have merging to do
-		final Map<String, Clue> byKey = new HashMap<>();
-
-		for (final Clue clue : existing) {
-			mergeClue(byKey, clue);
-		}
-
-		for (final Clue clue : incoming) {
-			mergeClue(byKey, clue);
-		}
-
-		return new HashSet<>(byKey.values());
-	}
-
-	private static void mergeClue(final Map<String, Clue> cluesByKey, final Clue incoming) {
-		Clue candidate = incoming;
-		Clue previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
-
-		/*
-		 * In the very rare case of an anonymous key collision simply recreate
-		 * the clue which pulls a fresh random key.
-		 */
-		while (previous != null && candidate.isAnonymous()) {
-			candidate = Clue.of(candidate.value());
-			previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
-		}
-
-		if (previous == null) {
-			return;
-		}
-
-		final Set<String> combinedValues = new HashSet<>(previous.value());
-		combinedValues.addAll(candidate.value());
-		cluesByKey.put(candidate.key(), new Clue(candidate.key(), Set.copyOf(combinedValues)));
+	private static Set<Clue> mergeAndAssertUnique(final Set<Clue> existing, final Set<Clue> incoming) {
+		final ClueAccumulator accumulator = new ClueAccumulator(existing);
+		accumulator.addAll(incoming);
+		return accumulator.clues();
 	}
 
 	private static Set<Clue> from(final FileContentClueFinder finder, final Path file) {
@@ -119,9 +81,9 @@ public class ArchivePathClueFinder {
 
 		Set<Clue> clues;
 		if (folderNameClueFinder == null) {
-			clues = new HashSet<>();
+			clues = Set.of();
 		} else {
-			clues = merge(new HashSet<>(), folderNameClueFinder.find(folder.name()));
+			clues = mergeAndAssertUnique(Set.of(), folderNameClueFinder.find(folder.name()));
 		}
 		if (files.isEmpty()) {
 			return clues;
@@ -136,7 +98,7 @@ public class ArchivePathClueFinder {
 					progressor.throwIfCancelled();
 					final Optional<Set<Clue>> fileContentClues = from(finder, session, file);
 					if (fileContentClues.isPresent()) {
-						clues = merge(clues, fileContentClues.get());
+						clues = mergeAndAssertUnique(clues, fileContentClues.get());
 					}
 				}
 			}
@@ -146,7 +108,7 @@ public class ArchivePathClueFinder {
 		final List<Path> relativeFiles = files.stream()
 				.map(file -> normalizedFolder.relativize(file.path().normalize())).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			clues = merge(clues, finder.find(relativeFiles));
+			clues = mergeAndAssertUnique(clues, finder.find(relativeFiles));
 		}
 		return clues;
 	}
@@ -158,10 +120,10 @@ public class ArchivePathClueFinder {
 	public Set<Clue> enrich(final Set<Clue> localClues, final ArchiveFolderView folder, final Progressor progressor) {
 		Objects.requireNonNull(localClues, "localClues");
 		Objects.requireNonNull(folder, "folder");
-		Set<Clue> clues = merge(new HashSet<>(), localClues);
+		Set<Clue> clues = mergeAndAssertUnique(Set.of(), localClues);
 		for (final TreeClueFinder finder : treeClueFinders) {
 			progressor.throwIfCancelled();
-			clues = merge(clues, finder.find(folder));
+			clues = mergeAndAssertUnique(clues, finder.find(folder));
 		}
 		return clues;
 	}

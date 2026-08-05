@@ -105,13 +105,17 @@ public interface RetroCrawler {
 	 * <p>
 	 * The accessor receives an open stream that is closed as soon as it
 	 * returns. Escaping streams must not be retained.
+	 * <p>
+	 * Due to a bug in OpenRewrite the return tag must come after the throws
+	 * tags. Do not reorder them.
 	 *
-	 * @return the inspected value, or empty if content is unavailable
 	 * @throws NoSuchFileException
 	 *             if the archive source has no file at the ARI
 	 * @throws IllegalArgumentException
 	 *             if the ARI belongs to another collection or an unknown
 	 *             archive
+	 * @return the inspected value, or an empty optional if the archive source
+	 *         cannot expose the file content
 	 */
 	<T> Optional<T> inspect(ARI source, ArchiveFileAccessor<T> inspector) throws IOException;
 

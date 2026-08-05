@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 
 /**
@@ -48,21 +49,17 @@ final class ClueClassifier {
 		final Map<String, Clue> classified = new LinkedHashMap<>();
 		for (final Clue clue : clues) {
 			classify(Objects.requireNonNull(clue, "clues must not contain null"))
-					.ifPresent(value -> merge(classified, value));
+					.ifPresent(value -> put(classified, value));
 		}
 		return Set.copyOf(classified.values());
 	}
 
-	private static void merge(final Map<String, Clue> cluesByKey, final Clue incoming) {
-		final Clue previous = cluesByKey.get(incoming.key());
-		if (previous == null) {
-			cluesByKey.put(incoming.key(), incoming);
-			return;
+	private static void put(final Map<String, Clue> cluesByKey, final Clue incoming) {
+		final Clue previous = cluesByKey.putIfAbsent(incoming.key(), incoming);
+		if (previous != null) {
+			throw new DuplicateClueException("More than one clue claims semantic key '" + incoming.key()
+					+ "'. First clue: " + previous + ", duplicate clue: " + incoming + ".");
 		}
-
-		final Set<String> combinedValues = new LinkedHashSet<>(previous.value());
-		combinedValues.addAll(incoming.value());
-		cluesByKey.put(incoming.key(), Clue.of(incoming.key(), Set.copyOf(combinedValues)));
 	}
 
 	private Optional<Clue> classify(final Clue clue) {
