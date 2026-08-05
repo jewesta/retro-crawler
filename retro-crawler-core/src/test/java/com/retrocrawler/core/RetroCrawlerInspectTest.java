@@ -21,6 +21,7 @@ import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -47,7 +48,7 @@ class RetroCrawlerInspectTest {
 				"filesystem image");
 		final RetroCrawler crawler = crawler(root, new FileSystemArchiveSource());
 
-		final Optional<byte[]> content = crawler.inspect(ARCHIVE_ID, file, InputStream::readAllBytes);
+		final Optional<byte[]> content = crawler.inspect(crawler.identify(ARCHIVE_ID, file), InputStream::readAllBytes);
 
 		assertTrue(content.isPresent());
 		assertArrayEquals("filesystem image".getBytes(StandardCharsets.UTF_8), content.get());
@@ -63,8 +64,8 @@ class RetroCrawlerInspectTest {
 		}
 		final RetroCrawler crawler = crawler(archive, new ZipArchiveSource());
 
-		final Optional<byte[]> content = crawler.inspect(ARCHIVE_ID, archive.resolve("gear/front.jpeg"),
-				InputStream::readAllBytes);
+		final Optional<byte[]> content = crawler
+				.inspect(crawler.identify(ARCHIVE_ID, archive.resolve("gear/front.jpeg")), InputStream::readAllBytes);
 
 		assertTrue(content.isPresent());
 		assertArrayEquals("zip image".getBytes(StandardCharsets.UTF_8), content.get());
@@ -105,7 +106,7 @@ class RetroCrawlerInspectTest {
 		};
 		final RetroCrawler crawler = crawler(root, source);
 
-		final Optional<Integer> result = crawler.inspect(ARCHIVE_ID, filePath, input -> {
+		final Optional<Integer> result = crawler.inspect(crawler.identify(ARCHIVE_ID, filePath), input -> {
 			throw new AssertionError("Unavailable content must not invoke the inspector.");
 		});
 
@@ -118,11 +119,12 @@ class RetroCrawlerInspectTest {
 		final Path root = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final RetroCrawler crawler = crawler(root, new FileSystemArchiveSource());
 		final Path missing = root.resolve("missing.jpeg");
+		final ARI source = crawler.identify(ARCHIVE_ID, missing);
 
 		final NoSuchFileException failure = assertThrows(NoSuchFileException.class,
-				() -> crawler.inspect(ARCHIVE_ID, missing, InputStream::readAllBytes));
+				() -> crawler.inspect(source, InputStream::readAllBytes));
 
-		assertEquals(missing.toString(), failure.getFile());
+		assertEquals(source.toString(), failure.getFile());
 	}
 
 	@Test
@@ -130,11 +132,12 @@ class RetroCrawlerInspectTest {
 		final Path root = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final Path folder = Files.createDirectory(root.resolve("gear"));
 		final RetroCrawler crawler = crawler(root, new FileSystemArchiveSource());
+		final ARI source = crawler.identify(ARCHIVE_ID, folder);
 
 		final NoSuchFileException failure = assertThrows(NoSuchFileException.class,
-				() -> crawler.inspect(ARCHIVE_ID, folder, InputStream::readAllBytes));
+				() -> crawler.inspect(source, InputStream::readAllBytes));
 
-		assertEquals(folder.toString(), failure.getFile());
+		assertEquals(source.toString(), failure.getFile());
 	}
 
 	@Test
@@ -144,8 +147,38 @@ class RetroCrawlerInspectTest {
 			throw new AssertionError("An invalid address must not open the source.");
 		});
 
-		assertThrows(IllegalArgumentException.class, () -> crawler.inspect(ARCHIVE_ID,
-				temporaryDirectory.resolve("outside.jpeg"), InputStream::readAllBytes));
+		assertThrows(IllegalArgumentException.class,
+				() -> crawler.identify(ARCHIVE_ID, temporaryDirectory.resolve("outside.jpeg")));
+	}
+
+	@Test
+	void rejectsAnAriFromAnotherCollectionBeforeOpeningTheSource() {
+		final Path root = temporaryDirectory.resolve("archive");
+		final RetroCrawler crawler = crawler(root, ignored -> {
+			throw new AssertionError("A foreign ARI must not open the source.");
+		});
+		final ARI foreign = ARI.of("another_collection", ARCHIVE_ID, Path.of("front.jpeg"));
+
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> crawler.inspect(foreign, InputStream::readAllBytes));
+
+		assertTrue(failure.getMessage().contains("another_collection"));
+		assertTrue(failure.getMessage().contains("factory_test"));
+	}
+
+	@Test
+	void resolvesAnAriFromAnotherCrawlerForTheSameCollectionAndArchive() throws IOException {
+		final Path firstRoot = Files.createDirectory(temporaryDirectory.resolve("first"));
+		final Path secondRoot = Files.createDirectory(temporaryDirectory.resolve("second"));
+		final Path firstFile = Files.writeString(firstRoot.resolve("evidence.txt"), "first");
+		Files.writeString(secondRoot.resolve("evidence.txt"), "second");
+		final RetroCrawler first = crawler(firstRoot, new FileSystemArchiveSource());
+		final RetroCrawler second = crawler(secondRoot, new FileSystemArchiveSource());
+
+		final ARI source = first.identify(ARCHIVE_ID, firstFile);
+		final Optional<byte[]> content = second.inspect(source, InputStream::readAllBytes);
+
+		assertArrayEquals("second".getBytes(StandardCharsets.UTF_8), content.orElseThrow());
 	}
 
 	private static RetroCrawler crawler(final Path root, final ArchiveSource source) {

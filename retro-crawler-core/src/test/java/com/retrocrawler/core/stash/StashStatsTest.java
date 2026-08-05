@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 
@@ -28,10 +29,10 @@ class StashStatsTest {
 
 	@Test
 	void describesArchiveAndGearTreeStructure() {
-		final GearNode<Object> deepest = new GearNode<>(23, List.of());
-		final GearNode<Object> child = new GearNode<>(new Right.Gear(), List.of(deepest));
-		final GearNode<Object> firstRoot = new GearNode<>(new Left.Gear(), List.of(child));
-		final GearNode<Object> secondRoot = new GearNode<>("loose", List.of());
+		final GearNode<Object> deepest = new GearNode<>(23, source("deepest"), List.of());
+		final GearNode<Object> child = new GearNode<>(new Right.Gear(), source("child"), List.of(deepest));
+		final GearNode<Object> firstRoot = new GearNode<>(new Left.Gear(), source("first"), List.of(child));
+		final GearNode<Object> secondRoot = new GearNode<>("loose", source("second"), List.of());
 		final Stash<Object> stash = new Stash<>(
 				List.of(new ArchiveGear<>(archive("first"), List.of(firstRoot, secondRoot)),
 						new ArchiveGear<>(archive("second"), List.of())));
@@ -54,6 +55,10 @@ class StashStatsTest {
 
 	private static ArchiveDescriptor archive(final String name) {
 		return ArchiveDescriptor.of(ArchiveId.of(name), Path.of(name));
+	}
+
+	private static ARI source(final String path) {
+		return ARI.of("collection", ArchiveId.of("first"), Path.of(path));
 	}
 
 	private static final class Left {

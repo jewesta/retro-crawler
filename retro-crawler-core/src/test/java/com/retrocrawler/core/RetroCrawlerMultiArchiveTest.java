@@ -18,6 +18,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -66,9 +67,10 @@ class RetroCrawlerMultiArchiveTest {
 				.archive(FIRST, contentSource(FIRST_ROOT, "first evidence"))
 				.archive(SECOND, contentSource(SECOND_ROOT, "second evidence")).build();
 
-		final Optional<String> first = crawler.inspect(FIRST.id(), FIRST_ROOT.resolve("evidence.txt"),
+		final Optional<String> first = crawler.inspect(crawler.identify(FIRST.id(), FIRST_ROOT.resolve("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
-		final Optional<String> second = crawler.inspect(SECOND.id(), SECOND_ROOT.resolve("evidence.txt"),
+		final Optional<String> second = crawler.inspect(
+				crawler.identify(SECOND.id(), SECOND_ROOT.resolve("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
 
 		assertEquals(Optional.of("first evidence"), first);
@@ -98,7 +100,7 @@ class RetroCrawlerMultiArchiveTest {
 		firstSource.openedRoots.clear();
 		secondSource.openedRoots.clear();
 
-		crawler.crawlAllGear(new Progressor(), ReindexScope.subtree(SECOND_ROOT),
+		crawler.crawlAllGear(new Progressor(), ReindexScope.subtree(crawler.identify(SECOND.id(), SECOND_ROOT)),
 				RetroCrawlerBuilderTest.TestGear.class);
 
 		assertTrue(firstSource.openedRoots.isEmpty());
@@ -106,15 +108,26 @@ class RetroCrawlerMultiArchiveTest {
 	}
 
 	@Test
-	void rejectsASubtreeBelowNoRegisteredArchive() {
+	void rejectsASubtreeInAnUnknownArchive() {
 		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
+		final ARI unknown = ARI.of(crawler.collectionId(), ArchiveId.of("third"), Path.of("subtree"));
+
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> crawler
+				.crawlAllGear(new Progressor(), ReindexScope.subtree(unknown), RetroCrawlerBuilderTest.TestGear.class));
+
+		assertEquals("Unknown archive: third", failure.getMessage());
+	}
+
+	@Test
+	void rejectsASubtreeFromAnArchiveOutsideTheSelectedCrawl() {
+		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
+		final ARI secondRoot = crawler.identify(SECOND.id(), SECOND_ROOT);
 
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> crawler.crawlAllGear(new Progressor(), ReindexScope.subtree(Path.of("remote/third")),
+				() -> crawler.crawlGear(FIRST.id(), new Progressor(), ReindexScope.subtree(secondRoot),
 						RetroCrawlerBuilderTest.TestGear.class));
 
-		assertEquals("Archive subtree is not below the root of any registered archive: remote/third",
-				failure.getMessage());
+		assertEquals("ARI does not belong to an archive selected for this crawl: " + secondRoot, failure.getMessage());
 	}
 
 	@Test

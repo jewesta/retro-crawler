@@ -14,6 +14,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
@@ -108,6 +110,10 @@ public class JsonFileRepository implements Repository {
 		try {
 			final File jsonFile = jsonPath.toFile();
 			logger.info("Retrieving archive from: {}", jsonPath);
+			final int version = inspectVersion(jsonFile, jsonPath);
+			if (version != ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.value().intValue()) {
+				throw unsupportedVersion(jsonPath, version);
+			}
 			final Archive archive = mapper.readValue(jsonFile, Archive.class);
 			if (archive == null) {
 				throw new RepositoryException("Stored JSON does not contain an archive at: " + jsonPath);
@@ -117,14 +123,47 @@ public class JsonFileRepository implements Repository {
 						"Expected archive id '" + id + "' but retrieved '" + archive.id() + "' from: " + jsonPath);
 			}
 			if (!ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.equals(archive.version())) {
-				throw new RepositoryException(
-						"Stored archive at " + jsonPath + " uses cache version " + archive.version()
-								+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
+				throw unsupportedVersion(jsonPath, archive.version().value().intValue());
 			}
 			return Optional.of(archive);
 		} catch (final IOException e) {
 			throw new RepositoryException("Could not retrieve archive from JSON at: " + jsonPath, e);
 		}
+	}
+
+	private int inspectVersion(final File jsonFile, final Path jsonPath) throws IOException {
+		try (JsonParser parser = mapper.getFactory().createParser(jsonFile)) {
+			if (parser.nextToken() != JsonToken.START_OBJECT) {
+				throw new RepositoryException("Stored JSON does not contain an archive object at: " + jsonPath);
+			}
+			JsonToken token;
+			while ((token = parser.nextToken()) != JsonToken.END_OBJECT) {
+				if (token == null) {
+					throw new RepositoryException("Stored JSON archive object is incomplete at: " + jsonPath);
+				}
+				if (token != JsonToken.FIELD_NAME) {
+					throw new RepositoryException("Stored JSON archive object is malformed at: " + jsonPath);
+				}
+				final String fieldName = parser.currentName();
+				final JsonToken value = parser.nextToken();
+				if (value == null) {
+					throw new RepositoryException("Stored JSON archive object is incomplete at: " + jsonPath);
+				}
+				if ("version".equals(fieldName)) {
+					if (value != JsonToken.VALUE_NUMBER_INT) {
+						throw new RepositoryException("Stored archive has a non-integer cache version at: " + jsonPath);
+					}
+					return parser.getIntValue();
+				}
+				parser.skipChildren();
+			}
+		}
+		throw new RepositoryException("Stored archive has no cache version at: " + jsonPath);
+	}
+
+	private static RepositoryException unsupportedVersion(final Path jsonPath, final int version) {
+		return new RepositoryException("Stored archive at " + jsonPath + " uses cache version " + version
+				+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 	}
 
 }

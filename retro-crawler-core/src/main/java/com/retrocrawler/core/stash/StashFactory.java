@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.gear.GearTreeFactory;
 
@@ -48,13 +49,23 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 
 	@Override
 	public MutableNode<G> addNode(final MutableNode<G> parent, final G gear) {
+		throw new IllegalStateException("The stash requires the Gear source ARI.");
+	}
+
+	@Override
+	public MutableNode<G> addNode(final MutableNode<G> parent, final G gear, final ARI source) {
 		Objects.requireNonNull(gear, "gear");
+		Objects.requireNonNull(source, "source");
 		if (currentArchive == null) {
 			throw new IllegalStateException("addNode called outside of beginArchive/endArchive. Expected: "
 					+ GearTreeFactory.class.getSimpleName());
 		}
+		if (!currentArchive.archive.id().equals(source.archiveId())) {
+			throw new IllegalArgumentException(
+					"Gear source belongs to a different archive than the current stash group: " + source);
+		}
 
-		final MutableNode<G> node = new MutableNode<>(gear);
+		final MutableNode<G> node = new MutableNode<>(gear, source);
 
 		if (parent == null) {
 			currentArchive.roots.add(node);
@@ -93,7 +104,7 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 
 	private static <G> GearNode<G> toImmutableNode(final MutableNode<G> node) {
 		final List<GearNode<G>> children = toImmutableNodes(node.children);
-		return new GearNode<>(node.gear, children);
+		return new GearNode<>(node.gear, node.source, children);
 	}
 
 	private static final class ArchiveBuild<G> {
@@ -114,10 +125,13 @@ public final class StashFactory<G> implements GearTreeFactory<Stash<G>, StashFac
 
 		private final G gear;
 
+		private final ARI source;
+
 		private final List<MutableNode<G>> children = new ArrayList<>();
 
-		private MutableNode(final G gear) {
+		private MutableNode(final G gear, final ARI source) {
 			this.gear = gear;
+			this.source = source;
 		}
 	}
 }

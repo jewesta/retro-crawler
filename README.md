@@ -79,9 +79,9 @@ Unknown or unparseable clues are preserved and may be accessed explicitly.
 RetroCrawler's collection and gear model can be configured via annotations:
 
 - `@RetroCollection`
-  Declares the collection identity, source locations, optional working
-  directory, and `ArchivePathFilter`. Exactly one collection is present in a
-  model.
+  Declares the collection identity, optional working directory, and
+  `ArchivePathFilter`. Exactly one collection is present in a model. Archive
+  roots and providers are runtime crawler configuration.
 
 - `@RetroClues`
   Declares which folder names, file names, file contents, and folder trees
@@ -200,7 +200,7 @@ RetroCrawler crawler = RetroCrawler.builder()
 
 ZIP archives can be crawled directly without extracting them. Select
 `ZipArchiveSource` and configure the archive root as the path of a local ZIP
-file. The ZIP path is the logical archive root. Entry names become descendant source
+file. The ZIP path is the provider root. Entry names become descendant source
 paths, and folders omitted from the ZIP directory are inferred from their
 children.
 
@@ -211,23 +211,33 @@ content is optional. When available, the session invokes a generic
 before returning its result. An empty result means that content was not
 available and content-based clue finders contribute no clue for that file.
 
-Applications can inspect a file at any source path produced by the crawler
-through the same scoped accessor contract. Every address is qualified by the
-archive it belongs to:
+Public resources are addressed by an Archive Resource Identifier (`ARI`). An
+ARI contains the collection id, archive id, and archive-relative resource path,
+but no physical root or provider details:
 
-```java
-Optional<byte[]> image = crawler.inspect(
-        incomingMaterial.id(), sourcePath, InputStream::readAllBytes);
+```text
+ari:/retro_pc_demo/incoming_material/Graphics%20Cards/Voodoo%203/front.jpg
 ```
 
-The crawler resolves the address through its configured source and closes the
+The crawler can identify a provider path during migration from path-based
+application data. Gear trees and `Stash` nodes already carry their source ARI:
+
+```java
+ARI source = crawler.identify(incomingMaterial.id(), sourcePath);
+Optional<byte[]> image = crawler.inspect(
+        source, InputStream::readAllBytes);
+```
+
+The crawler rejects an ARI from a different collection or an unknown archive.
+Another crawler configured for the same collection and archive identities may
+resolve it through a different root or provider. The crawler closes the
 short-lived session as well as the content stream. `Optional.empty()` means the
 provider recognizes the file but does not expose its content; a missing or
 folder address raises `NoSuchFileException`.
 
-Source paths remain hierarchical addresses used for relative clues, cache
-relocation, and partial re-indexing; providers must not require them to be
-locally accessible.
+Provider paths remain crawl-time coordinates used for relative clues and cache
+rebinding; providers must not require them to be locally accessible. ARIs are
+the stable application-facing resource identity.
 
 Crawling either selects one archive by identity or spans all of them:
 
@@ -239,11 +249,11 @@ Stash<RetroHardware> everything = crawler.crawlAllStash(
         progressor, reindexScope, RetroHardware.class);
 ```
 
-A `Stash` keeps its gear grouped per archive, so every result retains the
-archive it came from. `crawlAll` validates Retro ID uniqueness across all
-registered archives and routes a subtree reindex scope to the archive whose
-root contains each requested path; archives without a requested subtree reuse
-their stored clue archive.
+A `Stash` keeps its gear grouped per archive, and every `GearNode` retains the
+ARI of the artifact that produced it. `crawlAll` validates Retro ID uniqueness
+across all registered archives and routes a subtree reindex scope by each ARI's
+archive identity; archives without a requested subtree reuse their stored clue
+archive.
 
 ---
 
@@ -274,6 +284,8 @@ Repository repository = new JsonFileRepository(Path.of("my-cache"));
 RetroCrawler crawler = RetroCrawler.builder()
         .model(model)
         .repository(repository)
+        .archive(ArchiveDescriptor.of(
+                ArchiveId.of("my_archive"), Path.of("my-archive")))
         .build();
 ```
 
@@ -290,6 +302,11 @@ an application restart.
 A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
+
+JSON cache format version 3 is inspected before the stored payload is
+deserialized. Unsupported, missing, or malformed versions are rejected at the
+repository boundary so an incompatible payload is never parsed as the current
+`Archive` shape.
 
 ---
 

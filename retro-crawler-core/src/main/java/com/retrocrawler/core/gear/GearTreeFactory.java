@@ -1,7 +1,6 @@
 package com.retrocrawler.core.gear;
 
-import java.nio.file.Path;
-
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 
 /**
@@ -45,21 +44,21 @@ public interface GearTreeFactory<R, N, G> {
 	N addNode(N parent, G gear);
 
 	/**
-	 * Called for every produced gear node together with its source path.
+	 * Called for every produced gear node together with its source.
 	 * <p>
 	 * The default implementation preserves compatibility with factories that do
-	 * not need the source path.
+	 * not need the source.
 	 *
 	 * @param parent
 	 *            the parent node handle, or null if this is a root in its
 	 *            archive
 	 * @param gear
 	 *            the resolved gear instance
-	 * @param sourcePath
-	 *            the path of the artifact that produced the gear
+	 * @param source
+	 *            the ARI of the artifact that produced the gear
 	 * @return a node handle that will be passed as parent for its children
 	 */
-	default N addNode(final N parent, final G gear, final Path sourcePath) {
+	default N addNode(final N parent, final G gear, final ARI source) {
 		return addNode(parent, gear);
 	}
 

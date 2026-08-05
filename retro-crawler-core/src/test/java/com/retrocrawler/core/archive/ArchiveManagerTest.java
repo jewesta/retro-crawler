@@ -167,7 +167,7 @@ class ArchiveManagerTest {
 		Files.move(oldFolder, selected.resolve("renamed"));
 		Files.createDirectory(untouched.resolve("created-after-index"));
 
-		final Archive refreshed = manager.archive(new Progressor(), ReindexScope.subtree(selected));
+		final Archive refreshed = manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(List.of("original"), childFolders(node(refreshed, "untouched")));
@@ -190,7 +190,7 @@ class ArchiveManagerTest {
 		Files.move(oldFolder, selected.resolve("renamed"));
 
 		final Archive refreshed = manager(descriptor, repository).archive(new Progressor(),
-				ReindexScope.subtree(selected));
+				ReindexScope.subtree(ari(descriptor, selected)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(originalSelectedId, technicalId(node(refreshed, "selected")));
@@ -210,7 +210,8 @@ class ArchiveManagerTest {
 		final Path firstRenamed = Files.move(firstOld, first.resolve("renamed"));
 		Files.move(secondOld, second.resolve("renamed"));
 
-		final Archive refreshed = manager.archive(new Progressor(), ReindexScope.subtrees(first, firstRenamed, second));
+		final Archive refreshed = manager.archive(new Progressor(),
+				ReindexScope.subtrees(ari(descriptor, first), ari(descriptor, firstRenamed), ari(descriptor, second)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "second")));
@@ -226,7 +227,7 @@ class ArchiveManagerTest {
 		final ArchiveManager manager = manager(descriptor, repository);
 
 		final IllegalStateException failure = assertThrows(IllegalStateException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(selected)));
+				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected))));
 
 		assertTrue(failure.getMessage().contains("complete archive"));
 		assertEquals(1, repository.retrieveCount);
@@ -244,7 +245,7 @@ class ArchiveManagerTest {
 		final Path renamed = Files.move(selected, archiveDirectory.resolve("renamed"));
 
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(renamed)));
+				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, renamed))));
 
 		assertTrue(failure.getMessage().contains("re-index its parent"));
 		assertEquals(1, repository.stowawayCount);
@@ -262,7 +263,7 @@ class ArchiveManagerTest {
 		repository.stowawayFailure = new RepositoryException("Read only");
 
 		assertThrows(RepositoryException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(selected)));
+				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected))));
 
 		assertSame(original, manager.archive(new Progressor(), ReindexScope.none()));
 		assertEquals(2, repository.stowawayCount);
@@ -289,6 +290,11 @@ class ArchiveManagerTest {
 
 	private ArchiveDescriptor descriptor(final Path archiveDirectory) {
 		return new ArchiveDescriptor(ArchiveId.of("test_archive"), "Test archive", archiveDirectory);
+	}
+
+	private static ARI ari(final ArchiveDescriptor descriptor, final Path sourcePath) {
+		return ARI.of("test_collection", descriptor.id(),
+				descriptor.root().normalize().relativize(sourcePath.normalize()));
 	}
 
 	private static Archive emptyStoredArchive(final ArchiveDescriptor descriptor) {

@@ -1,5 +1,6 @@
 package com.retrocrawler.app;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.demo.gear.MyKnownGear;
@@ -26,13 +27,12 @@ final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<VaadinGear
 
 	@Override
 	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear) {
-		throw new IllegalStateException("The Vaadin tree requires the Gear source path.");
+		throw new IllegalStateException("The Vaadin tree requires the Gear source ARI.");
 	}
 
 	@Override
-	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear,
-			final java.nio.file.Path sourcePath) {
-		final VaadinGearNode node = new VaadinGearNode(gear, sourcePath);
+	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear, final ARI source) {
+		final VaadinGearNode node = new VaadinGearNode(gear, source);
 		data.addItem(parent, node);
 		return node;
 	}

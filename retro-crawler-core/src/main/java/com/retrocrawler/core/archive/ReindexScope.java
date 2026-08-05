@@ -1,6 +1,5 @@
 package com.retrocrawler.core.archive;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -24,11 +23,11 @@ public final class ReindexScope {
 
 	private final Kind kind;
 
-	private final List<Path> paths;
+	private final List<ARI> subtrees;
 
-	private ReindexScope(final Kind kind, final Collection<Path> paths) {
+	private ReindexScope(final Kind kind, final Collection<ARI> subtrees) {
 		this.kind = Objects.requireNonNull(kind, "kind");
-		this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
+		this.subtrees = List.copyOf(Objects.requireNonNull(subtrees, "subtrees"));
 	}
 
 	/**
@@ -46,41 +45,41 @@ public final class ReindexScope {
 	}
 
 	/**
-	 * Rebuilds one folder and everything below it.
+	 * Rebuilds one identified folder and everything below it.
 	 */
-	public static ReindexScope subtree(final Path path) {
-		return subtrees(List.of(Objects.requireNonNull(path, "path")));
+	public static ReindexScope subtree(final ARI subtree) {
+		return subtrees(List.of(Objects.requireNonNull(subtree, "subtree")));
 	}
 
 	/**
-	 * Rebuilds the supplied folders and everything below them.
+	 * Rebuilds the supplied identified folders and everything below them.
 	 */
-	public static ReindexScope subtrees(final Path... paths) {
-		Objects.requireNonNull(paths, "paths");
-		return subtrees(Arrays.asList(paths));
+	public static ReindexScope subtrees(final ARI... subtrees) {
+		Objects.requireNonNull(subtrees, "subtrees");
+		return subtrees(Arrays.asList(subtrees));
 	}
 
 	/**
-	 * Rebuilds the supplied folders and everything below them.
+	 * Rebuilds the supplied identified folders and everything below them.
 	 */
-	public static ReindexScope subtrees(final Collection<Path> paths) {
-		final List<Path> immutablePaths = List.copyOf(Objects.requireNonNull(paths, "paths"));
-		if (immutablePaths.isEmpty()) {
+	public static ReindexScope subtrees(final Collection<ARI> subtrees) {
+		final List<ARI> immutableSubtrees = List.copyOf(Objects.requireNonNull(subtrees, "subtrees"));
+		if (immutableSubtrees.isEmpty()) {
 			throw new IllegalArgumentException("At least one archive subtree is required.");
 		}
-		return new ReindexScope(Kind.SUBTREES, immutablePaths);
+		return new ReindexScope(Kind.SUBTREES, immutableSubtrees);
 	}
 
 	public Kind kind() {
 		return kind;
 	}
 
-	public List<Path> paths() {
-		return paths;
+	public List<ARI> subtrees() {
+		return subtrees;
 	}
 
 	@Override
 	public String toString() {
-		return kind == Kind.SUBTREES ? getClass().getSimpleName() + paths : getClass().getSimpleName() + "." + kind;
+		return kind == Kind.SUBTREES ? getClass().getSimpleName() + subtrees : getClass().getSimpleName() + "." + kind;
 	}
 }

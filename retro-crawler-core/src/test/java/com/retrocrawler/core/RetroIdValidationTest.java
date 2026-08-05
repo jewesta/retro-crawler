@@ -23,6 +23,7 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ReindexScope;
@@ -59,9 +60,9 @@ class RetroIdValidationTest {
 	}
 
 	@Test
-	void reportsEverySourcePathForDuplicateRetroId() throws IOException {
-		final Path first = Files.createDirectories(archiveRoot.resolve("id-200001"));
-		final Path second = Files.createDirectories(archiveRoot.resolve("nested").resolve("id-200001"));
+	void reportsEverySourceAriForDuplicateRetroId() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("id-200001"));
+		Files.createDirectories(archiveRoot.resolve("nested").resolve("id-200001"));
 		final RecordingFactory factory = new RecordingFactory();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
@@ -69,8 +70,9 @@ class RetroIdValidationTest {
 
 		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
-		assertTrue(paths.contains(first.toString()));
-		assertTrue(paths.contains(second.toString()));
+		assertTrue(paths.contains(ARI.of("retro_id_validation", ARCHIVE_ID, Path.of("id-200001")).toString()));
+		assertTrue(
+				paths.contains(ARI.of("retro_id_validation", ARCHIVE_ID, Path.of("nested", "id-200001")).toString()));
 		assertTrue(failure.getMessage().contains("200001"));
 		assertEquals(0, factory.beginArchiveCount);
 	}
@@ -79,8 +81,8 @@ class RetroIdValidationTest {
 	void reportsADuplicateRetroIdAcrossSeveralArchives() throws IOException {
 		final Path firstRoot = Files.createDirectories(archiveRoot.resolve("first"));
 		final Path secondRoot = Files.createDirectories(archiveRoot.resolve("second"));
-		final Path first = Files.createDirectories(firstRoot.resolve("id-200001"));
-		final Path second = Files.createDirectories(secondRoot.resolve("id-200001"));
+		Files.createDirectories(firstRoot.resolve("id-200001"));
+		Files.createDirectories(secondRoot.resolve("id-200001"));
 		final Model model = Model.from(Set.of(TestArchive.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new MemoryRepository())
 				.archive(ArchiveDescriptor.of(ArchiveId.of("first"), firstRoot))
@@ -91,8 +93,10 @@ class RetroIdValidationTest {
 
 		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
-		assertTrue(paths.contains(first.toString()));
-		assertTrue(paths.contains(second.toString()));
+		assertTrue(
+				paths.contains(ARI.of("retro_id_validation", ArchiveId.of("first"), Path.of("id-200001")).toString()));
+		assertTrue(
+				paths.contains(ARI.of("retro_id_validation", ArchiveId.of("second"), Path.of("id-200001")).toString()));
 	}
 
 	@Test

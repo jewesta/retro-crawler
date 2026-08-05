@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.retrocrawler.core.archive.ArchiveId;
 
 /**
@@ -13,7 +14,13 @@ import com.retrocrawler.core.archive.ArchiveId;
  * The tree below {@link #root()} is purely relative structure. The
  * {@link #basePath()} anchors it to the deployment location it was dug from and
  * is rebound when that location changes.
+ * <p>
+ * {@code version} is serialized first as a format contract: a repository must
+ * be able to read the stored cache version without decoding a version-dependent
+ * shape, and reading it should not require scanning a potentially large clue
+ * tree first. Remaining properties may be ordered freely.
  */
+@JsonPropertyOrder("version")
 public final class Archive {
 
 	@JsonProperty("version")

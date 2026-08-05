@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
@@ -78,6 +79,11 @@ public interface RetroCrawler {
 	List<ArchiveDescriptor> archives();
 
 	/**
+	 * The collection namespace shared by every ARI produced by this crawler.
+	 */
+	String collectionId();
+
+	/**
 	 * Returns the registered archive with the given identity.
 	 *
 	 * @throws IllegalArgumentException
@@ -86,8 +92,16 @@ public interface RetroCrawler {
 	ArchiveDescriptor archive(ArchiveId archiveId);
 
 	/**
-	 * Synchronously inspects the content of a file at one of the selected
-	 * archive's source paths.
+	 * Identifies one provider path as a stable resource within the selected
+	 * archive.
+	 *
+	 * @throws IllegalArgumentException
+	 *             if the path is outside the selected archive's root
+	 */
+	ARI identify(ArchiveId archiveId, Path sourcePath);
+
+	/**
+	 * Synchronously inspects the content of an archive file.
 	 * <p>
 	 * The accessor receives an open stream that is closed as soon as it
 	 * returns. Escaping streams must not be retained.
@@ -95,11 +109,12 @@ public interface RetroCrawler {
 	 * @return the inspected value, or an empty optional if the archive source
 	 *         cannot expose the file content
 	 * @throws NoSuchFileException
-	 *             if the archive source has no file at the address
+	 *             if the archive source has no file at the ARI
 	 * @throws IllegalArgumentException
-	 *             if the address is outside the selected archive's root
+	 *             if the ARI belongs to another collection or an unknown
+	 *             archive
 	 */
-	<T> Optional<T> inspect(ArchiveId archiveId, Path sourcePath, ArchiveFileAccessor<T> inspector) throws IOException;
+	<T> Optional<T> inspect(ARI source, ArchiveFileAccessor<T> inspector) throws IOException;
 
 	/** Crawls and resolves the selected archive through the shared model. */
 	<R, N, G> R crawl(ArchiveId archiveId, Progressor progressor, ReindexScope reindexScope,
@@ -109,8 +124,8 @@ public interface RetroCrawler {
 	 * Crawls and resolves every registered archive in one pass.
 	 * <p>
 	 * Retro ID uniqueness is validated across all archives. A subtree reindex
-	 * scope is routed to the archive whose root contains each requested path;
-	 * archives without a requested subtree reuse their stored clue archive.
+	 * scope is routed to the archive identified by each requested ARI; archives
+	 * without a requested subtree reuse their stored clue archive.
 	 */
 	<R, N, G> R crawlAll(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
 			throws IOException;

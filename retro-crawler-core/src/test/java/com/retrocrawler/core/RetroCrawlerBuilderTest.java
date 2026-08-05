@@ -21,6 +21,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
@@ -66,7 +67,7 @@ class RetroCrawlerBuilderTest {
 	}
 
 	@Test
-	void suppliesArtifactSourcePathToTreeFactory() throws IOException {
+	void suppliesArtifactSourceAriToTreeFactory() throws IOException {
 		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
@@ -75,8 +76,8 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
-		final List<Path> sourcePaths = new ArrayList<>();
-		final GearTreeFactory<List<Path>, TestGear, TestGear> factory = new GearTreeFactory<>() {
+		final List<ARI> sources = new ArrayList<>();
+		final GearTreeFactory<List<ARI>, TestGear, TestGear> factory = new GearTreeFactory<>() {
 
 			@Override
 			public Class<TestGear> gearType() {
@@ -95,24 +96,40 @@ class RetroCrawlerBuilderTest {
 
 			@Override
 			public TestGear addNode(final TestGear parent, final TestGear gear) {
-				throw new AssertionError("Expected the source-path overload.");
+				throw new AssertionError("Expected the source-ARI overload.");
 			}
 
 			@Override
-			public TestGear addNode(final TestGear parent, final TestGear gear, final Path sourcePath) {
-				sourcePaths.add(sourcePath);
+			public TestGear addNode(final TestGear parent, final TestGear gear, final ARI source) {
+				sources.add(source);
 				return gear;
 			}
 
 			@Override
-			public List<Path> build() {
-				return List.copyOf(sourcePaths);
+			public List<ARI> build() {
+				return List.copyOf(sources);
 			}
 		};
 
-		final List<Path> result = crawler.crawlAll(new Progressor(), ReindexScope.none(), factory);
+		final List<ARI> result = crawler.crawlAll(new Progressor(), ReindexScope.none(), factory);
 
-		assertEquals(List.of(ROOT.resolve("shelf")), result);
+		assertEquals(List.of(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf"))), result);
+	}
+
+	@Test
+	void stashRetainsTheSourceAriOfEveryGearNode() throws IOException {
+		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
+		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
+				List.of(new ArchiveNode("shelf", artifact, List.of())));
+		final Repository repository = new FixedArchiveRepository(Archive.of(ARCHIVE.id(), ROOT, archiveRoot));
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
+				.build();
+
+		final Stash<TestGear> stash = crawler.crawlAllStash(new Progressor(), ReindexScope.none(), TestGear.class);
+
+		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")),
+				stash.archives().getFirst().roots().getFirst().source());
 	}
 
 	@Test

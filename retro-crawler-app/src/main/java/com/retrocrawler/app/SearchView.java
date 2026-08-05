@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import com.retrocrawler.core.RetroCrawler;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
@@ -237,7 +238,7 @@ public class SearchView extends HorizontalLayout {
 		final DemoArchive archive = activeArchive;
 		if (archive.folderOpener().isPresent()) {
 			button.setTooltipText("Open archive folder");
-			button.addClickListener(event -> openArchiveFolder(archive, node.sourcePath()));
+			button.addClickListener(event -> openArchiveFolder(archive, node.source()));
 		} else {
 			button.setEnabled(false);
 			button.setTooltipText("This archive source does not expose local folders");
@@ -245,8 +246,9 @@ public class SearchView extends HorizontalLayout {
 		return button;
 	}
 
-	private void openArchiveFolder(final DemoArchive archive, final Path sourcePath) {
+	private void openArchiveFolder(final DemoArchive archive, final ARI source) {
 		try {
+			final Path sourcePath = archive.archive().root().resolve(source.resourcePath()).normalize();
 			archive.folderOpener().orElseThrow().open(sourcePath, archive.archive().root());
 		} catch (final IOException | IllegalArgumentException failure) {
 			logger.warning("Could not open archive folder: " + failure.getMessage());
@@ -286,7 +288,7 @@ public class SearchView extends HorizontalLayout {
 		return node.gear().getPicFront().map(path -> {
 			final String fileName = path.getFileName().toString();
 			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
-				final Optional<byte[]> content = crawler.inspect(archive.archive().id(), path,
+				final Optional<byte[]> content = crawler.inspect(crawler.identify(archive.archive().id(), path),
 						InputStream::readAllBytes);
 				if (content.isEmpty()) {
 					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);

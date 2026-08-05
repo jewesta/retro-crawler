@@ -24,6 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.DuplicateRetroIdException;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.JsonFileRepository;
@@ -436,17 +437,19 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void rejectsDuplicateRetroIdsWithTheirSourcePaths() throws IOException {
-		final Path first = Files.createDirectories(archiveRoot.resolve("Duplicate A [200004]"));
-		final Path second = Files.createDirectories(archiveRoot.resolve("Duplicate B [200004]"));
+	void rejectsDuplicateRetroIdsWithTheirSourceAris() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Duplicate A [200004]"));
+		Files.createDirectories(archiveRoot.resolve("Duplicate B [200004]"));
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
 				() -> crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 
 		final List<String> paths = failure.duplicates().get(new RetroId(200004));
 		assertEquals(2, paths.size());
-		assertTrue(paths.contains(first.toString()));
-		assertTrue(paths.contains(second.toString()));
+		assertTrue(paths.contains(
+				ARI.of("my_collection", ArchiveId.of("my_collection"), Path.of("Duplicate A [200004]")).toString()));
+		assertTrue(paths.contains(
+				ARI.of("my_collection", ArchiveId.of("my_collection"), Path.of("Duplicate B [200004]")).toString()));
 	}
 
 	@Test

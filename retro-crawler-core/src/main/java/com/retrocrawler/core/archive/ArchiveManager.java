@@ -54,10 +54,10 @@ public class ArchiveManager {
 		return archive;
 	}
 
-	private Archive fromSubtrees(final Progressor progressor, final Collection<Path> requestedPaths)
+	private Archive fromSubtrees(final Progressor progressor, final Collection<ARI> requestedSubtrees)
 			throws IOException {
 		final Archive stored = retrieveRequiredArchive();
-		final List<LocatedSubtree> located = locateSubtrees(stored, requestedPaths);
+		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
 		ArchiveNode root = stored.root();
 		try (OpenedRoot opened = new OpenedRoot(descriptor.root())) {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
@@ -101,7 +101,7 @@ public class ArchiveManager {
 		}
 		cache = switch (reindexScope.kind()) {
 		case NONE, ALL -> fromSource(progressor);
-		case SUBTREES -> fromSubtrees(progressor, reindexScope.paths());
+		case SUBTREES -> fromSubtrees(progressor, reindexScope.subtrees());
 		};
 		return cache;
 	}
@@ -140,7 +140,9 @@ public class ArchiveManager {
 		return Archive.of(stored.id(), configuredRoot, stored.root());
 	}
 
-	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<Path> requestedPaths) {
+	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<ARI> requestedSubtrees) {
+		final List<Path> requestedPaths = Objects.requireNonNull(requestedSubtrees, "requestedSubtrees").stream()
+				.map(this::sourcePath).toList();
 		final List<Path> effectivePaths = eliminateNestedPaths(requestedPaths);
 		final Path configuredRoot = normalize(descriptor.root());
 		final List<LocatedSubtree> result = new ArrayList<>();
@@ -155,6 +157,21 @@ public class ArchiveManager {
 			result.add(new LocatedSubtree(requestedPath, relativeFolders));
 		}
 		return result;
+	}
+
+	private Path sourcePath(final ARI subtree) {
+		Objects.requireNonNull(subtree, "subtree");
+		if (!descriptor.id().equals(subtree.archiveId())) {
+			throw new IllegalArgumentException("ARI belongs to archive '" + subtree.archiveId() + "' instead of '"
+					+ descriptor.id() + "': " + subtree);
+		}
+		Path sourcePath = normalize(descriptor.root());
+		if (!subtree.resourcePath().toString().isEmpty()) {
+			for (final Path segment : subtree.resourcePath()) {
+				sourcePath = sourcePath.resolve(segment.toString());
+			}
+		}
+		return sourcePath.normalize();
 	}
 
 	private static List<Path> eliminateNestedPaths(final Collection<Path> requestedPaths) {

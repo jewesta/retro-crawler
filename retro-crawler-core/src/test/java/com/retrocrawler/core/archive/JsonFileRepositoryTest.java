@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -81,11 +83,26 @@ class JsonFileRepositoryTest {
 		final Artifact retrieved = repository.retrieve(id).orElseThrow().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
-		assertEquals(2, json.path("version").asInt());
+		assertEquals(3, json.path("version").asInt());
 		assertTrue(storedClue.isArray());
 		assertTrue(storedClue.isEmpty());
 		assertEquals("sn", clue.key());
 		assertTrue(clue.isMissingValue());
+	}
+
+	@Test
+	void writesTheCacheVersionAsTheFirstStoredProperty() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("version_first");
+		repository.stowaway(archive(id, "root"));
+
+		try (JsonParser parser = new ObjectMapper().getFactory()
+				.createParser(repositoryDirectory.resolve("archive_version_first.json").toFile())) {
+			assertEquals(JsonToken.START_OBJECT, parser.nextToken());
+			assertEquals(JsonToken.FIELD_NAME, parser.nextToken());
+			assertEquals("version", parser.currentName());
+		}
 	}
 
 	@Test
@@ -133,7 +150,7 @@ class JsonFileRepositoryTest {
 	}
 
 	@Test
-	void rejectsAnOlderCacheWhoseFileCluesMayContainAbsolutePaths() throws IOException {
+	void rejectsAnOlderShapeBeforeDeserializingItAsTheCurrentArchive() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("old_paths");
@@ -141,10 +158,41 @@ class JsonFileRepositoryTest {
 		final Path jsonPath = repositoryDirectory.resolve("archive_old_paths.json");
 		final ObjectMapper mapper = new ObjectMapper();
 		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
-		json.put("version", 1);
+		json.put("version", 2);
+		json.remove("root");
+		json.putArray("buckets");
 		mapper.writeValue(jsonPath.toFile(), json);
 
-		assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+
+		assertTrue(failure.getMessage().contains("uses cache version 2"));
+	}
+
+	@Test
+	void rejectsAFutureVersionBeforeDeserializingIt() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		Files.createDirectories(repositoryDirectory);
+		final Path jsonPath = repositoryDirectory.resolve("archive_future.json");
+		Files.writeString(jsonPath, "{\"version\":99,\"notAnArchive\":true}");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+
+		final RepositoryException failure = assertThrows(RepositoryException.class,
+				() -> repository.retrieve(ArchiveId.of("future")));
+
+		assertTrue(failure.getMessage().contains("uses cache version 99"));
+	}
+
+	@Test
+	void rejectsAMissingOrMalformedVersion() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		Files.createDirectories(repositoryDirectory);
+		Files.writeString(repositoryDirectory.resolve("archive_missing_version.json"), "{\"id\":\"missing_version\"}");
+		Files.writeString(repositoryDirectory.resolve("archive_text_version.json"),
+				"{\"version\":\"3\",\"id\":\"text_version\"}");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+
+		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("missing_version")));
+		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("text_version")));
 	}
 
 	private Archive archive(final ArchiveId id, final String folder) {

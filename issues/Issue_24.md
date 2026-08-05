@@ -1168,12 +1168,14 @@ gear. The rebuilt private cache is 166 KiB. This second crawl took 48.2
 seconds; the unchanged region count but different elapsed time reinforces why
 region progress is explicitly approximate.
 
-`MyCollectionSmokeCrawl` is the explicit local launcher. It reads an
+`MyCollectionSmokeCrawl` was the explicit local launcher. It read an
 `ArchiveRoots` text file and private cache directory from command-line
-arguments, can either rebuild or reuse the cache, streams structured progress
-in five-percent buckets, and prints only privacy-safe aggregate cataloguing
-totals at completion. Structured progress messages retain the current path for
-local operator visibility, but no runtime path is compiled into the launcher.
+arguments, could either rebuild or reuse the cache, streamed structured progress
+in five-percent buckets, and printed only privacy-safe aggregate cataloguing
+totals at completion. Structured progress messages retained the current path for
+local operator visibility, but no runtime path was compiled into the launcher.
+The one-off launcher was removed in Issue 34; this section records the historical
+validation run rather than a supported workflow.
 
 ## First Full IBM-Compatible Crawl
 
