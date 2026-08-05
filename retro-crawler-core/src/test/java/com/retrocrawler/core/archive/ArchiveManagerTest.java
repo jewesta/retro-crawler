@@ -14,17 +14,18 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
+import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -149,6 +150,27 @@ class ArchiveManagerTest {
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 
 		assertThrows(ProgressCancelledException.class, () -> manager.archive(cancellingProgressor, ReindexScope.all()));
+		assertEquals(0, repository.stowawayCount);
+	}
+
+	@Test
+	void failLateDoesNotStowAwayAnArchiveContainingFailedFolders() throws IOException {
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		Files.createDirectory(archiveDirectory.resolve("broken"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final RecordingRepository repository = new RecordingRepository(Optional.empty());
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
+			throw new IllegalStateException("Finder broke at " + folder);
+		}, List.of(), List.of());
+		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
+		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
+		final Progressor failLate = new Progressor(FailureMode.FAIL_LATE);
+
+		final CrawlException failure = assertThrows(CrawlException.class,
+				() -> manager.archive(failLate, ReindexScope.all()));
+
+		assertEquals(2, failure.failures().size());
+		assertEquals(failLate.failures(), failure.failures());
 		assertEquals(0, repository.stowawayCount);
 	}
 
@@ -319,8 +341,8 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> Clues.of(Clue.of("folder", folder)),
-				List.of(), List.of());
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
+				folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);
 	}

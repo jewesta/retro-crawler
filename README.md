@@ -410,6 +410,23 @@ at its next checkpoint. For larger workflows, progressors can be divided into
 nested equal or weighted windows with `splitIntoEqualParts(...)` and
 `splitInRelationTo(...)`.
 
+Progressors fail early by default. A catalogue-validation crawl can instead
+record every independently recoverable clue-finding exception and fail after
+all selected archives have been examined:
+
+```java
+Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+try {
+    crawler.crawlAllGear(progressor, ReindexScope.all(), MyGear.class);
+} catch (CrawlException report) {
+    List<Exception> allFailures = report.failures();
+}
+```
+
+The final exception retains every occurrence in encounter order while its
+message shows only the first 50. Failed archive extractions are never stored,
+and resolution does not begin if clue finding recorded any exception.
+
 ---
 
 ## Design Goals

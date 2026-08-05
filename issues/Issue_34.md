@@ -358,15 +358,38 @@ the archive was crawled cleanly and only the model's vocabulary reveals the
 competition; the phase differs, so the type does. `RetroCrawlerImpl` gives it the
 same header naming the artifact.
 
-Failure remains fail-fast for now. Collecting clue failures and reporting them
-together is the better fit for cataloguing a messy archive — a compiler has hard
-rules too and still reports every error in one pass — but it changes the crawl
-contract and is left to its own issue.
+### Decision: `Progressor` records; reporting is bounded
+
+Fail-fast remains the default, but catalogue validation can now use a root
+`Progressor` configured with `FailureMode.FAIL_LATE`. The progressor is the
+recorder because the same root already spans every sub-progressor, folder, and
+archive in one operation. It accepts any `Exception`, retains every occurrence
+unchanged and in encounter order, and applies no grouping or interpretation.
+`record` always records; in fail-early mode it then rethrows the same instance,
+while in fail-late mode it returns.
+
+The clue-finder boundary catches arbitrary runtime exceptions from each
+independent finder invocation, except cancellation, wraps them with finder and
+source context, completes them with archive identity and relative folder, and
+hands them to the progressor. Checked failures can likewise be recorded by an
+operation that knows it can recover. `Error` is never collected.
+
+Presentation is the only bounded part. `CrawlException` exposes the complete
+immutable list but renders the first 50 occurrences followed by the omitted
+count. This avoids inventing an equivalence relation for "identical" failures
+and leaves grouping, filtering, or complete export to callers.
+
+Within a failed folder, independent local finders still run and child folders
+are still crawled. Tree enrichment for that folder is skipped because its local
+evidence is incomplete. `FolderOutcome.Failed` carries neither artifact nor
+folder view, so an ancestor cannot cross the failed boundary. An archive with
+any new recorded failure is not stowed; `crawlAll` continues with the remaining
+archives, then throws the complete report before resolution.
 
 ### Decision: metadata-folder status is established, never inferred
 
-Collecting failures instead of aborting introduces a folder state that does not
-exist today: read, but not understood. The artifact-boundary pruning that
+Collecting failures instead of aborting introduces a folder state that is read,
+but not understood. The artifact-boundary pruning that
 protects design principle 10 asked `child.node().artifact() == null`, which
 answers "does this child carry an artifact" and not "did the crawl establish
 that this child is metadata". Those coincide only because an unreadable folder
@@ -392,12 +415,10 @@ stops being a check at all. `DigResult` is now `(node, outcome)`.
 
 Sealing it also strengthens the forcing function. An enum constant obliged a new
 state to answer a boolean in the constructor; a sealed type stops every
-exhaustive switch compiling until the new case is handled. Verified by adding a
-`Failed` record, which fails compilation with "switch does not cover all
-possible input values" — exactly the reminder the crawl-report work will want.
+exhaustive switch compiling until the new case is handled. `Failed` is now that
+third state and every switch handles it explicitly.
 
-This changes no behaviour today; it removes the coincidence that would have made
-the change dangerous. The behavioural rule is covered by
+The behavioural rule is covered by
 `ArchiveDiggerTreeClueFinderTest.findsParentCluesPostOrderThroughMetadataFoldersWithoutCrossingArtifactBoundaries`,
 confirmed by mutating the earlier filter to accept every child.
 
@@ -408,17 +429,32 @@ so unregistering an archive leaks its stored entry with no API able to find it,
 and nothing can report what a repository currently holds. Both `JsonFileRepository`
 and `InMemoryRepository` inherit the gap.
 
-### Open: clue and fact values are unordered
+### Rejected: clue values should be ordered
 
-`Clue.value()` is a `Set<String>` and `Fact.value()` a `Set<Object>`, so ordering
-is lost and genuine duplicates collapse. Ordered multi-values are the normal case
-for retro material — disk sets, volume numbers, multi-part archives.
+This review proposed making clue and fact values ordered, on the grounds that
+ordered multi-values are the normal case for retro material and that unstable
+set iteration produces noisy diffs in the stored archive. Both halves were
+wrong, and the record is kept so the next review does not rediscover them.
 
-The set semantics also reach the persisted format: `HashSet` iteration order is
-unstable, so stored arrays may reorder between runs and produce noise in a
-file-based archive that is meant to be backup- and diff-friendly. `jsonGetter`
-additionally writes single-valued clues as scalars and multi-valued ones as
-arrays, an asymmetry worth keeping deliberate.
+A clue knows no order, deliberately. Order is meaning, and meaning is
+model-dependent, so it belongs to a fact rather than to evidence — design
+principle 8, and decision 14, which makes the artifact a flat provenance
+boundary that drops incidental source structure. The need is already met at the
+right level: `[Set 2 x 1,125MB]` is one clue value that `CapacitySetParser`
+turns into a typed `CapacitySet`. The review cited that type as evidence the
+need was unmet when it is the demonstration that it is met. Collapsing duplicate
+values is likewise correct — one authority asserting the same value twice adds
+nothing, and quantity is expressed by encoding it.
+
+The diff argument was built on a project value the code contradicts.
+`JsonFileRepository` writes "Can be deleted at any time. Do not commit." into
+its own directory: the stored archive is disposable, not version-controlled.
+Byte-stability is also unreachable by construction. Anonymous clue keys are
+freshly generated per crawl, so most field names in an artifact change every
+time, and decision 15 gives every rebuilt node a new `crawledAt` — while a
+recrawl is the only thing that rewrites the file. The useful diff granularity,
+which subtrees were recrawled, already works: partial reindexing retains
+untouched branches verbatim.
 
 ### Not a gap: location is the relation
 
@@ -501,9 +537,10 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Make transparency to tree finders an established outcome rather than an
       inferred one, so collecting clue failures cannot silently reopen an
       artifact boundary.
+- [x] Add progressor-controlled fail-early and fail-late operation modes,
+      retaining every exception occurrence while bounding only final rendering.
 - [ ] Follow-up issues for the remaining open review findings: artifact
-      location, repository removal and enumeration, and collecting clue failures
-      into one crawl report instead of failing fast.
+      location and repository removal and enumeration.
 - [x] Run focused and reactor verification.
 
 ## Verification
@@ -543,3 +580,15 @@ file resource values from archive-root-relative to artifact-relative, and format
   partial cache or collection change resulted. This validates the hard failure
   behavior and exposes a concrete bracket-language conflict for collector
   review.
+- After adding fail-late recording, canonical `prettify` passed for all 16
+  affected Java sources and `mvn clean install` passed for the full reactor with
+  353 tests, 0 failures, and 0 errors.
+- A disposable fail-late candidate then completed the same isolated sweep of all
+  three real archive roots. It recorded exactly three exceptions, all from the
+  folder-name bracket finder in the first archive: the original duplicate key
+  `1` and two folders that each contain two explicit `SN` tags. The other two
+  archives completed cleanly. Their validation caches were stowed; the failed
+  archive was not, and no collection content changed. This confirms both
+  continuation across archives and the no-partial-cache boundary while showing
+  that the numeric-key case is an isolated occurrence rather than a widespread
+  naming pattern.

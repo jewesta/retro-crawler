@@ -17,12 +17,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
@@ -82,11 +82,17 @@ public class ArchiveDigger {
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
+		final int failuresBeforeCrawling = progressor.failureCount();
 		final Instant crawledAt = Instant.now();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
 			final ArchiveDigPlan plan = plan(List.of(target), progressor);
-			return dig(target, plan, crawledAt, progressor);
+			final ArchiveNode result = dig(target, plan, crawledAt, progressor);
+			final List<Exception> failures = progressor.failures();
+			if (failures.size() > failuresBeforeCrawling) {
+				throw new CrawlException(failures.subList(failuresBeforeCrawling, failures.size()));
+			}
+			return result;
 		}
 	}
 
@@ -253,22 +259,6 @@ public class ArchiveDigger {
 		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, progressor, false).node();
 	}
 
-	/**
-	 * Completes a clue-finding failure with the archive-relative folder that
-	 * was being crawled. A finder names what it was reading and may name a
-	 * position inside it, but only the digger knows which folder that was.
-	 */
-	private static <T> T reporting(final Path relativeFolder, final Supplier<T> dig) {
-		try {
-			return dig.get();
-		} catch (final ClueFindingException reported) {
-			throw reported.in(relativeFolder);
-		} catch (final DuplicateClueException duplicate) {
-			// A synthetic clue collided; no finder was reading anything.
-			throw new ClueFindingException(duplicate.getMessage(), null, duplicate).in(relativeFolder);
-		}
-	}
-
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
 		final String archiveId = descriptor.id().value();
 		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
@@ -294,14 +284,11 @@ public class ArchiveDigger {
 		}
 		final FolderListing listing = found;
 
-		/*
-		 * The finders know what they were reading; only the digger knows where.
-		 * Complete every clue-finding failure with the archive-relative folder
-		 * before it leaves the crawl.
-		 */
 		final Path relativeFolder = root.path().relativize(folder.path());
-		final Clues localClues = reporting(relativeFolder,
-				() -> clueFinder.find(folder, listing.files(), session, progressor));
+		final int failuresBeforeFinding = progressor.failureCount();
+		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor,
+				failure -> progressor.record(failure.in(descriptor.id(), relativeFolder)));
+		boolean failed = progressor.failureCount() > failuresBeforeFinding;
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
@@ -310,23 +297,37 @@ public class ArchiveDigger {
 		}
 
 		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
-		final Clues clues = reporting(relativeFolder, () -> clueFinder.enrich(localClues, folderView, progressor));
+		Clues clues = localClues;
+		if (!failed) {
+			final int failuresBeforeEnriching = progressor.failureCount();
+			clues = clueFinder.enrich(localClues, folderView, progressor,
+					failure -> progressor.record(failure.in(descriptor.id(), relativeFolder)));
+			failed = progressor.failureCount() > failuresBeforeEnriching;
+		}
 		progressor.throwIfCancelled();
 
-		final Artifact artifact;
-		final FolderOutcome outcome;
-		if (clues.isEmpty()) {
-			artifact = null;
+		Artifact artifact = null;
+		FolderOutcome outcome;
+		if (failed) {
+			outcome = new FolderOutcome.Failed();
+		} else if (clues.isEmpty()) {
 			outcome = new FolderOutcome.MetadataFolder(folderView);
 		} else {
-			artifact = new Artifact(reporting(relativeFolder, () -> clues.and(createSyntheticClues(root, folder))));
-			/*
-			 * The view is deliberately not carried. This folder is another
-			 * item's evidence, so there must be nothing here for an ancestor to
-			 * read.
-			 */
-			outcome = new FolderOutcome.EstablishedArtifact();
-			logger.info("Found artifact at: " + relativeFolder);
+			try {
+				artifact = new Artifact(clues.and(createSyntheticClues(root, folder)));
+				/*
+				 * The view is deliberately not carried. This folder is another
+				 * item's evidence, so there must be nothing here for an
+				 * ancestor to read.
+				 */
+				outcome = new FolderOutcome.EstablishedArtifact();
+				logger.info("Found artifact at: " + relativeFolder);
+			} catch (final DuplicateClueException duplicate) {
+				// A synthetic clue collided; no finder was reading anything.
+				progressor.record(new ClueFindingException(duplicate.getMessage(), null, duplicate).in(descriptor.id(),
+						relativeFolder));
+				outcome = new FolderOutcome.Failed();
+			}
 		}
 
 		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
@@ -342,21 +343,22 @@ public class ArchiveDigger {
 			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
 		/*
 		 * Children are pruned deliberately, not as an optimization. The archive
-		 * tree expresses gear containment, never gear type, so a tree finder may
-		 * descend through non-gear subfolders belonging to one item but must
-		 * never reach into another piece of gear and absorb its identity.
+		 * tree expresses gear containment, never gear type, so a tree finder
+		 * may descend through non-gear subfolders belonging to one item but
+		 * must never reach into another piece of gear and absorb its identity.
 		 * Removing this filter would let a parent be classified by what its
 		 * children are.
 		 *
 		 * Pruning is structural rather than a check anyone has to remember: a
 		 * child that established an artifact carries no view, so there is
-		 * nothing here to take. An outcome that established nothing carries none
-		 * either, and this switch stops compiling until it says so.
+		 * nothing here to take. An outcome that established nothing carries
+		 * none either, and this switch stops compiling until it says so.
 		 */
 		final List<ArchiveFolderView> metadataFolders = children.stream().map(DigResult::outcome)
 				.flatMap(outcome -> switch (outcome) {
 				case FolderOutcome.MetadataFolder metadata -> Stream.of(metadata.view());
-				case FolderOutcome.EstablishedArtifact ignored -> Stream.<ArchiveFolderView>empty();
+				case FolderOutcome.EstablishedArtifact ignored -> Stream.<ArchiveFolderView> empty();
+				case FolderOutcome.Failed ignored -> Stream.<ArchiveFolderView> empty();
 				}).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
 				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
@@ -375,10 +377,9 @@ public class ArchiveDigger {
 	 * design principle 10 depends on is structural instead of a filter someone
 	 * has to remember to apply.
 	 * <p>
-	 * Collecting clue failures instead of aborting the dig will add a state that
-	 * established nothing and therefore carries no view either. Because this
-	 * type is sealed, every exhaustive switch over it stops compiling until that
-	 * case is handled.
+	 * A failed folder likewise establishes nothing and carries no view. Because
+	 * this type is sealed, every exhaustive switch has to handle that state
+	 * explicitly.
 	 */
 	private sealed interface FolderOutcome {
 
@@ -395,6 +396,12 @@ public class ArchiveDigger {
 		 * model-dependent question the digger neither knows nor needs.
 		 */
 		record EstablishedArtifact() implements FolderOutcome {
+		}
+
+		/**
+		 * Clue finding failed, so no conclusion or readable view may escape.
+		 */
+		record Failed() implements FolderOutcome {
 		}
 	}
 

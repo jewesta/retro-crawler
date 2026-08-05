@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,8 +26,11 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.TreeClueFinder;
+import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerTreeClueFinderTest {
@@ -85,6 +89,43 @@ class ArchiveDiggerTreeClueFinderTest {
 		assertNotNull(archive.artifact());
 		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
 		assertNull(child(archive, "Kleinanzeigen").artifact());
+	}
+
+	@Test
+	void failLateCrawlsChildrenButKeepsAFailedFolderOpaqueToItsParent() throws IOException {
+		final Path broken = Files.createDirectory(root.resolve("Broken artifact"));
+		Files.createDirectory(broken.resolve("Nested artifact"));
+		final IllegalStateException randomFailure = new IllegalStateException("Broken folder clue.");
+		final List<String> rootFolders = new ArrayList<>();
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(name -> {
+			if ("Broken artifact".equals(name)) {
+				throw randomFailure;
+			}
+			return "Nested artifact".equals(name) ? Clues.of(Clue.of("kind", "part")) : Clues.none();
+		}, List.of(), List.of(), List.of(folder -> {
+			if (folder.name().equals(root.getFileName().toString())) {
+				folder.folders().stream().map(ArchiveFolderView::name).forEach(rootFolders::add);
+			}
+			return Clues.none();
+		}));
+		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+
+		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
+		final ArchiveNode archive;
+		try (ArchiveSession session = digger.open(root)) {
+			final ArchiveDigTarget target = digger.rootTarget(session);
+			archive = digger.dig(target, digger.plan(List.of(target), progressor), progressor);
+		}
+
+		assertTrue(rootFolders.isEmpty());
+		final ArchiveNode failed = child(archive, "Broken artifact");
+		assertNull(failed.artifact());
+		assertNotNull(child(failed, "Nested artifact").artifact());
+		assertEquals(1, progressor.failureCount());
+		final ClueFindingException recorded = (ClueFindingException) progressor.failures().getFirst();
+		assertEquals(descriptor().id(), recorded.archiveId().orElseThrow());
+		assertEquals(Path.of("Broken artifact"), recorded.folder().orElseThrow());
+		assertSame(randomFailure, recorded.getCause());
 	}
 
 	private Clues originClues(final ArchiveFolderView folder) {

@@ -19,6 +19,7 @@ import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchivePathClueFinderTest {
@@ -79,12 +80,36 @@ class ArchivePathClueFinderTest {
 	void leavesLocalCluesUntouchedWhenNoTreeFinderIsConfigured() {
 		final ArchiveFolder root = () -> Path.of("/archive");
 		final ArchiveFolder folder = () -> root.path().resolve("folder");
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(
-				ignored -> Clues.of(Clue.of("bus", "ISA")), List.of(), List.of());
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(ignored -> Clues.of(Clue.of("bus", "ISA")),
+				List.of(), List.of());
 		final Progressor progressor = new Progressor();
 		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
 
 		assertSame(localClues, finder.enrich(localClues, emptyFolder(), progressor));
+	}
+
+	@Test
+	void failLateRecordsAnArbitraryFinderExceptionAndContinuesWithIndependentFinders() {
+		final Path rootPath = Path.of("/archive");
+		final ArchiveFolder root = () -> rootPath;
+		final ArchiveFolder folder = () -> rootPath.resolve("folder");
+		final ArchiveFile file = () -> folder.path().resolve("front.jpeg");
+		final IllegalStateException randomFailure = new IllegalStateException("Unexpected finder failure.");
+		final FolderNameClueFinder broken = ignored -> {
+			throw randomFailure;
+		};
+		final FileNameClueFinder working = ignored -> Clues.of(Clue.of("image", "front.jpeg"));
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(broken, List.of(), List.of(working));
+		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+
+		final Clues clues = finder.find(folder, List.of(file), emptySession(root), progressor);
+
+		assertEquals(Set.of("front.jpeg"), clues.get("image").orElseThrow().value());
+		assertEquals(1, progressor.failureCount());
+		final ClueFindingException recorded = assertInstanceOf(ClueFindingException.class,
+				progressor.failures().getFirst());
+		assertSame(randomFailure, recorded.getCause());
+		assertEquals(ClueSourceKind.FOLDER_NAME, recorded.source().orElseThrow().kind());
 	}
 
 	private static ArchiveFolderView emptyFolder() {

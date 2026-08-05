@@ -11,8 +11,8 @@ import java.util.Objects;
  * closes into immutable {@link Clues}.
  * <p>
  * This is the only place a clue is inspected. Every clue is checked once, as it
- * arrives, against everything accumulated so far. Nothing downstream re-inspects
- * what an accumulator has already closed.
+ * arrives, against everything accumulated so far. Nothing downstream
+ * re-inspects what an accumulator has already closed.
  * <p>
  * An accumulator also remembers where each accepted clue was spotted, so a
  * rejected duplicate can be reported against both observations instead of only
@@ -56,15 +56,29 @@ public final class ClueAccumulator {
 
 	public ClueAccumulator addAll(final Iterable<Clue> clues) {
 		Objects.requireNonNull(clues, "clues");
+		final Map<String, Clue> cluesBefore = new LinkedHashMap<>(cluesByKey);
+		final Map<String, ClueSighting> sightingsBefore = new HashMap<>(sightingsByKey);
 		/*
 		 * A finder accumulates privately and hands back Clues, so the positions
 		 * it tracked would otherwise die here. Take them over, or a conflict
 		 * between two finders could only be reported by source.
+		 *
+		 * The hand-off is atomic. Fail-late crawling continues with the next
+		 * independent finder, which must not see clues partially accepted from
+		 * a finder whose complete result was rejected.
 		 */
-		if (clues instanceof final Clues observed) {
-			observed.forEach(clue -> add(clue, observed.locationOf(clue.key()).orElse(null)));
-		} else {
-			clues.forEach(this::add);
+		try {
+			if (clues instanceof final Clues observed) {
+				observed.forEach(clue -> add(clue, observed.locationOf(clue.key()).orElse(null)));
+			} else {
+				clues.forEach(this::add);
+			}
+		} catch (final RuntimeException failure) {
+			cluesByKey.clear();
+			cluesByKey.putAll(cluesBefore);
+			sightingsByKey.clear();
+			sightingsByKey.putAll(sightingsBefore);
+			throw failure;
 		}
 		return this;
 	}

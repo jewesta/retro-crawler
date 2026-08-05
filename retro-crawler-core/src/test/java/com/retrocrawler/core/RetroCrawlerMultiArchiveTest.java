@@ -18,17 +18,23 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.annotation.RetroClues;
+import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
+import com.retrocrawler.core.archive.clues.Clues;
+import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
+import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.ArchiveGear;
 import com.retrocrawler.core.stash.Stash;
@@ -89,6 +95,29 @@ class RetroCrawlerMultiArchiveTest {
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
 		assertEquals(List.of(FIRST, SECOND), stash.archives().stream().map(ArchiveGear::archive).toList());
+	}
+
+	@Test
+	void failLateVisitsEveryArchiveAndReportsEveryFinderException() {
+		final RecordingSource firstSource = new RecordingSource();
+		final RecordingSource secondSource = new RecordingSource();
+		final InMemoryRepository repository = new InMemoryRepository();
+		final Model failingModel = Model
+				.from(Set.of(FailingArchiveConfiguration.class, RetroCrawlerBuilderTest.TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(failingModel).repository(repository)
+				.archive(FIRST, firstSource).archive(SECOND, secondSource).build();
+		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+
+		final CrawlException report = assertThrows(CrawlException.class,
+				() -> crawler.crawlAllGear(progressor, ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class));
+
+		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
+		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
+		assertEquals(2, report.failures().size());
+		assertEquals(List.of(FIRST.id(), SECOND.id()), report.failures().stream().map(ClueFindingException.class::cast)
+				.map(failure -> failure.archiveId().orElseThrow()).toList());
+		assertTrue(repository.retrieve(FIRST.id()).isEmpty());
+		assertTrue(repository.retrieve(SECOND.id()).isEmpty());
 	}
 
 	@Test
@@ -209,6 +238,19 @@ class RetroCrawlerMultiArchiveTest {
 
 	private static String readString(final InputStream content) throws IOException {
 		return new String(content.readAllBytes(), StandardCharsets.UTF_8);
+	}
+
+	@RetroCollection(id = "failing_multi_archive_test")
+	@RetroClues(fromFolderName = ThrowingClueFinder.class)
+	public static class FailingArchiveConfiguration {
+	}
+
+	public static class ThrowingClueFinder implements FolderNameClueFinder {
+
+		@Override
+		public Clues find(final String folderName) {
+			throw new IllegalStateException("Unexpected clue-finder failure at " + folderName);
+		}
 	}
 
 	private static final class RecordingSource implements ArchiveSource {

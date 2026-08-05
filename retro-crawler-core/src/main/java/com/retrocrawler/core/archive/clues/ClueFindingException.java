@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.util.RetroCrawlerException;
 
 /**
@@ -32,24 +33,27 @@ public class ClueFindingException extends RetroCrawlerException {
 
 	private final transient Path folder;
 
+	private final ArchiveId archiveId;
+
 	/**
 	 * Reports a failure a finder detected itself, pointing at the position it
 	 * was reading. The framework fills in the source and the folder.
 	 */
 	public ClueFindingException(final String reason, final ClueLocation location) {
-		this(reason, location, null, null, null);
+		this(reason, location, null, null, null, null);
 	}
 
 	public ClueFindingException(final String reason, final ClueLocation location, final Throwable cause) {
-		this(reason, location, null, null, cause);
+		this(reason, location, null, null, null, cause);
 	}
 
 	private ClueFindingException(final String reason, final ClueLocation location, final ClueSource source,
-			final Path folder, final Throwable cause) {
-		super(compose(reason, location, source, folder), cause);
+			final ArchiveId archiveId, final Path folder, final Throwable cause) {
+		super(compose(reason, location, source, archiveId, folder), cause);
 		this.reason = reason;
 		this.location = location;
 		this.source = source;
+		this.archiveId = archiveId;
 		this.folder = folder;
 	}
 
@@ -58,17 +62,29 @@ public class ClueFindingException extends RetroCrawlerException {
 		Objects.requireNonNull(source, "source");
 		if (failure instanceof final ClueFindingException reported) {
 			return new ClueFindingException(reported.reason, reported.location,
-					reported.source == null ? source : reported.source, reported.folder, reported.getCause());
+					reported.source == null ? source : reported.source, reported.archiveId, reported.folder,
+					reported.getCause());
 		}
-		return new ClueFindingException(failure.getMessage(), null, source, null, failure);
+		return new ClueFindingException(failure.getMessage(), null, source, null, null, failure);
 	}
 
 	/** Completes the report with the archive-relative folder being crawled. */
 	public ClueFindingException in(final Path archiveRelativeFolder) {
-		if (folder != null) {
+		return in(null, archiveRelativeFolder);
+	}
+
+	/** Completes the report with its archive and archive-relative folder. */
+	public ClueFindingException in(final ArchiveId archive, final Path archiveRelativeFolder) {
+		final ArchiveId effectiveArchive = archiveId == null ? archive : archiveId;
+		final Path effectiveFolder = folder == null ? archiveRelativeFolder : folder;
+		if (effectiveArchive == archiveId && effectiveFolder == folder) {
 			return this;
 		}
-		return new ClueFindingException(reason, location, source, archiveRelativeFolder, getCause());
+		return new ClueFindingException(reason, location, source, effectiveArchive, effectiveFolder, getCause());
+	}
+
+	public Optional<ArchiveId> archiveId() {
+		return Optional.ofNullable(archiveId);
 	}
 
 	/** What was being read, once the framework has named it. */
@@ -81,7 +97,9 @@ public class ClueFindingException extends RetroCrawlerException {
 		return Optional.ofNullable(location);
 	}
 
-	/** The archive-relative folder being crawled, once the digger has named it. */
+	/**
+	 * The archive-relative folder being crawled, once the digger has named it.
+	 */
 	public Optional<Path> folder() {
 		return Optional.ofNullable(folder);
 	}
@@ -92,13 +110,18 @@ public class ClueFindingException extends RetroCrawlerException {
 	}
 
 	/**
-	 * Renders a compiler-style header — {@code where:line:column: who} — so a
-	 * failure reads like any other tool's diagnostic and the archive path can be
-	 * pasted straight into a shell.
+	 * Renders a compiler-style header — {@code where:line:column: who}. The
+	 * portable archive-relative path remains visible while an archive prefix
+	 * distinguishes equal paths in a multi-archive crawl.
 	 */
 	private static String compose(final String reason, final ClueLocation location, final ClueSource source,
-			final Path folder) {
-		final StringBuilder message = new StringBuilder(where(source, folder));
+			final ArchiveId archiveId, final Path folder) {
+		final String where = where(source, folder);
+		final StringBuilder message = new StringBuilder();
+		if (archiveId != null) {
+			message.append('[').append(archiveId).append("] ");
+		}
+		message.append(where);
 		if (location != null) {
 			message.append(':').append(location.line()).append(':').append(location.column());
 		}

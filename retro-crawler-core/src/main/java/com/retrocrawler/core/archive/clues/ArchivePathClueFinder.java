@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.source.ArchiveFile;
@@ -60,15 +62,18 @@ public class ArchivePathClueFinder {
 	 * The accumulation is inside the guard on purpose: a rejected duplicate
 	 * surfaces when the clue is added, not when the finder returns.
 	 */
-	private static void observing(final ClueAccumulator clues, final ClueSource source, final Runnable observation) {
+	private static <T> T observing(final ClueAccumulator clues, final ClueSource source, final Progressor progressor,
+			final Consumer<ClueFindingException> failures, final Supplier<T> observation, final T fallback) {
+		progressor.throwIfCancelled();
 		clues.observing(source);
 		try {
-			observation.run();
+			return observation.get();
 		} catch (final ProgressCancelledException cancelled) {
 			// Cancellation is the caller's decision, not a finding failure.
 			throw cancelled;
 		} catch (final RuntimeException failure) {
-			throw ClueFindingException.from(source, failure);
+			failures.accept(ClueFindingException.from(source, failure));
+			return fallback;
 		}
 	}
 
@@ -77,10 +82,21 @@ public class ArchivePathClueFinder {
 	 */
 	public Clues find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
 			final Progressor progressor) {
+		return find(folder, files, session, progressor, progressor::record);
+	}
+
+	/**
+	 * Runs local clue finders and hands each independently contextualized
+	 * failure to the supplied recorder. A recorder may attach the archive
+	 * location before delegating to the progressor.
+	 */
+	public Clues find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
+			final Progressor progressor, final Consumer<ClueFindingException> failures) {
 		Objects.requireNonNull(folder, "folder");
 		Objects.requireNonNull(files, "files");
 		Objects.requireNonNull(session, "session");
 		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(failures, "failures");
 
 		/*
 		 * One accumulator for every finder at this location. Each observation
@@ -88,8 +104,10 @@ public class ArchivePathClueFinder {
 		 */
 		final ClueAccumulator clues = Clues.accumulator();
 		if (folderNameClueFinder != null) {
-			observing(clues, ClueSource.folderName(folder.name(), folderNameClueFinder),
-					() -> clues.addAll(folderNameClueFinder.find(folder.name())));
+			observing(clues, ClueSource.folderName(folder.name(), folderNameClueFinder), progressor, failures, () -> {
+				clues.addAll(folderNameClueFinder.find(folder.name()));
+				return null;
+			}, null);
 		}
 		if (files.isEmpty()) {
 			return clues.clues();
@@ -97,12 +115,15 @@ public class ArchivePathClueFinder {
 
 		for (final ArchiveFile file : files) {
 			for (final FileContentClueFinder finder : fileContentClueFinders) {
-				if (!finder.matches(file.name())) {
+				final ClueSource source = ClueSource.fileContent(file.name(), finder);
+				if (!observing(clues, source, progressor, failures, () -> finder.matches(file.name()), false)) {
 					continue;
 				}
 				progressor.throwIfCancelled();
-				observing(clues, ClueSource.fileContent(file.name(), finder),
-						() -> from(finder, session, file).ifPresent(clues::addAll));
+				observing(clues, source, progressor, failures, () -> {
+					from(finder, session, file).ifPresent(clues::addAll);
+					return null;
+				}, null);
 			}
 		}
 
@@ -110,7 +131,10 @@ public class ArchivePathClueFinder {
 		final List<Path> relativeFiles = files.stream()
 				.map(file -> normalizedFolder.relativize(file.path().normalize())).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			observing(clues, ClueSource.fileNames(finder), () -> clues.addAll(finder.find(relativeFiles)));
+			observing(clues, ClueSource.fileNames(finder), progressor, failures, () -> {
+				clues.addAll(finder.find(relativeFiles));
+				return null;
+			}, null);
 		}
 		return clues.clues();
 	}
@@ -123,15 +147,28 @@ public class ArchivePathClueFinder {
 	 * tree finders add is examined, and it is examined against them.
 	 */
 	public Clues enrich(final Clues localClues, final ArchiveFolderView folder, final Progressor progressor) {
+		return enrich(localClues, folder, progressor, progressor::record);
+	}
+
+	/**
+	 * Runs tree finders while handing every failure to the supplied recorder.
+	 */
+	public Clues enrich(final Clues localClues, final ArchiveFolderView folder, final Progressor progressor,
+			final Consumer<ClueFindingException> failures) {
 		Objects.requireNonNull(localClues, "localClues");
 		Objects.requireNonNull(folder, "folder");
+		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(failures, "failures");
 		if (treeClueFinders.isEmpty()) {
 			return localClues;
 		}
 		final ClueAccumulator clues = Clues.accumulator(localClues);
 		for (final TreeClueFinder finder : treeClueFinders) {
 			progressor.throwIfCancelled();
-			observing(clues, ClueSource.folderTree(finder), () -> clues.addAll(finder.find(folder)));
+			observing(clues, ClueSource.folderTree(finder), progressor, failures, () -> {
+				clues.addAll(finder.find(folder));
+				return null;
+			}, null);
 		}
 		return clues.clues();
 	}

@@ -39,6 +39,7 @@ import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
@@ -199,7 +200,19 @@ class RetroCrawlerImpl implements RetroCrawler {
 		for (final RegisteredArchive registered : selected) {
 			progressor.throwIfCancelled();
 			final ReindexScope scope = routedScope(registered.descriptor(), reindexScope);
-			crawled.add(new CrawledArchive(registered.descriptor(), registered.manager().archive(progressor, scope)));
+			final int failuresBeforeArchive = progressor.failureCount();
+			try {
+				crawled.add(
+						new CrawledArchive(registered.descriptor(), registered.manager().archive(progressor, scope)));
+			} catch (final CrawlException failure) {
+				if (progressor.failureMode() == FailureMode.FAIL_EARLY
+						|| progressor.failureCount() == failuresBeforeArchive) {
+					throw failure;
+				}
+			}
+		}
+		if (progressor.hasFailures()) {
+			throw new CrawlException(progressor.failures());
 		}
 
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
@@ -319,8 +332,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 	 * <p>
 	 * A clue conflict discovered here is not a finder failure: the archive was
 	 * crawled cleanly and only the model's vocabulary reveals that two clues
-	 * claim one semantic key. The phase differs, so the exception type does too,
-	 * but the header reads the same as a crawl-time report.
+	 * claim one semantic key. The phase differs, so the exception type does
+	 * too, but the header reads the same as a crawl-time report.
 	 */
 	private static <T> T resolving(final Path relativeSourcePath, final Supplier<T> resolve) {
 		try {

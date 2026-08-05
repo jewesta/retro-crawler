@@ -94,4 +94,18 @@ class CluesTest {
 		assertSame(clues, clues.and(Clues.none()));
 		assertSame(clues, Clues.none().and(clues));
 	}
+
+	@Test
+	void rejectsAFinderResultAtomically() {
+		final ClueAccumulator accumulator = Clues.accumulator();
+		accumulator.add(Clue.of("bus", "ISA"));
+		final Clues incoming = Clues.of(Clue.of("title", "Example"), Clue.of("bus", "PCI"));
+
+		assertThrows(DuplicateClueException.class, () -> accumulator.addAll(incoming));
+
+		final Clues retained = accumulator.clues();
+		assertEquals(1, retained.size());
+		assertTrue(retained.contains("bus"));
+		assertTrue(retained.get("title").isEmpty());
+	}
 }

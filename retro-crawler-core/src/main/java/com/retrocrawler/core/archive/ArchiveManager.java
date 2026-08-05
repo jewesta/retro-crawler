@@ -16,6 +16,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
@@ -50,6 +51,7 @@ public class ArchiveManager {
 	}
 
 	private Archive fromSource(final Progressor progressor) throws IOException {
+		final int failuresBeforeCrawling = progressor.failureCount();
 		final Path root = descriptor.root();
 		final Instant crawledAt = clock.instant();
 		final ArchiveNode rootNode;
@@ -58,6 +60,7 @@ public class ArchiveManager {
 			progressor.throwIfCancelled();
 			rootNode = digger.dig(opened.target(), plan, crawledAt, progressor);
 		}
+		requireNoNewFailures(progressor, failuresBeforeCrawling);
 		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
@@ -67,6 +70,7 @@ public class ArchiveManager {
 
 	private Archive fromSubtrees(final Progressor progressor, final Collection<ARI> requestedSubtrees)
 			throws IOException {
+		final int failuresBeforeCrawling = progressor.failureCount();
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
 		final Instant crawledAt = clock.instant();
@@ -89,12 +93,20 @@ public class ArchiveManager {
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
+		requireNoNewFailures(progressor, failuresBeforeCrawling);
 
 		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
 		return archive;
+	}
+
+	private static void requireNoNewFailures(final Progressor progressor, final int previousFailureCount) {
+		final List<Exception> failures = progressor.failures();
+		if (failures.size() > previousFailureCount) {
+			throw new CrawlException(failures.subList(previousFailureCount, failures.size()));
+		}
 	}
 
 	public synchronized Archive archive(final Progressor progressor, final ReindexScope reindexScope)

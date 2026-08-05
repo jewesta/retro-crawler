@@ -2,6 +2,7 @@ package com.retrocrawler.core.progress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,6 +49,35 @@ class ProgressorTest {
 		assertThrows(ProgressCancelledException.class, progressor::throwIfCancelled);
 		assertThrows(ProgressCancelledException.class,
 				() -> progressor.indeterminate(ProgressStage.CRAWLING, "Ignored."));
+	}
+
+	@Test
+	void recordsAndRethrowsTheSameExceptionByDefault() {
+		final Progressor progressor = new Progressor();
+		final Exception expected = new Exception("Broken.");
+
+		final Exception thrown = assertThrows(Exception.class, () -> progressor.record(expected));
+
+		assertSame(expected, thrown);
+		assertEquals(FailureMode.FAIL_EARLY, progressor.failureMode());
+		assertEquals(List.of(expected), progressor.failures());
+	}
+
+	@Test
+	void failLateRecordsEveryExceptionInEncounterOrderAcrossChildren() throws Exception {
+		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+		final Progressor child = progressor.splitIntoEqualParts(2)[0];
+		final Exception first = new IllegalArgumentException("First.");
+		final Exception second = new Exception("Second.");
+
+		child.record(first);
+		progressor.record(second);
+
+		assertEquals(FailureMode.FAIL_LATE, child.failureMode());
+		assertEquals(List.of(first, second), progressor.failures());
+		assertEquals(progressor.failures(), child.failures());
+		assertEquals(2, progressor.failureCount());
+		assertTrue(child.hasFailures());
 	}
 
 	@Test
