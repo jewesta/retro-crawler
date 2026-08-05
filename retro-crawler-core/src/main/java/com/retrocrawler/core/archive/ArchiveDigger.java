@@ -313,10 +313,13 @@ public class ArchiveDigger {
 		progressor.throwIfCancelled();
 
 		final Artifact artifact;
+		final FolderOutcome outcome;
 		if (clues.isEmpty()) {
 			artifact = null;
+			outcome = FolderOutcome.NO_CLUES;
 		} else {
 			artifact = new Artifact(reporting(relativeFolder, () -> clues.and(createSyntheticClues(root, folder))));
+			outcome = FolderOutcome.ARTIFACT;
 			logger.info("Found artifact at: " + relativeFolder);
 		}
 
@@ -326,28 +329,78 @@ public class ArchiveDigger {
 		if (startsRegion) {
 			plan.completeRegion(folder, progressor);
 		}
-		return new DigResult(result, folderView);
+		return new DigResult(result, folderView, outcome);
 	}
 
 	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
 			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
 		/*
-		 * Children that already established an artifact are pruned
-		 * deliberately, not as an optimization. The archive tree expresses gear
-		 * containment, never gear type, so a tree finder may descend through
-		 * non-gear subfolders belonging to one item but must never reach into
-		 * another piece of gear and absorb its identity. Removing this filter
-		 * would let a parent be classified by what its children are.
+		 * Children are pruned deliberately, not as an optimization. The archive
+		 * tree expresses gear containment, never gear type, so a tree finder may
+		 * descend through non-gear subfolders belonging to one item but must
+		 * never reach into another piece of gear and absorb its identity.
+		 * Removing this filter would let a parent be classified by what its
+		 * children are.
+		 *
+		 * The question asked is what the crawl positively established about a
+		 * child, not whether it happens to carry an artifact. Those coincide
+		 * today, but only because a folder the crawl could not read aborts the
+		 * whole dig. A child left in an unknown state is not a metadata folder,
+		 * so FolderOutcome answers this once rather than every caller inferring
+		 * it from a null artifact.
 		 */
-		final List<ArchiveFolderView> metadataFolders = children.stream()
-				.filter(child -> child.node().artifact() == null).map(DigResult::folderView).toList();
+		final List<ArchiveFolderView> metadataFolders = children.stream().filter(DigResult::isMetadataFolder)
+				.map(DigResult::folderView).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
 				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
 				.toList();
 		return new DefaultArchiveFolderView(folder.name(), metadataFolders, fileViews);
 	}
 
-	private record DigResult(ArchiveNode node, ArchiveFolderView folderView) {
+	/**
+	 * What the crawl established about one folder, and therefore whether it is a
+	 * metadata folder an ancestor's tree finder may look inside.
+	 * <p>
+	 * Metadata status must be established, never inferred. Only a folder the
+	 * crawl positively read and found no clue in qualifies; anything else stays
+	 * opaque, including a folder whose state the crawl never determined.
+	 * Collecting clue failures instead of aborting the dig will add exactly such
+	 * a state, and adding a constant here forces the question to be answered
+	 * rather than left to a null check that would silently say yes.
+	 */
+	private enum FolderOutcome {
+
+		/** Positively read, no clue found: the folder holds no item of its own. */
+		NO_CLUES(true),
+
+		/**
+		 * Established an artifact, so its clues are another item's evidence.
+		 * Whether that evidence ever resolves into gear is a later,
+		 * model-dependent question the digger neither knows nor needs.
+		 */
+		ARTIFACT(false);
+
+		private final boolean metadataFolder;
+
+		FolderOutcome(final boolean metadataFolder) {
+			this.metadataFolder = metadataFolder;
+		}
+
+		boolean isMetadataFolder() {
+			return metadataFolder;
+		}
+	}
+
+	private record DigResult(ArchiveNode node, ArchiveFolderView folderView, FolderOutcome outcome) {
+
+		/**
+		 * Whether this child carries no item of its own, so an ancestor's tree
+		 * finder may read through it. The outcome owns the answer; this only
+		 * saves the caller a hop.
+		 */
+		boolean isMetadataFolder() {
+			return outcome.isMetadataFolder();
+		}
 	}
 
 	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders, List<ArchiveFileView> files)

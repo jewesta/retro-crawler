@@ -116,6 +116,12 @@ These instructions apply to the entire repository.
    non-gear subfolders belonging to one item, but folders that already
    established an artifact are pruned from its view and must stay pruned. The
    tree carries where a thing is, never what a thing is.
+   Metadata-folder status is established, never inferred. Only a folder the
+   crawl positively read and found no clue in is one, and only such a folder may
+   be read through by an ancestor's tree finder; a folder in any other state,
+   including one the crawl never determined, stays opaque. `FolderOutcome`
+   answers this once, so a new state has to declare its answer instead of
+   falling through an `artifact == null` check that would silently say yes.
 
 ## Repository Structure
 

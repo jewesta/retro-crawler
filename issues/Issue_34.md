@@ -358,10 +358,35 @@ the archive was crawled cleanly and only the model's vocabulary reveals the
 competition; the phase differs, so the type does. `RetroCrawlerImpl` gives it the
 same header naming the artifact.
 
-Failure remains fail-fast. Collecting clue failures through `Progressor` and
-continuing the crawl would surface every problem folder at once, which is worth
-having when first cataloguing a messy archive, but it changes the crawl contract
-and is left to its own issue.
+Failure remains fail-fast for now. Collecting clue failures and reporting them
+together is the better fit for cataloguing a messy archive — a compiler has hard
+rules too and still reports every error in one pass — but it changes the crawl
+contract and is left to its own issue.
+
+### Decision: metadata-folder status is established, never inferred
+
+Collecting failures instead of aborting introduces a folder state that does not
+exist today: read, but not understood. The artifact-boundary pruning that
+protects design principle 10 asked `child.node().artifact() == null`, which
+answers "does this child carry an artifact" and not "did the crawl establish
+that this child is metadata". Those coincide only because an unreadable folder
+aborts the whole dig.
+
+Under collection they diverge, and the failure mode is worse than a lost cache.
+A folder that failed would have no artifact, so it would no longer be pruned,
+and its parent's tree finder would descend into a folder holding another item's
+evidence and absorb its identity. The parent then produces different clues than
+it should, so the crawl report itself fills with findings the recovery caused
+and real ones may be masked. Under fail-fast this cannot happen, because the
+parent is never built.
+
+`FolderOutcome` now answers the question once, and only `NO_CLUES` is a metadata
+folder. Adding a state for a failed folder forces its answer to be declared
+in the enum constructor rather than left to a null check that would silently say
+yes. This changes no behaviour today; it removes the coincidence that would have
+made the change dangerous. Verified by mutating the filter to accept every
+child, which fails
+`ArchiveDiggerTreeClueFinderTest.findsParentCluesPostOrderThroughMetadataFoldersWithoutCrossingArtifactBoundaries`.
 
 ### Open: a repository cannot forget or enumerate
 
@@ -460,9 +485,12 @@ file resource values from archive-root-relative to artifact-relative, and format
       once where it is observed, and observation order survives.
 - [x] Report every clue failure against its archive location, with a
       finder-supplied position where the finder tracks one.
+- [x] Make transparency to tree finders an established outcome rather than an
+      inferred one, so collecting clue failures cannot silently reopen an
+      artifact boundary.
 - [ ] Follow-up issues for the remaining open review findings: artifact
       location, repository removal and enumeration, and collecting clue failures
-      through structured progress instead of failing fast.
+      into one crawl report instead of failing fast.
 - [x] Run focused and reactor verification.
 
 ## Verification
