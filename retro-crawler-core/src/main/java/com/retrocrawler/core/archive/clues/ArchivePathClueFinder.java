@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroClues;
-import com.retrocrawler.core.archive.ArchivePath;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
@@ -92,57 +91,6 @@ public class ArchivePathClueFinder {
 		} catch (final IOException e) {
 			throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
 		}
-	}
-
-	public Set<Clue> find(final ArchivePath node, final Progressor progressor) {
-		final List<Path> files = node.children().stream().filter(Files::isRegularFile).toList();
-		return find(node, files, progressor);
-	}
-
-	/**
-	 * Runs local clue finders with a caller-supplied classification of the
-	 * current folder's direct files.
-	 */
-	public Set<Clue> find(final ArchivePath node, final List<Path> files, final Progressor progressor) {
-		Objects.requireNonNull(node, "node");
-		Objects.requireNonNull(files, "files");
-		Set<Clue> clues;
-		final String folderName = node.path().getFileName().toString();
-		if (folderNameClueFinder != null) {
-			clues = merge(new HashSet<>(), folderNameClueFinder.find(folderName));
-		} else {
-			clues = new HashSet<>();
-		}
-		if (files.isEmpty()) {
-			/* No files. Nothing to get further clues from. */
-			return clues;
-		}
-		/*
-		 * For all file content clue finders we check for each file if the
-		 * finder is compatible and if yes invoke the search.
-		 */
-		if (!fileContentClueFinders.isEmpty()) {
-			for (final Path file : files) {
-				final String fileName = file.getFileName().toString();
-				for (final FileContentClueFinder finder : fileContentClueFinders) {
-					if (!finder.matches(fileName)) {
-						continue;
-					}
-					final Set<Clue> fileContentClues = from(finder, file);
-					clues = merge(clues, fileContentClues);
-				}
-			}
-		}
-		/*
-		 * For the file name clue finders it is the other way around: Each
-		 * finder we invoke with the total list of available files.
-		 */
-		final List<Path> relativeFiles = files.stream().map(node::relative).toList();
-		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			final Set<Clue> fileNameClues = finder.find(relativeFiles);
-			clues = merge(clues, fileNameClues);
-		}
-		return clues;
 	}
 
 	/**
