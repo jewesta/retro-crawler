@@ -11,6 +11,8 @@ import java.util.Set;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
+import com.retrocrawler.core.archive.clues.ClueLocation;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileContentClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
@@ -46,36 +48,48 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		}
 
 		final Map<String, Set<String>> valuesByKey = new LinkedHashMap<>();
+		/*
+		 * Where each key was first declared. A duplicate rejected later can then
+		 * be pointed at the front matter line that produced this clue rather
+		 * than at the document as a whole.
+		 */
+		final Map<String, Integer> offsetByKey = new LinkedHashMap<>();
 		int cursor = first.next();
 		while (cursor < document.length()) {
 			final Line line = lineAt(document, cursor);
 			if (DELIMITER.equals(line.text())) {
-				return clues(valuesByKey, document.substring(line.next()));
+				return clues(document, valuesByKey, offsetByKey, line.next());
 			}
-			parseFrontMatterLine(line.text(), valuesByKey);
+			parseFrontMatterLine(document, cursor, line.text(), valuesByKey, offsetByKey);
 			cursor = line.next();
 		}
-		throw new ClueFileIOException("Unclosed front matter in " + FILE_NAME + ".");
+		throw new ClueFindingException("Unclosed front matter in " + FILE_NAME + ".",
+				ClueLocation.in(document, 0, DELIMITER.length()));
 	}
 
-	private static void parseFrontMatterLine(final String rawLine, final Map<String, Set<String>> valuesByKey) {
+	private static void parseFrontMatterLine(final String document, final int lineStart, final String rawLine,
+			final Map<String, Set<String>> valuesByKey, final Map<String, Integer> offsetByKey) {
 		final String line = rawLine.trim();
 		if (line.isEmpty() || line.startsWith("#")) {
 			return;
 		}
 
+		final int indent = rawLine.indexOf(line.charAt(0));
 		final int colon = line.indexOf(':');
 		if (colon <= 0) {
-			throw new ClueFileIOException("Expected flat 'key: value' front matter but got: " + rawLine);
+			throw new ClueFindingException("Expected flat 'key: value' front matter but got: " + rawLine,
+					ClueLocation.in(document, lineStart + indent, line.length()));
 		}
 
 		final String key = line.substring(0, colon).trim();
 		if (AttributeNames.DESC.equalsIgnoreCase(key)) {
-			throw new ClueFileIOException("Put desc in the Markdown body, not in front matter.");
+			throw new ClueFindingException("Put desc in the Markdown body, not in front matter.",
+					ClueLocation.in(document, lineStart + indent, colon));
 		}
 
 		final String value = line.substring(colon + 1).trim();
 		final Set<String> values = valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>());
+		offsetByKey.putIfAbsent(key, lineStart + indent);
 		if (AttributeNames.LOT.equalsIgnoreCase(key)) {
 			java.util.Arrays.stream(value.split(",\\s+", -1)).map(String::trim).forEach(values::add);
 		} else {
@@ -83,20 +97,29 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		}
 	}
 
-	private static Clues clues(final Map<String, Set<String>> valuesByKey, final String rawBody) {
+	private static Clues clues(final String document, final Map<String, Set<String>> valuesByKey,
+			final Map<String, Integer> offsetByKey, final int bodyStart) {
 		final ClueAccumulator clues = Clues.accumulator();
 		for (final Map.Entry<String, Set<String>> entry : valuesByKey.entrySet()) {
 			final Set<String> nonEmptyValues = entry.getValue().stream().filter(value -> !value.isEmpty())
 					.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-			clues.add(nonEmptyValues.isEmpty() ? Clue.missingValue(entry.getKey())
-					: Clue.of(entry.getKey(), nonEmptyValues));
+			final Clue clue = nonEmptyValues.isEmpty() ? Clue.missingValue(entry.getKey())
+					: Clue.of(entry.getKey(), nonEmptyValues);
+			clues.add(clue, location(document, offsetByKey.get(entry.getKey()), entry.getKey().length()));
 		}
 
-		final String body = rawBody.strip();
+		final String body = document.substring(bodyStart).strip();
 		if (!body.isEmpty()) {
-			clues.add(Clue.of(AttributeNames.DESC, body));
+			clues.add(Clue.of(AttributeNames.DESC, body), location(document, bodyStart, 0));
 		}
 		return clues.clues();
+	}
+
+	private static ClueLocation location(final String document, final Integer offset, final int length) {
+		if (offset == null || offset > document.length()) {
+			return null;
+		}
+		return ClueLocation.in(document, offset, length);
 	}
 
 	private static Line lineAt(final String document, final int offset) {

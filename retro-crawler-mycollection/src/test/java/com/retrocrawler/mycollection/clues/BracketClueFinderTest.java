@@ -1,6 +1,7 @@
 package com.retrocrawler.mycollection.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.mycollection.AttributeNames;
 
 class BracketClueFinderTest {
@@ -58,6 +60,19 @@ class BracketClueFinderTest {
 	@Test
 	void ignoresAnEmptyGroupAndDoesNotDeriveATitleFromIt() {
 		assertTrue(finder.find("Board []").isEmpty());
+	}
+
+	@Test
+	void pointsAtBothBracketGroupsWhenTheyClaimOneKey() {
+		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
+				() -> finder.find("Example Board [bus ISA] [200001] [bus PCI]"));
+
+		assertEquals("""
+				Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
+				First values: [ISA], duplicate values: [PCI].
+				  Example Board [bus ISA] [200001] [bus PCI]
+				                ^^^^^^^^^ first
+				                                   ^^^^^^^^^ duplicate""", failure.getMessage());
 	}
 
 	@Test

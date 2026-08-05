@@ -12,7 +12,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.mycollection.AttributeNames;
 
@@ -54,12 +54,33 @@ class CollectionFileClueFindersTest {
 	}
 
 	@Test
-	void rejectsMalformedOrMisplacedFrontMatter() {
+	void rejectsMalformedOrMisplacedFrontMatterPointingAtTheOffendingLine() {
 		final RetroMarkdownClueFinder finder = new RetroMarkdownClueFinder();
 
-		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\nprice 120 EUR\n---\n")));
-		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\ndesc: Wrong level\n---\n")));
-		assertThrows(ClueFileIOException.class, () -> finder.find(input("---\nprice: 120 EUR\n")));
+		final ClueFindingException missingColon = assertThrows(ClueFindingException.class,
+				() -> finder.find(input("---\nprice 120 EUR\n---\n")));
+		assertEquals(2, missingColon.location().orElseThrow().line());
+		assertEquals("price 120 EUR", missingColon.location().orElseThrow().excerpt());
+
+		final ClueFindingException misplacedDesc = assertThrows(ClueFindingException.class,
+				() -> finder.find(input("---\nfcc: 123\ndesc: Wrong level\n---\n")));
+		assertEquals(3, misplacedDesc.location().orElseThrow().line());
+		assertEquals("desc: Wrong level", misplacedDesc.location().orElseThrow().excerpt());
+
+		final ClueFindingException unclosed = assertThrows(ClueFindingException.class,
+				() -> finder.find(input("---\nprice: 120 EUR\n")));
+		assertEquals(1, unclosed.location().orElseThrow().line());
+	}
+
+	/**
+	 * Two front matter lines for one key are one authority supplying several
+	 * values, not a conflict, so the file merges them itself.
+	 */
+	@Test
+	void mergesRepeatedFrontMatterLinesForOneKey() {
+		final Clues clues = new RetroMarkdownClueFinder().find(input("---\nlot: 200001\nlot: 200002\n---\n"));
+
+		assertEquals(Set.of("200001", "200002"), clues.get(AttributeNames.LOT).orElseThrow().value());
 	}
 
 	@Test

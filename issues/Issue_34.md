@@ -313,6 +313,56 @@ later. `Clues` also preserves observation order end to end; the previous
 `LinkedHashSet` had been carefully building, which is the value-ordering finding
 recorded below.
 
+### Decision: a rejection has to say where
+
+Restoring the invariant made clue finding throw where it used to merge, and the
+failure named nothing: not the folder, not the finder, not the file. A crawl over
+a real archive reported `Duplicate clue key 'bus'` and left the cataloguer to
+find the folder by hand.
+
+Position is known in three layers, and no single place knows all of them. The
+digger knows the archive-relative folder. `ArchivePathClueFinder` knows which
+finder ran and what it was reading. Only the finder can know where inside that
+source, because it normalizes what it reads — `[trw 10510]` becomes key
+`theRetroWebId`, so the raw text is no longer searchable for the resulting clue.
+
+`ClueFindingException` therefore collects context in layers, each producing a new
+exception rather than mutating one in flight, and renders a compiler-style
+`path:line:column: who` header. It wraps whatever the finder threw and keeps it
+as the cause, so a caller that cares which condition occurred can still ask.
+A finder reports a position by passing a `ClueLocation` when it accumulates a
+clue; `ClueAccumulator` remembers a sighting per accepted clue so a duplicate is
+drawn against *both* observations rather than only the second one.
+
+Positions do not live on `Clue`: they are crawl-time diagnostics, not evidence,
+and would reach the cached JSON. They *are* carried by `Clues`, because a finder
+accumulates privately and hands its work back — without that, every position a
+finder tracked would die at the return statement, and the common conflict
+between a folder name and `retro.md` could only be reported by source.
+
+The first attempt kept `Clues` free of them and accepted exactly that loss,
+justified by the memory a position would cost in every cached artifact. That
+justification was wrong: `Artifact` can simply drop them, which it now does, so
+positions live for one folder's crawl — bounded by tree depth, not archive size —
+just as they would have anyway. What the argument was really protecting was the
+tidiness of a type that had just been cleaned up, which is not worth the feature.
+
+The artifact is the right place to stop. A retrieved archive has no folder name
+or document left to point into, so a position that crossed the cache would
+describe text nobody read this run, and diagnostics would differ depending on
+whether an archive came from a crawl or from the repository.
+
+Resolution-time conflicts stay a `DuplicateClueException` rather than becoming a
+finding failure. When `[AGP]` in a folder name meets `bus: PCI` in `retro.md`,
+the archive was crawled cleanly and only the model's vocabulary reveals the
+competition; the phase differs, so the type does. `RetroCrawlerImpl` gives it the
+same header naming the artifact.
+
+Failure remains fail-fast. Collecting clue failures through `Progressor` and
+continuing the crawl would surface every problem folder at once, which is worth
+having when first cataloguing a messy archive, but it changes the crawl contract
+and is left to its own issue.
+
 ### Open: a repository cannot forget or enumerate
 
 `Repository` is `stowaway` plus `retrieve`. There is no removal and no listing,
@@ -408,8 +458,11 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Replace `Set<Clue>` with `Clues` across the clue-finder SPI, the crawler,
       and `Artifact` so the invariant lives in the type, each clue is inspected
       once where it is observed, and observation order survives.
+- [x] Report every clue failure against its archive location, with a
+      finder-supplied position where the finder tracks one.
 - [ ] Follow-up issues for the remaining open review findings: artifact
-      location, and repository removal and enumeration.
+      location, repository removal and enumeration, and collecting clue failures
+      through structured progress instead of failing fast.
 - [x] Run focused and reactor verification.
 
 ## Verification

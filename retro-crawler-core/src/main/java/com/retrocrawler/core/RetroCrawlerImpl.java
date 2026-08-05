@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDefinition;
@@ -26,6 +27,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -312,6 +314,30 @@ class RetroCrawlerImpl implements RetroCrawler {
 		}
 	}
 
+	/**
+	 * Names the artifact whose clues could not be interpreted.
+	 * <p>
+	 * A clue conflict discovered here is not a finder failure: the archive was
+	 * crawled cleanly and only the model's vocabulary reveals that two clues
+	 * claim one semantic key. The phase differs, so the exception type does too,
+	 * but the header reads the same as a crawl-time report.
+	 */
+	private static <T> T resolving(final Path relativeSourcePath, final Supplier<T> resolve) {
+		try {
+			return resolve.get();
+		} catch (final DuplicateClueException conflict) {
+			throw new DuplicateClueException(
+					portable(relativeSourcePath) + ": Resolving clues into facts.\n" + conflict.getMessage(), conflict);
+		}
+	}
+
+	private static String portable(final Path path) {
+		final String separator = path.getFileSystem().getSeparator();
+		final String value = path.toString();
+		final String normalized = "/".equals(separator) ? value : value.replace(separator, "/");
+		return normalized.isEmpty() ? "." : normalized;
+	}
+
 	private ResolvedArchiveNode resolve(final ArchiveId archiveId, final ArchiveNode node, final Path archiveRoot,
 			final Path sourcePath, final RetroIdRegistry retroIds, final ResolutionProgress progress,
 			final Progressor progressor) {
@@ -319,8 +345,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final Artifact artifact = node.artifact();
 		final Path relativeSourcePath = archiveRoot.relativize(sourcePath);
 		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
-				: resolver.resolveWithIdentity(artifact,
-						new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
+				: resolving(relativeSourcePath, () -> resolver.resolveWithIdentity(artifact,
+						new ParseContext(configuration, new Node(archiveRoot, sourcePath))));
 		resolution.ifPresent(value -> value.retroId()
 				.ifPresent(id -> retroIds.register(id, ARI.of(collectionId, archiveId, relativeSourcePath))));
 		if (artifact != null) {

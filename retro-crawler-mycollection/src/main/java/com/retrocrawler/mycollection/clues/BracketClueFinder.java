@@ -10,6 +10,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueLocation;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
@@ -44,19 +45,27 @@ public final class BracketClueFinder implements FolderNameClueFinder {
 
 			final int closingBracket = folderName.indexOf(']', openingBracket + 1);
 			if (closingBracket < 0) {
-				clues.add(Clue.of(folderName.substring(openingBracket).trim()));
+				clues.add(Clue.of(folderName.substring(openingBracket).trim()),
+						ClueLocation.in(folderName, openingBracket, folderName.length() - openingBracket));
 				cursor = folderName.length();
 				break;
 			}
 
+			/*
+			 * The whole group including its brackets is the observation, so a
+			 * rejected duplicate points at the tag the cataloguer wrote rather
+			 * than at the normalized key it produced.
+			 */
 			final String group = folderName.substring(openingBracket + 1, closingBracket);
-			parseGroup(group).ifPresent(clues::add);
+			final ClueLocation location = ClueLocation.in(folderName, openingBracket,
+					closingBracket - openingBracket + 1);
+			parseGroup(group).ifPresent(clue -> clues.add(clue, location));
 			cursor = closingBracket + 1;
 		}
 
 		final String title = String.join(" ", titleParts);
 		if (!clues.isEmpty() && !title.isBlank()) {
-			clues.add(Clue.of(AttributeNames.TITLE, title));
+			clues.add(Clue.of(AttributeNames.TITLE, title), ClueLocation.in(folderName, 0, folderName.length()));
 		}
 
 		return clues.clues();

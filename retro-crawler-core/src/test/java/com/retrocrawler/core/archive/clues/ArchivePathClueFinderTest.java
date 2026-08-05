@@ -1,6 +1,7 @@
 package com.retrocrawler.core.archive.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -48,9 +49,11 @@ class ArchivePathClueFinderTest {
 		final Progressor progressor = new Progressor();
 		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
 
-		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
+		final ClueFindingException failure = assertThrows(ClueFindingException.class,
 				() -> finder.enrich(localClues, emptyFolder(), progressor));
 
+		assertEquals(ClueSourceKind.FOLDER_TREE, failure.source().orElseThrow().kind());
+		assertInstanceOf(DuplicateClueException.class, failure.getCause());
 		assertTrue(failure.getMessage().contains("bus"));
 	}
 

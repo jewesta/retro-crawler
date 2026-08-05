@@ -65,6 +65,47 @@ return clues.clues();
 A second clue claiming a key already taken is rejected with a
 `DuplicateClueException` right where it is observed.
 
+### Clue diagnostics
+Because RetroCrawler rejects a conflict instead of merging it, a failed crawl
+has to say where. Every clue failure leaves a crawl as a `ClueFindingException`
+with a compiler-style header naming the archive-relative folder, the finder, and
+the source it was reading — the original condition stays available as the cause.
+
+A finder that tracks offsets can hand them over, and the rejection then points at
+the tag you actually wrote:
+
+```
+Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the folder name.
+Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [ISA], duplicate values: [PCI].
+  Example Board [bus ISA] [200001] [bus PCI]
+                ^^^^^^^^^ first
+                                   ^^^^^^^^^ duplicate
+```
+
+Pass a `ClueLocation` when you accumulate:
+
+```java
+clues.add(Clue.of(key, values), ClueLocation.in(folderName, openingBracket, length));
+```
+
+A finder that reports nothing still produces the header. When the two conflicting
+clues come from *different* finders, both are drawn — the positions travel with
+the `Clues` a finder hands back:
+
+```
+Graphics Cards/Example Board [bus AGP]/retro.md: RetroMarkdownClueFinder read the file content.
+Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [AGP], duplicate values: [PCI].
+  The first clue was observed where BracketClueFinder read the folder name of 'Example Board [bus AGP]', line 1, column 15.
+    Example Board [bus AGP]
+                  ^^^^^^^^^
+  The duplicate clue was observed where RetroMarkdownClueFinder read the file content of 'retro.md', line 3, column 1.
+    bus: PCI
+    ^^^
+```
+
+Positions stop at the artifact: a retrieved archive has no folder name or
+document left to point into, so they would otherwise describe text nobody read.
+
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
 Gear types are **not** required to implement framework interfaces and require only a no-arg constructor. It's "bring your own type".

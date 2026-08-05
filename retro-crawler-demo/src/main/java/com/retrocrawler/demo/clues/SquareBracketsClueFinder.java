@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
+import com.retrocrawler.core.archive.clues.ClueLocation;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.demo.AttributeNames;
@@ -105,7 +107,13 @@ public class SquareBracketsClueFinder implements FolderNameClueFinder {
 				// Empty attribute tag - ignore
 				continue;
 			}
-			clues.add(parse(keyValueString));
+			final ClueLocation location = ClueLocation.in(folderName, indexOfFirstAttribute + m.start(),
+					m.end() - m.start());
+			try {
+				clues.add(parse(keyValueString), location);
+			} catch (final IllegalArgumentException malformed) {
+				throw new ClueFindingException(malformed.getMessage(), location, malformed);
+			}
 		}
 		return clues.clues();
 	}

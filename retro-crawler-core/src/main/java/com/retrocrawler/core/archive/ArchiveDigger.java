@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,9 @@ import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveEntry;
@@ -249,6 +252,22 @@ public class ArchiveDigger {
 		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, progressor, false).node();
 	}
 
+	/**
+	 * Completes a clue-finding failure with the archive-relative folder that
+	 * was being crawled. A finder names what it was reading and may name a
+	 * position inside it, but only the digger knows which folder that was.
+	 */
+	private static <T> T reporting(final Path relativeFolder, final Supplier<T> dig) {
+		try {
+			return dig.get();
+		} catch (final ClueFindingException reported) {
+			throw reported.in(relativeFolder);
+		} catch (final DuplicateClueException duplicate) {
+			// A synthetic clue collided; no finder was reading anything.
+			throw new ClueFindingException(duplicate.getMessage(), null, duplicate).in(relativeFolder);
+		}
+	}
+
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
 		final String archiveId = descriptor.id().value();
 		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
@@ -268,12 +287,20 @@ public class ArchiveDigger {
 		final boolean insideRegion = parentInsideRegion || startsRegion;
 		plan.reportCurrent(folder, insideRegion, progressor);
 
-		FolderListing listing = plan.listing(session, folder).orElse(null);
-		if (listing == null) {
-			listing = list(session, folder);
+		FolderListing found = plan.listing(session, folder).orElse(null);
+		if (found == null) {
+			found = list(session, folder);
 		}
+		final FolderListing listing = found;
 
-		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor);
+		/*
+		 * The finders know what they were reading; only the digger knows where.
+		 * Complete every clue-finding failure with the archive-relative folder
+		 * before it leaves the crawl.
+		 */
+		final Path relativeFolder = root.path().relativize(folder.path());
+		final Clues localClues = reporting(relativeFolder,
+				() -> clueFinder.find(folder, listing.files(), session, progressor));
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
@@ -282,15 +309,15 @@ public class ArchiveDigger {
 		}
 
 		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
-		final Clues clues = clueFinder.enrich(localClues, folderView, progressor);
+		final Clues clues = reporting(relativeFolder, () -> clueFinder.enrich(localClues, folderView, progressor));
 		progressor.throwIfCancelled();
 
 		final Artifact artifact;
 		if (clues.isEmpty()) {
 			artifact = null;
 		} else {
-			artifact = new Artifact(clues.and(createSyntheticClues(root, folder)));
-			logger.info("Found artifact at: " + root.path().relativize(folder.path()));
+			artifact = new Artifact(reporting(relativeFolder, () -> clues.and(createSyntheticClues(root, folder))));
+			logger.info("Found artifact at: " + relativeFolder);
 		}
 
 		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();

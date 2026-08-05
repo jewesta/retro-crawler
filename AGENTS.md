@@ -89,6 +89,16 @@ These instructions apply to the entire repository.
    somewhere else, and do not reintroduce a `Set<Clue>`: `Clue` keeps identity
    equality on purpose, so a set promises a uniqueness it cannot enforce and
    says nothing about the key-level rule that actually applies.
+   Because the rule rejects rather than merges, it must say where. Report a
+   clue failure against the archive location that caused it: the digger
+   completes every `ClueFindingException` with the archive-relative folder, and
+   `ArchivePathClueFinder` names the finder and the source it was reading. A
+   finder that already tracks offsets should pass a `ClueLocation` when it
+   accumulates a clue, so a rejection can point at the tag the cataloguer
+   actually wrote. `Clues` carries those positions so they survive a finder
+   handing its work back, and `Artifact` drops them, because a cached archive
+   has nothing left to point into. Never let a clue failure escape a crawl
+   without naming its folder.
 
 10. **Express gear relation through archive location, never through
    hierarchy-derived type.**

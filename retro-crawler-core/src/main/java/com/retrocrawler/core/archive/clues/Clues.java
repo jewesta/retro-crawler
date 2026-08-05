@@ -25,12 +25,24 @@ import java.util.stream.Stream;
  */
 public final class Clues implements Iterable<Clue> {
 
-	private static final Clues NONE = new Clues(Map.of());
+	private static final Clues NONE = new Clues(Map.of(), Map.of());
 
 	private final Map<String, Clue> cluesByKey;
 
-	Clues(final Map<String, Clue> cluesByKey) {
+	/**
+	 * Where each clue was seen, for the finders that track offsets. Carried so
+	 * that a duplicate rejected further downstream can still be drawn against
+	 * the observation that claimed the key first — a finder accumulates
+	 * privately, so this is the only way its positions outlive it.
+	 * <p>
+	 * Empty for clues built any other way, and dropped at the {@link Artifact}
+	 * boundary: see {@link #withoutLocations()}.
+	 */
+	private final Map<String, ClueLocation> locationsByKey;
+
+	Clues(final Map<String, Clue> cluesByKey, final Map<String, ClueLocation> locationsByKey) {
 		this.cluesByKey = cluesByKey;
+		this.locationsByKey = locationsByKey;
 	}
 
 	/**
@@ -82,6 +94,30 @@ public final class Clues implements Iterable<Clue> {
 
 	public Clues and(final Clue incoming) {
 		return accumulator(this).add(incoming).clues();
+	}
+
+	/**
+	 * Where the finder saw the clue claiming this key, when it tracked offsets.
+	 */
+	Optional<ClueLocation> locationOf(final String key) {
+		return Optional.ofNullable(locationsByKey.get(key));
+	}
+
+	boolean hasLocations() {
+		return !locationsByKey.isEmpty();
+	}
+
+	/**
+	 * The same clues without their crawl-time positions.
+	 * <p>
+	 * An {@link Artifact} is the cache boundary, and diagnostics do not cross
+	 * it: an artifact retrieved from the repository has no folder name or
+	 * document left to point into, so a position that survived the cache would
+	 * describe text nobody read this run. Dropping it here also keeps positions
+	 * alive for exactly one folder's crawl rather than for the whole archive.
+	 */
+	Clues withoutLocations() {
+		return hasLocations() ? new Clues(cluesByKey, Map.of()) : this;
 	}
 
 	/**

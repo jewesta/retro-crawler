@@ -52,7 +52,13 @@ public class Artifact {
 			throw new IllegalArgumentException(
 					"Clues cannot be empty. The existence of an artifact implies that there is at least one clue.");
 		}
-		this.clues = clues;
+		/*
+		 * An artifact is the cache boundary, so crawl-time positions stop here.
+		 * A retrieved artifact has no folder name or document left to point
+		 * into, and diagnostics that differed depending on whether an archive
+		 * came from a crawl or from the repository would be worse than none.
+		 */
+		this.clues = clues.withoutLocations();
 	}
 
 	/**

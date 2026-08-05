@@ -10,6 +10,7 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Reflection;
 
@@ -45,10 +46,29 @@ public class ArchivePathClueFinder {
 	private static Optional<Clues> from(final FileContentClueFinder finder, final ArchiveSession session,
 			final ArchiveFile file) {
 		try {
-			// TODO Report the affected clue file through structured progress diagnostics.
 			return session.access(file, finder::find);
 		} catch (final IOException e) {
 			throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
+		}
+	}
+
+	/**
+	 * Runs one finder while naming what it is reading, so that anything it
+	 * throws is reported against that source instead of escaping bare. A finder
+	 * that reported a position of its own keeps it.
+	 * <p>
+	 * The accumulation is inside the guard on purpose: a rejected duplicate
+	 * surfaces when the clue is added, not when the finder returns.
+	 */
+	private static void observing(final ClueAccumulator clues, final ClueSource source, final Runnable observation) {
+		clues.observing(source);
+		try {
+			observation.run();
+		} catch (final ProgressCancelledException cancelled) {
+			// Cancellation is the caller's decision, not a finding failure.
+			throw cancelled;
+		} catch (final RuntimeException failure) {
+			throw ClueFindingException.from(source, failure);
 		}
 	}
 
@@ -68,7 +88,8 @@ public class ArchivePathClueFinder {
 		 */
 		final ClueAccumulator clues = Clues.accumulator();
 		if (folderNameClueFinder != null) {
-			clues.addAll(folderNameClueFinder.find(folder.name()));
+			observing(clues, ClueSource.folderName(folder.name(), folderNameClueFinder),
+					() -> clues.addAll(folderNameClueFinder.find(folder.name())));
 		}
 		if (files.isEmpty()) {
 			return clues.clues();
@@ -80,7 +101,8 @@ public class ArchivePathClueFinder {
 					continue;
 				}
 				progressor.throwIfCancelled();
-				from(finder, session, file).ifPresent(clues::addAll);
+				observing(clues, ClueSource.fileContent(file.name(), finder),
+						() -> from(finder, session, file).ifPresent(clues::addAll));
 			}
 		}
 
@@ -88,7 +110,7 @@ public class ArchivePathClueFinder {
 		final List<Path> relativeFiles = files.stream()
 				.map(file -> normalizedFolder.relativize(file.path().normalize())).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			clues.addAll(finder.find(relativeFiles));
+			observing(clues, ClueSource.fileNames(finder), () -> clues.addAll(finder.find(relativeFiles)));
 		}
 		return clues.clues();
 	}
@@ -109,7 +131,7 @@ public class ArchivePathClueFinder {
 		final ClueAccumulator clues = Clues.accumulator(localClues);
 		for (final TreeClueFinder finder : treeClueFinders) {
 			progressor.throwIfCancelled();
-			clues.addAll(finder.find(folder));
+			observing(clues, ClueSource.folderTree(finder), () -> clues.addAll(finder.find(folder)));
 		}
 		return clues.clues();
 	}
