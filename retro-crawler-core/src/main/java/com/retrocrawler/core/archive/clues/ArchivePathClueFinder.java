@@ -57,22 +57,35 @@ public class ArchivePathClueFinder {
 		final Map<String, Clue> byKey = new HashMap<>();
 
 		for (final Clue clue : existing) {
-			byKey.put(clue.key(), clue);
+			mergeClue(byKey, clue);
 		}
 
 		for (final Clue clue : incoming) {
-			final Clue previous = byKey.get(clue.key());
-			if (previous == null) {
-				byKey.put(clue.key(), clue);
-				continue;
-			}
-
-			final Set<String> combinedValues = new HashSet<>(previous.value());
-			combinedValues.addAll(clue.value());
-			byKey.put(clue.key(), new Clue(clue.key(), Set.copyOf(combinedValues)));
+			mergeClue(byKey, clue);
 		}
 
 		return new HashSet<>(byKey.values());
+	}
+
+	private static void mergeClue(final Map<String, Clue> cluesByKey, final Clue incoming) {
+		Clue candidate = incoming;
+		Clue previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
+
+		/*
+		 * In the very rare case of an anonymous key collision simply recreate the clue which pulls a fresh random key.
+		 */
+		while (previous != null && candidate.isAnonymous()) {
+			candidate = Clue.of(candidate.value());
+			previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
+		}
+
+		if (previous == null) {
+			return;
+		}
+
+		final Set<String> combinedValues = new HashSet<>(previous.value());
+		combinedValues.addAll(candidate.value());
+		cluesByKey.put(candidate.key(), new Clue(candidate.key(), Set.copyOf(combinedValues)));
 	}
 
 	private static Set<Clue> from(final FileContentClueFinder finder, final Path file) {

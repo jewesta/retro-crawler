@@ -327,6 +327,8 @@ once.
 - [x] Remove `ArchivePath` and the two dead `ArchivePathClueFinder.find`
       overloads it served.
 - [x] Move `Confidence` from `archive.clues` to `gear`.
+- [x] Record location-as-relation as design principle 9 and document the
+      artifact-boundary pruning it depends on.
 - [ ] Follow-up issues for the open review findings: clue provenance, archive
       freshness, artifact location, the artifact clue-key invariant, repository
       removal and enumeration, and value ordering.
@@ -342,3 +344,11 @@ once.
   tests, 0 failures, 0 errors. The count dropped with the tests covering the
   removed types; no remaining test needed adjusting, which is the expected
   result for types nothing referenced.
+- Re-verified after documenting design principle 9: `mvn test` passed for the
+  full reactor with 314 tests, 0 failures, 0 errors, and the canonical
+  `prettify` assertion passed for `ArchiveDigger`.
+- Note for worktree-based work: `prettify` validates a repository root with
+  `Files.isDirectory(repo.resolve(".git"))`, which no Git worktree satisfies
+  because its `.git` is a file. The assertion above was obtained by running
+  prettify against a reactor copy. Running the canonical formatter inside an
+  issue worktree needs a fix in `devtools`.
