@@ -68,6 +68,23 @@ These instructions apply to the entire repository.
    must not mutate the cached artifact. Model and parser changes must therefore
    be able to reinterpret an existing clue archive without re-indexing.
 
+9. **Express gear relation through archive location, never through
+   hierarchy-derived type.**
+   A physical item is in exactly one place at a time, and so is a folder. That
+   isomorphism is why RetroCrawler models gear relation as archive location:
+   moving gear means moving folders, which is fast, pragmatic, and visual, with
+   no parallel relational model to keep in sync and no way for a relation to
+   contradict the archive. Do not add relation types, cross-references, or link
+   tables beside the tree.
+   The same exclusivity forbids the inverse. A folder's ancestry must never
+   determine what its gear *is*: `Graphics Cards/GeForce 2` does not make the
+   GeForce 2 a graphics card, because moving that folder would silently change
+   the item's type. Clue finders may read a folder's own name; they must not
+   read classification from its parents. A `TreeClueFinder` may descend through
+   non-gear subfolders belonging to one item, but folders that already
+   established an artifact are pruned from its view and must stay pruned. The
+   tree carries where a thing is, never what a thing is.
+
 ## Repository Structure
 
 - `retro-crawler-core`: public framework API and implementation.

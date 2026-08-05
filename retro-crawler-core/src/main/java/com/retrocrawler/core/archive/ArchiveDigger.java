@@ -301,6 +301,14 @@ public class ArchiveDigger {
 
 	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
 			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
+		/*
+		 * Children that already established an artifact are pruned
+		 * deliberately, not as an optimization. The archive tree expresses gear
+		 * containment, never gear type, so a tree finder may descend through
+		 * non-gear subfolders belonging to one item but must never reach into
+		 * another piece of gear and absorb its identity. Removing this filter
+		 * would let a parent be classified by what its children are.
+		 */
 		final List<ArchiveFolderView> metadataFolders = children.stream()
 				.filter(child -> child.node().artifact() == null).map(DigResult::folderView).toList();
 		final List<ArchiveFileView> fileViews = files.stream()

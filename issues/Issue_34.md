@@ -156,6 +156,150 @@ path against itself yields a one-element empty path, so both
 folder named `""`. Both now treat root-equals-path as the root target. This
 surfaced through subtree routing in `crawlAll`.
 
+## Core Model Review
+
+Reshaping the archive level invited a review of the whole chain —
+`ArchiveSource` to `Clue` to `Repository` to gear. The clue/fact separation
+holds: `GearResolver` derives an effective clue view without mutating the
+artifact, and `ClueClassifier` keeps model vocabulary out of the cache, so a
+changed model reinterprets a stored archive without re-indexing. The gaps below
+are what the review found. Only the resolved cleanups are in this issue's scope;
+the open findings are recorded here because this is where they surfaced.
+
+### Resolved here
+
+Three findings were leftovers of the source and archive refactors and were cheap
+to close, so they were closed rather than deferred.
+
+- `Clues` was a public record referenced by nothing. Removed.
+- `ArchivePath` was never constructed in main or test. It survived only as the
+  parameter of two `ArchivePathClueFinder.find` overloads that nothing called,
+  superseded by the `ArchiveFolder`/`ArchiveSession` overload the digger uses,
+  and it carried a compatibility constructor for a compatibility no longer
+  exercised. Meanwhile `Node` models the same rooted-path-with-below-check idea
+  and is used. Two types for one concept; `ArchivePath` and both dead overloads
+  are gone.
+- `Confidence` lived in `archive.clues` but is meaningless to a `Clue`. Only
+  `Fact`, `RatedFact`, and matchers use it, so it moved to `gear`. This also
+  makes the package boundary state the clue/fact rule instead of blurring it.
+
+### Open: provenance stops at the folder
+
+Design principle 7 promises an answer traceable to its archive, source path,
+clues, and facts. `GearNode` carries an `ARI` and `Fact` retains its source
+`Clue`, but a `Clue` records only `key` and `value`. It does not know which
+`ClueFinder` produced it or which file it came from, so a `FileContentClueFinder`
+reading one file inside a folder discards that filename.
+
+`TreeClueFinder` widens the loss: it runs post-order over a subtree and returns
+clues for the current folder, so a clue may originate several levels below and be
+recorded as observed at the parent. Gathering across those levels is correct —
+artifact boundaries are pruned, so the finder stays inside one item's own
+material — but the archive keeps no record of how far down a clue actually came
+from, and caching makes that permanent. The concern is not that the clue was
+collected; it is that the collection cannot afterwards be audited.
+
+An origin on `Clue` — finder identity plus an optional archive-relative source
+path — stays model-independent and therefore does not violate the clue/fact rule,
+and it serializes into the existing clue archive.
+
+### Open: the archive has no freshness
+
+Nothing in the archive or stash packages records a timestamp, size, or content
+hash. `Archive` holds `{version, id, basePath, root}` with no crawl time, and
+`ArchiveEntry` exposes only `path()`.
+
+`ReindexScope.none()` therefore reuses a stored archive indefinitely, and no
+component can answer whether the cache still reflects its source. Principle 5
+holds that the filesystem archive is the source of truth and stored data is
+rebuildable from it; that is true, but nothing can determine *when* rebuilding is
+due. Re-indexing is entirely a manual decision.
+
+Making this answerable needs `crawledAt` on `Archive` and optional `size()` and
+`lastModified()` on `ArchiveEntry` — optional because a ZIP or a future remote
+source may not expose either. That is the precondition for any cheap staleness
+sweep.
+
+### Open: an artifact does not know where it is
+
+The digger injects `@id` (a hash of `archiveId::relativePath`) and `@folder` as
+synthetic clues, but `Artifact` itself carries no path or ARI; its position is
+implied solely by `ArchiveNode` nesting. `GearContext` passes a matcher the gear
+type, artifact, and attributes, so a `GearMatcher` cannot make a location-aware
+decision and a failure cannot cite a path.
+
+`@id` is a hash of the path where an `ARI` is a resolvable address for the same
+thing. Now that ARIs exist, the synthetic id is a candidate for replacement
+rather than a fixture.
+
+### Open: the artifact clue-key invariant is unenforced
+
+`Clue` overrides neither `equals` nor `hashCode`, so the `Set<Clue>` inside
+`Artifact` deduplicates by identity and two clues may share a key.
+`Artifact.jsonGetter` then collects to a map keyed by `Clue::key` and throws
+`IllegalStateException` on the duplicate — at stowaway time, after the expensive
+crawl that caching exists to avoid repeating.
+
+This is not live on the default path, because `ArchivePathClueFinder.merge` folds
+by key first. The invariant lives in a collaborator rather than in the type that
+depends on it, and `Artifact(Set<Clue>)` is public. `DuplicateClueException`
+exists and is thrown nowhere, which suggests the check was intended on `Artifact`
+and never landed.
+
+### Open: a repository cannot forget or enumerate
+
+`Repository` is `stowaway` plus `retrieve`. There is no removal and no listing,
+so unregistering an archive leaks its stored entry with no API able to find it,
+and nothing can report what a repository currently holds. Both `JsonFileRepository`
+and `InMemoryRepository` inherit the gap.
+
+### Open: clue and fact values are unordered
+
+`Clue.value()` is a `Set<String>` and `Fact.value()` a `Set<Object>`, so ordering
+is lost and genuine duplicates collapse. Ordered multi-values are the normal case
+for retro material — disk sets, volume numbers, multi-part archives.
+
+The set semantics also reach the persisted format: `HashSet` iteration order is
+unstable, so stored arrays may reorder between runs and produce noise in a
+file-based archive that is meant to be backup- and diff-friendly. `jsonGetter`
+additionally writes single-valued clues as scalars and multi-valued ones as
+arrays, an asymmetry worth keeping deliberate.
+
+### Not a gap: location is the relation
+
+The review initially recorded folder-shaped gear relationships as a possible
+limitation. That was a misreading, and the correction is worth stating because
+the rule is currently enforced in code without being written down anywhere.
+
+Gear relation *is* archive location, and this works because the two are
+genuinely isomorphic: a physical item can be in exactly one place at a time,
+and so can a folder. A CPU sits on one board; a manual sits in one box. Moving
+gear therefore means moving folders — fast, pragmatic, and visual, with no
+parallel relational model to keep in sync and no chance of a relation
+contradicting the archive.
+
+The same reasoning is why RetroCrawler must *not* derive gear type from folder
+hierarchy. `Graphics Cards/GeForce 2` must not make the GeForce 2 a graphics
+card, because moving that folder would silently change what the item is.
+Location is exclusive and therefore safe to read as containment; it is not
+safe to read as classification. The tree carries where a thing is, never what
+a thing is.
+
+`ArchiveDigger.folderView` implements the boundary: children that already
+established an artifact are pruned from the view passed to `TreeClueFinder`s,
+so a finder may descend through non-gear subfolders belonging to one item but
+can never cross into another piece of gear and absorb its identity. This is
+covered by
+`ArchiveDiggerTreeClueFinderTest.findsParentCluesPostOrderThroughMetadataFoldersWithoutCrossingArtifactBoundaries`.
+
+The principle was enforced and tested but was not among the design principles in
+`AGENTS.md`, and the README presented the pruning as a mechanical property of
+tree finders rather than as the rule it protects. That omission was
+load-bearing: this review read the entire core and proposed relaxing the
+constraint, which is exactly the failure an unstated principle invites. It is
+now design principle 9 in `AGENTS.md`, and the pruning filter carries a comment
+naming what it protects so it cannot be mistaken for an optimization.
+
 ## Consequences for Existing Deployments
 
 Stored clue archives are not compatible: the persisted shape changed and archive
@@ -177,6 +321,15 @@ once.
 - [x] Demonstrate one shared model with filesystem and ZIP archives.
 - [x] Remove the obsolete private smoke-crawl launcher.
 - [x] Document the public composition model.
+- [x] Review the core model from `ArchiveSource` through clues and the
+      repository to gear.
+- [x] Remove the unused `Clues` record.
+- [x] Remove `ArchivePath` and the two dead `ArchivePathClueFinder.find`
+      overloads it served.
+- [x] Move `Confidence` from `archive.clues` to `gear`.
+- [ ] Follow-up issues for the open review findings: clue provenance, archive
+      freshness, artifact location, the artifact clue-key invariant, repository
+      removal and enumeration, and value ordering.
 - [x] Run focused and reactor verification.
 
 ## Verification
@@ -184,3 +337,8 @@ once.
 - Canonical `prettify` assertion passed for all remaining changed Java sources.
 - `mvn test` passed for the full reactor: 320 tests, 0 failures, 0 errors.
 - `mvn clean install` passed for the full seven-module reactor.
+- Re-verified after the review cleanups removed `Clues` and `ArchivePath` and
+  moved `Confidence` to `gear`: `mvn test` passed for the full reactor with 314
+  tests, 0 failures, 0 errors. The count dropped with the tests covering the
+  removed types; no remaining test needed adjusting, which is the expected
+  result for types nothing referenced.
