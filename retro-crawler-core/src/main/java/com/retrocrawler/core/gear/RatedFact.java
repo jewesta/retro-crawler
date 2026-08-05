@@ -3,8 +3,6 @@ package com.retrocrawler.core.gear;
 import java.util.Objects;
 import java.util.Optional;
 
-import com.retrocrawler.core.archive.clues.Confidence;
-
 /**
  * A parser result for zero or one value of a fact type.
  *

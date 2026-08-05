@@ -1,7 +1,7 @@
 package com.retrocrawler.core.gear.parser;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.RatedFact;
 
 public interface FactParser<T> {
