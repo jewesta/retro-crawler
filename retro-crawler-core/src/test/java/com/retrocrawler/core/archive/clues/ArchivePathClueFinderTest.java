@@ -3,15 +3,37 @@ package com.retrocrawler.core.archive.clues;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.archive.source.ArchiveFile;
+import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
+import com.retrocrawler.core.archive.source.ArchiveFolder;
+import com.retrocrawler.core.archive.source.ArchiveListing;
+import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchivePathClueFinderTest {
+
+	@Test
+	void passesFileNamesRelativeToTheCurrentFolder() {
+		final Path rootPath = Path.of("/archive");
+		final ArchiveFolder root = () -> rootPath;
+		final ArchiveFolder folder = () -> rootPath.resolve("shelf/gear");
+		final ArchiveFile image = () -> folder.path().resolve("front.jpeg");
+		final FileNameClueFinder fileNames = paths -> Set
+				.of(Clue.of("image", paths.stream().map(FileNameClueFinder::portablePath).collect(Collectors.toSet())));
+		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(), List.of(fileNames));
+
+		final Set<Clue> clues = finder.find(folder, List.of(image), emptySession(root), new Progressor());
+
+		assertEquals(Set.of("front.jpeg"), clues.iterator().next().value());
+	}
 
 	@Test
 	void rekeysCollidingAnonymousCluesInsteadOfMergingTheirValues() {
@@ -47,6 +69,30 @@ class ArchivePathClueFinderTest {
 			@Override
 			public List<ArchiveFileView> files() {
 				return List.of();
+			}
+		};
+	}
+
+	private static ArchiveSession emptySession(final ArchiveFolder root) {
+		return new ArchiveSession() {
+
+			@Override
+			public ArchiveFolder root() {
+				return root;
+			}
+
+			@Override
+			public ArchiveListing list(final ArchiveFolder folder) {
+				return new ArchiveListing(List.of(), List.of());
+			}
+
+			@Override
+			public <T> Optional<T> access(final ArchiveFile file, final ArchiveFileAccessor<T> accessor) {
+				return Optional.empty();
+			}
+
+			@Override
+			public void close() {
 			}
 		};
 	}

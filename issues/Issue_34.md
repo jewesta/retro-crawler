@@ -100,7 +100,7 @@ plus crawler-level aggregation. `crawlAll` is what pays for it.
     non-gear nodes. `StashStats.bucketCount` became `archiveCount`.
 11. The persisted clue archive is `{version, id, basePath, root}`. Cache
     relocation is unconditional rebinding of one base path. This incompatible
-    shape is cache format 3.
+    shape was introduced as cache format 3.
 12. `JsonFileRepository` inspects the raw top-level numeric version before
     deserializing a version-dependent `Archive`. Only a supported version is
     passed to its decoder; missing, malformed, older, and future versions fail
@@ -109,6 +109,12 @@ plus crawler-level aggregation. `crawlAll` is what pays for it.
     token instead of scanning the clue tree. The pin is deliberate rather than
     incidental: Jackson would otherwise derive the order from the creator
     signature, which is not a format contract.
+13. File resource clues are relative to their artifact, not to the archive
+    root. Current local image finders therefore store `front.jpeg` rather than
+    repeating the artifact's archive path. Resolution binds the value to the
+    artifact source path. Because format 3 values used archive-root-relative
+    paths and cannot be distinguished structurally, this semantic change is
+    cache format 4 and forces one safe re-index.
 
 ## Archive Resource Identifiers
 
@@ -199,7 +205,7 @@ material — but the archive keeps no record of how far down a clue actually cam
 from, and caching makes that permanent. The concern is not that the clue was
 collected; it is that the collection cannot afterwards be audited.
 
-An origin on `Clue` — finder identity plus an optional archive-relative source
+An origin on `Clue` — finder identity plus an optional artifact-relative source
 path — stays model-independent and therefore does not violate the clue/fact rule,
 and it serializes into the existing clue archive.
 
@@ -303,8 +309,9 @@ naming what it protects so it cannot be mistaken for an optimization.
 ## Consequences for Existing Deployments
 
 Stored clue archives are not compatible: the persisted shape changed and archive
-IDs are now per archive rather than per collection. Every deployment re-indexes
-once.
+IDs are now per archive rather than per collection. Cache format 4 also changes
+file resource values from archive-root-relative to artifact-relative. Every
+deployment re-indexes once.
 
 ## Progress
 
@@ -317,7 +324,8 @@ once.
       provenance.
 - [x] Regroup the gear tree factory, `Stash`, and stats per archive; retain the
       source ARI on each `GearNode`.
-- [x] Inspect cache versions before decoding and assign the new shape format 3.
+- [x] Inspect cache versions before decoding; introduce the new shape as format
+      3 and artifact-relative file resource paths as format 4.
 - [x] Demonstrate one shared model with filesystem and ZIP archives.
 - [x] Remove the obsolete private smoke-crawl launcher.
 - [x] Document the public composition model.
@@ -347,6 +355,10 @@ once.
 - Re-verified after documenting design principle 9: `mvn test` passed for the
   full reactor with 314 tests, 0 failures, 0 errors, and the canonical
   `prettify` assertion passed for `ArchiveDigger`.
+- Re-verified after making file resources artifact-relative: canonical
+  `prettify` passed for all 12 affected Java sources, and `mvn clean install`
+  passed for the full seven-module reactor with 318 tests, 0 failures, and 0
+  errors.
 - Note for worktree-based work: `prettify` validates a repository root with
   `Files.isDirectory(repo.resolve(".git"))`, which no Git worktree satisfies
   because its `.git` is a file. The assertion above was obtained by running

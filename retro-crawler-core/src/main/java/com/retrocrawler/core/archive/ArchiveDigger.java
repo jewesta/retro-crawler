@@ -268,7 +268,7 @@ public class ArchiveDigger {
 			listing = list(session, folder);
 		}
 
-		final Set<Clue> localClues = clueFinder.find(root, folder, listing.files(), session, progressor);
+		final Set<Clue> localClues = clueFinder.find(folder, listing.files(), session, progressor);
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();

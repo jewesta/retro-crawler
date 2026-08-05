@@ -72,7 +72,8 @@ public class ArchivePathClueFinder {
 		Clue previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
 
 		/*
-		 * In the very rare case of an anonymous key collision simply recreate the clue which pulls a fresh random key.
+		 * In the very rare case of an anonymous key collision simply recreate
+		 * the clue which pulls a fresh random key.
 		 */
 		while (previous != null && candidate.isAnonymous()) {
 			candidate = Clue.of(candidate.value());
@@ -109,9 +110,8 @@ public class ArchivePathClueFinder {
 	/**
 	 * Runs local clue finders against entries supplied by an archive source.
 	 */
-	public Set<Clue> find(final ArchiveFolder root, final ArchiveFolder folder, final List<ArchiveFile> files,
-			final ArchiveSession session, final Progressor progressor) {
-		Objects.requireNonNull(root, "root");
+	public Set<Clue> find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
+			final Progressor progressor) {
 		Objects.requireNonNull(folder, "folder");
 		Objects.requireNonNull(files, "files");
 		Objects.requireNonNull(session, "session");
@@ -142,9 +142,9 @@ public class ArchivePathClueFinder {
 			}
 		}
 
-		final Path normalizedRoot = root.path().normalize();
-		final List<Path> relativeFiles = files.stream().map(file -> normalizedRoot.relativize(file.path().normalize()))
-				.toList();
+		final Path normalizedFolder = folder.path().normalize();
+		final List<Path> relativeFiles = files.stream()
+				.map(file -> normalizedFolder.relativize(file.path().normalize())).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
 			clues = merge(clues, finder.find(relativeFiles));
 		}

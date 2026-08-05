@@ -66,30 +66,25 @@ class CollectionFileClueFindersTest {
 	@Test
 	void recognizesOnlyTheThreeExactStandardImageNames() {
 		final StandardImageClueFinder finder = new StandardImageClueFinder();
-		final Path folder = Path.of("gear");
 
-		final Set<Clue> clues = finder.find(List.of(folder.resolve("ANGLED.JPEG"), folder.resolve("front.jpeg"),
-				folder.resolve("back.jpeg"), folder.resolve("front.jpg"), folder.resolve("overview.jpeg")));
+		final Set<Clue> clues = finder.find(List.of(Path.of("ANGLED.JPEG"), Path.of("front.jpeg"), Path.of("back.jpeg"),
+				Path.of("front.jpg"), Path.of("overview.jpeg")));
 
-		assertEquals(Set.of(folder.resolve("ANGLED.JPEG").toString()),
-				clue(clues, AttributeNames.IMAGE_ANGLED).value());
-		assertEquals(Set.of(folder.resolve("front.jpeg").toString()), clue(clues, AttributeNames.IMAGE_FRONT).value());
-		assertEquals(Set.of(folder.resolve("back.jpeg").toString()), clue(clues, AttributeNames.IMAGE_BACK).value());
+		assertEquals(Set.of("ANGLED.JPEG"), clue(clues, AttributeNames.IMAGE_ANGLED).value());
+		assertEquals(Set.of("front.jpeg"), clue(clues, AttributeNames.IMAGE_FRONT).value());
+		assertEquals(Set.of("back.jpeg"), clue(clues, AttributeNames.IMAGE_BACK).value());
 		assertEquals(3, clues.size());
 	}
 
 	@Test
 	void recognizesAndAggregatesFloppyImageIdsAtTheStartOfFileNames() {
 		final FloppyImageClueFinder finder = new FloppyImageClueFinder();
-		final Path folder = Path.of("gear");
 
-		final Set<Clue> clues = finder.find(List.of(folder.resolve("FD-0007.img"),
-				folder.resolve("fd-0008 Boot disk.ima"), folder.resolve("Copy of FD-0009.img")));
+		final Set<Clue> clues = finder.find(
+				List.of(Path.of("FD-0007.img"), Path.of("fd-0008 Boot disk.ima"), Path.of("Copy of FD-0009.img")));
 
 		assertEquals(Set.of("FD-0007", "FD-0008"), clue(clues, AttributeNames.FLOPPY_IMAGE_ID).value());
-		assertEquals(
-				Set.of(folder.resolve("FD-0007.img").toString(), folder.resolve("fd-0008 Boot disk.ima").toString()),
-				clue(clues, AttributeNames.FLOPPY_IMAGES).value());
+		assertEquals(Set.of("FD-0007.img", "fd-0008 Boot disk.ima"), clue(clues, AttributeNames.FLOPPY_IMAGES).value());
 	}
 
 	private static ByteArrayInputStream input(final String value) {

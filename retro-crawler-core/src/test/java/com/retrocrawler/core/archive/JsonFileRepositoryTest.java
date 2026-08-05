@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.util.ReadmeWriter;
@@ -83,7 +84,7 @@ class JsonFileRepositoryTest {
 		final Artifact retrieved = repository.retrieve(id).orElseThrow().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
-		assertEquals(3, json.path("version").asInt());
+		assertEquals(ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.value().intValue(), json.path("version").asInt());
 		assertTrue(storedClue.isArray());
 		assertTrue(storedClue.isEmpty());
 		assertEquals("sn", clue.key());
@@ -169,6 +170,23 @@ class JsonFileRepositoryTest {
 	}
 
 	@Test
+	void rejectsThePreviousCacheVersionEvenWhenItsShapeCanStillBeDecoded() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("old_file_paths");
+		repository.stowaway(archive(id, "root"));
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_file_paths.json");
+		final ObjectMapper mapper = new ObjectMapper();
+		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
+		json.put("version", 3);
+		mapper.writeValue(jsonPath.toFile(), json);
+
+		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+
+		assertTrue(failure.getMessage().contains("uses cache version 3"));
+	}
+
+	@Test
 	void rejectsAFutureVersionBeforeDeserializingIt() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		Files.createDirectories(repositoryDirectory);
@@ -188,7 +206,7 @@ class JsonFileRepositoryTest {
 		Files.createDirectories(repositoryDirectory);
 		Files.writeString(repositoryDirectory.resolve("archive_missing_version.json"), "{\"id\":\"missing_version\"}");
 		Files.writeString(repositoryDirectory.resolve("archive_text_version.json"),
-				"{\"version\":\"3\",\"id\":\"text_version\"}");
+				"{\"version\":\"4\",\"id\":\"text_version\"}");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 
 		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("missing_version")));

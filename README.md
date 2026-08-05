@@ -235,9 +235,15 @@ short-lived session as well as the content stream. `Optional.empty()` means the
 provider recognizes the file but does not expose its content; a missing or
 folder address raises `NoSuchFileException`.
 
-Provider paths remain crawl-time coordinates used for relative clues and cache
-rebinding; providers must not require them to be locally accessible. ARIs are
-the stable application-facing resource identity.
+Provider paths remain crawl-time coordinates used to derive artifact-relative
+clues and to rebind caches; providers must not require them to be locally
+accessible. ARIs are the stable application-facing resource identity.
+
+When a file-name clue refers to a resource belonging to an artifact, its cached
+path is relative to that artifact rather than to the archive root. A direct
+`front.jpeg` is therefore stored as `front.jpeg`; a resource below the artifact
+may be stored as `Box/front.jpeg`. Path facts are rebound against the artifact's
+current provider path during resolution.
 
 Crawling either selects one archive by identity or spans all of them:
 
@@ -303,7 +309,7 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
-JSON cache format version 3 is inspected before the stored payload is
+JSON cache format version 4 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
 `Archive` shape.

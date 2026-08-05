@@ -489,7 +489,7 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void rebindsCachedRelativeFileCluesToANewArchiveRoot() throws IOException {
+	void rebindsCachedArtifactRelativeFileCluesToANewArchiveRoot() throws IOException {
 		final Path nasRoot = Files.createDirectory(archiveRoot.resolve("nas-root"));
 		final Path gearFolder = Files.createDirectory(nasRoot.resolve("Portable object [200006]"));
 		Files.createFile(gearFolder.resolve("front.jpeg"));
@@ -500,7 +500,7 @@ class MyCollectionModelTest {
 		final Archive stored = repository.retrieve(ARCHIVE_ID).orElseThrow();
 		final Clue storedImage = stored.root().children().getFirst().artifact().clues().stream()
 				.filter(clue -> AttributeNames.IMAGE_FRONT.equals(clue.key())).findFirst().orElseThrow();
-		assertEquals(Set.of(Path.of("Portable object [200006]", "front.jpeg").toString()), storedImage.value());
+		assertEquals(Set.of("front.jpeg"), storedImage.value());
 
 		final Path desktopRoot = Files.move(nasRoot, archiveRoot.resolve("desktop-root"));
 		final MyGear rebound = gear(

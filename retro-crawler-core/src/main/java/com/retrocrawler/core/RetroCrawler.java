@@ -106,8 +106,7 @@ public interface RetroCrawler {
 	 * The accessor receives an open stream that is closed as soon as it
 	 * returns. Escaping streams must not be retained.
 	 *
-	 * @return the inspected value, or an empty optional if the archive source
-	 *         cannot expose the file content
+	 * @return the inspected value, or empty if content is unavailable
 	 * @throws NoSuchFileException
 	 *             if the archive source has no file at the ARI
 	 * @throws IllegalArgumentException

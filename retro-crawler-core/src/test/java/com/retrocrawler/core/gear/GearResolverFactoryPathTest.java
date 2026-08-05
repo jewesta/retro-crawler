@@ -21,8 +21,8 @@ class GearResolverFactoryPathTest {
 	@Test
 	void autoDetectsPathParserForScalarAndCollectionFacts() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(PathGear.class));
-		final Artifact artifact = new Artifact(Set.of(Clue.of("picture", "gear/front.jpeg"),
-				Clue.of("images", Set.of("gear/disk-one.img", "gear/disk-two.img"))));
+		final Artifact artifact = new Artifact(
+				Set.of(Clue.of("picture", "front.jpeg"), Clue.of("images", Set.of("disk-one.img", "disk-two.img"))));
 		final Path root = Path.of("/mounted/archive");
 
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
