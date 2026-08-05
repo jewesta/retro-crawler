@@ -82,7 +82,7 @@ import com.retrocrawler.model.temporal.YearWeek;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
-import com.retrocrawler.mycollection.catalog.RetroId;
+import com.retrocrawler.mycollection.catalog.MyRetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
@@ -129,7 +129,7 @@ class MyCollectionModelTest {
 
 		final MyGear identifiedMystery = gear(gear, "Mystery object [200001]");
 		assertInstanceOf(MysteryGear.class, identifiedMystery);
-		assertEquals(Optional.of(new RetroId(200001)), identifiedMystery.getRetroId());
+		assertEquals(Optional.of(new MyRetroId(200001)), identifiedMystery.getRetroId());
 
 		final MyGear unnumbered = gear(gear, "Unnumbered object [PCI]");
 		assertInstanceOf(MysteryGear.class, unnumbered);
@@ -138,7 +138,7 @@ class MyCollectionModelTest {
 
 		final MyGear graphicsCard = gear(gear, "Known card [AGP] [VGA] [200002] [TRW 10510]");
 		assertInstanceOf(GraphicsCard.class, graphicsCard);
-		assertEquals(Optional.of(new RetroId(200002)), graphicsCard.getRetroId());
+		assertEquals(Optional.of(new MyRetroId(200002)), graphicsCard.getRetroId());
 		assertEquals(Set.of(ExpansionBus.AGP), graphicsCard.getExpansionBuses());
 		assertEquals(Set.of(VideoConnector.VGA), graphicsCard.getVideoConnectors());
 		final TheRetroWebReference expectedReference = new TheRetroWebReference(TheRetroWebCategory.EXPANSION_CARD,
@@ -444,7 +444,7 @@ class MyCollectionModelTest {
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
 				() -> crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), MyGear.class));
 
-		final List<String> paths = failure.duplicates().get(new RetroId(200004));
+		final List<String> paths = failure.duplicates().get(new MyRetroId(200004));
 		assertEquals(2, paths.size());
 		assertTrue(paths.contains(
 				ARI.of("my_collection", ArchiveId.of("my_collection"), Path.of("Duplicate A [200004]")).toString()));
@@ -527,7 +527,7 @@ class MyCollectionModelTest {
 
 		assertEquals(Optional.of("future-market.example"), gear.getSource());
 		assertEquals(Optional.of(new Money(new BigDecimal("100"), Currency.getInstance("EUR"))), gear.getLotPrice());
-		assertEquals(Set.of(new RetroId(200009), new RetroId(200010)), gear.getLot());
+		assertEquals(Set.of(new MyRetroId(200009), new MyRetroId(200010)), gear.getLot());
 		assertEquals(Optional.empty(), gear.getPrice());
 	}
 

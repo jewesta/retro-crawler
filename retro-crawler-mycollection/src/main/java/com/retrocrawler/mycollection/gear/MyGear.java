@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
+import com.retrocrawler.core.annotation.RetroId;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -64,7 +65,7 @@ import com.retrocrawler.mycollection.AttributeNames;
 import com.retrocrawler.mycollection.catalog.Destiny;
 import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
-import com.retrocrawler.mycollection.catalog.RetroId;
+import com.retrocrawler.mycollection.catalog.MyRetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.facts.CollectionColorParser;
 import com.retrocrawler.mycollection.facts.CollectionDamageKindParser;
@@ -81,7 +82,7 @@ import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
 import com.retrocrawler.mycollection.facts.GearKindParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
-import com.retrocrawler.mycollection.facts.RetroIdParser;
+import com.retrocrawler.mycollection.facts.MyRetroIdParser;
 import com.retrocrawler.mycollection.facts.TestedParser;
 
 import de.creativecouple.validation.isbn.ISBN;
@@ -91,9 +92,9 @@ public abstract class MyGear {
 	@RetroFact(key = InternalClueKeys.FOLDER, optional = false)
 	private String folderName;
 
-	@com.retrocrawler.core.annotation.RetroId
-	@RetroFact(key = AttributeNames.RETRO_ID, parser = RetroIdParser.class, strict = false, optional = true)
-	private RetroId retroId;
+	@RetroId
+	@RetroFact(key = AttributeNames.RETRO_ID, parser = MyRetroIdParser.class, strict = false, optional = true)
+	private MyRetroId retroId;
 
 	@RetroFact(key = AttributeNames.BUS, parser = ExpansionBusParser.class, strict = false, optional = true)
 	private Set<ExpansionBus> expansionBuses = Set.of();
@@ -179,8 +180,8 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.PRICE, parser = MoneyParser.class, optional = true)
 	private Money price;
 
-	@RetroFact(key = AttributeNames.LOT, parser = RetroIdParser.class, optional = true)
-	private Set<RetroId> lot = Set.of();
+	@RetroFact(key = AttributeNames.LOT, parser = MyRetroIdParser.class, optional = true)
+	private Set<MyRetroId> lot = Set.of();
 
 	@RetroFact(key = AttributeNames.LOT_PRICE, parser = MoneyParser.class, optional = true)
 	private Money lotPrice;
@@ -254,7 +255,7 @@ public abstract class MyGear {
 		return folderName;
 	}
 
-	public Optional<RetroId> getRetroId() {
+	public Optional<MyRetroId> getRetroId() {
 		return Optional.ofNullable(retroId);
 	}
 
@@ -377,7 +378,7 @@ public abstract class MyGear {
 		return Optional.ofNullable(price);
 	}
 
-	public Set<RetroId> getLot() {
+	public Set<MyRetroId> getLot() {
 		return Set.copyOf(lot);
 	}
 
