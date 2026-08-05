@@ -23,6 +23,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
@@ -141,7 +142,7 @@ class ArchiveManagerTest {
 		final Progressor cancellingProgressor = new Progressor();
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
 			cancellingProgressor.cancel("Stop.");
-			return Set.of(Clue.of("folder", folder));
+			return Clues.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
@@ -318,7 +319,7 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)),
+		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> Clues.of(Clue.of("folder", folder)),
 				List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);

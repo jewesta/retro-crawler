@@ -32,6 +32,7 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -68,7 +69,7 @@ class RetroCrawlerBuilderTest {
 
 	@Test
 	void suppliesArtifactSourceAriToTreeFactory() throws IOException {
-		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("name", "test gear")));
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
 		final Repository repository = new FixedArchiveRepository(
@@ -118,7 +119,7 @@ class RetroCrawlerBuilderTest {
 
 	@Test
 	void stashRetainsTheSourceAriOfEveryGearNode() throws IOException {
-		final Artifact artifact = new Artifact(Set.of(Clue.of("name", "test gear")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("name", "test gear")));
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
 		final Repository repository = new FixedArchiveRepository(Archive.of(ARCHIVE.id(), ROOT, archiveRoot));
@@ -330,8 +331,8 @@ class RetroCrawlerBuilderTest {
 	public static class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return Set.of();
+		public Clues find(final String folderName) {
+			return Clues.none();
 		}
 	}
 

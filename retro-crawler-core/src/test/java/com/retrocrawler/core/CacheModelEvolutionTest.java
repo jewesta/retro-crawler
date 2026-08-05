@@ -30,6 +30,7 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.Progressor;
@@ -113,8 +114,8 @@ class CacheModelEvolutionTest {
 	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return "serial-pending".equals(folderName) ? Set.of(Clue.of("SN")) : Set.of();
+		public Clues find(final String folderName) {
+			return "serial-pending".equals(folderName) ? Clues.of(Clue.of("SN")) : Clues.none();
 		}
 	}
 

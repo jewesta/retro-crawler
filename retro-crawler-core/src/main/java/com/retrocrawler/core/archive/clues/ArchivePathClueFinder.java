@@ -1,13 +1,10 @@
 package com.retrocrawler.core.archive.clues;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.source.ArchiveFile;
@@ -45,24 +42,10 @@ public class ArchivePathClueFinder {
 		}
 	}
 
-	private static Set<Clue> mergeAndAssertUnique(final Set<Clue> existing, final Set<Clue> incoming) {
-		final ClueAccumulator accumulator = new ClueAccumulator(existing);
-		accumulator.addAll(incoming);
-		return accumulator.clues();
-	}
-
-	private static Set<Clue> from(final FileContentClueFinder finder, final Path file) {
-		try (InputStream in = Files.newInputStream(file)) {
-			return finder.find(in);
-		} catch (final IOException e) {
-			// TODO Report the affected clue file through structured progress diagnostics.
-			throw new ClueFileIOException(e);
-		}
-	}
-
-	private static Optional<Set<Clue>> from(final FileContentClueFinder finder, final ArchiveSession session,
+	private static Optional<Clues> from(final FileContentClueFinder finder, final ArchiveSession session,
 			final ArchiveFile file) {
 		try {
+			// TODO Report the affected clue file through structured progress diagnostics.
 			return session.access(file, finder::find);
 		} catch (final IOException e) {
 			throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
@@ -72,35 +55,32 @@ public class ArchivePathClueFinder {
 	/**
 	 * Runs local clue finders against entries supplied by an archive source.
 	 */
-	public Set<Clue> find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
+	public Clues find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
 			final Progressor progressor) {
 		Objects.requireNonNull(folder, "folder");
 		Objects.requireNonNull(files, "files");
 		Objects.requireNonNull(session, "session");
 		Objects.requireNonNull(progressor, "progressor");
 
-		Set<Clue> clues;
-		if (folderNameClueFinder == null) {
-			clues = Set.of();
-		} else {
-			clues = mergeAndAssertUnique(Set.of(), folderNameClueFinder.find(folder.name()));
+		/*
+		 * One accumulator for every finder at this location. Each observation
+		 * is checked once, as it arrives, against everything observed so far.
+		 */
+		final ClueAccumulator clues = Clues.accumulator();
+		if (folderNameClueFinder != null) {
+			clues.addAll(folderNameClueFinder.find(folder.name()));
 		}
 		if (files.isEmpty()) {
-			return clues;
+			return clues.clues();
 		}
 
-		if (!fileContentClueFinders.isEmpty()) {
-			for (final ArchiveFile file : files) {
-				for (final FileContentClueFinder finder : fileContentClueFinders) {
-					if (!finder.matches(file.name())) {
-						continue;
-					}
-					progressor.throwIfCancelled();
-					final Optional<Set<Clue>> fileContentClues = from(finder, session, file);
-					if (fileContentClues.isPresent()) {
-						clues = mergeAndAssertUnique(clues, fileContentClues.get());
-					}
+		for (final ArchiveFile file : files) {
+			for (final FileContentClueFinder finder : fileContentClueFinders) {
+				if (!finder.matches(file.name())) {
+					continue;
 				}
+				progressor.throwIfCancelled();
+				from(finder, session, file).ifPresent(clues::addAll);
 			}
 		}
 
@@ -108,24 +88,30 @@ public class ArchivePathClueFinder {
 		final List<Path> relativeFiles = files.stream()
 				.map(file -> normalizedFolder.relativize(file.path().normalize())).toList();
 		for (final FileNameClueFinder finder : fileNameClueFinders) {
-			clues = mergeAndAssertUnique(clues, finder.find(relativeFiles));
+			clues.addAll(finder.find(relativeFiles));
 		}
-		return clues;
+		return clues.clues();
 	}
 
 	/**
 	 * Enriches clues already found locally with observations from the
 	 * configured post-order tree finders.
+	 * <p>
+	 * The local clues arrive checked and are not inspected again; only what the
+	 * tree finders add is examined, and it is examined against them.
 	 */
-	public Set<Clue> enrich(final Set<Clue> localClues, final ArchiveFolderView folder, final Progressor progressor) {
+	public Clues enrich(final Clues localClues, final ArchiveFolderView folder, final Progressor progressor) {
 		Objects.requireNonNull(localClues, "localClues");
 		Objects.requireNonNull(folder, "folder");
-		Set<Clue> clues = mergeAndAssertUnique(Set.of(), localClues);
+		if (treeClueFinders.isEmpty()) {
+			return localClues;
+		}
+		final ClueAccumulator clues = Clues.accumulator(localClues);
 		for (final TreeClueFinder finder : treeClueFinders) {
 			progressor.throwIfCancelled();
-			clues = mergeAndAssertUnique(clues, finder.find(folder));
+			clues.addAll(finder.find(folder));
 		}
-		return clues;
+		return clues.clues();
 	}
 
 	public static ArchivePathClueFinder of(final RetroClues clues) {

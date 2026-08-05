@@ -25,6 +25,7 @@ import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.util.ReadmeWriter;
 
 class JsonFileRepositoryTest {
@@ -75,7 +76,7 @@ class JsonFileRepositoryTest {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("missing_value");
-		final Artifact artifact = new Artifact(Set.of(Clue.missingValue("sn")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.missingValue("sn")));
 		final ArchiveNode root = new ArchiveNode("root", artifact, null);
 		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
 

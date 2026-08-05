@@ -7,6 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.demo.AttributeNames;
 
@@ -64,17 +66,17 @@ public class SquareBracketsClueFinder implements FolderNameClueFinder {
 	}
 
 	@Override
-	public Set<Clue> find(String folderName) {
+	public Clues find(String folderName) {
 		if (!folderName.contains("[")) {
-			return Set.of();
+			return Clues.none();
 		}
 
-		final Set<Clue> clues = new HashSet<>();
+		final ClueAccumulator clues = Clues.accumulator();
 
 		folderName = folderName.trim();
 		if (folderName.isEmpty()) {
 			// Nothing to see here
-			return clues;
+			return clues.clues();
 		}
 
 		/*
@@ -84,8 +86,7 @@ public class SquareBracketsClueFinder implements FolderNameClueFinder {
 		final int indexOfFirstAttribute = folderName.indexOf(SquareBracketsClueFinder.OPENING_BRACKETS);
 		if (indexOfFirstAttribute == -1) {
 			// Path name has only title attribute
-			clues.add(Clue.of(AttributeNames.TITLE, folderName));
-			return clues;
+			return clues.add(Clue.of(AttributeNames.TITLE, folderName)).clues();
 		}
 
 		if (indexOfFirstAttribute > 0) {
@@ -104,10 +105,9 @@ public class SquareBracketsClueFinder implements FolderNameClueFinder {
 				// Empty attribute tag - ignore
 				continue;
 			}
-			final Clue clue = parse(keyValueString);
-			clues.add(clue);
+			clues.add(parse(keyValueString));
 		}
-		return clues;
+		return clues.clues();
 	}
 
 }

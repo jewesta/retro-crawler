@@ -29,6 +29,7 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -187,16 +188,16 @@ class ModelConfigurationTest {
 	public static final class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return Set.of();
+		public Clues find(final String folderName) {
+			return Clues.none();
 		}
 	}
 
 	public static final class RuntimeContextClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return "gear".equals(folderName) ? Set.of(Clue.of("observed", "value")) : Set.of();
+		public Clues find(final String folderName) {
+			return "gear".equals(folderName) ? Clues.of(Clue.of("observed", "value")) : Clues.none();
 		}
 	}
 

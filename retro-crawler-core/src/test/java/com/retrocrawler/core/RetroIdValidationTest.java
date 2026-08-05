@@ -30,6 +30,7 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -165,14 +166,14 @@ class RetroIdValidationTest {
 	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
+		public Clues find(final String folderName) {
 			if (folderName.startsWith("id-")) {
-				return Set.of(Clue.of("catalogId", folderName.substring("id-".length())));
+				return Clues.of(Clue.of("catalogId", folderName.substring("id-".length())));
 			}
 			if (folderName.equals("gear-without-id")) {
-				return Set.of(Clue.of("tag", "gear"));
+				return Clues.of(Clue.of("tag", "gear"));
 			}
-			return Set.of();
+			return Clues.none();
 		}
 	}
 

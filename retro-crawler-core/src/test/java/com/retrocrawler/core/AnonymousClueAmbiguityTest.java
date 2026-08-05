@@ -25,6 +25,7 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -84,8 +85,8 @@ class AnonymousClueAmbiguityTest {
 	public static final class AmbiguousClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return "ambiguous".equals(folderName) ? Set.of(Clue.of("overlap")) : Set.of();
+		public Clues find(final String folderName) {
+			return "ambiguous".equals(folderName) ? Clues.of(Clue.of("overlap")) : Clues.none();
 		}
 	}
 

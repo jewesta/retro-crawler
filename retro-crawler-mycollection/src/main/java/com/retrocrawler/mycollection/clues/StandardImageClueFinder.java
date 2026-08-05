@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileNameClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
@@ -20,7 +22,7 @@ public final class StandardImageClueFinder implements FileNameClueFinder {
 			"front.jpeg", AttributeNames.IMAGE_FRONT, "back.jpeg", AttributeNames.IMAGE_BACK);
 
 	@Override
-	public Set<Clue> find(final Collection<Path> files) {
+	public Clues find(final Collection<Path> files) {
 		final Map<String, Set<String>> valuesByKey = new java.util.LinkedHashMap<>();
 		for (final Path file : files) {
 			final String fileName = file.getFileName().toString().toLowerCase(Locale.ROOT);
@@ -31,8 +33,8 @@ public final class StandardImageClueFinder implements FileNameClueFinder {
 			}
 		}
 
-		final Set<Clue> clues = new LinkedHashSet<>();
+		final ClueAccumulator clues = Clues.accumulator();
 		valuesByKey.forEach((key, values) -> clues.add(Clue.of(key, Set.copyOf(values))));
-		return Set.copyOf(clues);
+		return clues.clues();
 	}
 }

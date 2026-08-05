@@ -24,6 +24,7 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
@@ -160,8 +161,8 @@ class ModelCatalogConfigurationTest {
 	public static final class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return Set.of();
+		public Clues find(final String folderName) {
+			return Clues.none();
 		}
 	}
 }

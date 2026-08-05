@@ -26,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileContentClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -98,7 +99,7 @@ class ArchiveDiggerSourceTest {
 			final FileContentClueFinder contentFinder) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test", root);
 		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
-				name -> "gear".equals(name) ? Set.of(Clue.of("kind", "gear")) : Set.of(), List.of(contentFinder),
+				name -> "gear".equals(name) ? Clues.of(Clue.of("kind", "gear")) : Clues.none(), List.of(contentFinder),
 				List.of());
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), source);
 	}
@@ -112,10 +113,10 @@ class ArchiveDiggerSourceTest {
 			}
 
 			@Override
-			public Set<Clue> find(final InputStream content) {
+			public Clues find(final InputStream content) {
 				invoked.set(true);
 				try {
-					return Set.of(Clue.of("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
+					return Clues.of(Clue.of("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
 				} catch (final IOException e) {
 					throw new IllegalStateException(e);
 				}

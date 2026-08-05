@@ -24,6 +24,8 @@ import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.TreeClueFinder;
 import com.retrocrawler.core.progress.Progressor;
 
@@ -50,7 +52,7 @@ class ArchiveDiggerTreeClueFinderTest {
 			return originClues(folder);
 		};
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
-				name -> "Child artifact".equals(name) ? Set.of(Clue.of("kind", "part")) : Set.of(), List.of(),
+				name -> "Child artifact".equals(name) ? Clues.of(Clue.of("kind", "part")) : Clues.none(), List.of(),
 				List.of(), List.of(treeFinder));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
 
@@ -71,8 +73,9 @@ class ArchiveDiggerTreeClueFinderTest {
 	@Test
 	void treeFinderAloneCanEstablishAnArtifact() throws IOException {
 		Files.createDirectory(root.resolve("Kleinanzeigen"));
-		final TreeClueFinder treeFinder = folder -> folder.folders().stream().anyMatch(
-				child -> "Kleinanzeigen".equals(child.name())) ? Set.of(Clue.of("origin", "Kleinanzeigen")) : Set.of();
+		final TreeClueFinder treeFinder = folder -> folder.folders().stream()
+				.anyMatch(child -> "Kleinanzeigen".equals(child.name())) ? Clues.of(Clue.of("origin", "Kleinanzeigen"))
+						: Clues.none();
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(null, List.of(), List.of(),
 				List.of(treeFinder));
 
@@ -84,8 +87,8 @@ class ArchiveDiggerTreeClueFinderTest {
 		assertNull(child(archive, "Kleinanzeigen").artifact());
 	}
 
-	private Set<Clue> originClues(final ArchiveFolderView folder) {
-		final Set<Clue> clues = new HashSet<>();
+	private Clues originClues(final ArchiveFolderView folder) {
+		final ClueAccumulator clues = Clues.accumulator();
 		for (final ArchiveFolderView child : folder.folders()) {
 			if (!"Kleinanzeigen".equals(child.name())) {
 				continue;
@@ -96,7 +99,7 @@ class ArchiveDiggerTreeClueFinderTest {
 				}
 			}
 		}
-		return Set.copyOf(clues);
+		return clues.clues();
 	}
 
 	private String read(final InputStream in) {

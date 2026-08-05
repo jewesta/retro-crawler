@@ -2,7 +2,6 @@ package com.retrocrawler.core.gear;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -12,6 +11,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 
@@ -43,22 +44,42 @@ final class ClueClassifier {
 		this.knownKeysIgnoringCase = Map.copyOf(ignoringCase);
 	}
 
-	Set<Clue> classify(final Set<Clue> clues) {
+	/**
+	 * Classifying can give an anonymous observation a semantic key, so the
+	 * result has to be accumulated again rather than carried over: that new key
+	 * may collide with one an explicit clue already claims.
+	 */
+	Clues classify(final Clues clues) {
 		Objects.requireNonNull(clues, "clues");
 
-		final Map<String, Clue> classified = new LinkedHashMap<>();
+		final ClueAccumulator classified = Clues.accumulator();
+		/*
+		 * Classifying strips a reinterpreted anonymous observation down to a
+		 * missing-value clue, so the accumulator can no longer show what the
+		 * archive actually said. Remember the raw form to name both sides of a
+		 * conflict.
+		 */
+		final Map<String, Clue> observedByKey = new HashMap<>();
 		for (final Clue clue : clues) {
-			classify(Objects.requireNonNull(clue, "clues must not contain null"))
-					.ifPresent(value -> put(classified, value));
+			classify(Objects.requireNonNull(clue, "clues must not contain null")).ifPresent(value -> {
+				add(classified, observedByKey.get(value.key()), clue, value);
+				observedByKey.put(value.key(), clue);
+			});
 		}
-		return Set.copyOf(classified.values());
+		return classified.clues();
 	}
 
-	private static void put(final Map<String, Clue> cluesByKey, final Clue incoming) {
-		final Clue previous = cluesByKey.putIfAbsent(incoming.key(), incoming);
-		if (previous != null) {
-			throw new DuplicateClueException("More than one clue claims semantic key '" + incoming.key()
-					+ "'. First clue: " + previous + ", duplicate clue: " + incoming + ".");
+	/**
+	 * The accumulator owns the one-authority rule; this only restates its
+	 * rejection in terms the accumulator cannot see.
+	 */
+	private static void add(final ClueAccumulator classified, final Clue previous, final Clue observed,
+			final Clue value) {
+		try {
+			classified.add(value);
+		} catch (final DuplicateClueException e) {
+			throw new DuplicateClueException("More than one clue claims semantic key '" + value.key() + "'. "
+					+ previous + " competes with " + observed + ".", e);
 		}
 	}
 

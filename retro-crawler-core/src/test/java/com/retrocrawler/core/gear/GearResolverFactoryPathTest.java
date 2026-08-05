@@ -13,6 +13,7 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
@@ -22,7 +23,7 @@ class GearResolverFactoryPathTest {
 	void autoDetectsPathParserForScalarAndCollectionFacts() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(PathGear.class));
 		final Artifact artifact = new Artifact(
-				Set.of(Clue.of("picture", "front.jpeg"), Clue.of("images", Set.of("disk-one.img", "disk-two.img"))));
+				Clues.of(Clue.of("picture", "front.jpeg"), Clue.of("images", Set.of("disk-one.img", "disk-two.img"))));
 		final Path root = Path.of("/mounted/archive");
 
 		final ParseContext context = new ParseContext(Configuration.builder().build(),

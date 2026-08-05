@@ -48,6 +48,23 @@ number of clue finders may contribute anonymous clues to one artifact, and all
 of those observations survive under distinct generated keys. Resolution may
 later interpret several of them as values of the same fact.
 
+### Clues
+The clues observed at one archive location: immutable, in observation order, and
+holding exactly one clue per key. A clue finder returns `Clues` and an `Artifact`
+holds `Clues`, so the one-authority rule is carried by the type rather than
+re-checked at each boundary. Build them with `Clues.of(...)`, or accumulate them
+one observation at a time:
+
+```java
+final ClueAccumulator clues = Clues.accumulator();
+clues.add(Clue.of("bus", "AGP"));
+clues.add(Clue.of("Example Graphics Board"));
+return clues.clues();
+```
+
+A second clue claiming a key already taken is rejected with a
+`DuplicateClueException` right where it is observed.
+
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
 Gear types are **not** required to implement framework interfaces and require only a no-arg constructor. It's "bring your own type".

@@ -81,6 +81,14 @@ These instructions apply to the entire repository.
    semantic key. Generated anonymous-key collisions are the sole key-level
    exception; re-key the incoming anonymous clue because its key carries no
    semantics.
+   The rule lives in the type. `Clues` is the currency between a clue finder,
+   the crawler, and an `Artifact`: immutable, in observation order, one clue per
+   key, and constructible only through a `ClueAccumulator`. That accumulator is
+   the single place a clue is ever inspected — once, as it arrives, against
+   everything observed so far. Do not re-validate `Clues` that arrive from
+   somewhere else, and do not reintroduce a `Set<Clue>`: `Clue` keeps identity
+   equality on purpose, so a set promises a uniqueness it cannot enforce and
+   says nothing about the key-level rule that actually applies.
 
 10. **Express gear relation through archive location, never through
    hierarchy-derived type.**

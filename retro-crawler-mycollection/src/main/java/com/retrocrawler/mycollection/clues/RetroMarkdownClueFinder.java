@@ -9,7 +9,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileContentClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
@@ -29,7 +31,7 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 	}
 
 	@Override
-	public Set<Clue> find(final InputStream is) {
+	public Clues find(final InputStream is) {
 		try {
 			return parse(new String(is.readAllBytes(), StandardCharsets.UTF_8));
 		} catch (final IOException e) {
@@ -37,10 +39,10 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		}
 	}
 
-	private static Set<Clue> parse(final String document) {
+	private static Clues parse(final String document) {
 		final Line first = lineAt(document, 0);
 		if (!DELIMITER.equals(first.text())) {
-			return document.isBlank() ? Set.of() : Set.of(Clue.of(AttributeNames.DESC, document));
+			return document.isBlank() ? Clues.none() : Clues.of(Clue.of(AttributeNames.DESC, document));
 		}
 
 		final Map<String, Set<String>> valuesByKey = new LinkedHashMap<>();
@@ -81,8 +83,8 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		}
 	}
 
-	private static Set<Clue> clues(final Map<String, Set<String>> valuesByKey, final String rawBody) {
-		final Set<Clue> clues = new LinkedHashSet<>();
+	private static Clues clues(final Map<String, Set<String>> valuesByKey, final String rawBody) {
+		final ClueAccumulator clues = Clues.accumulator();
 		for (final Map.Entry<String, Set<String>> entry : valuesByKey.entrySet()) {
 			final Set<String> nonEmptyValues = entry.getValue().stream().filter(value -> !value.isEmpty())
 					.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
@@ -94,7 +96,7 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 		if (!body.isEmpty()) {
 			clues.add(Clue.of(AttributeNames.DESC, body));
 		}
-		return Set.copyOf(clues);
+		return clues.clues();
 	}
 
 	private static Line lineAt(final String document, final int offset) {

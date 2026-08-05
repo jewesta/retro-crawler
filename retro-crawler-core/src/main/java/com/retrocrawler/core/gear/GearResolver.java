@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
@@ -204,7 +205,7 @@ public class GearResolver {
 		 * many clues as possible into facts. Attributes that cannot be turned
 		 * into facts remain as clues.
 		 */
-		final Set<Clue> clues = clueClassifier.classify(artifact.clues());
+		final Clues clues = clueClassifier.classify(artifact.clues());
 		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of());
 
 		/*
@@ -267,7 +268,7 @@ public class GearResolver {
 		return Optional.of(new GearResolution(newGear, retroId));
 	}
 
-	private RetroAttributes resolveAttributes(final Set<Clue> clues, final ParseContext parseContext,
+	private RetroAttributes resolveAttributes(final Clues clues, final ParseContext parseContext,
 			final Set<String> allowedContextualKeys) {
 		final RetroAttributes attributes = new RetroAttributes();
 		for (final Clue clue : clues) {

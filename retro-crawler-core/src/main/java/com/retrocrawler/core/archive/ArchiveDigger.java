@@ -28,6 +28,7 @@ import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveEntry;
@@ -248,18 +249,14 @@ public class ArchiveDigger {
 		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, progressor, false).node();
 	}
 
-	private Set<Clue> createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
-		final Set<Clue> clues = new HashSet<>();
-
+	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
 		final String archiveId = descriptor.id().value();
 		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
 		final String basis = archiveId + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
 		final String id = Hashes.toHex(hash, 16);
-		clues.add(Clue.internal(InternalClueKeys.ID, id));
-		clues.add(Clue.internal(InternalClueKeys.FOLDER, folder.name()));
 
-		return clues;
+		return Clues.of(Clue.internal(InternalClueKeys.ID, id), Clue.internal(InternalClueKeys.FOLDER, folder.name()));
 	}
 
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
@@ -276,7 +273,7 @@ public class ArchiveDigger {
 			listing = list(session, folder);
 		}
 
-		final Set<Clue> localClues = clueFinder.find(folder, listing.files(), session, progressor);
+		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor);
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
@@ -285,16 +282,14 @@ public class ArchiveDigger {
 		}
 
 		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
-		final Set<Clue> clues = clueFinder.enrich(localClues, folderView, progressor);
+		final Clues clues = clueFinder.enrich(localClues, folderView, progressor);
 		progressor.throwIfCancelled();
 
 		final Artifact artifact;
 		if (clues.isEmpty()) {
 			artifact = null;
 		} else {
-			final Set<Clue> effectiveClues = new HashSet<>(clues);
-			effectiveClues.addAll(createSyntheticClues(root, folder));
-			artifact = new Artifact(effectiveClues);
+			artifact = new Artifact(clues.and(createSyntheticClues(root, folder)));
 			logger.info("Found artifact at: " + root.path().relativize(folder.path()));
 		}
 

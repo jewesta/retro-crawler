@@ -25,6 +25,7 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -73,7 +74,7 @@ class ModelParserFactoryTest {
 
 		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
 
-		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "custom-on")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "custom-on")));
 		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
@@ -138,7 +139,7 @@ class ModelParserFactoryTest {
 		assertEquals(List.of("state"), keys);
 		assertEquals(0, FactorySelectedEnumParser.instances);
 
-		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "factory-value")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "factory-value")));
 		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
@@ -464,8 +465,8 @@ class ModelParserFactoryTest {
 	public static final class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return Set.of();
+		public Clues find(final String folderName) {
+			return Clues.none();
 		}
 	}
 }

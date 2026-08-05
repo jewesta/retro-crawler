@@ -267,17 +267,51 @@ or value. This is particularly dangerous for collection-valued facts, where a
 folder asserting `AGP` and a metadata file asserting `PCI` could otherwise be
 accepted as the apparently valid set `{AGP, PCI}`.
 
-The invariant is enforced while clues are collected and again by the public
-`Artifact(Set<Clue>)` boundary. Resolution rejects an anonymous observation
-that is interpreted as a semantic key already claimed by an explicitly keyed
-clue. Any number of clue finders may contribute anonymous clues because those
-observations claim no semantic key. Several anonymous clues may later form one
-multi-valued fact, such as `[DS] [HD]` or `[schwarz] [weiß, pink]`.
-A random collision between generated anonymous keys is not a semantic
-duplicate; the incoming clue receives a fresh anonymous key and both
-observations survive. `Clue` deliberately retains identity equality so that
-conflicting observations remain visible long enough to be rejected rather than
-being silently discarded by a `Set`.
+Resolution rejects an anonymous observation that is interpreted as a semantic
+key already claimed by an explicitly keyed clue. Any number of clue finders may
+contribute anonymous clues because those observations claim no semantic key.
+Several anonymous clues may later form one multi-valued fact, such as
+`[DS] [HD]` or `[schwarz] [weiß, pink]`. A random collision between generated
+anonymous keys is not a semantic duplicate; the incoming clue receives a fresh
+anonymous key and both observations survive. `Clue` deliberately retains
+identity equality so that conflicting observations remain visible long enough
+to be rejected rather than being silently discarded by a `Set`.
+
+### Decision: `Clues` carries the invariant, `Set<Clue>` cannot
+
+The invariant was first restored by enforcing it at every boundary that handled
+clues. That left `Set<Clue>` as the currency between finders, the crawler, and
+`Artifact`, which was wrong twice over.
+
+It said the wrong thing. Because `Clue` keeps identity equality on purpose, a
+set promises a uniqueness it never enforces, and it cannot express the rule that
+actually applies, which is one clue per *key*. The invariant consequently had to
+live in whichever collaborator happened to hold the set, and every reader of a
+`Set<Clue>` had to know that.
+
+It also made the same collection prove itself repeatedly. `ArchivePathClueFinder`
+opened a fresh accumulator per finder result and re-added everything gathered so
+far; `enrich` re-checked the set `find` had just returned; `ArchiveDigger` then
+dropped to a plain `HashSet` to add the synthetic clues, which checked nothing;
+and `Artifact` re-checked the lot. That last pass was the only one that could
+catch a synthetic clue colliding with a found one, so the redundancy was
+accidentally load-bearing in exactly one place.
+
+`Clues` replaces the set: immutable, in observation order, one clue per key, and
+constructible only through a `ClueAccumulator`. The accumulator is the single
+place a clue is ever inspected. Each observation is checked once, as it arrives,
+against everything observed so far, and nothing downstream inspects it again.
+Seeding an accumulator from existing `Clues` is a copy rather than a second
+inspection.
+
+This is a breaking change to the clue-finder SPI: `FolderNameClueFinder`,
+`FileNameClueFinder`, `FileContentClueFinder`, and `TreeClueFinder` return
+`Clues`, and `Artifact` takes and returns `Clues`. A finder that emitted two
+clues for one key is now rejected in the finder itself rather than one layer
+later. `Clues` also preserves observation order end to end; the previous
+`Set.copyOf` calls discarded the ordering that `LinkedHashMap` and
+`LinkedHashSet` had been carefully building, which is the value-ordering finding
+recorded below.
 
 ### Open: a repository cannot forget or enumerate
 
@@ -371,8 +405,11 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Restore one clue per explicit key, reject explicit-versus-anonymous
       semantic competition, and preserve arbitrary anonymous clues from any
       number of finders.
+- [x] Replace `Set<Clue>` with `Clues` across the clue-finder SPI, the crawler,
+      and `Artifact` so the invariant lives in the type, each clue is inspected
+      once where it is observed, and observation order survives.
 - [ ] Follow-up issues for the remaining open review findings: artifact
-      location, repository removal and enumeration, and value ordering.
+      location, and repository removal and enumeration.
 - [x] Run focused and reactor verification.
 
 ## Verification
@@ -398,11 +435,17 @@ file resource values from archive-root-relative to artifact-relative, and format
 - Re-verified after restoring the clue-key invariant: canonical `prettify`
   assertion passed for all 10 affected Java sources, and `mvn clean install`
   passed for the full seven-module reactor with 324 tests, 0 failures, and 0
-  errors. The repository-wide formatter assertion found only an unrelated
-  pending Javadoc change in `RetroCrawler.java`, which this work deliberately
-  left untouched.
-- Note for worktree-based work: `prettify` validates a repository root with
-  `Files.isDirectory(repo.resolve(".git"))`, which no Git worktree satisfies
-  because its `.git` is a file. The assertion above was obtained by running
-  prettify against a reactor copy. Running the canonical formatter inside an
-  issue worktree needs a fix in `devtools`.
+  errors.
+- After the corresponding devtools update, canonical `prettify` ran directly
+  in the linked issue worktree. `--apply --select uncommitted` formatted the
+  one remaining source and the matching assertion passed for all 11 selected
+  Java sources without the previous scratch-repository workaround.
+- A clean Issue 34 release was installed in the private NAS runtime and used
+  for a fresh isolated full crawl spanning all three collection archives. The
+  restored invariant stopped extraction in the first archive at approximately
+  188 of 517 crawl regions: one folder name caused `BracketClueFinder` to emit
+  two explicit clues with key `1`. The failure occurred entirely within the
+  folder-name finder, before file clues, resolution, or cache stowaway. No
+  partial cache or collection change resulted. This validates the hard failure
+  behavior and exposes a concrete bracket-language conflict for collector
+  review.

@@ -1,10 +1,11 @@
 package com.retrocrawler.core.archive.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -13,13 +14,12 @@ class ArtifactTest {
 
 	@Test
 	void protectsCachedCluesFromExternalMutation() {
-		final Set<Clue> clues = new HashSet<>(Set.of(Clue.of("bus", "AGP")));
-		final Artifact artifact = new Artifact(clues);
+		final List<Clue> observed = new java.util.ArrayList<>(List.of(Clue.of("bus", "AGP")));
+		final Artifact artifact = new Artifact(Clues.of(observed));
 
-		clues.clear();
+		observed.clear();
 
 		assertEquals(1, artifact.clues().size());
-		assertThrows(UnsupportedOperationException.class, () -> artifact.clues().clear());
 	}
 
 	@Test
@@ -34,15 +34,15 @@ class ArtifactTest {
 	}
 
 	@Test
-	void rejectsMoreThanOneClueForTheSameKey() {
-		final Clue folderClue = Clue.of("bus", "ISA");
-		final Clue fileClue = Clue.of("bus", "PCI");
+	void holdsTheCluesItWasGivenWithoutRebuildingThem() {
+		final Clues clues = Clues.of(Clue.of("bus", "AGP"));
 
-		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
-				() -> new Artifact(Set.of(folderClue, fileClue)));
+		assertSame(clues, new Artifact(clues).clues());
+	}
 
-		assertTrue(failure.getMessage().contains("bus"));
-		assertTrue(failure.getMessage().contains("ISA"));
-		assertTrue(failure.getMessage().contains("PCI"));
+	@Test
+	void rejectsAnArtifactWithoutAClue() {
+		assertThrows(IllegalArgumentException.class, () -> new Artifact(Clues.none()));
+		assertThrows(NullPointerException.class, () -> new Artifact(null));
 	}
 }
