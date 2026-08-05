@@ -2,6 +2,8 @@ package com.retrocrawler.core.archive;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -33,19 +35,28 @@ public class ArchiveManager {
 
 	private final ArchiveDigger digger;
 
+	private final Clock clock;
+
 	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository) {
+		this(descriptor, digger, repository, Clock.systemUTC());
+	}
+
+	ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository,
+			final Clock clock) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.digger = Objects.requireNonNull(digger, "digger");
 		this.repository = Objects.requireNonNull(repository, "repository");
+		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
 	private Archive fromSource(final Progressor progressor) throws IOException {
 		final Path root = descriptor.root();
+		final Instant crawledAt = clock.instant();
 		final ArchiveNode rootNode;
 		try (OpenedRoot opened = new OpenedRoot(root)) {
 			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), progressor);
 			progressor.throwIfCancelled();
-			rootNode = digger.dig(opened.target(), plan, progressor);
+			rootNode = digger.dig(opened.target(), plan, crawledAt, progressor);
 		}
 		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
 		progressor.throwIfCancelled();
@@ -58,6 +69,7 @@ public class ArchiveManager {
 			throws IOException {
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
+		final Instant crawledAt = clock.instant();
 		ArchiveNode root = stored.root();
 		try (OpenedRoot opened = new OpenedRoot(descriptor.root())) {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
@@ -73,7 +85,7 @@ public class ArchiveManager {
 
 			for (int index = 0; index < located.size(); index++) {
 				progressor.throwIfCancelled();
-				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, progressor);
+				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, progressor);
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
@@ -232,7 +244,7 @@ public class ArchiveManager {
 				final ArchiveNode replaced = replace(candidate, relativeFolders.subList(1, relativeFolders.size()),
 						replacement);
 				replacements.set(index, replaced);
-				return new ArchiveNode(current.folder(), current.artifact(), replacements);
+				return new ArchiveNode(current.folder(), current.crawledAt(), current.artifact(), replacements);
 			}
 		}
 		throw new IllegalStateException("Stored archive tree no longer contains expected folder: " + folder);

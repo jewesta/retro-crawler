@@ -115,6 +115,21 @@ plus crawler-level aggregation. `crawlAll` is what pays for it.
     artifact source path. Because format 3 values used archive-root-relative
     paths and cannot be distinguished structurally, this semantic change is
     cache format 4 and forces one safe re-index.
+14. The artifact is the deliberate provenance boundary for clues. An artifact
+    retains its place in the archive tree, but its clues are a flat set of
+    evidence and do not retain finder identity or the exact file or descendant
+    folder where each observation originated. This keeps the clue model and
+    cache compact and matches the intentional collapsing of subfolder clues.
+    File resource values may still carry artifact-relative paths because those
+    paths are needed to use the resource; they are not generic clue-origin
+    metadata.
+15. Every `ArchiveNode` records `crawledAt`, the time of the crawl operation
+    that most recently rebuilt that complete subtree. One operation timestamp
+    is shared by all nodes rebuilt in a full or multi-subtree reindex. Partial
+    replacement preserves timestamps on ancestors and untouched branches, so
+    the root timestamp remains the last complete archive crawl. Adding the
+    persisted timestamp changes the node shape and advances the cache to format
+    5.
 
 ## Archive Resource Identifiers
 
@@ -189,42 +204,42 @@ to close, so they were closed rather than deferred.
   `Fact`, `RatedFact`, and matchers use it, so it moved to `gear`. This also
   makes the package boundary state the clue/fact rule instead of blurring it.
 
-### Open: provenance stops at the folder
+### Deliberate simplification: provenance stops at the artifact
 
 Design principle 7 promises an answer traceable to its archive, source path,
-clues, and facts. `GearNode` carries an `ARI` and `Fact` retains its source
-`Clue`, but a `Clue` records only `key` and `value`. It does not know which
-`ClueFinder` produced it or which file it came from, so a `FileContentClueFinder`
-reading one file inside a folder discards that filename.
+clues, and facts. That trace deliberately stops at artifact granularity:
+`GearNode` carries an `ARI`, `Fact` retains its source `Clue`, and `Clue` records
+only `key` and `value`. A clue does not know which `ClueFinder` produced it or
+which file it came from.
 
-`TreeClueFinder` widens the loss: it runs post-order over a subtree and returns
-clues for the current folder, so a clue may originate several levels below and be
-recorded as observed at the parent. Gathering across those levels is correct —
-artifact boundaries are pruned, so the finder stays inside one item's own
-material — but the archive keeps no record of how far down a clue actually came
-from, and caching makes that permanent. The concern is not that the clue was
-collected; it is that the collection cannot afterwards be audited.
+`TreeClueFinder` runs post-order over a subtree and returns clues for the current
+artifact folder, so a clue may originate several levels below. That flattening
+is intentional. Artifact boundaries are pruned, so the finder stays inside one
+item's own material, while the cache avoids repeating origin metadata for every
+observation.
 
-An origin on `Clue` — finder identity plus an optional artifact-relative source
-path — stays model-independent and therefore does not violate the clue/fact rule,
-and it serializes into the existing clue archive.
+Finder identity and an artifact-relative observation path could be added later
+without violating the clue/fact rule, but the current value would mainly be
+diagnostic. Until a concrete query or auditing requirement needs that finer
+trace, omitting it is a conscious simplification rather than missing provenance.
 
-### Open: the archive has no freshness
+### Resolved here: every subtree records its crawl time
 
-Nothing in the archive or stash packages records a timestamp, size, or content
-hash. `Archive` holds `{version, id, basePath, root}` with no crawl time, and
-`ArchiveEntry` exposes only `path()`.
+The original review correctly found that nothing could answer when cached
+material was crawled. One timestamp on `Archive` would become misleading after
+a partial reindex, because the resulting tree contains material from more than
+one crawl operation. The gapless `ArchiveNode` tree is the natural granularity.
 
-`ReindexScope.none()` therefore reuses a stored archive indefinitely, and no
-component can answer whether the cache still reflects its source. Principle 5
-holds that the filesystem archive is the source of truth and stored data is
-rebuildable from it; that is true, but nothing can determine *when* rebuilding is
-due. Re-indexing is entirely a manual decision.
+`ArchiveNode.crawledAt` records when its complete subtree was last crawled. A
+full crawl gives every node the same timestamp. A partial crawl gives every
+replacement node one new operation timestamp while structurally rebuilt
+ancestors keep their old one. Consequently the root records the last full crawl
+and any selected node records the last complete crawl of that subtree.
 
-Making this answerable needs `crawledAt` on `Archive` and optional `size()` and
-`lastModified()` on `ArchiveEntry` — optional because a ZIP or a future remote
-source may not expose either. That is the precondition for any cheap staleness
-sweep.
+This records cache age, not freshness. `ReindexScope.none()` continues to mean
+unconditional cache reuse. Source fingerprints, modification metadata, and
+automatic change detection are deliberately deferred until there is a concrete
+need for them.
 
 ### Open: an artifact does not know where it is
 
@@ -310,8 +325,8 @@ naming what it protects so it cannot be mistaken for an optimization.
 
 Stored clue archives are not compatible: the persisted shape changed and archive
 IDs are now per archive rather than per collection. Cache format 4 also changes
-file resource values from archive-root-relative to artifact-relative. Every
-deployment re-indexes once.
+file resource values from archive-root-relative to artifact-relative, and format
+5 timestamps every archive node. Every deployment re-indexes once.
 
 ## Progress
 
@@ -325,7 +340,8 @@ deployment re-indexes once.
 - [x] Regroup the gear tree factory, `Stash`, and stats per archive; retain the
       source ARI on each `GearNode`.
 - [x] Inspect cache versions before decoding; introduce the new shape as format
-      3 and artifact-relative file resource paths as format 4.
+      3, artifact-relative file resource paths as format 4, and archive-node
+      timestamps as format 5.
 - [x] Demonstrate one shared model with filesystem and ZIP archives.
 - [x] Remove the obsolete private smoke-crawl launcher.
 - [x] Document the public composition model.
@@ -337,9 +353,12 @@ deployment re-indexes once.
 - [x] Move `Confidence` from `archive.clues` to `gear`.
 - [x] Record location-as-relation as design principle 9 and document the
       artifact-boundary pruning it depends on.
-- [ ] Follow-up issues for the open review findings: clue provenance, archive
-      freshness, artifact location, the artifact clue-key invariant, repository
-      removal and enumeration, and value ordering.
+- [x] Define the artifact as the deliberate clue-provenance boundary.
+- [x] Timestamp every archive subtree and preserve crawl history across partial
+      reindexing.
+- [ ] Follow-up issues for the open review findings: artifact location, the
+      artifact clue-key invariant, repository removal and enumeration, and value
+      ordering.
 - [x] Run focused and reactor verification.
 
 ## Verification
@@ -359,6 +378,9 @@ deployment re-indexes once.
   `prettify` passed for all 12 affected Java sources, and `mvn clean install`
   passed for the full seven-module reactor with 318 tests, 0 failures, and 0
   errors.
+- Re-verified after timestamping archive nodes: canonical `prettify` passed for
+  all 7 affected Java sources, and `mvn clean install` passed for the full
+  seven-module reactor with 319 tests, 0 failures, and 0 errors.
 - Note for worktree-based work: `prettify` validates a repository root with
   `Files.isDirectory(repo.resolve(".git"))`, which no Git worktree satisfies
   because its `.git` is a file. The assertion above was obtained by running

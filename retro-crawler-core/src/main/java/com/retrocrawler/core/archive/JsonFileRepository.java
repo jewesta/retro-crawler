@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.util.ReadmeWriter;
@@ -33,7 +35,8 @@ public class JsonFileRepository implements Repository {
 	private final Path directory;
 
 	// Thread-safe after configuration, as recommended by the ObjectMapper javadoc.
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule())
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	public JsonFileRepository() {
 		this(DEFAULT_DIRECTORY);

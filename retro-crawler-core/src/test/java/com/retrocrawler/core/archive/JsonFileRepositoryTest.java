@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -107,6 +108,23 @@ class JsonFileRepositoryTest {
 	}
 
 	@Test
+	void preservesTheArchiveNodeCrawlTimestampAsReadableJson() throws IOException {
+		final Instant crawledAt = Instant.parse("2026-08-05T09:42:17.123456Z");
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("crawl_timestamp");
+		final ArchiveNode root = new ArchiveNode("root", crawledAt, null, null);
+		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
+
+		final JsonNode json = new ObjectMapper()
+				.readTree(repositoryDirectory.resolve("archive_crawl_timestamp.json").toFile());
+		final Archive retrieved = repository.retrieve(id).orElseThrow();
+
+		assertEquals(crawledAt.toString(), json.at("/root/crawledAt").asText());
+		assertEquals(crawledAt, retrieved.root().crawledAt());
+	}
+
+	@Test
 	void encodesArchiveIdForUseAsFileName() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
@@ -173,17 +191,17 @@ class JsonFileRepositoryTest {
 	void rejectsThePreviousCacheVersionEvenWhenItsShapeCanStillBeDecoded() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
-		final ArchiveId id = ArchiveId.of("old_file_paths");
+		final ArchiveId id = ArchiveId.of("old_node_timestamps");
 		repository.stowaway(archive(id, "root"));
-		final Path jsonPath = repositoryDirectory.resolve("archive_old_file_paths.json");
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_node_timestamps.json");
 		final ObjectMapper mapper = new ObjectMapper();
 		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
-		json.put("version", 3);
+		json.put("version", 4);
 		mapper.writeValue(jsonPath.toFile(), json);
 
 		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
 
-		assertTrue(failure.getMessage().contains("uses cache version 3"));
+		assertTrue(failure.getMessage().contains("uses cache version 4"));
 	}
 
 	@Test
@@ -206,7 +224,7 @@ class JsonFileRepositoryTest {
 		Files.createDirectories(repositoryDirectory);
 		Files.writeString(repositoryDirectory.resolve("archive_missing_version.json"), "{\"id\":\"missing_version\"}");
 		Files.writeString(repositoryDirectory.resolve("archive_text_version.json"),
-				"{\"version\":\"4\",\"id\":\"text_version\"}");
+				"{\"version\":\"5\",\"id\":\"text_version\"}");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 
 		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("missing_version")));

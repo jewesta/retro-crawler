@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -180,20 +183,28 @@ class ArchiveManagerTest {
 
 	@Test
 	void retrievesAndPartiallyReindexesAJsonArchiveInANewCrawlerSession() throws IOException {
+		final Instant fullCrawl = Instant.parse("2026-08-05T08:00:00Z");
+		final Instant partialCrawl = Instant.parse("2026-08-05T09:00:00Z");
 		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final Path selected = Files.createDirectory(archiveDirectory.resolve("selected"));
 		final Path oldFolder = Files.createDirectory(selected.resolve("old"));
+		Files.createDirectory(archiveDirectory.resolve("untouched"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final Repository repository = new JsonFileRepository(temporaryDirectory.resolve("repository"));
-		final Archive original = manager(descriptor, repository).archive(new Progressor(), ReindexScope.all());
+		final Archive original = manager(descriptor, repository, Clock.fixed(fullCrawl, ZoneOffset.UTC))
+				.archive(new Progressor(), ReindexScope.all());
 		final String originalSelectedId = technicalId(node(original, "selected"));
 		Files.move(oldFolder, selected.resolve("renamed"));
 
-		final Archive refreshed = manager(descriptor, repository).archive(new Progressor(),
-				ReindexScope.subtree(ari(descriptor, selected)));
+		final Archive refreshed = manager(descriptor, repository, Clock.fixed(partialCrawl, ZoneOffset.UTC))
+				.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(originalSelectedId, technicalId(node(refreshed, "selected")));
+		assertEquals(fullCrawl, refreshed.root().crawledAt());
+		assertEquals(fullCrawl, node(refreshed, "untouched").crawledAt());
+		assertEquals(partialCrawl, node(refreshed, "selected").crawledAt());
+		assertEquals(partialCrawl, node(refreshed, "selected", "renamed").crawledAt());
 	}
 
 	@Test
@@ -215,6 +226,7 @@ class ArchiveManagerTest {
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "second")));
+		assertEquals(node(refreshed, "first").crawledAt(), node(refreshed, "second").crawledAt());
 		assertEquals(2, repository.stowawayCount);
 	}
 
@@ -302,10 +314,14 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {
+		return manager(descriptor, repository, Clock.systemUTC());
+	}
+
+	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
 		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)),
 				List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
-		return new ArchiveManager(descriptor, digger, repository);
+		return new ArchiveManager(descriptor, digger, repository, clock);
 	}
 
 	private static final class RecordingRepository implements Repository {

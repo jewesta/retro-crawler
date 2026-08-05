@@ -245,6 +245,13 @@ path is relative to that artifact rather than to the archive root. A direct
 may be stored as `Box/front.jpeg`. Path facts are rebound against the artifact's
 current provider path during resolution.
 
+Every persisted archive node records when its complete subtree was last
+crawled. All nodes rebuilt by one full or multi-subtree operation receive the
+same timestamp. Partial reindexing preserves the timestamps of ancestors and
+untouched branches, so the root timestamp remains the time of the last complete
+archive crawl. These timestamps record cache age; RetroCrawler does not
+currently attempt automatic source-change detection.
+
 Crawling either selects one archive by identity or spans all of them:
 
 ```java
@@ -309,7 +316,7 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
-JSON cache format version 4 is inspected before the stored payload is
+JSON cache format version 5 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
 `Archive` shape.

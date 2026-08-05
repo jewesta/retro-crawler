@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -76,10 +77,11 @@ public class ArchiveDigger {
 	}
 
 	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
+		final Instant crawledAt = Instant.now();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
 			final ArchiveDigPlan plan = plan(List.of(target), progressor);
-			return dig(target, plan, progressor);
+			return dig(target, plan, crawledAt, progressor);
 		}
 	}
 
@@ -232,12 +234,18 @@ public class ArchiveDigger {
 
 	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Progressor progressor)
 			throws IOException {
+		return dig(target, plan, Instant.now(), progressor);
+	}
+
+	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawledAt,
+			final Progressor progressor) throws IOException {
 		Objects.requireNonNull(target, "target");
+		Objects.requireNonNull(crawledAt, "crawledAt");
 		if (!target.folder().path().normalize().startsWith(target.root().path().normalize())) {
 			throw new IllegalArgumentException("Expected archive path '" + target.folder().path()
 					+ "' to be below root '" + target.root().path() + "'.");
 		}
-		return digFolder(target.session(), target.root(), target.folder(), plan, progressor, false).node();
+		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, progressor, false).node();
 	}
 
 	private Set<Clue> createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
@@ -255,8 +263,8 @@ public class ArchiveDigger {
 	}
 
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
-			final ArchiveDigPlan plan, final Progressor progressor, final boolean parentInsideRegion)
-			throws IOException {
+			final ArchiveDigPlan plan, final Instant crawledAt, final Progressor progressor,
+			final boolean parentInsideRegion) throws IOException {
 		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
 		progressor.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(session, folder);
@@ -273,7 +281,7 @@ public class ArchiveDigger {
 
 		final List<DigResult> children = new ArrayList<>();
 		for (final ArchiveFolder child : listing.folders()) {
-			children.add(digFolder(session, root, child, plan, progressor, insideRegion));
+			children.add(digFolder(session, root, child, plan, crawledAt, progressor, insideRegion));
 		}
 
 		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
@@ -292,7 +300,7 @@ public class ArchiveDigger {
 
 		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
 		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
-		final ArchiveNode result = new ArchiveNode(pathName, artifact, effectiveChildren);
+		final ArchiveNode result = new ArchiveNode(pathName, crawledAt, artifact, effectiveChildren);
 		if (startsRegion) {
 			plan.completeRegion(folder, progressor);
 		}
