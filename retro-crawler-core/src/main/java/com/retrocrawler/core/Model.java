@@ -50,18 +50,18 @@ public final class Model {
 
 	private final String collectionId;
 	private final String collectionName;
-	private final ArchiveFolderClueFinder archivePathClueFinder;
+	private final ArchiveFolderClueFinder archiveFolderClueFinder;
 	private final Configuration configuration;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
 	private final List<ArchivePathFilter> pathFilters;
 
 	private Model(final String collectionId, final String collectionName,
-			final ArchiveFolderClueFinder archivePathClueFinder, final Configuration configuration,
+			final ArchiveFolderClueFinder archiveFolderClueFinder, final Configuration configuration,
 			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
 		this.collectionId = Objects.requireNonNull(collectionId, "collectionId");
 		this.collectionName = Objects.requireNonNull(collectionName, "collectionName");
-		this.archivePathClueFinder = Objects.requireNonNull(archivePathClueFinder, "archivePathClueFinder");
+		this.archiveFolderClueFinder = Objects.requireNonNull(archiveFolderClueFinder, "archiveFolderClueFinder");
 		this.configuration = Objects.requireNonNull(configuration, "configuration");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
 		this.workingDirectory = workingDirectory;
@@ -113,8 +113,8 @@ public final class Model {
 		return Optional.ofNullable(workingDirectory);
 	}
 
-	public ArchiveFolderClueFinder archivePathClueFinder() {
-		return archivePathClueFinder;
+	public ArchiveFolderClueFinder archiveFolderClueFinder() {
+		return archiveFolderClueFinder;
 	}
 
 	public Configuration configuration() {

@@ -35,7 +35,6 @@ import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.progress.Progressor;
 
 class ModelConfigurationTest {
 
@@ -136,7 +135,7 @@ class ModelConfigurationTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<RuntimeContextGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(),
+		final List<RuntimeContextGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(),
 				RuntimeContextGear.class);
 
 		assertEquals(1, gear.size());

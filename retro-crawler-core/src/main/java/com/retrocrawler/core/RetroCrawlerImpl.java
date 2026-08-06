@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDefinition;
@@ -24,10 +23,9 @@ import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -36,11 +34,12 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearResolution;
+import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
@@ -164,35 +163,37 @@ class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public <R, N, G> R crawl(final ArchiveId archiveId, final Progressor progressor, final ReindexScope reindexScope,
+	public <R, N, G> R crawl(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(List.of(registeredArchive(archiveId)), progressor, reindexScope, factory);
+		return crawl(List.of(registeredArchive(archiveId)), journal, reindexScope, factory);
 	}
 
 	@Override
-	public <R, N, G> R crawlAll(final Progressor progressor, final ReindexScope reindexScope,
+	public <R, N, G> R crawlAll(final Journal journal, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(archives.values(), progressor, reindexScope, factory);
+		return crawl(archives.values(), journal, reindexScope, factory);
 	}
 
-	private <R, N, G> R crawl(final Collection<RegisteredArchive> selected, final Progressor progressor,
+	private <R, N, G> R crawl(final Collection<RegisteredArchive> selected, final Journal journal,
 			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
 
-		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(journal, "journal");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
+		final Progressor progressor = journal.progressor();
 		progressor.throwIfCancelled();
 
 		try {
-			return crawlToCompletion(selected, progressor, reindexScope, factory);
+			return crawlToCompletion(selected, journal, reindexScope, factory);
 		} catch (final IOException | RuntimeException failure) {
 			reportFailure(progressor, failure);
 			throw failure;
 		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Progressor progressor,
+	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Journal journal,
 			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
+		final Progressor progressor = journal.progressor();
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 		requireRoutableSubtrees(selected, reindexScope);
 
@@ -200,19 +201,15 @@ class RetroCrawlerImpl implements RetroCrawler {
 		for (final RegisteredArchive registered : selected) {
 			progressor.throwIfCancelled();
 			final ReindexScope scope = routedScope(registered.descriptor(), reindexScope);
-			final int failuresBeforeArchive = progressor.failureCount();
+			final int failuresBeforeArchive = journal.failureCount();
 			try {
-				crawled.add(
-						new CrawledArchive(registered.descriptor(), registered.manager().archive(progressor, scope)));
+				crawled.add(new CrawledArchive(registered.descriptor(), registered.manager().archive(journal, scope)));
 			} catch (final CrawlException failure) {
-				if (progressor.failureMode() == FailureMode.FAIL_EARLY
-						|| progressor.failureCount() == failuresBeforeArchive) {
+				if (journal.failureMode() == FailureMode.FAIL_EARLY
+						|| journal.failureCount() == failuresBeforeArchive) {
 					throw failure;
 				}
 			}
-		}
-		if (progressor.hasFailures()) {
-			throw new CrawlException(progressor.failures());
 		}
 
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
@@ -224,11 +221,18 @@ class RetroCrawlerImpl implements RetroCrawler {
 			progressor.throwIfCancelled();
 			final Path archiveRoot = Path.of(archive.clues().basePath());
 			final ResolvedArchiveNode resolvedRoot = resolve(archive.descriptor().id(), archive.clues().root(),
-					archiveRoot, archiveRoot, retroIds, resolutionProgress, progressor);
+					archiveRoot, archiveRoot, retroIds, resolutionProgress, journal);
 			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot));
 		}
 
-		retroIds.assertUnique();
+		try {
+			retroIds.assertUnique();
+		} catch (final DuplicateRetroIdException failure) {
+			journal.record(failure);
+		}
+		if (journal.hasFailures()) {
+			throw new CrawlException(journal.failures());
+		}
 
 		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
 			progressor.throwIfCancelled();
@@ -327,43 +331,35 @@ class RetroCrawlerImpl implements RetroCrawler {
 		}
 	}
 
-	/**
-	 * Names the artifact whose clues could not be interpreted.
-	 * <p>
-	 * A clue conflict discovered here is not a finder failure: the archive was
-	 * crawled cleanly and only the model's vocabulary reveals that two clues
-	 * claim one semantic key. The phase differs, so the exception type does
-	 * too, but the header reads the same as a crawl-time report.
-	 */
-	private static <T> T resolving(final Path relativeSourcePath, final Supplier<T> resolve) {
+	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path archiveRoot,
+			final Path sourcePath, final ResolutionProgress progress, final Journal journal) {
 		try {
-			return resolve.get();
-		} catch (final DuplicateClueException conflict) {
-			throw new DuplicateClueException(
-					portable(relativeSourcePath) + ": Resolving clues into facts.\n" + conflict.getMessage(), conflict);
+			return resolver.resolveWithIdentity(artifact,
+					new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
+		} catch (final ProgressCancelledException cancellation) {
+			throw cancellation;
+		} catch (final RuntimeException failure) {
+			journal.record(new GearResolutionException(source, failure));
+			return Optional.empty();
+		} finally {
+			progress.complete(sourcePath);
 		}
-	}
-
-	private static String portable(final Path path) {
-		final String separator = path.getFileSystem().getSeparator();
-		final String value = path.toString();
-		final String normalized = "/".equals(separator) ? value : value.replace(separator, "/");
-		return normalized.isEmpty() ? "." : normalized;
 	}
 
 	private ResolvedArchiveNode resolve(final ArchiveId archiveId, final ArchiveNode node, final Path archiveRoot,
 			final Path sourcePath, final RetroIdRegistry retroIds, final ResolutionProgress progress,
-			final Progressor progressor) {
+			final Journal journal) {
+		final Progressor progressor = journal.progressor();
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.artifact();
 		final Path relativeSourcePath = archiveRoot.relativize(sourcePath);
-		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
-				: resolving(relativeSourcePath, () -> resolver.resolveWithIdentity(artifact,
-						new ParseContext(configuration, new Node(archiveRoot, sourcePath))));
-		resolution.ifPresent(value -> value.retroId()
-				.ifPresent(id -> retroIds.register(id, ARI.of(collectionId, archiveId, relativeSourcePath))));
-		if (artifact != null) {
-			progress.complete(sourcePath);
+		final Optional<GearResolution> resolution;
+		if (artifact == null) {
+			resolution = Optional.empty();
+		} else {
+			final ARI source = ARI.of(collectionId, archiveId, relativeSourcePath);
+			resolution = resolveArtifact(source, artifact, archiveRoot, sourcePath, progress, journal);
+			resolution.ifPresent(value -> value.retroId().ifPresent(id -> retroIds.register(id, source)));
 		}
 
 		final List<ResolvedArchiveNode> children = new ArrayList<>();
@@ -371,7 +367,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
 				children.add(resolve(archiveId, child, archiveRoot, sourcePath.resolve(child.folder()), retroIds,
-						progress, progressor));
+						progress, journal));
 			}
 		}
 		return new ResolvedArchiveNode(resolution, relativeSourcePath, List.copyOf(children));
@@ -394,7 +390,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 		private void complete(final Path sourcePath) {
 			completed++;
-			progressor.advanceTo(completed, "Resolved artifact " + completed + " of " + total + ": "
+			progressor.advanceTo(completed, "Examined artifact " + completed + " of " + total + ": "
 					+ PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
@@ -417,8 +413,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 			implements ArchiveDefinition {
 
 		@Override
-		public ArchiveFolderClueFinder archivePathClueFinder() {
-			return model.archivePathClueFinder();
+		public ArchiveFolderClueFinder archiveFolderClueFinder() {
+			return model.archiveFolderClueFinder();
 		}
 
 		@Override

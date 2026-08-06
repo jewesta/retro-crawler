@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
@@ -50,17 +51,18 @@ public class ArchiveManager {
 		this.clock = Objects.requireNonNull(clock, "clock");
 	}
 
-	private Archive fromSource(final Progressor progressor) throws IOException {
-		final int failuresBeforeCrawling = progressor.failureCount();
+	private Archive fromSource(final Journal journal) throws IOException {
+		final Progressor progressor = journal.progressor();
+		final int failuresBeforeCrawling = journal.failureCount();
 		final Path root = descriptor.root();
 		final Instant crawledAt = clock.instant();
 		final ArchiveNode rootNode;
 		try (OpenedRoot opened = new OpenedRoot(root)) {
 			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), progressor);
 			progressor.throwIfCancelled();
-			rootNode = digger.dig(opened.target(), plan, crawledAt, progressor);
+			rootNode = digger.dig(opened.target(), plan, crawledAt, journal);
 		}
-		requireNoNewFailures(progressor, failuresBeforeCrawling);
+		requireNoNewFailures(journal, failuresBeforeCrawling);
 		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
 		progressor.throwIfCancelled();
 		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
@@ -68,9 +70,9 @@ public class ArchiveManager {
 		return archive;
 	}
 
-	private Archive fromSubtrees(final Progressor progressor, final Collection<ARI> requestedSubtrees)
-			throws IOException {
-		final int failuresBeforeCrawling = progressor.failureCount();
+	private Archive fromSubtrees(final Journal journal, final Collection<ARI> requestedSubtrees) throws IOException {
+		final Progressor progressor = journal.progressor();
+		final int failuresBeforeCrawling = journal.failureCount();
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
 		final Instant crawledAt = clock.instant();
@@ -89,11 +91,11 @@ public class ArchiveManager {
 
 			for (int index = 0; index < located.size(); index++) {
 				progressor.throwIfCancelled();
-				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, progressor);
+				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, journal);
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
-		requireNoNewFailures(progressor, failuresBeforeCrawling);
+		requireNoNewFailures(journal, failuresBeforeCrawling);
 
 		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
 		progressor.throwIfCancelled();
@@ -102,16 +104,15 @@ public class ArchiveManager {
 		return archive;
 	}
 
-	private static void requireNoNewFailures(final Progressor progressor, final int previousFailureCount) {
-		final List<Exception> failures = progressor.failures();
+	private static void requireNoNewFailures(final Journal journal, final int previousFailureCount) {
+		final List<Exception> failures = journal.failures();
 		if (failures.size() > previousFailureCount) {
 			throw new CrawlException(failures.subList(previousFailureCount, failures.size()));
 		}
 	}
 
-	public synchronized Archive archive(final Progressor progressor, final ReindexScope reindexScope)
-			throws IOException {
-		Objects.requireNonNull(progressor, "progressor");
+	public synchronized Archive archive(final Journal journal, final ReindexScope reindexScope) throws IOException {
+		Objects.requireNonNull(journal, "journal");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 
 		if (reindexScope.kind() == ReindexScope.Kind.NONE) {
@@ -124,8 +125,8 @@ public class ArchiveManager {
 			}
 		}
 		cache = switch (reindexScope.kind()) {
-		case NONE, ALL -> fromSource(progressor);
-		case SUBTREES -> fromSubtrees(progressor, reindexScope.subtrees());
+		case NONE, ALL -> fromSource(journal);
+		case SUBTREES -> fromSubtrees(journal, reindexScope.subtrees());
 		};
 		return cache;
 	}

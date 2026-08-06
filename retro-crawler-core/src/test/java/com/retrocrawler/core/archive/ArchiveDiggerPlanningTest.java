@@ -10,13 +10,13 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.source.ArchiveSession;
@@ -36,13 +36,14 @@ class ArchiveDiggerPlanningTest {
 		final ArchiveDigger digger = digger(new CrawlPlanning(3, 5, 100, Duration.ofMinutes(1)));
 		final List<ProgressSnapshot> events = new ArrayList<>();
 		final Progressor progressor = Progressor.observing(events::add);
+		final Journal journal = new Journal(progressor);
 
 		final ArchiveDigPlan plan;
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
 			plan = digger.plan(List.of(target), progressor);
-			archive = digger.dig(target, plan, progressor);
+			archive = digger.dig(target, plan, journal);
 		}
 
 		assertEquals(2, plan.analyzedDepth());
@@ -80,12 +81,13 @@ class ArchiveDiggerPlanningTest {
 		Files.createDirectory(root.resolve("known"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
+		final Journal journal = new Journal(progressor);
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
 			final ArchiveDigPlan plan = digger.plan(List.of(target), progressor);
 			Files.createDirectory(root.resolve("created-after-planning"));
-			archive = digger.dig(target, plan, progressor);
+			archive = digger.dig(target, plan, journal);
 		}
 
 		assertEquals(List.of("known"), archive.children().stream().map(ArchiveNode::folder).toList());
@@ -97,13 +99,14 @@ class ArchiveDiggerPlanningTest {
 		final Path changingEntry = Files.createFile(root.resolve("changing-entry"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
 		final Progressor progressor = new Progressor();
+		final Journal journal = new Journal(progressor);
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
 			final ArchiveDigPlan plan = digger.plan(List.of(target), progressor);
 			Files.delete(changingEntry);
 			Files.createDirectory(changingEntry);
-			archive = digger.dig(target, plan, progressor);
+			archive = digger.dig(target, plan, journal);
 		}
 
 		assertTrue(archive.children() == null || archive.children().isEmpty());

@@ -36,7 +36,6 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class ContextualFactResolutionTest {
@@ -55,7 +54,7 @@ class ContextualFactResolutionTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<BaseGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(), BaseGear.class);
+		final List<BaseGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), BaseGear.class);
 
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());

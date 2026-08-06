@@ -16,7 +16,6 @@ import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.FlatListFactory;
 import com.retrocrawler.core.gear.GearTreeFactory;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.stash.StashFactory;
 
@@ -120,8 +119,8 @@ public interface RetroCrawler {
 	<T> Optional<T> inspect(ARI source, ArchiveFileAccessor<T> inspector) throws IOException;
 
 	/** Crawls and resolves the selected archive through the shared model. */
-	<R, N, G> R crawl(ArchiveId archiveId, Progressor progressor, ReindexScope reindexScope,
-			GearTreeFactory<R, N, G> factory) throws IOException;
+	<R, N, G> R crawl(ArchiveId archiveId, Journal journal, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
+			throws IOException;
 
 	/**
 	 * Crawls and resolves every registered archive in one pass.
@@ -130,43 +129,43 @@ public interface RetroCrawler {
 	 * scope is routed to the archive identified by each requested ARI; archives
 	 * without a requested subtree reuse their stored clue archive.
 	 */
-	<R, N, G> R crawlAll(Progressor progressor, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
+	<R, N, G> R crawlAll(Journal journal, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
 			throws IOException;
 
 	/**
 	 * Convenience method that builds a hierarchical {@link Stash} from the
 	 * selected archive.
 	 */
-	default <G> Stash<G> crawlStash(final ArchiveId archiveId, final Progressor progressor,
-			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
-		return crawl(archiveId, progressor, reindexScope, new StashFactory<>(gearType));
+	default <G> Stash<G> crawlStash(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawl(archiveId, journal, reindexScope, new StashFactory<>(gearType));
 	}
 
 	/**
 	 * Convenience method that builds one hierarchical {@link Stash} across
 	 * every registered archive.
 	 */
-	default <G> Stash<G> crawlAllStash(final Progressor progressor, final ReindexScope reindexScope,
-			final Class<G> gearType) throws IOException {
-		return crawlAll(progressor, reindexScope, new StashFactory<>(gearType));
+	default <G> Stash<G> crawlAllStash(final Journal journal, final ReindexScope reindexScope, final Class<G> gearType)
+			throws IOException {
+		return crawlAll(journal, reindexScope, new StashFactory<>(gearType));
 	}
 
 	/**
 	 * Convenience method that returns matching gear from the selected archive
 	 * as a flat list.
 	 */
-	default <G> List<G> crawlGear(final ArchiveId archiveId, final Progressor progressor,
-			final ReindexScope reindexScope, final Class<G> gearType) throws IOException {
-		return crawl(archiveId, progressor, reindexScope, new FlatListFactory<>(gearType));
+	default <G> List<G> crawlGear(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
+			final Class<G> gearType) throws IOException {
+		return crawl(archiveId, journal, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 	/**
 	 * Convenience method that returns matching gear from every registered
 	 * archive as one flat list.
 	 */
-	default <G> List<G> crawlAllGear(final Progressor progressor, final ReindexScope reindexScope,
-			final Class<G> gearType) throws IOException {
-		return crawlAll(progressor, reindexScope, new FlatListFactory<>(gearType));
+	default <G> List<G> crawlAllGear(final Journal journal, final ReindexScope reindexScope, final Class<G> gearType)
+			throws IOException {
+		return crawlAll(journal, reindexScope, new FlatListFactory<>(gearType));
 	}
 
 }

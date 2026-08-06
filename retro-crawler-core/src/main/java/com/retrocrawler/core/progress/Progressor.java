@@ -1,8 +1,6 @@
 package com.retrocrawler.core.progress;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -48,11 +46,7 @@ public final class Progressor {
 	private long startedNanos = System.nanoTime();
 
 	public Progressor() {
-		this(FailureMode.FAIL_EARLY);
-	}
-
-	public Progressor(final FailureMode failureMode) {
-		this.root = new Root("progress-" + IDS.incrementAndGet(), Objects.requireNonNull(failureMode, "failureMode"));
+		this.root = new Root("progress-" + IDS.incrementAndGet());
 		this.offset = 0;
 		this.window = 1;
 		this.rootProgressor = true;
@@ -77,43 +71,6 @@ public final class Progressor {
 	public Progressor withMonitor(final ProgressMonitor monitor) {
 		root.monitors.add(Objects.requireNonNull(monitor, "monitor"));
 		return this;
-	}
-
-	/** The failure policy shared by this progressor and all of its children. */
-	public FailureMode failureMode() {
-		return root.failureMode;
-	}
-
-	/**
-	 * Records any exception on the root progressor. In
-	 * {@link FailureMode#FAIL_EARLY} the same exception is rethrown after
-	 * recording; in {@link FailureMode#FAIL_LATE} this method returns normally.
-	 */
-	public <E extends Exception> void record(final E failure) throws E {
-		Objects.requireNonNull(failure, "failure");
-		synchronized (root) {
-			root.failures.add(failure);
-		}
-		if (root.failureMode == FailureMode.FAIL_EARLY) {
-			throw failure;
-		}
-	}
-
-	/** Every exception recorded by this root, in encounter order. */
-	public List<Exception> failures() {
-		synchronized (root) {
-			return List.copyOf(root.failures);
-		}
-	}
-
-	public int failureCount() {
-		synchronized (root) {
-			return root.failures.size();
-		}
-	}
-
-	public boolean hasFailures() {
-		return failureCount() > 0;
 	}
 
 	public Progressor begin(final ProgressStage newStage, final String newMessage, final long newTotal,
@@ -398,10 +355,6 @@ public final class Progressor {
 
 		private final String id;
 
-		private final FailureMode failureMode;
-
-		private final List<Exception> failures = new ArrayList<>();
-
 		private final CopyOnWriteArrayList<ProgressMonitor> monitors = new CopyOnWriteArrayList<>();
 
 		private final AtomicBoolean cancelled = new AtomicBoolean();
@@ -414,9 +367,8 @@ public final class Progressor {
 
 		private ProgressSnapshot snapshot;
 
-		private Root(final String id, final FailureMode failureMode) {
+		private Root(final String id) {
 			this.id = id;
-			this.failureMode = failureMode;
 			this.snapshot = new ProgressSnapshot(id, ProgressStage.IDLE, "", -1, -1, ProgressAccuracy.INDETERMINATE,
 					ProgressState.RUNNING, 0, Duration.ZERO, Optional.empty());
 		}

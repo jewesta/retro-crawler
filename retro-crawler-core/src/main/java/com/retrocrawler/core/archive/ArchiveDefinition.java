@@ -13,7 +13,7 @@ public interface ArchiveDefinition {
 
 	ArchiveDescriptor archiveDescriptor();
 
-	ArchiveFolderClueFinder archivePathClueFinder();
+	ArchiveFolderClueFinder archiveFolderClueFinder();
 
 	List<ArchivePathFilter> pathFilters();
 }

@@ -20,18 +20,18 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.FailureMode;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.TreeClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.FailureMode;
-import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerTreeClueFinderTest {
 
@@ -60,7 +60,7 @@ class ArchiveDiggerTreeClueFinderTest {
 				List.of(), List.of(treeFinder));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
 
-		final ArchiveNode archive = digger.dig(root, new Progressor());
+		final ArchiveNode archive = digger.dig(root, new Journal());
 
 		assertEquals(root.getFileName().toString(), inspectionOrder.getLast());
 		assertEquals(List.of("Kleinanzeigen"), rootFolders);
@@ -84,7 +84,7 @@ class ArchiveDiggerTreeClueFinderTest {
 				List.of(treeFinder));
 
 		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder)).dig(root,
-				new Progressor());
+				new Journal());
 
 		assertNotNull(archive.artifact());
 		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
@@ -108,21 +108,21 @@ class ArchiveDiggerTreeClueFinderTest {
 			}
 			return Clues.none();
 		}));
-		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			archive = digger.dig(target, digger.plan(List.of(target), progressor), progressor);
+			archive = digger.dig(target, digger.plan(List.of(target), journal.progressor()), journal);
 		}
 
 		assertTrue(rootFolders.isEmpty());
 		final ArchiveNode failed = child(archive, "Broken artifact");
 		assertNull(failed.artifact());
 		assertNotNull(child(failed, "Nested artifact").artifact());
-		assertEquals(1, progressor.failureCount());
-		final ClueFindingException recorded = (ClueFindingException) progressor.failures().getFirst();
+		assertEquals(1, journal.failureCount());
+		final ClueFindingException recorded = (ClueFindingException) journal.failures().getFirst();
 		assertEquals(descriptor().id(), recorded.archiveId().orElseThrow());
 		assertEquals(Path.of("Broken artifact"), recorded.folder().orElseThrow());
 		assertSame(randomFailure, recorded.getCause());

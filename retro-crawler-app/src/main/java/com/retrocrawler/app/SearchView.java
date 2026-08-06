@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.JsonFileRepository;
@@ -259,13 +260,13 @@ public class SearchView extends HorizontalLayout {
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final DemoArchive archive = activeArchive;
 		final Progressor activeProgressor = createProgressor(ui);
+		final Journal journal = new Journal(activeProgressor);
 		final RetroCrawler crawler = archive.crawler();
 		this.progressor = activeProgressor;
 		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return crawler.crawl(archive.archive().id(), activeProgressor, reindexScope,
-						new VaadinTreeDataFactory());
+				return crawler.crawl(archive.archive().id(), journal, reindexScope, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}

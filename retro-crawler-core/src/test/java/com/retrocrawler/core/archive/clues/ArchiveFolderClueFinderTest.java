@@ -14,15 +14,15 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.FailureMode;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.FailureMode;
-import com.retrocrawler.core.progress.Progressor;
 
-class ArchivePathClueFinderTest {
+class ArchiveFolderClueFinderTest {
 
 	@Test
 	void passesFileNamesRelativeToTheCurrentFolder() {
@@ -34,7 +34,7 @@ class ArchivePathClueFinderTest {
 				.of(Clue.of("image", paths.stream().map(FileNameClueFinder::portablePath).collect(Collectors.toSet())));
 		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(null, List.of(), List.of(fileNames));
 
-		final Clues clues = finder.find(folder, List.of(image), emptySession(root), new Progressor());
+		final Clues clues = finder.find(folder, List.of(image), emptySession(root), new Journal());
 
 		assertEquals(Set.of("front.jpeg"), clues.iterator().next().value());
 	}
@@ -47,11 +47,11 @@ class ArchivePathClueFinderTest {
 		final TreeClueFinder treeFinder = ignored -> Clues.of(Clue.of("bus", "PCI"));
 		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(folderFinder, List.of(), List.of(),
 				List.of(treeFinder));
-		final Progressor progressor = new Progressor();
-		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
+		final Journal journal = new Journal();
+		final Clues localClues = finder.find(folder, List.of(), emptySession(root), journal);
 
 		final ClueFindingException failure = assertThrows(ClueFindingException.class,
-				() -> finder.enrich(localClues, emptyFolder(), progressor));
+				() -> finder.enrich(localClues, emptyFolder(), journal));
 
 		assertEquals(ClueSourceKind.FOLDER_TREE, failure.source().orElseThrow().kind());
 		assertInstanceOf(DuplicateClueException.class, failure.getCause());
@@ -66,10 +66,10 @@ class ArchivePathClueFinderTest {
 		final TreeClueFinder treeFinder = ignored -> Clues.of(Clue.of("tree observation"));
 		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(folderFinder, List.of(), List.of(),
 				List.of(treeFinder));
-		final Progressor progressor = new Progressor();
-		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
+		final Journal journal = new Journal();
+		final Clues localClues = finder.find(folder, List.of(), emptySession(root), journal);
 
-		final Clues clues = finder.enrich(localClues, emptyFolder(), progressor);
+		final Clues clues = finder.enrich(localClues, emptyFolder(), journal);
 
 		assertEquals(Set.of("folder observation", "tree observation"),
 				clues.stream().flatMap(clue -> clue.value().stream()).collect(Collectors.toSet()));
@@ -82,10 +82,10 @@ class ArchivePathClueFinderTest {
 		final ArchiveFolder folder = () -> root.path().resolve("folder");
 		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(ignored -> Clues.of(Clue.of("bus", "ISA")),
 				List.of(), List.of());
-		final Progressor progressor = new Progressor();
-		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
+		final Journal journal = new Journal();
+		final Clues localClues = finder.find(folder, List.of(), emptySession(root), journal);
 
-		assertSame(localClues, finder.enrich(localClues, emptyFolder(), progressor));
+		assertSame(localClues, finder.enrich(localClues, emptyFolder(), journal));
 	}
 
 	@Test
@@ -100,14 +100,14 @@ class ArchivePathClueFinderTest {
 		};
 		final FileNameClueFinder working = ignored -> Clues.of(Clue.of("image", "front.jpeg"));
 		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(broken, List.of(), List.of(working));
-		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
-		final Clues clues = finder.find(folder, List.of(file), emptySession(root), progressor);
+		final Clues clues = finder.find(folder, List.of(file), emptySession(root), journal);
 
 		assertEquals(Set.of("front.jpeg"), clues.get("image").orElseThrow().value());
-		assertEquals(1, progressor.failureCount());
+		assertEquals(1, journal.failureCount());
 		final ClueFindingException recorded = assertInstanceOf(ClueFindingException.class,
-				progressor.failures().getFirst());
+				journal.failures().getFirst());
 		assertSame(randomFailure, recorded.getCause());
 		assertEquals(ClueSourceKind.FOLDER_NAME, recorded.source().orElseThrow().kind());
 	}

@@ -60,7 +60,7 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
 
-		final Stash<TestGear> result = crawler.crawlAllStash(new Progressor(), ReindexScope.none(), TestGear.class);
+		final Stash<TestGear> result = crawler.crawlAllStash(new Journal(), ReindexScope.none(), TestGear.class);
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, result.archives().size());
@@ -112,7 +112,7 @@ class RetroCrawlerBuilderTest {
 			}
 		};
 
-		final List<ARI> result = crawler.crawlAll(new Progressor(), ReindexScope.none(), factory);
+		final List<ARI> result = crawler.crawlAll(new Journal(), ReindexScope.none(), factory);
 
 		assertEquals(List.of(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf"))), result);
 	}
@@ -127,7 +127,7 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
 
-		final Stash<TestGear> stash = crawler.crawlAllStash(new Progressor(), ReindexScope.none(), TestGear.class);
+		final Stash<TestGear> stash = crawler.crawlAllStash(new Journal(), ReindexScope.none(), TestGear.class);
 
 		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")),
 				stash.archives().getFirst().roots().getFirst().source());
@@ -139,6 +139,7 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
 				.archive(ARCHIVE).build();
 		final Progressor progressor = new Progressor();
+		final Journal journal = new Journal(progressor);
 		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
 
 			@Override
@@ -167,8 +168,7 @@ class RetroCrawlerBuilderTest {
 			}
 		};
 
-		assertThrows(IllegalStateException.class,
-				() -> crawler.crawlAll(progressor, ReindexScope.none(), failingFactory));
+		assertThrows(IllegalStateException.class, () -> crawler.crawlAll(journal, ReindexScope.none(), failingFactory));
 		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
 		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
 	}
@@ -286,7 +286,7 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ARCHIVE, source).build();
 
-		crawler.crawlAllGear(new Progressor(), ReindexScope.all(), TestGear.class);
+		crawler.crawlAllGear(new Journal(), ReindexScope.all(), TestGear.class);
 
 		assertTrue(opened.get());
 		assertTrue(closed.get());

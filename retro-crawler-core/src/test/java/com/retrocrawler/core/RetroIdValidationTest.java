@@ -1,6 +1,7 @@
 package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,8 +46,6 @@ class RetroIdValidationTest {
 
 	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
 
-	private static final Progressor SILENT_PROGRESSOR = new Progressor();
-
 	@TempDir
 	private Path archiveRoot;
 
@@ -54,7 +53,7 @@ class RetroIdValidationTest {
 	void permitsMissingOptionalFactBackedRetroId() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("gear-without-id"));
 
-		final List<TestGear> gear = crawler().crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
+		final List<TestGear> gear = crawler().crawlAllGear(new Journal(), ReindexScope.all(), TestGear.class);
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().catalogId);
@@ -67,7 +66,7 @@ class RetroIdValidationTest {
 		final RecordingFactory factory = new RecordingFactory();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler().crawlAll(SILENT_PROGRESSOR, ReindexScope.all(), factory));
+				() -> crawler().crawlAll(new Journal(), ReindexScope.all(), factory));
 
 		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
@@ -90,7 +89,7 @@ class RetroIdValidationTest {
 				.archive(ArchiveDescriptor.of(ArchiveId.of("second"), secondRoot)).build();
 
 		final DuplicateRetroIdException failure = assertThrows(DuplicateRetroIdException.class,
-				() -> crawler.crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class));
+				() -> crawler.crawlAllGear(new Journal(), ReindexScope.all(), TestGear.class));
 
 		final List<String> paths = failure.duplicates().get("200001");
 		assertEquals(2, paths.size());
@@ -98,6 +97,22 @@ class RetroIdValidationTest {
 				paths.contains(ARI.of("retro_id_validation", ArchiveId.of("first"), Path.of("id-200001")).toString()));
 		assertTrue(
 				paths.contains(ARI.of("retro_id_validation", ArchiveId.of("second"), Path.of("id-200001")).toString()));
+	}
+
+	@Test
+	void failLateRecordsDuplicateRetroIdsAndDoesNotEmitAPartialResult() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("id-200001"));
+		Files.createDirectories(archiveRoot.resolve("nested").resolve("id-200001"));
+		final RecordingFactory factory = new RecordingFactory();
+		final Journal journal = new Journal(FailureMode.FAIL_LATE);
+
+		final CrawlException report = assertThrows(CrawlException.class,
+				() -> crawler().crawlAll(journal, ReindexScope.all(), factory));
+
+		assertEquals(1, report.failures().size());
+		assertInstanceOf(DuplicateRetroIdException.class, report.failures().getFirst());
+		assertEquals(report.failures(), journal.failures());
+		assertEquals(0, factory.beginArchiveCount);
 	}
 
 	@Test
@@ -112,7 +127,7 @@ class RetroIdValidationTest {
 				.archive(ArchiveDescriptor.of(firstId, firstRoot))
 				.archive(ArchiveDescriptor.of(ArchiveId.of("second"), secondRoot)).build();
 
-		final List<TestGear> gear = crawler.crawlGear(firstId, SILENT_PROGRESSOR, ReindexScope.all(), TestGear.class);
+		final List<TestGear> gear = crawler.crawlGear(firstId, new Journal(), ReindexScope.all(), TestGear.class);
 
 		assertEquals(1, gear.size());
 	}
@@ -123,7 +138,7 @@ class RetroIdValidationTest {
 		Files.createDirectories(archiveRoot.resolve("id-200002"));
 		final List<ProgressSnapshot> events = new java.util.ArrayList<>();
 
-		crawler().crawlAllGear(Progressor.observing(events::add), ReindexScope.all(), TestGear.class);
+		crawler().crawlAllGear(new Journal(Progressor.observing(events::add)), ReindexScope.all(), TestGear.class);
 
 		final List<ProgressSnapshot> resolving = events.stream()
 				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();

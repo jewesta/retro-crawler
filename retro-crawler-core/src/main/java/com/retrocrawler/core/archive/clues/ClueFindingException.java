@@ -17,10 +17,11 @@ import com.retrocrawler.core.util.RetroCrawlerException;
  * still ask.
  * <p>
  * Context is attached in layers, because no single place knows all of it. A
- * finder may report a {@link ClueLocation}. {@code ArchivePathClueFinder} knows
- * the {@link ClueSource} and wraps whatever the finder threw. The digger knows
- * the archive-relative folder and completes the report with {@link #in(Path)}.
- * Each layer produces a new exception rather than mutating one in flight.
+ * finder may report a {@link ClueLocation}. {@code ArchiveFolderClueFinder}
+ * knows the {@link ClueSource} and wraps whatever the finder threw. The digger
+ * knows the archive-relative folder and completes the report with
+ * {@link #in(Path)}. Each layer produces a new exception rather than mutating
+ * one in flight.
  */
 @SuppressWarnings("serial")
 public class ClueFindingException extends RetroCrawlerException {

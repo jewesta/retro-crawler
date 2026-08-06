@@ -19,22 +19,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.FailureMode;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
-import com.retrocrawler.core.progress.FailureMode;
 import com.retrocrawler.core.progress.ProgressCancelledException;
-import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveManagerTest {
 
 	@TempDir
 	private Path temporaryDirectory;
 
-	private final Progressor progressor = new Progressor();
+	private final Journal journal = new Journal();
 
 	@Test
 	void retrievesStoredArchiveWithoutCrawlingFilesystem() throws IOException {
@@ -43,7 +43,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.archive(progressor, ReindexScope.none());
+		final Archive result = manager.archive(journal, ReindexScope.none());
 
 		assertSame(stored, result);
 		assertEquals(1, repository.retrieveCount);
@@ -58,7 +58,7 @@ class ArchiveManagerTest {
 		final Archive stored = Archive.of(descriptor.id(), Path.of("/nas-container/archive"), storedRoot);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 
-		final Archive rebound = manager(descriptor, repository).archive(progressor, ReindexScope.none());
+		final Archive rebound = manager(descriptor, repository).archive(journal, ReindexScope.none());
 
 		assertNotSame(stored, rebound);
 		assertSame(storedRoot, rebound.root());
@@ -73,7 +73,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.archive(progressor, ReindexScope.none());
+		final Archive result = manager.archive(journal, ReindexScope.none());
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
@@ -88,7 +88,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.archive(progressor, ReindexScope.all());
+		final Archive result = manager.archive(journal, ReindexScope.all());
 
 		assertNotSame(stored, result);
 		assertEquals(0, repository.retrieveCount);
@@ -103,7 +103,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(new RepositoryException("Unavailable"));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive result = manager.archive(progressor, ReindexScope.none());
+		final Archive result = manager.archive(journal, ReindexScope.none());
 
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
@@ -118,7 +118,7 @@ class ArchiveManagerTest {
 		repository.stowawayFailure = new RepositoryException("Read only");
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		assertThrows(RepositoryException.class, () -> manager.archive(progressor, ReindexScope.none()));
+		assertThrows(RepositoryException.class, () -> manager.archive(journal, ReindexScope.none()));
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 	}
@@ -130,8 +130,8 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		assertSame(stored, manager.archive(progressor, ReindexScope.none()));
-		assertSame(stored, manager.archive(progressor, ReindexScope.none()));
+		assertSame(stored, manager.archive(journal, ReindexScope.none()));
+		assertSame(stored, manager.archive(journal, ReindexScope.none()));
 		assertEquals(1, repository.retrieveCount);
 	}
 
@@ -140,16 +140,16 @@ class ArchiveManagerTest {
 		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final Progressor cancellingProgressor = new Progressor();
+		final Journal cancellingJournal = new Journal();
 		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
-			cancellingProgressor.cancel("Stop.");
+			cancellingJournal.progressor().cancel("Stop.");
 			return Clues.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 
-		assertThrows(ProgressCancelledException.class, () -> manager.archive(cancellingProgressor, ReindexScope.all()));
+		assertThrows(ProgressCancelledException.class, () -> manager.archive(cancellingJournal, ReindexScope.all()));
 		assertEquals(0, repository.stowawayCount);
 	}
 
@@ -164,7 +164,7 @@ class ArchiveManagerTest {
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
-		final Progressor failLate = new Progressor(FailureMode.FAIL_LATE);
+		final Journal failLate = new Journal(FailureMode.FAIL_LATE);
 
 		final CrawlException failure = assertThrows(CrawlException.class,
 				() -> manager.archive(failLate, ReindexScope.all()));
@@ -185,7 +185,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
 
-		final Archive original = manager.archive(new Progressor(), ReindexScope.all());
+		final Archive original = manager.archive(new Journal(), ReindexScope.all());
 		final ArchiveNode originalSelected = node(original, "selected");
 		final ArchiveNode originalUntouched = node(original, "untouched");
 		final String originalSelectedId = technicalId(originalSelected);
@@ -193,7 +193,7 @@ class ArchiveManagerTest {
 		Files.move(oldFolder, selected.resolve("renamed"));
 		Files.createDirectory(untouched.resolve("created-after-index"));
 
-		final Archive refreshed = manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected)));
+		final Archive refreshed = manager.archive(new Journal(), ReindexScope.subtree(ari(descriptor, selected)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(List.of("original"), childFolders(node(refreshed, "untouched")));
@@ -215,12 +215,12 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final Repository repository = new JsonFileRepository(temporaryDirectory.resolve("repository"));
 		final Archive original = manager(descriptor, repository, Clock.fixed(fullCrawl, ZoneOffset.UTC))
-				.archive(new Progressor(), ReindexScope.all());
+				.archive(new Journal(), ReindexScope.all());
 		final String originalSelectedId = technicalId(node(original, "selected"));
 		Files.move(oldFolder, selected.resolve("renamed"));
 
 		final Archive refreshed = manager(descriptor, repository, Clock.fixed(partialCrawl, ZoneOffset.UTC))
-				.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected)));
+				.archive(new Journal(), ReindexScope.subtree(ari(descriptor, selected)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(originalSelectedId, technicalId(node(refreshed, "selected")));
@@ -240,11 +240,11 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
-		manager.archive(new Progressor(), ReindexScope.all());
+		manager.archive(new Journal(), ReindexScope.all());
 		final Path firstRenamed = Files.move(firstOld, first.resolve("renamed"));
 		Files.move(secondOld, second.resolve("renamed"));
 
-		final Archive refreshed = manager.archive(new Progressor(),
+		final Archive refreshed = manager.archive(new Journal(),
 				ReindexScope.subtrees(ari(descriptor, first), ari(descriptor, firstRenamed), ari(descriptor, second)));
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
@@ -262,7 +262,7 @@ class ArchiveManagerTest {
 		final ArchiveManager manager = manager(descriptor, repository);
 
 		final IllegalStateException failure = assertThrows(IllegalStateException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected))));
+				() -> manager.archive(new Journal(), ReindexScope.subtree(ari(descriptor, selected))));
 
 		assertTrue(failure.getMessage().contains("complete archive"));
 		assertEquals(1, repository.retrieveCount);
@@ -276,11 +276,11 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
-		manager.archive(new Progressor(), ReindexScope.all());
+		manager.archive(new Journal(), ReindexScope.all());
 		final Path renamed = Files.move(selected, archiveDirectory.resolve("renamed"));
 
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, renamed))));
+				() -> manager.archive(new Journal(), ReindexScope.subtree(ari(descriptor, renamed))));
 
 		assertTrue(failure.getMessage().contains("re-index its parent"));
 		assertEquals(1, repository.stowawayCount);
@@ -293,14 +293,14 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final ArchiveManager manager = manager(descriptor, repository);
-		final Archive original = manager.archive(new Progressor(), ReindexScope.all());
+		final Archive original = manager.archive(new Journal(), ReindexScope.all());
 		Files.createDirectory(selected.resolve("new"));
 		repository.stowawayFailure = new RepositoryException("Read only");
 
 		assertThrows(RepositoryException.class,
-				() -> manager.archive(new Progressor(), ReindexScope.subtree(ari(descriptor, selected))));
+				() -> manager.archive(new Journal(), ReindexScope.subtree(ari(descriptor, selected))));
 
-		assertSame(original, manager.archive(new Progressor(), ReindexScope.none()));
+		assertSame(original, manager.archive(new Journal(), ReindexScope.none()));
 		assertEquals(2, repository.stowawayCount);
 	}
 

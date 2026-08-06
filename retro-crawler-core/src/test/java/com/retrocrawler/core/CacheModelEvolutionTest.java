@@ -33,14 +33,11 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class CacheModelEvolutionTest {
 
 	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
-
-	private static final Progressor SILENT_PROGRESSOR = new Progressor();
 
 	@TempDir
 	private Path archiveRoot;
@@ -53,7 +50,7 @@ class CacheModelEvolutionTest {
 		final Model initialModel = Model.from(Set.of(TestArchive.class, InitialGear.class));
 		final RetroCrawler initialCrawler = RetroCrawler.builder().model(initialModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		initialCrawler.crawlAllGear(SILENT_PROGRESSOR, ReindexScope.all(), InitialGear.class);
+		initialCrawler.crawlAllGear(new Journal(), ReindexScope.all(), InitialGear.class);
 
 		final Archive cachedArchive = repository.archive;
 		assertEquals(1, repository.stowawayCount);
@@ -62,7 +59,7 @@ class CacheModelEvolutionTest {
 		final Model evolvedModel = Model.from(Set.of(TestArchive.class, EvolvedGear.class));
 		final RetroCrawler evolvedCrawler = RetroCrawler.builder().model(evolvedModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		final List<EvolvedGear> gear = evolvedCrawler.crawlAllGear(SILENT_PROGRESSOR, ReindexScope.none(),
+		final List<EvolvedGear> gear = evolvedCrawler.crawlAllGear(new Journal(), ReindexScope.none(),
 				EvolvedGear.class);
 
 		assertEquals(1, gear.size());

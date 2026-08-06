@@ -23,10 +23,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
@@ -75,20 +76,23 @@ public class ArchiveDigger {
 	public ArchiveDigger(final ArchiveDefinition archive, final ArchiveSource source, final CrawlPlanning planning) {
 		Objects.requireNonNull(archive, "archive");
 		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
-		this.clueFinder = Objects.requireNonNull(archive.archivePathClueFinder(), "archive.archivePathClueFinder()");
+		this.clueFinder = Objects.requireNonNull(archive.archiveFolderClueFinder(),
+				"archive.archiveFolderClueFinder()");
 		this.source = Objects.requireNonNull(source, "source");
 		this.planning = Objects.requireNonNull(planning, "planning");
 		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
 	}
 
-	public ArchiveNode dig(final Path path, final Progressor progressor) throws IOException {
-		final int failuresBeforeCrawling = progressor.failureCount();
+	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
+		Objects.requireNonNull(journal, "journal");
+		final Progressor progressor = journal.progressor();
+		final int failuresBeforeCrawling = journal.failureCount();
 		final Instant crawledAt = Instant.now();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
 			final ArchiveDigPlan plan = plan(List.of(target), progressor);
-			final ArchiveNode result = dig(target, plan, crawledAt, progressor);
-			final List<Exception> failures = progressor.failures();
+			final ArchiveNode result = dig(target, plan, crawledAt, journal);
+			final List<Exception> failures = journal.failures();
 			if (failures.size() > failuresBeforeCrawling) {
 				throw new CrawlException(failures.subList(failuresBeforeCrawling, failures.size()));
 			}
@@ -243,20 +247,21 @@ public class ArchiveDigger {
 		return pathFilters.stream().allMatch(filter -> filter.accept(entry.path()));
 	}
 
-	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Progressor progressor)
+	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Journal journal)
 			throws IOException {
-		return dig(target, plan, Instant.now(), progressor);
+		return dig(target, plan, Instant.now(), journal);
 	}
 
 	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawledAt,
-			final Progressor progressor) throws IOException {
+			final Journal journal) throws IOException {
 		Objects.requireNonNull(target, "target");
 		Objects.requireNonNull(crawledAt, "crawledAt");
+		Objects.requireNonNull(journal, "journal");
 		if (!target.folder().path().normalize().startsWith(target.root().path().normalize())) {
 			throw new IllegalArgumentException("Expected archive path '" + target.folder().path()
 					+ "' to be below root '" + target.root().path() + "'.");
 		}
-		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, progressor, false).node();
+		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, journal, false).node();
 	}
 
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
@@ -270,8 +275,9 @@ public class ArchiveDigger {
 	}
 
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
-			final ArchiveDigPlan plan, final Instant crawledAt, final Progressor progressor,
-			final boolean parentInsideRegion) throws IOException {
+			final ArchiveDigPlan plan, final Instant crawledAt, final Journal journal, final boolean parentInsideRegion)
+			throws IOException {
+		final Progressor progressor = journal.progressor();
 		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
 		progressor.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(session, folder);
@@ -285,24 +291,24 @@ public class ArchiveDigger {
 		final FolderListing listing = found;
 
 		final Path relativeFolder = root.path().relativize(folder.path());
-		final int failuresBeforeFinding = progressor.failureCount();
+		final int failuresBeforeFinding = journal.failureCount();
 		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor,
-				failure -> progressor.record(failure.in(descriptor.id(), relativeFolder)));
-		boolean failed = progressor.failureCount() > failuresBeforeFinding;
+				failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
+		boolean failed = journal.failureCount() > failuresBeforeFinding;
 		progressor.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
 		for (final ArchiveFolder child : listing.folders()) {
-			children.add(digFolder(session, root, child, plan, crawledAt, progressor, insideRegion));
+			children.add(digFolder(session, root, child, plan, crawledAt, journal, insideRegion));
 		}
 
 		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
 		Clues clues = localClues;
 		if (!failed) {
-			final int failuresBeforeEnriching = progressor.failureCount();
+			final int failuresBeforeEnriching = journal.failureCount();
 			clues = clueFinder.enrich(localClues, folderView, progressor,
-					failure -> progressor.record(failure.in(descriptor.id(), relativeFolder)));
-			failed = progressor.failureCount() > failuresBeforeEnriching;
+					failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
+			failed = journal.failureCount() > failuresBeforeEnriching;
 		}
 		progressor.throwIfCancelled();
 
@@ -324,7 +330,7 @@ public class ArchiveDigger {
 				logger.info("Found artifact at: " + relativeFolder);
 			} catch (final DuplicateClueException duplicate) {
 				// A synthetic clue collided; no finder was reading anything.
-				progressor.record(new ClueFindingException(duplicate.getMessage(), null, duplicate).in(descriptor.id(),
+				journal.record(new ClueFindingException(duplicate.getMessage(), null, duplicate).in(descriptor.id(),
 						relativeFolder));
 				outcome = new FolderOutcome.Failed();
 			}

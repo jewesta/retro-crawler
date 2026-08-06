@@ -3,6 +3,7 @@ package com.retrocrawler.app.cli;
 import java.time.Duration;
 import java.time.Instant;
 
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
@@ -32,7 +33,7 @@ public final class RetroCrawlerCli {
 				.archive(descriptor).build();
 
 		final Instant start = Instant.now();
-		final Progressor progressor = Progressor.reportingMessages(System.out::println);
+		final Journal journal = new Journal(Progressor.reportingMessages(System.out::println));
 
 		/*
 		 * To run a demo we need a folder structure with some retro gear
@@ -53,7 +54,7 @@ public final class RetroCrawlerCli {
 		System.out.println("Reindex scope: " + parsed.reindexScope);
 
 		System.out.println();
-		final Stash<MyRetroGear> stash = crawler.crawlAllStash(progressor, parsed.reindexScope, MyRetroGear.class);
+		final Stash<MyRetroGear> stash = crawler.crawlAllStash(journal, parsed.reindexScope, MyRetroGear.class);
 
 		final Duration dur = Duration.between(start, Instant.now());
 

@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
@@ -15,7 +16,6 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.source.ZipArchiveSource;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.gear.MyKnownGear;
 
 class DemoZipArchiveTest {
@@ -29,7 +29,7 @@ class DemoZipArchiveTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(archive, new ZipArchiveSource()).build();
 
-		final List<MyKnownGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(), MyKnownGear.class);
+		final List<MyKnownGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), MyKnownGear.class);
 
 		final String folder = "ATI VGA Wonder 16 [SN VHK 144994] [200326]";
 		final MyKnownGear graphicsCard = gear.stream().filter(candidate -> folder.equals(candidate.getFolderName()))

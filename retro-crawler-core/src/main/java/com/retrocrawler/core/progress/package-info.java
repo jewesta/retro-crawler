@@ -1,5 +1,5 @@
 /**
- * Observable progress, cancellation, completion, and failure reporting.
+ * Observable progress, cancellation, and completion reporting.
  *
  * <p>
  * A {@link com.retrocrawler.core.progress.Progressor} publishes immutable

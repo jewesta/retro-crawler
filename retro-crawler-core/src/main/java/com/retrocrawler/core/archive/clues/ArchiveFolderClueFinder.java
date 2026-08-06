@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -16,7 +17,7 @@ import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Reflection;
 
-public class ArchiveFolderClueFinder implements ClueFinder{
+public class ArchiveFolderClueFinder implements ClueFinder {
 
 	private final FolderNameClueFinder folderNameClueFinder;
 
@@ -81,8 +82,9 @@ public class ArchiveFolderClueFinder implements ClueFinder{
 	 * Runs local clue finders against entries supplied by an archive source.
 	 */
 	public Clues find(final ArchiveFolder folder, final List<ArchiveFile> files, final ArchiveSession session,
-			final Progressor progressor) {
-		return find(folder, files, session, progressor, progressor::record);
+			final Journal journal) {
+		Objects.requireNonNull(journal, "journal");
+		return find(folder, files, session, journal.progressor(), journal::record);
 	}
 
 	/**
@@ -146,8 +148,9 @@ public class ArchiveFolderClueFinder implements ClueFinder{
 	 * The local clues arrive checked and are not inspected again; only what the
 	 * tree finders add is examined, and it is examined against them.
 	 */
-	public Clues enrich(final Clues localClues, final ArchiveFolderView folder, final Progressor progressor) {
-		return enrich(localClues, folder, progressor, progressor::record);
+	public Clues enrich(final Clues localClues, final ArchiveFolderView folder, final Journal journal) {
+		Objects.requireNonNull(journal, "journal");
+		return enrich(localClues, folder, journal.progressor(), journal::record);
 	}
 
 	/**

@@ -325,11 +325,13 @@ currently attempt automatic source-change detection.
 Crawling either selects one archive by identity or spans all of them:
 
 ```java
+Journal journal = new Journal();
+
 Stash<RetroHardware> museum = crawler.crawlStash(
-        museumCollection.id(), progressor, reindexScope, RetroHardware.class);
+        museumCollection.id(), journal, reindexScope, RetroHardware.class);
 
 Stash<RetroHardware> everything = crawler.crawlAllStash(
-        progressor, reindexScope, RetroHardware.class);
+        journal, reindexScope, RetroHardware.class);
 ```
 
 A `Stash` keeps its gear grouped per archive, and every `GearNode` retains the
@@ -393,16 +395,18 @@ repository boundary so an incompatible payload is never parsed as the current
 
 ---
 
-## Progress and Cancellation
+## Journal, Progress, and Failure Handling
 
-Crawler operations accept a `Progressor`. It publishes immutable, structured
-snapshots with an extensible stage, human-readable message, exact or
-approximate work units, timing, and operation state. A lightweight message
-view is available for simple command-line or GUI integrations:
+Crawler operations accept an operation-scoped `Journal`. Its `Progressor`
+publishes immutable, structured snapshots with an extensible stage,
+human-readable message, exact or approximate work units, timing, and operation
+state. A lightweight message view is available for simple command-line or GUI
+integrations:
 
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
-List<MyGear> gear = crawler.crawlAllGear(progressor, ReindexScope.all(), MyGear.class);
+Journal journal = new Journal(progressor);
+List<MyGear> gear = crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
 ```
 
 Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl
@@ -410,22 +414,26 @@ at its next checkpoint. For larger workflows, progressors can be divided into
 nested equal or weighted windows with `splitIntoEqualParts(...)` and
 `splitInRelationTo(...)`.
 
-Progressors fail early by default. A catalogue-validation crawl can instead
-record every independently recoverable clue-finding exception and fail after
-all selected archives have been examined:
+Journals fail early by default. A catalogue-validation crawl can instead record
+every independently recoverable clue-finding or gear-resolution exception and
+fail after all recoverable work has been examined:
 
 ```java
-Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
+Journal journal = new Journal(FailureMode.FAIL_LATE);
 try {
-    crawler.crawlAllGear(progressor, ReindexScope.all(), MyGear.class);
+    crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
 } catch (CrawlException report) {
     List<Exception> allFailures = report.failures();
 }
 ```
 
 The final exception retains every occurrence in encounter order while its
-message shows only the first 50. Failed archive extractions are never stored,
-and resolution does not begin if clue finding recorded any exception.
+message shows only the first 50. An archive with a clue-finding failure is not
+stored or resolved, but clean archives continue into resolution. A resolution
+failure is recorded against its artifact ARI; that artifact contributes no
+gear, while its descendants and the remaining archives are still examined.
+RetroCrawler throws the final report before invoking the result factory, so a
+failed operation never exposes a partial result.
 
 ---
 

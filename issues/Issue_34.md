@@ -194,7 +194,7 @@ to close, so they were closed rather than deferred.
 
 - `Clues` was a public record referenced by nothing. Removed.
 - `ArchivePath` was never constructed in main or test. It survived only as the
-  parameter of two `ArchivePathClueFinder.find` overloads that nothing called,
+  parameter of two `ArchiveFolderClueFinder.find` overloads that nothing called,
   superseded by the `ArchiveFolder`/`ArchiveSession` overload the digger uses,
   and it carried a compatibility constructor for a compatibility no longer
   exercised. Meanwhile `Node` models the same rooted-path-with-below-check idea
@@ -289,7 +289,7 @@ actually applies, which is one clue per *key*. The invariant consequently had to
 live in whichever collaborator happened to hold the set, and every reader of a
 `Set<Clue>` had to know that.
 
-It also made the same collection prove itself repeatedly. `ArchivePathClueFinder`
+It also made the same collection prove itself repeatedly. `ArchiveFolderClueFinder`
 opened a fresh accumulator per finder result and re-added everything gathered so
 far; `enrich` re-checked the set `find` had just returned; `ArchiveDigger` then
 dropped to a plain `HashSet` to add the synthetic clues, which checked nothing;
@@ -321,7 +321,7 @@ a real archive reported `Duplicate clue key 'bus'` and left the cataloguer to
 find the folder by hand.
 
 Position is known in three layers, and no single place knows all of them. The
-digger knows the archive-relative folder. `ArchivePathClueFinder` knows which
+digger knows the archive-relative folder. `ArchiveFolderClueFinder` knows which
 finder ran and what it was reading. Only the finder can know where inside that
 source, because it normalizes what it reads — `[trw 10510]` becomes key
 `theRetroWebId`, so the raw text is no longer searchable for the resulting clue.
@@ -353,25 +353,29 @@ describe text nobody read this run, and diagnostics would differ depending on
 whether an archive came from a crawl or from the repository.
 
 Resolution-time conflicts stay a `DuplicateClueException` rather than becoming a
-finding failure. When `[AGP]` in a folder name meets `bus: PCI` in `retro.md`,
-the archive was crawled cleanly and only the model's vocabulary reveals the
-competition; the phase differs, so the type does. `RetroCrawlerImpl` gives it the
-same header naming the artifact.
+finding failure. When an anonymous `[AGP]` observation meets an explicit
+`bus: PCI` clue, the archive was crawled cleanly and only the model's vocabulary
+reveals the competition. `GearResolutionException` keeps that original cause
+while adding the artifact ARI.
 
-### Decision: `Progressor` records; reporting is bounded
+### Decision: `Journal` accompanies the operation; reporting is bounded
 
-Fail-fast remains the default, but catalogue validation can now use a root
-`Progressor` configured with `FailureMode.FAIL_LATE`. The progressor is the
-recorder because the same root already spans every sub-progressor, folder, and
-archive in one operation. It accepts any `Exception`, retains every occurrence
-unchanged and in encounter order, and applies no grouping or interpretation.
-`record` always records; in fail-early mode it then rethrows the same instance,
-while in fail-late mode it returns.
+`Journal` is the operation umbrella. It owns the `Progressor`, the failure mode,
+and the complete failure record, leaving `Progressor` concerned only with
+progress, monitoring, cancellation, and sequential subdivision. This vocabulary
+is intentionally not crawl-specific so later query operations can use the same
+concept.
+
+Fail-early remains the default, but catalogue validation can use a `Journal`
+configured with `FailureMode.FAIL_LATE`. It accepts any `Exception`, retains
+every occurrence unchanged and in encounter order, and applies no grouping or
+interpretation. `record` always records; in fail-early mode it then rethrows the
+same instance, while in fail-late mode it returns.
 
 The clue-finder boundary catches arbitrary runtime exceptions from each
 independent finder invocation, except cancellation, wraps them with finder and
 source context, completes them with archive identity and relative folder, and
-hands them to the progressor. Checked failures can likewise be recorded by an
+hands them to the journal. Checked failures can likewise be recorded by an
 operation that knows it can recover. `Error` is never collected.
 
 Presentation is the only bounded part. `CrawlException` exposes the complete
@@ -384,7 +388,16 @@ are still crawled. Tree enrichment for that folder is skipped because its local
 evidence is incomplete. `FolderOutcome.Failed` carries neither artifact nor
 folder view, so an ancestor cannot cross the failed boundary. An archive with
 any new recorded failure is not stowed; `crawlAll` continues with the remaining
-archives, then throws the complete report before resolution.
+archives.
+
+Successful archives still enter gear resolution even when another archive
+failed during clue finding. Resolution treats one artifact as the recovery
+unit: any runtime exception is wrapped in `GearResolutionException` with the
+artifact ARI, that artifact remains unresolved, and its descendants and sibling
+artifacts continue. Duplicate Retro IDs are recorded after the full successful
+resolution set has been examined. If the journal contains any failure,
+RetroCrawler throws one `CrawlException` before invoking `GearTreeFactory`, so
+no partial result escapes.
 
 ### Decision: metadata-folder status is established, never inferred
 
@@ -518,7 +531,7 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Review the core model from `ArchiveSource` through clues and the
       repository to gear.
 - [x] Remove the unused `Clues` record.
-- [x] Remove `ArchivePath` and the two dead `ArchivePathClueFinder.find`
+- [x] Remove `ArchivePath` and the two dead `ArchiveFolderClueFinder.find`
       overloads it served.
 - [x] Move `Confidence` from `archive.clues` to `gear`.
 - [x] Record location-as-relation as design principle 10 and document the
@@ -537,8 +550,9 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Make transparency to tree finders an established outcome rather than an
       inferred one, so collecting clue failures cannot silently reopen an
       artifact boundary.
-- [x] Add progressor-controlled fail-early and fail-late operation modes,
-      retaining every exception occurrence while bounding only final rendering.
+- [x] Add `Journal`-controlled fail-early and fail-late operation modes across
+      clue finding and gear resolution, retaining every exception occurrence
+      while bounding only final rendering.
 - [ ] Follow-up issues for the remaining open review findings: artifact
       location and repository removal and enumeration.
 - [x] Run focused and reactor verification.
@@ -553,6 +567,10 @@ file resource values from archive-root-relative to artifact-relative, and format
   tests, 0 failures, 0 errors. The count dropped with the tests covering the
   removed types; no remaining test needed adjusting, which is the expected
   result for types nothing referenced.
+- Re-verified after introducing `Journal` and extending fail-late handling
+  through gear resolution: canonical `prettify` passed for all 35 uncommitted
+  Java sources, and `mvn clean install` passed for the full seven-module reactor
+  with 358 tests, 0 failures, and 0 errors.
 - Re-verified after documenting design principle 10: `mvn test` passed for the
   full reactor with 314 tests, 0 failures, 0 errors, and the canonical
   `prettify` assertion passed for `ArchiveDigger`.

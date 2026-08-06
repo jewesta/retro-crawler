@@ -92,7 +92,7 @@ These instructions apply to the entire repository.
    Because the rule rejects rather than merges, it must say where. Report a
    clue failure against the archive location that caused it: the digger
    completes every `ClueFindingException` with the archive-relative folder, and
-   `ArchivePathClueFinder` names the finder and the source it was reading. A
+   `ArchiveFolderClueFinder` names the finder and the source it was reading. A
    finder that already tracks offsets should pass a `ClueLocation` when it
    accumulates a clue, so a rejection can point at the tag the cataloguer
    actually wrote. `Clues` carries those positions so they survive a finder

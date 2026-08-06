@@ -12,12 +12,12 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.Progressor;
 
 class ClueDiagnosticsTest {
 
@@ -62,11 +62,11 @@ class ClueDiagnosticsTest {
 				() -> clues.add(Clue.of("bus", "PCI"), ClueLocation.in(folderName, 24, 9)));
 
 		assertEquals("""
-				Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
-				First values: [ISA], duplicate values: [PCI].
-				  Example Board [bus ISA] [bus PCI]
-				                ^^^^^^^^^ first
-				                          ^^^^^^^^^ duplicate""", failure.getMessage());
+			Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
+			First values: [ISA], duplicate values: [PCI].
+			  Example Board [bus ISA] [bus PCI]
+			                ^^^^^^^^^ first
+			                          ^^^^^^^^^ duplicate""", failure.getMessage());
 	}
 
 	/**
@@ -88,16 +88,16 @@ class ClueDiagnosticsTest {
 				.addAll(Clues.accumulator().add(Clue.of("bus", "PCI"), ClueLocation.in(document, 4, 3)).clues()));
 
 		assertEquals("""
-				Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
-				First values: [AGP], duplicate values: [PCI].
-				  The first clue was observed where BracketishFinder read the folder name of \
-				'Example Board [bus AGP]', line 1, column 15.
-				    Example Board [bus AGP]
-				                  ^^^^^^^^^
-				  The duplicate clue was observed where MarkdownishFinder read the file content of \
-				'retro.md', line 2, column 1.
-				    bus: PCI
-				    ^^^""", failure.getMessage());
+			Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
+			First values: [AGP], duplicate values: [PCI].
+			  The first clue was observed where BracketishFinder read the folder name of \
+			'Example Board [bus AGP]', line 1, column 15.
+			    Example Board [bus AGP]
+			                  ^^^^^^^^^
+			  The duplicate clue was observed where MarkdownishFinder read the file content of \
+			'retro.md', line 2, column 1.
+			    bus: PCI
+			    ^^^""", failure.getMessage());
 	}
 
 	/**
@@ -107,8 +107,8 @@ class ClueDiagnosticsTest {
 	 */
 	@Test
 	void dropsPositionsWhenTheCluesBecomeAnArtifact() {
-		final Clues located = Clues.accumulator()
-				.add(Clue.of("bus", "AGP"), ClueLocation.in("Board [bus AGP]", 7, 7)).clues();
+		final Clues located = Clues.accumulator().add(Clue.of("bus", "AGP"), ClueLocation.in("Board [bus AGP]", 7, 7))
+				.clues();
 		assertTrue(located.hasLocations());
 
 		assertFalse(new Artifact(located).clues().hasLocations());
@@ -118,10 +118,11 @@ class ClueDiagnosticsTest {
 	void reportsTheFinderAndSourceForAFailureTheFinderDidNotLocate() {
 		final ArchiveFolder root = () -> Path.of("/archive");
 		final ArchiveFolder folder = () -> root.path().resolve("Example Board");
-		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(new BracketishFinder(), List.of(), List.of());
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(new BracketishFinder(), List.of(),
+				List.of());
 
 		final ClueFindingException failure = assertThrows(ClueFindingException.class,
-				() -> finder.find(folder, List.of(), session(root), new Progressor()));
+				() -> finder.find(folder, List.of(), session(root), new Journal()));
 
 		assertEquals(ClueSourceKind.FOLDER_NAME, failure.source().orElseThrow().kind());
 		assertEquals(BracketishFinder.class, failure.source().orElseThrow().finder());
@@ -140,8 +141,8 @@ class ClueDiagnosticsTest {
 
 		assertEquals(Path.of("Graphics Cards", "Example Board"), located.folder().orElseThrow());
 		assertEquals("""
-				Graphics Cards/Example Board: BracketishFinder read the folder name.
-				Duplicate clue key 'bus'.""", located.getMessage());
+			Graphics Cards/Example Board: BracketishFinder read the folder name.
+			Duplicate clue key 'bus'.""", located.getMessage());
 	}
 
 	@Test
@@ -150,18 +151,20 @@ class ClueDiagnosticsTest {
 		final ClueSource source = ClueSource.folderName("Board [!]", new BracketishFinder());
 
 		final ClueFindingException reported = ClueFindingException
-				.from(source, new ClueFindingException("Reserved key.", location))
-				.in(Path.of("Board"));
+				.from(source, new ClueFindingException("Reserved key.", location)).in(Path.of("Board"));
 
 		assertEquals(location, reported.location().orElseThrow());
 		assertEquals("""
-				Board:1:7: BracketishFinder read the folder name.
-				Reserved key.
-				  Board [!]
-				        ^^^""", reported.getMessage());
+			Board:1:7: BracketishFinder read the folder name.
+			Reserved key.
+			  Board [!]
+			        ^^^""", reported.getMessage());
 	}
 
-	/** Emits two clues claiming one key so the framework has something to report. */
+	/**
+	 * Emits two clues claiming one key so the framework has something to
+	 * report.
+	 */
 	private static final class BracketishFinder implements FolderNameClueFinder {
 
 		@Override

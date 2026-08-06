@@ -31,7 +31,6 @@ import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class AnonymousClueAmbiguityTest {
@@ -48,8 +47,7 @@ class AnonymousClueAmbiguityTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<AmbiguousGear> gear = crawler.crawlAllGear(new Progressor(), ReindexScope.all(),
-				AmbiguousGear.class);
+		final List<AmbiguousGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), AmbiguousGear.class);
 
 		assertNull(gear.getFirst().firstMeaning);
 		assertNull(gear.getFirst().secondMeaning);
