@@ -8,21 +8,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
+import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.Bucket;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.util.ReadmeWriter;
 
 class JsonFileRepositoryTest {
@@ -53,8 +56,7 @@ class JsonFileRepositoryTest {
 
 		final Archive retrieved = repository.retrieve(ArchiveId.of("test_archive")).orElseThrow();
 		assertEquals(id, retrieved.id());
-		assertEquals(1, retrieved.buckets().size());
-		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.buckets().get(0).basePath());
+		assertEquals(temporaryDirectory.resolve("root").toString(), retrieved.basePath());
 	}
 
 	@Test
@@ -66,7 +68,7 @@ class JsonFileRepositoryTest {
 		repository.stowaway(archive(id, "second"));
 
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
-		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.buckets().get(0).basePath());
+		assertEquals(temporaryDirectory.resolve("second").toString(), retrieved.basePath());
 	}
 
 	@Test
@@ -74,21 +76,53 @@ class JsonFileRepositoryTest {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("missing_value");
-		final Artifact artifact = new Artifact(Set.of(Clue.missingValue("sn")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.missingValue("sn")));
 		final ArchiveNode root = new ArchiveNode("root", artifact, null);
-		repository.stowaway(Archive.of(id, List.of(Bucket.of(temporaryDirectory.resolve("root"), root))));
+		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
-		final JsonNode storedClue = json.at("/buckets/0/root/artifact/sn");
-		final Artifact retrieved = repository.retrieve(id).orElseThrow().buckets().getFirst().root().artifact();
+		final JsonNode storedClue = json.at("/root/artifact/sn");
+		final Artifact retrieved = repository.retrieve(id).orElseThrow().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 
-		assertEquals(2, json.path("version").asInt());
+		assertEquals(ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.value().intValue(), json.path("version").asInt());
 		assertTrue(storedClue.isArray());
 		assertTrue(storedClue.isEmpty());
 		assertEquals("sn", clue.key());
 		assertTrue(clue.isMissingValue());
+	}
+
+	@Test
+	void writesTheCacheVersionAsTheFirstStoredProperty() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("version_first");
+		repository.stowaway(archive(id, "root"));
+
+		try (JsonParser parser = new ObjectMapper().getFactory()
+				.createParser(repositoryDirectory.resolve("archive_version_first.json").toFile())) {
+			assertEquals(JsonToken.START_OBJECT, parser.nextToken());
+			assertEquals(JsonToken.FIELD_NAME, parser.nextToken());
+			assertEquals("version", parser.currentName());
+		}
+	}
+
+	@Test
+	void preservesTheArchiveNodeCrawlTimestampAsReadableJson() throws IOException {
+		final Instant crawledAt = Instant.parse("2026-08-05T09:42:17.123456Z");
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("crawl_timestamp");
+		final ArchiveNode root = new ArchiveNode("root", crawledAt, null, null);
+		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
+
+		final JsonNode json = new ObjectMapper()
+				.readTree(repositoryDirectory.resolve("archive_crawl_timestamp.json").toFile());
+		final Archive retrieved = repository.retrieve(id).orElseThrow();
+
+		assertEquals(crawledAt.toString(), json.at("/root/crawledAt").asText());
+		assertEquals(crawledAt, retrieved.root().crawledAt());
 	}
 
 	@Test
@@ -136,7 +170,7 @@ class JsonFileRepositoryTest {
 	}
 
 	@Test
-	void rejectsAnOlderCacheWhoseFileCluesMayContainAbsolutePaths() throws IOException {
+	void rejectsAnOlderShapeBeforeDeserializingItAsTheCurrentArchive() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("old_paths");
@@ -144,16 +178,63 @@ class JsonFileRepositoryTest {
 		final Path jsonPath = repositoryDirectory.resolve("archive_old_paths.json");
 		final ObjectMapper mapper = new ObjectMapper();
 		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
-		json.put("version", 1);
+		json.put("version", 2);
+		json.remove("root");
+		json.putArray("buckets");
 		mapper.writeValue(jsonPath.toFile(), json);
 
-		assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+
+		assertTrue(failure.getMessage().contains("uses cache version 2"));
+	}
+
+	@Test
+	void rejectsThePreviousCacheVersionEvenWhenItsShapeCanStillBeDecoded() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("old_node_timestamps");
+		repository.stowaway(archive(id, "root"));
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_node_timestamps.json");
+		final ObjectMapper mapper = new ObjectMapper();
+		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
+		json.put("version", 4);
+		mapper.writeValue(jsonPath.toFile(), json);
+
+		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
+
+		assertTrue(failure.getMessage().contains("uses cache version 4"));
+	}
+
+	@Test
+	void rejectsAFutureVersionBeforeDeserializingIt() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		Files.createDirectories(repositoryDirectory);
+		final Path jsonPath = repositoryDirectory.resolve("archive_future.json");
+		Files.writeString(jsonPath, "{\"version\":99,\"notAnArchive\":true}");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+
+		final RepositoryException failure = assertThrows(RepositoryException.class,
+				() -> repository.retrieve(ArchiveId.of("future")));
+
+		assertTrue(failure.getMessage().contains("uses cache version 99"));
+	}
+
+	@Test
+	void rejectsAMissingOrMalformedVersion() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		Files.createDirectories(repositoryDirectory);
+		Files.writeString(repositoryDirectory.resolve("archive_missing_version.json"), "{\"id\":\"missing_version\"}");
+		Files.writeString(repositoryDirectory.resolve("archive_text_version.json"),
+				"{\"version\":\"5\",\"id\":\"text_version\"}");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+
+		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("missing_version")));
+		assertThrows(RepositoryException.class, () -> repository.retrieve(ArchiveId.of("text_version")));
 	}
 
 	private Archive archive(final ArchiveId id, final String folder) {
 		final ArchiveNode root = new ArchiveNode(folder, null, null);
-		final Bucket bucket = Bucket.of(temporaryDirectory.resolve(folder), root);
-		return Archive.of(id, List.of(bucket));
+		return Archive.of(id, temporaryDirectory.resolve(folder), root);
 	}
 
 }

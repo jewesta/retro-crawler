@@ -9,6 +9,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueLocation;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
@@ -19,15 +22,15 @@ import com.retrocrawler.mycollection.AttributeNames;
 public final class BracketClueFinder implements FolderNameClueFinder {
 
 	@Override
-	public Set<Clue> find(final String folderName) {
+	public Clues find(final String folderName) {
 		Objects.requireNonNull(folderName, "folderName");
 
 		final int firstOpeningBracket = folderName.indexOf('[');
 		if (firstOpeningBracket < 0) {
-			return Set.of();
+			return Clues.none();
 		}
 
-		final Set<Clue> clues = new LinkedHashSet<>();
+		final ClueAccumulator clues = Clues.accumulator();
 		final List<String> titleParts = new java.util.ArrayList<>();
 		int cursor = 0;
 
@@ -42,22 +45,30 @@ public final class BracketClueFinder implements FolderNameClueFinder {
 
 			final int closingBracket = folderName.indexOf(']', openingBracket + 1);
 			if (closingBracket < 0) {
-				clues.add(Clue.of(folderName.substring(openingBracket).trim()));
+				clues.add(Clue.of(folderName.substring(openingBracket).trim()),
+						ClueLocation.in(folderName, openingBracket, folderName.length() - openingBracket));
 				cursor = folderName.length();
 				break;
 			}
 
+			/*
+			 * The whole group including its brackets is the observation, so a
+			 * rejected duplicate points at the tag the cataloguer wrote rather
+			 * than at the normalized key it produced.
+			 */
 			final String group = folderName.substring(openingBracket + 1, closingBracket);
-			parseGroup(group).ifPresent(clues::add);
+			final ClueLocation location = ClueLocation.in(folderName, openingBracket,
+					closingBracket - openingBracket + 1);
+			parseGroup(group).ifPresent(clue -> clues.add(clue, location));
 			cursor = closingBracket + 1;
 		}
 
 		final String title = String.join(" ", titleParts);
 		if (!clues.isEmpty() && !title.isBlank()) {
-			clues.add(Clue.of(AttributeNames.TITLE, title));
+			clues.add(Clue.of(AttributeNames.TITLE, title), ClueLocation.in(folderName, 0, folderName.length()));
 		}
 
-		return Set.copyOf(clues);
+		return clues.clues();
 	}
 
 	private static void addTitlePart(final List<String> titleParts, final String raw) {

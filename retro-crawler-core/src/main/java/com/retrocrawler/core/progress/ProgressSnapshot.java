@@ -26,6 +26,8 @@ import java.util.OptionalDouble;
  *            accuracy of the stage work units
  * @param state
  *            operation state
+ * @param progress
+ *            position in the observed progressor, from zero to one
  * @param overallFraction
  *            position in the root progressor, from zero to one
  * @param elapsed
@@ -34,8 +36,8 @@ import java.util.OptionalDouble;
  *            estimated remaining time in the current stage
  */
 public record ProgressSnapshot(String id, ProgressStage stage, String message, long completed, long total,
-		ProgressAccuracy accuracy, ProgressState state, double overallFraction, Duration elapsed,
-		Optional<Duration> remaining) {
+		ProgressAccuracy accuracy, ProgressState state, double progress, double overallFraction, Duration elapsed,
+		Optional<Duration> remaining) implements ProgressSupplier {
 
 	public ProgressSnapshot {
 		Objects.requireNonNull(id, "id");
@@ -46,6 +48,9 @@ public record ProgressSnapshot(String id, ProgressStage stage, String message, l
 		Objects.requireNonNull(elapsed, "elapsed");
 		remaining = Objects.requireNonNull(remaining, "remaining");
 
+		if (!Double.isFinite(progress) || progress < 0 || progress > 1) {
+			throw new IllegalArgumentException("Progress fraction must be between zero and one.");
+		}
 		if (!Double.isFinite(overallFraction) || overallFraction < 0 || overallFraction > 1) {
 			throw new IllegalArgumentException("Overall progress fraction must be between zero and one.");
 		}
@@ -66,6 +71,11 @@ public record ProgressSnapshot(String id, ProgressStage stage, String message, l
 		return accuracy != ProgressAccuracy.INDETERMINATE;
 	}
 
+	@Override
+	public ProgressSnapshot snapshot() {
+		return this;
+	}
+
 	public OptionalDouble stageFraction() {
 		if (!isDeterminate() || total == 0) {
 			return OptionalDouble.empty();
@@ -73,6 +83,7 @@ public record ProgressSnapshot(String id, ProgressStage stage, String message, l
 		return OptionalDouble.of((double) completed / total);
 	}
 
+	@Override
 	public boolean hasFinished() {
 		return state != ProgressState.RUNNING;
 	}

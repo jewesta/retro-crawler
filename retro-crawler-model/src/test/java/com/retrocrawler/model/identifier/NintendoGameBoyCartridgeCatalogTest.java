@@ -12,7 +12,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.model.locale.LanguageCode;
 import com.retrocrawler.model.locale.RegionCode;
 

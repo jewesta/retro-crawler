@@ -1,8 +1,12 @@
 package com.retrocrawler.core;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-import com.retrocrawler.core.archive.ArchiveDigger;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.source.ArchiveSource;
@@ -16,7 +20,7 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 
 	private CrawlPlanning crawlPlanning;
 
-	private ArchiveSource archiveSource;
+	private final Map<ArchiveId, ArchiveBinding> archives = new LinkedHashMap<>();
 
 	@Override
 	public RetroCrawler.Builder model(final Model model) {
@@ -46,11 +50,16 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 	}
 
 	@Override
-	public RetroCrawler.Builder archiveSource(final ArchiveSource source) {
-		if (archiveSource != null) {
-			throw new IllegalStateException("Archive source is already configured.");
+	public RetroCrawler.Builder archive(final ArchiveDescriptor archive) {
+		return archive(archive, new FileSystemArchiveSource());
+	}
+
+	@Override
+	public RetroCrawler.Builder archive(final ArchiveDescriptor archive, final ArchiveSource source) {
+		final ArchiveBinding binding = new ArchiveBinding(archive, source);
+		if (archives.putIfAbsent(binding.descriptor().id(), binding) != null) {
+			throw new IllegalArgumentException("Archive is already configured: " + binding.descriptor().id());
 		}
-		archiveSource = Objects.requireNonNull(source, "source");
 		return this;
 	}
 
@@ -62,11 +71,11 @@ final class DefaultRetroCrawlerBuilder implements RetroCrawler.Builder {
 		if (repository == null) {
 			throw new IllegalStateException("Missing required repository configuration.");
 		}
+		if (archives.isEmpty()) {
+			throw new IllegalStateException("At least one archive must be configured.");
+		}
 
 		final CrawlPlanning effectivePlanning = crawlPlanning == null ? CrawlPlanning.defaults() : crawlPlanning;
-		final ArchiveSource effectiveSource = archiveSource == null ? new FileSystemArchiveSource() : archiveSource;
-		final ArchiveDigger digger = new ArchiveDigger(model, effectiveSource, effectivePlanning);
-		return new RetroCrawlerImpl(model.archiveDescriptor(), digger, model.gearResolver(), model.configuration(),
-				repository, effectiveSource);
+		return new RetroCrawlerImpl(model, List.copyOf(archives.values()), effectivePlanning, repository);
 	}
 }

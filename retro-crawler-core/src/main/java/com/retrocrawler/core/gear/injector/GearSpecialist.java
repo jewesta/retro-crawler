@@ -3,7 +3,7 @@ package com.retrocrawler.core.gear.injector;
 import java.util.List;
 import java.util.Objects;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.gear.GearFactory;

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 
 public final class FlatListFactory<G> implements GearTreeFactory<List<G>, G, G> {
 
@@ -22,12 +22,12 @@ public final class FlatListFactory<G> implements GearTreeFactory<List<G>, G, G> 
 	}
 
 	@Override
-	public void beginBucket(final Bucket bucket) {
+	public void beginArchive(final ArchiveDescriptor archive) {
 		// nothing
 	}
 
 	@Override
-	public void endBucket(final Bucket bucket) {
+	public void endArchive(final ArchiveDescriptor archive) {
 		// nothing
 	}
 

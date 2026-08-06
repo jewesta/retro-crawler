@@ -1,7 +1,6 @@
 package com.retrocrawler.core.archive.clues;
 
 import java.io.InputStream;
-import java.util.Set;
 
 public interface FileContentClueFinder extends ClueFinder {
 
@@ -11,6 +10,6 @@ public interface FileContentClueFinder extends ClueFinder {
 	 */
 	boolean matches(String fileName);
 
-	Set<Clue> find(InputStream is);
+	Clues find(InputStream is);
 
 }

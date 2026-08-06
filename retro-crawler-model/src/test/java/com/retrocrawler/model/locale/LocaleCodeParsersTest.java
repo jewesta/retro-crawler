@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 
 class LocaleCodeParsersTest {
 

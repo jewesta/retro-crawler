@@ -23,21 +23,21 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.ArchiveRoots;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class CacheModelEvolutionTest {
 
-	private static final Progressor SILENT_PROGRESSOR = new Progressor();
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
 
 	@TempDir
 	private Path archiveRoot;
@@ -47,19 +47,19 @@ class CacheModelEvolutionTest {
 		Files.createDirectories(archiveRoot.resolve("serial-pending"));
 		final MemoryRepository repository = new MemoryRepository();
 
-		final Model initialModel = Model.from(Set.of(TestArchive.class, InitialGear.class),
-				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler initialCrawler = RetroCrawler.builder().model(initialModel).repository(repository).build();
-		initialCrawler.crawlGear(SILENT_PROGRESSOR, ReindexScope.all(), InitialGear.class);
+		final Model initialModel = Model.from(Set.of(TestArchive.class, InitialGear.class));
+		final RetroCrawler initialCrawler = RetroCrawler.builder().model(initialModel).repository(repository)
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
+		initialCrawler.crawlAllGear(new Journal(), ReindexScope.all(), InitialGear.class);
 
 		final Archive cachedArchive = repository.archive;
 		assertEquals(1, repository.stowawayCount);
 		assertRawAnonymousSerialMarker(cachedArchive);
 
-		final Model evolvedModel = Model.from(Set.of(TestArchive.class, EvolvedGear.class),
-				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler evolvedCrawler = RetroCrawler.builder().model(evolvedModel).repository(repository).build();
-		final List<EvolvedGear> gear = evolvedCrawler.crawlGear(SILENT_PROGRESSOR, ReindexScope.none(),
+		final Model evolvedModel = Model.from(Set.of(TestArchive.class, EvolvedGear.class));
+		final RetroCrawler evolvedCrawler = RetroCrawler.builder().model(evolvedModel).repository(repository)
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
+		final List<EvolvedGear> gear = evolvedCrawler.crawlAllGear(new Journal(), ReindexScope.none(),
 				EvolvedGear.class);
 
 		assertEquals(1, gear.size());
@@ -72,7 +72,7 @@ class CacheModelEvolutionTest {
 	}
 
 	private static void assertRawAnonymousSerialMarker(final Archive archive) {
-		final Artifact artifact = archive.buckets().getFirst().root().children().getFirst().artifact();
+		final Artifact artifact = archive.root().children().getFirst().artifact();
 		assertTrue(artifact.clues().stream().anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("SN"))));
 		assertTrue(artifact.clues().stream().noneMatch(clue -> "sn".equals(clue.key())));
 	}
@@ -111,8 +111,8 @@ class CacheModelEvolutionTest {
 	public static final class TestClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return "serial-pending".equals(folderName) ? Set.of(Clue.of("SN")) : Set.of();
+		public Clues find(final String folderName) {
+			return "serial-pending".equals(folderName) ? Clues.of(Clue.of("SN")) : Clues.none();
 		}
 	}
 

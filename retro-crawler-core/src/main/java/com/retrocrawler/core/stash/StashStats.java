@@ -7,11 +7,11 @@ import java.util.Objects;
 /**
  * Structural statistics for a resolved {@link Stash}.
  */
-public record StashStats(long bucketCount, long rootCount, long nodeCount, long leafCount, int maximumDepth,
+public record StashStats(long archiveCount, long rootCount, long nodeCount, long leafCount, int maximumDepth,
 		Map<Class<?>, Long> gearByType) {
 
 	public StashStats {
-		if (bucketCount < 0 || rootCount < 0 || nodeCount < 0 || leafCount < 0 || maximumDepth < 0) {
+		if (archiveCount < 0 || rootCount < 0 || nodeCount < 0 || leafCount < 0 || maximumDepth < 0) {
 			throw new IllegalArgumentException("Stash statistics must not be negative.");
 		}
 		gearByType = Map.copyOf(Objects.requireNonNull(gearByType, "gearByType"));
@@ -21,15 +21,15 @@ public record StashStats(long bucketCount, long rootCount, long nodeCount, long 
 		Objects.requireNonNull(stash, "stash");
 
 		final MutableStats stats = new MutableStats();
-		stats.bucketCount = stash.buckets().size();
-		for (final GearBucket<?> bucket : stash.buckets()) {
-			stats.rootCount += bucket.roots().size();
-			for (final GearNode<?> root : bucket.roots()) {
+		stats.archiveCount = stash.archives().size();
+		for (final ArchiveGear<?> archive : stash.archives()) {
+			stats.rootCount += archive.roots().size();
+			for (final GearNode<?> root : archive.roots()) {
 				walk(root, 1, stats);
 			}
 		}
 
-		return new StashStats(stats.bucketCount, stats.rootCount, stats.nodeCount, stats.leafCount, stats.maximumDepth,
+		return new StashStats(stats.archiveCount, stats.rootCount, stats.nodeCount, stats.leafCount, stats.maximumDepth,
 				stats.gearByType);
 	}
 
@@ -49,7 +49,7 @@ public record StashStats(long bucketCount, long rootCount, long nodeCount, long 
 
 	private static final class MutableStats {
 
-		private long bucketCount;
+		private long archiveCount;
 		private long rootCount;
 		private long nodeCount;
 		private long leafCount;

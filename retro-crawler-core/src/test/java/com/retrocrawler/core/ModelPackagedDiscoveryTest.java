@@ -38,7 +38,7 @@ class ModelPackagedDiscoveryTest {
 
 			final Model model = Model.from(PACKAGE_NAME);
 
-			assertEquals("packaged_model", model.archiveDescriptor().id().value());
+			assertEquals("packaged_model", model.collectionId());
 		} finally {
 			Thread.currentThread().setContextClassLoader(originalContextClassLoader);
 		}
@@ -56,8 +56,7 @@ class ModelPackagedDiscoveryTest {
 			package com.retrocrawler.packagedfixture;
 
 			@com.retrocrawler.core.annotation.RetroCollection(
-					id = "packaged_model",
-					locations = "/unused")
+					id = "packaged_model")
 			@com.retrocrawler.core.annotation.RetroClues(
 					fromFolderName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class)
 			public class PackagedArchive {

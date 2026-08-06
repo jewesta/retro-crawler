@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +17,8 @@ class ProgressorTest {
 	void publishesStructuredSnapshotsAndMessageOnlyObservations() {
 		final List<String> messages = new ArrayList<>();
 		final List<ProgressSnapshot> snapshots = new ArrayList<>();
-		final Progressor progressor = Progressor.reportingMessages(messages::add).withMonitor(snapshots::add);
+		final Progressor progressor = Progressor.reportingMessages(messages::add)
+				.withMonitor(progress -> snapshots.add(progress.snapshot()));
 
 		progressor.begin(ProgressStage.CRAWLING, "Starting.", 10, ProgressAccuracy.APPROXIMATE);
 		progressor.advanceTo(1, "Region 2 of 10.");
@@ -33,9 +35,73 @@ class ProgressorTest {
 	}
 
 	@Test
+	void retainsThePepperControllerScaleAndBaseConversions() {
+		final Progressor progressor = Progressor.create();
+		final ProgressController controller = progressor;
+
+		controller.reset(8).advanceBy(2);
+		assertEquals(0.25, progressor.progress());
+
+		controller.advanceToBase100(50);
+		assertEquals(0.5, progressor.progress());
+
+		controller.advanceToBase1(0.75);
+		assertEquals(0.75, progressor.progress());
+
+		controller.advanceToBase(12, 0);
+		assertEquals(0, progressor.progress());
+	}
+
+	@Test
+	void aSubProgressorUsesItsOwnScaleInsideTheRootWindow() {
+		final Progressor root = Progressor.create();
+		final Progressor secondHalf = root.splitIntoEqualParts(2)[1];
+
+		secondHalf.reset(4).advanceBy(1);
+
+		assertEquals(0.25, secondHalf.progress());
+		assertEquals(0.625, root.progress());
+		assertEquals(0.25, secondHalf.snapshot().progress());
+		assertEquals(0.625, secondHalf.snapshot().overallFraction());
+		assertEquals(1, root.snapshot().completed());
+		assertEquals(4, root.snapshot().total());
+	}
+
+	@Test
+	void resetCanMoveProgressBackToTheStart() {
+		final Progressor progressor = Progressor.create();
+		progressor.reset(10).advanceToEnd();
+
+		progressor.reset(20);
+
+		assertEquals(0, progressor.progress());
+		assertEquals(0, progressor.completed());
+		assertEquals(20, progressor.total());
+	}
+
+	@Test
+	void serializesParallelAdvancesLikeThePepperImplementation() {
+		final Progressor progressor = Progressor.create().reset(1_000);
+
+		IntStream.range(0, 1_000).parallel().forEach(ignored -> progressor.advance());
+
+		assertEquals(1, progressor.progress());
+		assertEquals(1_000, progressor.completed());
+	}
+
+	@Test
+	void dummyProgressorDoesNothingAndReturnsDummyChildren() {
+		Progressor.DUMMY.begin(ProgressStage.CRAWLING, "Ignored.", 10, ProgressAccuracy.EXACT).advanceToEnd();
+
+		assertEquals(0, Progressor.DUMMY.progress());
+		assertTrue(java.util.Arrays.stream(Progressor.DUMMY.splitIntoEqualParts(3))
+				.allMatch(child -> child == Progressor.DUMMY));
+	}
+
+	@Test
 	void cancellationIsOneWayAndStopsFurtherProgress() {
 		final List<ProgressSnapshot> snapshots = new ArrayList<>();
-		final Progressor progressor = Progressor.observing(snapshots::add);
+		final Progressor progressor = Progressor.observing(progress -> snapshots.add(progress.snapshot()));
 
 		progressor.indeterminate(ProgressStage.PLANNING, "Planning.");
 		progressor.cancel("Stopping.");
@@ -52,7 +118,7 @@ class ProgressorTest {
 
 	@Test
 	void representsIndeterminateProgressWithoutInventingAStageFractionOrEta() {
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 
 		progressor.indeterminate(ProgressStage.PLANNING, "Planning.");
 
@@ -64,7 +130,7 @@ class ProgressorTest {
 
 	@Test
 	void mapsNestedWeightedProgressIntoTheRootWindow() {
-		final Progressor root = new Progressor();
+		final Progressor root = Progressor.create();
 		final Progressor[] halves = root.splitIntoEqualParts(2);
 		final Progressor[] secondHalf = halves[1].splitInRelationTo(1, 3);
 
@@ -85,7 +151,7 @@ class ProgressorTest {
 
 	@Test
 	void rootCancellationRetainsTheActiveChildStage() {
-		final Progressor root = new Progressor();
+		final Progressor root = Progressor.create();
 		final Progressor child = root.splitIntoEqualParts(2)[0];
 		child.begin(ProgressStage.of("CHILD"), "Working.", 4, ProgressAccuracy.EXACT).advanceTo(1, "One done.");
 
@@ -103,7 +169,7 @@ class ProgressorTest {
 		final FixedStepProgressMonitor monitor = new FixedStepProgressMonitor(4) {
 
 			@Override
-			protected void onProgressStep(final long maximumStep, final long currentStep,
+			protected void monitorFixedStep(final long maximumStep, final long currentStep,
 					final ProgressSnapshot progress) {
 				observations.add(progress.stage() + ":" + currentStep + ":" + progress.state());
 			}
@@ -122,7 +188,7 @@ class ProgressorTest {
 
 	@Test
 	void reportsCompleteAndFailedTerminalStates() {
-		final Progressor complete = new Progressor();
+		final Progressor complete = Progressor.create();
 		complete.begin(ProgressStage.RESOLVING, "Resolving.", 2, ProgressAccuracy.EXACT).advanceTo(1, "One resolved.");
 		complete.complete("Done.");
 
@@ -130,7 +196,7 @@ class ProgressorTest {
 		assertEquals(2, complete.snapshot().completed());
 		assertEquals(1, complete.snapshot().overallFraction());
 
-		final Progressor failed = new Progressor();
+		final Progressor failed = Progressor.create();
 		failed.indeterminate(ProgressStage.STOWING, "Stowing.");
 		failed.fail("Repository unavailable.");
 

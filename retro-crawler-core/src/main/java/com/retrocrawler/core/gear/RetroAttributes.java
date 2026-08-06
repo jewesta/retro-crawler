@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.util.RetroAttribute;
 
 public class RetroAttributes {
@@ -97,9 +98,13 @@ public class RetroAttributes {
 				.collect(Collectors.toUnmodifiableSet());
 	}
 
-	public Set<Clue> clues() {
-		return attributes.values().stream().filter(Clue.class::isInstance).map(Clue.class::cast)
-				.collect(Collectors.toUnmodifiableSet());
+	/**
+	 * Returns the attributes that remained unresolved evidence. They are keyed
+	 * exactly like the clues they came from, so they are {@link Clues} rather
+	 * than a set that could not express that.
+	 */
+	public Clues clues() {
+		return Clues.of(attributes.values().stream().filter(Clue.class::isInstance).map(Clue.class::cast).toList());
 	}
 
 	public Map<String, RetroAttribute> all() {

@@ -299,7 +299,8 @@ interpreted as a **missing-value clue**. It:
 - Keeps the key and source provenance for a later cataloguing audit.
 - Does not become a fact and therefore leaves the corresponding gear field
   absent.
-- Can be superseded by a real value for the same key from another clue finder.
+- Conflicts with a real value for the same semantic key from another clue;
+  separate authorities are rejected rather than merged or superseded.
 
 This is a core resolution semantic rather than collection-specific model
 knowledge. Individual clue finders remain unaware of the model vocabulary.
@@ -998,31 +999,22 @@ folder-name, file-name, and file-content clue finders remain peer discovery
 mechanisms. The personal model's practical "no tag, no gear" rule now includes
 these deliberately conventional file declarations as tags.
 
-### Corroboration and Conflict
+### One Authority per Clue Key
 
-Different clue finders may observe the same semantic key. A hash suffix would
-turn one observation into the accidental canonical value and would obscure the
-fact that both sources describe the same concept. RetroCrawler therefore keeps
-the original semantic key:
+Issue 24 originally introduced corroboration and conflict merging across clue
+finders. Issue 34 supersedes that policy and restores the crawler's original
+hard invariant: one distinct clue may claim an explicit key within an artifact.
+A clue may itself contain several values, but observations from separate
+sources are never combined merely because they share a key. Repetition is an
+archive consistency error even when the values agree.
 
-- Equal values corroborate and collapse to one value.
-- Different values are united under that key.
-- A scalar fact parser may resolve multiple raw spellings when they all parse
-  to the same value.
-- If the values parse to different scalar values, the attribute remains an
-  unresolved multi-valued clue. No value is injected into the gear and no
-  matcher sees a fact for that key.
-- A collection-valued fact may legitimately retain multiple parsed values.
-
-For example, folder tag `[AGP]` together with `bus: AGP` in `retro.md` front
-matter yields the `AGP` bus fact. `[AGP]` together with `bus: PCI` yields the
-unresolved clue `bus = {AGP, PCI}` and the gear remains a `MysteryGear` unless
-other independent facts identify it.
-
-This policy makes conflict visible without letting clue-finder execution order
-choose a winner. Deciding which source is wrong remains a cataloguing task.
-Structured conflict diagnostics belong with the later Issue 22 query and audit
-work.
+The rule is also enforced when resolution interprets an anonymous observation.
+For example, folder tag `[AGP]` together with `bus: AGP` or `bus: PCI` in
+`retro.md` is rejected in both cases. The archive must choose one authority for
+the bus clue. A genuinely multi-valued assertion remains expressible as one
+clue such as `[ISA, PCI, AGP]`, or as several anonymous observations from the
+same or different clue finders. Anonymous clues claim no key and therefore do
+not violate the one-authority rule.
 
 ## Bounded Crawl Planning and Progress
 
@@ -1168,12 +1160,14 @@ gear. The rebuilt private cache is 166 KiB. This second crawl took 48.2
 seconds; the unchanged region count but different elapsed time reinforces why
 region progress is explicitly approximate.
 
-`MyCollectionSmokeCrawl` is the explicit local launcher. It reads an
+`MyCollectionSmokeCrawl` was the explicit local launcher. It read an
 `ArchiveRoots` text file and private cache directory from command-line
-arguments, can either rebuild or reuse the cache, streams structured progress
-in five-percent buckets, and prints only privacy-safe aggregate cataloguing
-totals at completion. Structured progress messages retain the current path for
-local operator visibility, but no runtime path is compiled into the launcher.
+arguments, could either rebuild or reuse the cache, streamed structured progress
+in five-percent buckets, and printed only privacy-safe aggregate cataloguing
+totals at completion. Structured progress messages retained the current path for
+local operator visibility, but no runtime path was compiled into the launcher.
+The one-off launcher was removed in Issue 34; this section records the historical
+validation run rather than a supported workflow.
 
 ## First Full IBM-Compatible Crawl
 
@@ -1792,7 +1786,8 @@ filesystem changes until that root is included in a future crawl.
       clue finders; remove the bookmark-presence finder disproved by the live
       crawl.
 - [x] Define corroborating and conflicting clue semantics without choosing a
-      value by source order.
+      value by source order. Superseded by Issue 34's restored one-authority
+      invariant.
 - [x] Add bounded shallow crawl planning and approximate numerical region
       progress to core.
 - [x] Add structured crawl phases and exact artifact-resolution progress while

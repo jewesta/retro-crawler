@@ -33,8 +33,9 @@ public abstract class FixedStepProgressMonitor implements ProgressMonitor {
 	}
 
 	@Override
-	public final synchronized void onProgress(final ProgressSnapshot progress) {
-		Objects.requireNonNull(progress, "progress");
+	public final synchronized void monitorProgress(final ProgressSupplier supplier) {
+		Objects.requireNonNull(supplier, "supplier");
+		final ProgressSnapshot progress = supplier.snapshot();
 		final long currentStep = step(progress);
 		final boolean stageChanged = !progress.stage().equals(previousStage);
 		final boolean stateChanged = progress.state() != previousState;
@@ -42,13 +43,13 @@ public abstract class FixedStepProgressMonitor implements ProgressMonitor {
 			return;
 		}
 
-		onProgressStep(maximumStep, currentStep, progress);
+		monitorFixedStep(maximumStep, currentStep, progress);
 		previousStage = progress.stage();
 		previousState = progress.state();
 		previousStep = currentStep;
 	}
 
-	protected abstract void onProgressStep(long maximumStep, long currentStep, ProgressSnapshot progress);
+	protected abstract void monitorFixedStep(long maximumStep, long currentStep, ProgressSnapshot progress);
 
 	private long step(final ProgressSnapshot progress) {
 		final OptionalDouble fraction = progress.stageFraction();

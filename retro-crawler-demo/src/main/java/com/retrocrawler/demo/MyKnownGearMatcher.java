@@ -1,6 +1,6 @@
 package com.retrocrawler.demo;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.demo.catalog.DemoId;

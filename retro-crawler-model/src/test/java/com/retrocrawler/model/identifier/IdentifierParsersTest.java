@@ -7,7 +7,7 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 
 import de.creativecouple.validation.isbn.ISBN;
 

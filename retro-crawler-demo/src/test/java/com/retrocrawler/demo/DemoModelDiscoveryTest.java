@@ -18,7 +18,7 @@ class DemoModelDiscoveryTest {
 	void discoversDemoModelFromBasePackage() {
 		final Model model = Model.from(DemoModels.RETRO_PC.getBasePackage());
 
-		assertEquals("retro_pc_demo", model.archiveDescriptor().id().value());
+		assertEquals("retro_pc_demo", model.collectionId());
 		assertEquals(List.of(IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class, IgnoreMacSystemPaths.class,
 				IgnoreLinuxSystemPaths.class), model.pathFilters().stream().map(Object::getClass).toList());
 	}

@@ -1,14 +1,14 @@
 package com.retrocrawler.app;
 
-import java.nio.file.Path;
 import java.util.Objects;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.demo.gear.MyKnownGear;
 
-record VaadinGearNode(MyKnownGear gear, Path sourcePath) {
+record VaadinGearNode(MyKnownGear gear, ARI source) {
 
 	VaadinGearNode {
 		Objects.requireNonNull(gear, "gear");
-		Objects.requireNonNull(sourcePath, "sourcePath");
+		Objects.requireNonNull(source, "source");
 	}
 }

@@ -1,68 +1,36 @@
 package com.retrocrawler.core.archive;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
-import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.util.Descriptor;
-import com.retrocrawler.core.util.TypeName;
 
-public class ArchiveDescriptor implements Descriptor {
+/**
+ * One separately identified archive and the single hierarchical root that holds
+ * it.
+ * <p>
+ * An archive has exactly one root. A collection spread across several
+ * locations, providers, or media is composed as several archives on one
+ * crawler, each with its own identity, source, and repository entry.
+ */
+public record ArchiveDescriptor(ArchiveId id, String name, Path root) implements Descriptor {
 
-	private final ArchiveId id;
-
-	private final String name;
-
-	private final Collection<Path> paths;
-
-	public ArchiveDescriptor(final ArchiveId id, final String name, final Collection<Path> paths) {
-		this.id = Objects.requireNonNull(id, "id");
-		this.name = Objects.requireNonNull(name, "name");
-		this.paths = List.copyOf(Objects.requireNonNull(paths, "paths"));
+	public ArchiveDescriptor {
+		Objects.requireNonNull(id, "id");
+		Objects.requireNonNull(name, "name");
+		Objects.requireNonNull(root, "root");
 	}
 
-	public ArchiveId id() {
-		return id;
+	/**
+	 * Describes an archive that uses its identity as its display name.
+	 */
+	public static ArchiveDescriptor of(final ArchiveId id, final Path root) {
+		return new ArchiveDescriptor(Objects.requireNonNull(id, "id"), id.value(), root);
 	}
 
-	public String name() {
-		return name;
-	}
-
-	public Collection<Path> paths() {
-		return paths;
-	}
-
-	public static final ArchiveDescriptor valueOf(final ArchiveId id, final String name,
-			final Collection<String> pathNames) {
-		final Collection<Path> paths = pathNames.stream().map(Path::of).toList();
-		return new ArchiveDescriptor(id, name, paths);
-	}
-
-	public static final ArchiveDescriptor of(final RetroCollection collection) {
-		Objects.requireNonNull(collection, "collection");
-		final Collection<Path> paths = Arrays.stream(collection.locations()).map(String::trim).map(Path::of).toList();
-		return fromPaths(collection, paths);
-	}
-
-	public static final ArchiveDescriptor of(final RetroCollection collection, final ArchiveRoots archiveRoots) {
-		Objects.requireNonNull(archiveRoots, "archiveRoots");
-		return fromPaths(collection, archiveRoots.paths());
-	}
-
-	private static ArchiveDescriptor fromPaths(final RetroCollection collection, final Collection<Path> paths) {
-		Objects.requireNonNull(collection, "collection");
-		final List<Path> immutablePaths = List.copyOf(Objects.requireNonNull(paths, "paths"));
-		final ArchiveId id = ArchiveId.of(collection.id());
-		final String name = collection.name().isBlank() ? id.value() : collection.name().trim();
-		if (immutablePaths.isEmpty()) {
-			throw new IllegalArgumentException(
-					"A " + TypeName.simple(RetroCollection.class) + " requires at least one location to be set.");
-		}
-		return new ArchiveDescriptor(id, name, immutablePaths);
+	public static ArchiveDescriptor valueOf(final String id, final String name, final String rootName) {
+		Objects.requireNonNull(rootName, "rootName");
+		return new ArchiveDescriptor(ArchiveId.of(id), name, Path.of(rootName));
 	}
 
 }

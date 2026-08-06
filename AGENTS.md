@@ -68,6 +68,64 @@ These instructions apply to the entire repository.
    must not mutate the cached artifact. Model and parser changes must therefore
    be able to reinterpret an existing clue archive without re-indexing.
 
+9. **Give every clue key exactly one authority per artifact.**
+   A single clue may deliberately contain several values, but two distinct
+   clues must never claim the same key within one artifact. Different finders
+   are independent sources, not corroborating authorities: a folder name and a
+   metadata file supplying the same key is an archive consistency error even
+   when their values agree. Never merge their values or let source order choose
+   a winner. Any number of clue finders may emit anonymous clues: anonymous
+   clues claim no semantic key, coexist under distinct generated keys, and may
+   later contribute to the same fact. During resolution, an anonymous
+   observation must not compete with a clue that already explicitly claims its
+   semantic key. Generated anonymous-key collisions are the sole key-level
+   exception; re-key the incoming anonymous clue because its key carries no
+   semantics.
+   The rule lives in the type. `Clues` is the currency between a clue finder,
+   the crawler, and an `Artifact`: immutable, in observation order, one clue per
+   key, and constructible only through a `ClueAccumulator`. That accumulator is
+   the single place a clue is ever inspected — once, as it arrives, against
+   everything observed so far. Do not re-validate `Clues` that arrive from
+   somewhere else, and do not reintroduce a `Set<Clue>`: `Clue` keeps identity
+   equality on purpose, so a set promises a uniqueness it cannot enforce and
+   says nothing about the key-level rule that actually applies.
+   Because the rule rejects rather than merges, it must say where. Report a
+   clue failure against the archive location that caused it: the digger
+   completes every `ClueFindingException` with the archive-relative folder, and
+   `ArchiveFolderClueFinder` names the finder and the source it was reading. A
+   finder that already tracks offsets should pass a `ClueLocation` when it
+   accumulates a clue, so a rejection can point at the tag the cataloguer
+   actually wrote. `Clues` carries those positions so they survive a finder
+   handing its work back, and `Artifact` drops them, because a cached archive
+   has nothing left to point into. Never let a clue failure escape a crawl
+   without naming its folder.
+
+10. **Express gear relation through archive location, never through
+   hierarchy-derived type.**
+   A physical item is in exactly one place at a time, and so is a folder. That
+   isomorphism is why RetroCrawler models gear relation as archive location:
+   moving gear means moving folders, which is fast, pragmatic, and visual, with
+   no parallel relational model to keep in sync and no way for a relation to
+   contradict the archive. Do not add relation types, cross-references, or link
+   tables beside the tree.
+   The same exclusivity forbids the inverse. A folder's ancestry must never
+   determine what its gear *is*: `Graphics Cards/GeForce 2` does not make the
+   GeForce 2 a graphics card, because moving that folder would silently change
+   the item's type. Clue finders may read a folder's own name; they must not
+   read classification from its parents. A `TreeClueFinder` may descend through
+   non-gear subfolders belonging to one item, but folders that already
+   established an artifact are pruned from its view and must stay pruned. The
+   tree carries where a thing is, never what a thing is.
+   Metadata-folder status is established, never inferred. Only a folder the
+   crawl positively read and found no clue in is one, and only such a folder may
+   be read through by an ancestor's tree finder; a folder in any other state,
+   including one the crawl never determined, stays opaque. Keep this structural:
+   a `FolderOutcome` carries the readable view only when it has established the
+   right to offer one, so a folder holding another item's evidence has nothing
+   to hand up and the boundary cannot be crossed by a forgotten check. The type
+   is sealed, so a new outcome stops every switch over it compiling until it
+   declares what it offers.
+
 ## Repository Structure
 
 - `retro-crawler-core`: public framework API and implementation.

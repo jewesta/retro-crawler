@@ -12,9 +12,11 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.Journal;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileNameClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
@@ -40,13 +42,14 @@ class ArchiveDiggerPathFilterTest {
 		final ArchiveDefinition archive = definition(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
 				new IgnoreQNAPSystemPaths());
 		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
 		final ArchiveNode result;
 		final ArchiveDigPlan plan;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
 			plan = digger.plan(List.of(target), progressor);
-			result = digger.dig(target, plan, progressor);
+			result = digger.dig(target, plan, journal);
 		}
 
 		assertEquals(1, plan.totalRegions());
@@ -58,7 +61,7 @@ class ArchiveDiggerPathFilterTest {
 	void acceptsEveryPathWhenNoFiltersAreConfigured() throws IOException {
 		Files.createDirectory(root.resolve(".archive-metadata"));
 
-		final ArchiveNode archive = new ArchiveDigger(definition()).dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(definition()).dig(root, new Journal());
 
 		assertEquals(List.of(".archive-metadata"), archive.children().stream().map(ArchiveNode::folder).toList());
 	}
@@ -70,7 +73,7 @@ class ArchiveDiggerPathFilterTest {
 		final ArchivePathFilter first = path -> true;
 		final ArchivePathFilter second = path -> !"skip".equals(path.getFileName().toString());
 
-		final ArchiveNode archive = new ArchiveDigger(definition(first, second)).dig(root, new Progressor());
+		final ArchiveNode archive = new ArchiveDigger(definition(first, second)).dig(root, new Journal());
 
 		assertEquals(List.of("admit"), archive.children().stream().map(ArchiveNode::folder).toList());
 	}
@@ -80,13 +83,13 @@ class ArchiveDiggerPathFilterTest {
 	}
 
 	private ArchiveDescriptor descriptor() {
-		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", List.of(root));
+		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", root);
 	}
 
-	private static ArchivePathClueFinder clueFinder() {
-		final FileNameClueFinder files = paths -> Set
+	private static ArchiveFolderClueFinder clueFinder() {
+		final FileNameClueFinder files = paths -> Clues
 				.of(Clue.of("files", Set.copyOf(paths.stream().map(Path::getFileName).map(Path::toString).toList())));
-		return new ArchivePathClueFinder(folder -> Set.of(Clue.of("folder", folder)), List.of(), List.of(files));
+		return new ArchiveFolderClueFinder(folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of(files));
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

@@ -12,9 +12,17 @@ Instead, you can use your own personal already existing folder structure, provid
 ## Core Concepts
 
 ### Archive
-A rooted, hierarchical source that contains a collection. The default source is
-a local directory tree, but providers may expose ZIP entries, remote files, or
-other file-like hierarchies through the same archive model.
+A separately identified, hierarchical collection holding, rooted at exactly one
+place. The default source is a local directory tree, but providers may expose
+ZIP entries, remote files, or other file-like hierarchies through the same
+archive model.
+
+One `RetroCrawler` applies a shared model to every archive registered with it.
+Each archive keeps its own identity, root, source provider, repository entry,
+and crawl lifecycle, so a collection spread across several disks, mounts, or
+media is composed as several archives rather than as several roots of one.
+Aggregation is a crawler operation: `crawlAll` resolves every archive in one
+pass and validates Retro ID uniqueness across all of them.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -27,6 +35,76 @@ A raw key–value observation derived from:
 - file contents
 
 Clues are always **string-based** and may contain multiple values. This is a raw representation of a **potential** property of a piece in your collection.
+
+Within one artifact, every clue key has exactly one authority. One clue may
+contain several values, but separate clues from different finders must not
+claim the same explicit key. An anonymous observation must likewise not compete
+with an explicitly keyed clue after resolution discovers its meaning.
+RetroCrawler rejects that archive inconsistency even when the values agree; it
+never merges observations from separate authorities into one clue.
+
+Anonymous clues are deliberately different: they claim no semantic key. Any
+number of clue finders may contribute anonymous clues to one artifact, and all
+of those observations survive under distinct generated keys. Resolution may
+later interpret several of them as values of the same fact.
+
+### Clues
+The clues observed at one archive location: immutable, in observation order, and
+holding exactly one clue per key. A clue finder returns `Clues` and an `Artifact`
+holds `Clues`, so the one-authority rule is carried by the type rather than
+re-checked at each boundary. Build them with `Clues.of(...)`, or accumulate them
+one observation at a time:
+
+```java
+final ClueAccumulator clues = Clues.accumulator();
+clues.add(Clue.of("bus", "AGP"));
+clues.add(Clue.of("Example Graphics Board"));
+return clues.clues();
+```
+
+A second clue claiming a key already taken is rejected with a
+`DuplicateClueException` right where it is observed.
+
+### Clue diagnostics
+Because RetroCrawler rejects a conflict instead of merging it, a failed crawl
+has to say where. Every clue failure leaves a crawl as a `ClueFindingException`
+with a compiler-style header naming the archive-relative folder, the finder, and
+the source it was reading — the original condition stays available as the cause.
+
+A finder that tracks offsets can hand them over, and the rejection then points at
+the tag you actually wrote:
+
+```
+Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the folder name.
+Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [ISA], duplicate values: [PCI].
+  Example Board [bus ISA] [200001] [bus PCI]
+                ^^^^^^^^^ first
+                                   ^^^^^^^^^ duplicate
+```
+
+Pass a `ClueLocation` when you accumulate:
+
+```java
+clues.add(Clue.of(key, values), ClueLocation.in(folderName, openingBracket, length));
+```
+
+A finder that reports nothing still produces the header. When the two conflicting
+clues come from *different* finders, both are drawn — the positions travel with
+the `Clues` a finder hands back:
+
+```
+Graphics Cards/Example Board [bus AGP]/retro.md: RetroMarkdownClueFinder read the file content.
+Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [AGP], duplicate values: [PCI].
+  The first clue was observed where BracketClueFinder read the folder name of 'Example Board [bus AGP]', line 1, column 15.
+    Example Board [bus AGP]
+                  ^^^^^^^^^
+  The duplicate clue was observed where RetroMarkdownClueFinder read the file content of 'retro.md', line 3, column 1.
+    bus: PCI
+    ^^^
+```
+
+Positions stop at the artifact: a retrieved archive has no folder name or
+document left to point into, so they would otherwise describe text nobody read.
 
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
@@ -71,9 +149,9 @@ Unknown or unparseable clues are preserved and may be accessed explicitly.
 RetroCrawler's collection and gear model can be configured via annotations:
 
 - `@RetroCollection`
-  Declares the collection identity, source locations, optional working
-  directory, and `ArchivePathFilter`. Exactly one collection is present in a
-  model.
+  Declares the collection identity, optional working directory, and
+  `ArchivePathFilter`. Exactly one collection is present in a model. Archive
+  roots and providers are runtime crawler configuration.
 
 - `@RetroClues`
   Declares which folder names, file names, file contents, and folder trees
@@ -102,7 +180,6 @@ common operating-system or NAS service entries such as `Thumbs.db`,
 ```java
 @RetroCollection(
         id = "my_collection",
-        locations = "my-collection",
         pathFilters = {
                 IgnoreDotPaths.class,
                 IgnoreWindowsSystemPaths.class,
@@ -133,13 +210,15 @@ Model model = Model.from("com.example.collection");
 
 Applications that need deterministic or custom discovery can instead provide a `Set<Class<?>>` or `TypeSource`.
 
+A model declares how a collection is interpreted, never where it is stored.
+Archive roots are deployment configuration and are registered on the crawler.
+
 Deployment-specific settings can override annotation defaults while the model
 is built:
 
 ```java
 Model model = Model.builder()
         .typesFrom("com.example.collection")
-        .locations(Path.of("my-collection"))
         .workingDirectory(Path.of("retro-work"))
         .factCatalog(MyCatalogParser.class,
                 configuration -> configuration.catalogFile("my-catalog.tsv"))
@@ -160,32 +239,38 @@ all keys must occur exactly once, while their order is arbitrary.
 
 Archive traversal is provided by an application-selected `ArchiveSource`.
 `FileSystemArchiveSource` is the default and uses the NIO filesystem associated
-with each configured root `Path`; existing applications require no additional
-configuration.
+with the archive's root `Path`.
 
-Other hierarchical providers can open an `ArchiveSession` for the same roots:
+Every crawler registers at least one archive. The model's clue finders, fact
+parsers, and gear resolution are shared, while each archive is paired with the
+provider that exposes its root:
 
 ```java
+ArchiveDescriptor myCollection = ArchiveDescriptor.of(
+        ArchiveId.of("my_collection"), Path.of("my-collection"));
+ArchiveDescriptor museumCollection = new ArchiveDescriptor(
+        ArchiveId.of("museum_collection"),
+        "Museum collection",
+        Path.of("museum"));
+ArchiveDescriptor incomingMaterial = new ArchiveDescriptor(
+        ArchiveId.of("incoming_material"),
+        "Incoming material",
+        Path.of("incoming.zip"));
+
 RetroCrawler crawler = RetroCrawler.builder()
-        .model(model)
+        .model(retroHardwareModel)
         .repository(repository)
-        .archiveSource(myArchiveSource)
+        .archive(myCollection)
+        .archive(museumCollection, sshArchiveSource)
+        .archive(incomingMaterial, new ZipArchiveSource())
         .build();
 ```
+
+`archive(descriptor)` selects the filesystem provider.
 
 ZIP archives can be crawled directly without extracting them. Select
-`ZipArchiveSource` and configure each archive root as the path of a local ZIP
-file:
-
-```java
-RetroCrawler crawler = RetroCrawler.builder()
-        .model(model)
-        .repository(repository)
-        .archiveSource(new ZipArchiveSource())
-        .build();
-```
-
-The ZIP path is the logical archive root. Entry names become descendant source
+`ZipArchiveSource` and configure the archive root as the path of a local ZIP
+file. The ZIP path is the provider root. Entry names become descendant source
 paths, and folders omitted from the ZIP directory are inferred from their
 children.
 
@@ -196,21 +281,64 @@ content is optional. When available, the session invokes a generic
 before returning its result. An empty result means that content was not
 available and content-based clue finders contribute no clue for that file.
 
-Applications can inspect a file at any source path produced by the crawler
-through the same scoped accessor contract:
+Public resources are addressed by an Archive Resource Identifier (`ARI`). An
+ARI contains the collection id, archive id, and archive-relative resource path,
+but no physical root or provider details:
 
-```java
-Optional<byte[]> image = crawler.inspect(sourcePath, InputStream::readAllBytes);
+```text
+ari:/retro_pc_demo/incoming_material/Graphics%20Cards/Voodoo%203/front.jpg
 ```
 
-The crawler resolves the address through its configured source and closes the
+The crawler can identify a provider path during migration from path-based
+application data. Gear trees and `Stash` nodes already carry their source ARI:
+
+```java
+ARI source = crawler.identify(incomingMaterial.id(), sourcePath);
+Optional<byte[]> image = crawler.inspect(
+        source, InputStream::readAllBytes);
+```
+
+The crawler rejects an ARI from a different collection or an unknown archive.
+Another crawler configured for the same collection and archive identities may
+resolve it through a different root or provider. The crawler closes the
 short-lived session as well as the content stream. `Optional.empty()` means the
 provider recognizes the file but does not expose its content; a missing or
 folder address raises `NoSuchFileException`.
 
-Source paths remain hierarchical addresses used for relative clues, cache
-relocation, and partial re-indexing; providers must not require them to be
-locally accessible.
+Provider paths remain crawl-time coordinates used to derive artifact-relative
+clues and to rebind caches; providers must not require them to be locally
+accessible. ARIs are the stable application-facing resource identity.
+
+When a file-name clue refers to a resource belonging to an artifact, its cached
+path is relative to that artifact rather than to the archive root. A direct
+`front.jpeg` is therefore stored as `front.jpeg`; a resource below the artifact
+may be stored as `Box/front.jpeg`. Path facts are rebound against the artifact's
+current provider path during resolution.
+
+Every persisted archive node records when its complete subtree was last
+crawled. All nodes rebuilt by one full or multi-subtree operation receive the
+same timestamp. Partial reindexing preserves the timestamps of ancestors and
+untouched branches, so the root timestamp remains the time of the last complete
+archive crawl. These timestamps record cache age; RetroCrawler does not
+currently attempt automatic source-change detection.
+
+Crawling either selects one archive by identity or spans all of them:
+
+```java
+Journal journal = new Journal();
+
+Stash<RetroHardware> museum = crawler.crawlStash(
+        museumCollection.id(), journal, reindexScope, RetroHardware.class);
+
+Stash<RetroHardware> everything = crawler.crawlAllStash(
+        journal, reindexScope, RetroHardware.class);
+```
+
+A `Stash` keeps its gear grouped per archive, and every `GearNode` retains the
+ARI of the artifact that produced it. `crawlAll` validates Retro ID uniqueness
+across all registered archives and routes a subtree reindex scope by each ARI's
+archive identity; archives without a requested subtree reuse their stored clue
+archive.
 
 ---
 
@@ -241,6 +369,8 @@ Repository repository = new JsonFileRepository(Path.of("my-cache"));
 RetroCrawler crawler = RetroCrawler.builder()
         .model(model)
         .repository(repository)
+        .archive(ArchiveDescriptor.of(
+                ArchiveId.of("my_archive"), Path.of("my-archive")))
         .build();
 ```
 
@@ -258,24 +388,52 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
+JSON cache format version 5 is inspected before the stored payload is
+deserialized. Unsupported, missing, or malformed versions are rejected at the
+repository boundary so an incompatible payload is never parsed as the current
+`Archive` shape.
+
 ---
 
-## Progress and Cancellation
+## Journal, Progress, and Failure Handling
 
-Crawler operations accept a `Progressor`. It publishes immutable, structured
-snapshots with an extensible stage, human-readable message, exact or
-approximate work units, timing, and operation state. A lightweight message
-view is available for simple command-line or GUI integrations:
+Crawler operations accept an operation-scoped `Journal`. Its `Progressor`
+publishes immutable, structured snapshots with an extensible stage,
+human-readable message, exact or approximate work units, timing, and operation
+state. A lightweight message view is available for simple command-line or GUI
+integrations:
 
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
-List<MyGear> gear = crawler.crawlGear(progressor, true, MyGear.class);
+Journal journal = new Journal(progressor);
+List<MyGear> gear = crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
 ```
 
 Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl
 at its next checkpoint. For larger workflows, progressors can be divided into
 nested equal or weighted windows with `splitIntoEqualParts(...)` and
 `splitInRelationTo(...)`.
+
+Journals fail early by default. A catalogue-validation crawl can instead record
+every independently recoverable clue-finding or gear-resolution exception and
+fail after all recoverable work has been examined:
+
+```java
+Journal journal = new Journal(FailureMode.FAIL_LATE);
+try {
+    crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
+} catch (CrawlException report) {
+    List<Exception> allFailures = report.failures();
+}
+```
+
+The final exception retains every occurrence in encounter order while its
+message shows only the first 50. An archive with a clue-finding failure is not
+stored or resolved, but clean archives continue into resolution. A resolution
+failure is recorded against its artifact ARI; that artifact contributes no
+gear, while its descendants and the remaining archives are still examined.
+RetroCrawler throws the final report before invoking the result factory, so a
+failed operation never exposes a partial result.
 
 ---
 

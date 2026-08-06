@@ -1,8 +1,7 @@
 package com.retrocrawler.core.gear;
 
-import java.nio.file.Path;
-
-import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
 
 /**
  * @param <R>
@@ -23,21 +22,21 @@ public interface GearTreeFactory<R, N, G> {
 	Class<G> gearType();
 
 	/**
-	 * Called once per bucket before any nodes are emitted.
+	 * Called once per archive before any of its nodes are emitted.
 	 */
-	void beginBucket(Bucket bucket);
+	void beginArchive(ArchiveDescriptor archive);
 
 	/**
-	 * Called once per bucket after all nodes are emitted.
+	 * Called once per archive after all of its nodes are emitted.
 	 */
-	void endBucket(Bucket bucket);
+	void endArchive(ArchiveDescriptor archive);
 
 	/**
 	 * Called for every produced gear node (compressed tree).
 	 *
 	 * @param parent
 	 *            the parent node handle, or null if this is a root in its
-	 *            bucket
+	 *            archive
 	 * @param gear
 	 *            the resolved gear instance
 	 * @return a node handle that will be passed as parent for its children
@@ -45,21 +44,21 @@ public interface GearTreeFactory<R, N, G> {
 	N addNode(N parent, G gear);
 
 	/**
-	 * Called for every produced gear node together with its source path.
+	 * Called for every produced gear node together with its source.
 	 * <p>
 	 * The default implementation preserves compatibility with factories that do
-	 * not need archive-location information.
+	 * not need the source.
 	 *
 	 * @param parent
 	 *            the parent node handle, or null if this is a root in its
-	 *            bucket
+	 *            archive
 	 * @param gear
 	 *            the resolved gear instance
-	 * @param sourcePath
-	 *            the path of the artifact that produced the gear
+	 * @param source
+	 *            the ARI of the artifact that produced the gear
 	 * @return a node handle that will be passed as parent for its children
 	 */
-	default N addNode(final N parent, final G gear, final Path sourcePath) {
+	default N addNode(final N parent, final G gear, final ARI source) {
 		return addNode(parent, gear);
 	}
 

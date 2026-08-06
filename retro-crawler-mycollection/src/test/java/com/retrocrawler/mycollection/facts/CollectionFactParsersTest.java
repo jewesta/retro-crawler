@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
 import com.retrocrawler.core.archive.Node;
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
 import com.retrocrawler.core.archive.Node;
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 
 class LocalDateParserTest {
 

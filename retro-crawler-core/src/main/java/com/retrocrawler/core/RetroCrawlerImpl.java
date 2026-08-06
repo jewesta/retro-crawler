@@ -4,23 +4,29 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveDefinition;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
-import com.retrocrawler.core.archive.clues.Bucket;
+import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -28,137 +34,242 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearResolution;
+import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
 class RetroCrawlerImpl implements RetroCrawler {
 
-	private final ArchiveDescriptor archiveDescriptor;
+	private final List<ArchiveDescriptor> archiveDescriptors;
 
-	private final ArchiveManager manager;
+	private final Map<ArchiveId, RegisteredArchive> archives;
+
+	private final String collectionId;
 
 	private final GearResolver resolver;
 
 	private final Configuration configuration;
 
-	private final ArchiveSource source;
-
 	// package-private: only factories construct this
-	RetroCrawlerImpl(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final GearResolver resolver,
-			final Configuration configuration, final Repository repository, final ArchiveSource source) {
-		this.archiveDescriptor = Objects.requireNonNull(descriptor, "descriptor");
-		this.manager = new ArchiveManager(descriptor, digger, repository);
-		this.resolver = Objects.requireNonNull(resolver, "resolver");
-		this.configuration = Objects.requireNonNull(configuration, "configuration");
-		this.source = Objects.requireNonNull(source, "source");
-	}
+	RetroCrawlerImpl(final Model model, final List<ArchiveBinding> archiveBindings, final CrawlPlanning planning,
+			final Repository repository) {
+		Objects.requireNonNull(model, "model");
+		Objects.requireNonNull(archiveBindings, "archiveBindings");
+		Objects.requireNonNull(planning, "planning");
+		Objects.requireNonNull(repository, "repository");
+		this.collectionId = model.collectionId();
+		this.resolver = model.gearResolver();
+		this.configuration = model.configuration();
 
-	@Override
-	public ArchiveDescriptor archiveDescriptor() {
-		return archiveDescriptor;
-	}
-
-	@Override
-	public <T> Optional<T> inspect(final Path sourcePath, final ArchiveFileAccessor<T> inspector) throws IOException {
-		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
-		Objects.requireNonNull(inspector, "inspector");
-		final Path configuredRoot = rootFor(requested);
-
-		try (ArchiveSession session = source.open(configuredRoot)) {
-			ArchiveFolder current = Objects.requireNonNull(session.root(), "session.root()");
-			final Path sourceRoot = current.path().normalize();
-			if (!requested.startsWith(sourceRoot)) {
-				throw new IllegalArgumentException(
-						"Source path '" + sourcePath + "' is not below session root '" + current.path() + "'.");
-			}
-
-			final Path relative = sourceRoot.relativize(requested);
-			if (relative.toString().isEmpty()) {
-				throw new NoSuchFileException(sourcePath.toString(), null,
-						"Source address identifies an archive root.");
-			}
-
-			for (int index = 0; index < relative.getNameCount(); index++) {
-				final ArchiveListing listing = Objects.requireNonNull(session.list(current), "session.list(folder)");
-				final Path expected = current.path().resolve(relative.getName(index)).normalize();
-				final boolean terminal = index == relative.getNameCount() - 1;
-				if (terminal) {
-					final ArchiveFile file = listing.files().stream()
-							.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst()
-							.orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
-					return session.access(file, inspector);
-				}
-				current = listing.folders().stream().filter(candidate -> candidate.path().normalize().equals(expected))
-						.findFirst().orElseThrow(() -> new NoSuchFileException(sourcePath.toString()));
+		final Map<ArchiveId, RegisteredArchive> configured = new LinkedHashMap<>();
+		for (final ArchiveBinding binding : archiveBindings) {
+			final ArchiveDescriptor descriptor = binding.descriptor();
+			final ArchiveDigger digger = new ArchiveDigger(new ModelArchiveDefinition(descriptor, model),
+					binding.source(), planning);
+			final RegisteredArchive archive = new RegisteredArchive(descriptor,
+					new ArchiveManager(descriptor, digger, repository), binding.source());
+			if (configured.putIfAbsent(descriptor.id(), archive) != null) {
+				throw new IllegalArgumentException("Archive is already configured: " + descriptor.id());
 			}
 		}
-		throw new NoSuchFileException(sourcePath.toString());
-	}
-
-	private Path rootFor(final Path sourcePath) {
-		return archiveDescriptor.paths().stream().filter(root -> sourcePath.startsWith(root.normalize()))
-				.max(Comparator.comparingInt(root -> root.normalize().getNameCount()))
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Source path is outside the configured archives: " + sourcePath));
+		if (configured.isEmpty()) {
+			throw new IllegalArgumentException("At least one archive must be configured.");
+		}
+		this.archives = Collections.unmodifiableMap(configured);
+		this.archiveDescriptors = configured.values().stream().map(RegisteredArchive::descriptor).toList();
 	}
 
 	@Override
-	public <R, N, G> R crawl(final Progressor progressor, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
+	public List<ArchiveDescriptor> archives() {
+		return archiveDescriptors;
+	}
 
-		Objects.requireNonNull(progressor, "progressor");
+	@Override
+	public String collectionId() {
+		return collectionId;
+	}
+
+	@Override
+	public ArchiveDescriptor archive(final ArchiveId archiveId) {
+		return registeredArchive(archiveId).descriptor();
+	}
+
+	@Override
+	public ARI identify(final ArchiveId archiveId, final Path sourcePath) {
+		final RegisteredArchive archive = registeredArchive(archiveId);
+		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
+		final Path configuredRoot = archive.descriptor().root().normalize();
+		if (!requested.startsWith(configuredRoot)) {
+			throw new IllegalArgumentException(
+					"Source path is outside archive '" + archive.descriptor().id() + "': " + sourcePath);
+		}
+		return ARI.of(collectionId, archiveId, configuredRoot.relativize(requested));
+	}
+
+	@Override
+	public <T> Optional<T> inspect(final ARI source, final ArchiveFileAccessor<T> inspector) throws IOException {
+		final RegisteredArchive archive = registeredArchive(source);
+		Objects.requireNonNull(inspector, "inspector");
+		final Path configuredRoot = archive.descriptor().root();
+
+		try (ArchiveSession session = archive.source().open(configuredRoot)) {
+			ArchiveFolder current = Objects.requireNonNull(session.root(), "session.root()");
+			final Path relative = source.resourcePath();
+			for (int index = 0; index < relative.getNameCount(); index++) {
+				final Path expected = current.path().resolve(relative.getName(index).toString()).normalize();
+				final boolean last = index == relative.getNameCount() - 1;
+				final ArchiveListing listing = Objects.requireNonNull(session.list(current), "session.list(folder)");
+				if (last) {
+					final Optional<ArchiveFile> file = listing.files().stream()
+							.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
+					if (file.isPresent()) {
+						return session.access(file.get(), inspector);
+					}
+					throw new NoSuchFileException(source.toString());
+				}
+				final Optional<ArchiveFolder> folder = listing.folders().stream()
+						.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
+				if (folder.isEmpty()) {
+					throw new NoSuchFileException(source.toString());
+				}
+				current = folder.get();
+			}
+		}
+		throw new NoSuchFileException(source.toString());
+	}
+
+	private RegisteredArchive registeredArchive(final ArchiveId archiveId) {
+		Objects.requireNonNull(archiveId, "archiveId");
+		final RegisteredArchive archive = archives.get(archiveId);
+		if (archive == null) {
+			throw new IllegalArgumentException("Unknown archive: " + archiveId);
+		}
+		return archive;
+	}
+
+	private RegisteredArchive registeredArchive(final ARI source) {
+		Objects.requireNonNull(source, "source");
+		if (!collectionId.equals(source.collectionId())) {
+			throw new IllegalArgumentException("ARI belongs to collection '" + source.collectionId()
+					+ "' but this crawler represents collection '" + collectionId + "': " + source);
+		}
+		return registeredArchive(source.archiveId());
+	}
+
+	@Override
+	public <R, N, G> R crawl(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
+		return crawl(List.of(registeredArchive(archiveId)), journal, reindexScope, factory);
+	}
+
+	@Override
+	public <R, N, G> R crawlAll(final Journal journal, final ReindexScope reindexScope,
+			final GearTreeFactory<R, N, G> factory) throws IOException {
+		return crawl(archives.values(), journal, reindexScope, factory);
+	}
+
+	private <R, N, G> R crawl(final Collection<RegisteredArchive> selected, final Journal journal,
+			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
+
+		Objects.requireNonNull(journal, "journal");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
+		final Progressor progressor = journal.progressor();
 		progressor.throwIfCancelled();
 
 		try {
-			return crawlToCompletion(progressor, reindexScope, factory);
+			return crawlToCompletion(selected, journal, reindexScope, factory);
 		} catch (final IOException | RuntimeException failure) {
 			reportFailure(progressor, failure);
 			throw failure;
 		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final Progressor progressor, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
+	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Journal journal,
+			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
+		final Progressor progressor = journal.progressor();
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
+		requireRoutableSubtrees(selected, reindexScope);
 
-		final Archive archive = manager.archive(progressor, reindexScope);
-		final RetroIdRegistry retroIds = new RetroIdRegistry();
-		final List<ResolvedBucket> resolvedBuckets = new ArrayList<>();
-		final long artifactCount = archive.buckets().stream().map(Bucket::root)
-				.mapToLong(RetroCrawlerImpl::countArtifacts).sum();
-		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
-
-		for (final Bucket bucket : archive.buckets()) {
+		final List<CrawledArchive> crawled = new ArrayList<>();
+		for (final RegisteredArchive registered : selected) {
 			progressor.throwIfCancelled();
-			final ArchiveNode root = bucket.root();
-			final Path archiveRoot = Path.of(bucket.basePath());
-			final ResolvedArchiveNode resolvedRoot = root == null ? null
-					: resolve(root, archiveRoot, archiveRoot, retroIds, resolutionProgress, progressor);
-			resolvedBuckets.add(new ResolvedBucket(bucket, resolvedRoot));
+			final ReindexScope scope = routedScope(registered.descriptor(), reindexScope);
+			final int failuresBeforeArchive = journal.failureCount();
+			try {
+				crawled.add(new CrawledArchive(registered.descriptor(), registered.manager().archive(journal, scope)));
+			} catch (final CrawlException failure) {
+				if (journal.failureMode() == FailureMode.FAIL_EARLY
+						|| journal.failureCount() == failuresBeforeArchive) {
+					throw failure;
+				}
+			}
 		}
 
-		retroIds.assertUnique();
+		final RetroIdRegistry retroIds = new RetroIdRegistry();
+		final long artifactCount = crawled.stream().mapToLong(archive -> countArtifacts(archive.clues().root())).sum();
+		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
 
-		for (final ResolvedBucket resolvedBucket : resolvedBuckets) {
+		final List<ResolvedArchive> resolvedArchives = new ArrayList<>();
+		for (final CrawledArchive archive : crawled) {
 			progressor.throwIfCancelled();
-			final Bucket bucket = resolvedBucket.bucket();
-			factory.beginBucket(bucket);
-			if (resolvedBucket.root() != null) {
-				emitCompressed(resolvedBucket.root(), null, factory, gearType, progressor);
-			}
-			factory.endBucket(bucket);
+			final Path archiveRoot = Path.of(archive.clues().basePath());
+			final ResolvedArchiveNode resolvedRoot = resolve(archive.descriptor().id(), archive.clues().root(),
+					archiveRoot, archiveRoot, retroIds, resolutionProgress, journal);
+			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot));
+		}
+
+		try {
+			retroIds.assertUnique();
+		} catch (final DuplicateRetroIdException failure) {
+			journal.record(failure);
+		}
+		if (journal.hasFailures()) {
+			throw new CrawlException(journal.failures());
+		}
+
+		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
+			progressor.throwIfCancelled();
+			factory.beginArchive(resolvedArchive.descriptor());
+			emitCompressed(resolvedArchive.descriptor().id(), resolvedArchive.root(), null, factory, gearType,
+					progressor);
+			factory.endArchive(resolvedArchive.descriptor());
 		}
 
 		final R result = factory.build();
 		progressor.complete("Crawl complete.");
 		return result;
+	}
+
+	private void requireRoutableSubtrees(final Collection<RegisteredArchive> selected,
+			final ReindexScope reindexScope) {
+		if (reindexScope.kind() != ReindexScope.Kind.SUBTREES) {
+			return;
+		}
+		for (final ARI subtree : reindexScope.subtrees()) {
+			registeredArchive(subtree);
+			final boolean selectedArchive = selected.stream()
+					.anyMatch(archive -> subtree.archiveId().equals(archive.descriptor().id()));
+			if (!selectedArchive) {
+				throw new IllegalArgumentException(
+						"ARI does not belong to an archive selected for this crawl: " + subtree);
+			}
+		}
+	}
+
+	private static ReindexScope routedScope(final ArchiveDescriptor descriptor, final ReindexScope reindexScope) {
+		if (reindexScope.kind() != ReindexScope.Kind.SUBTREES) {
+			return reindexScope;
+		}
+		final List<ARI> routed = reindexScope.subtrees().stream()
+				.filter(subtree -> descriptor.id().equals(subtree.archiveId())).toList();
+		return routed.isEmpty() ? ReindexScope.none() : ReindexScope.subtrees(routed);
 	}
 
 	private static String failureDescription(final Throwable failure) {
@@ -196,7 +307,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 	 * not resolve or type does not match: emit nothing, keep same parent for
 	 * children (lifting)
 	 */
-	private <R, N, G> void emitCompressed(final ResolvedArchiveNode node, final N parent,
+	private <R, N, G> void emitCompressed(final ArchiveId archiveId, final ResolvedArchiveNode node, final N parent,
 			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Progressor progressor) {
 
 		progressor.throwIfCancelled();
@@ -205,7 +316,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final N nextParent;
 		if (resolved.isPresent() && gearType.isInstance(resolved.get())) {
 			final G typed = gearType.cast(resolved.get());
-			nextParent = factory.addNode(parent, typed, node.sourcePath());
+			final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
+			nextParent = factory.addNode(parent, typed, source);
 		} else {
 			nextParent = parent;
 		}
@@ -215,31 +327,50 @@ class RetroCrawlerImpl implements RetroCrawler {
 			return;
 		}
 		for (final ResolvedArchiveNode child : children) {
-			emitCompressed(child, nextParent, factory, gearType, progressor);
+			emitCompressed(archiveId, child, nextParent, factory, gearType, progressor);
 		}
 	}
 
-	private ResolvedArchiveNode resolve(final ArchiveNode node, final Path archiveRoot, final Path sourcePath,
-			final RetroIdRegistry retroIds, final ResolutionProgress progress, final Progressor progressor) {
+	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path archiveRoot,
+			final Path sourcePath, final ResolutionProgress progress, final Journal journal) {
+		try {
+			return resolver.resolveWithIdentity(artifact,
+					new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
+		} catch (final ProgressCancelledException cancellation) {
+			throw cancellation;
+		} catch (final RuntimeException failure) {
+			journal.record(new GearResolutionException(source, failure));
+			return Optional.empty();
+		} finally {
+			progress.complete(sourcePath);
+		}
+	}
+
+	private ResolvedArchiveNode resolve(final ArchiveId archiveId, final ArchiveNode node, final Path archiveRoot,
+			final Path sourcePath, final RetroIdRegistry retroIds, final ResolutionProgress progress,
+			final Journal journal) {
+		final Progressor progressor = journal.progressor();
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.artifact();
-		final Optional<GearResolution> resolution = artifact == null ? Optional.empty()
-				: resolver.resolveWithIdentity(artifact,
-						new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
-		resolution.ifPresent(value -> retroIds.register(value, sourcePath));
-		if (artifact != null) {
-			progress.complete(sourcePath);
+		final Path relativeSourcePath = archiveRoot.relativize(sourcePath);
+		final Optional<GearResolution> resolution;
+		if (artifact == null) {
+			resolution = Optional.empty();
+		} else {
+			final ARI source = ARI.of(collectionId, archiveId, relativeSourcePath);
+			resolution = resolveArtifact(source, artifact, archiveRoot, sourcePath, progress, journal);
+			resolution.ifPresent(value -> value.retroId().ifPresent(id -> retroIds.register(id, source)));
 		}
 
 		final List<ResolvedArchiveNode> children = new ArrayList<>();
 		final List<ArchiveNode> archiveChildren = node.children();
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
-				children.add(resolve(child, archiveRoot, sourcePath.resolve(child.folder()), retroIds, progress,
-						progressor));
+				children.add(resolve(archiveId, child, archiveRoot, sourcePath.resolve(child.folder()), retroIds,
+						progress, journal));
 			}
 		}
-		return new ResolvedArchiveNode(resolution, sourcePath, List.copyOf(children));
+		return new ResolvedArchiveNode(resolution, relativeSourcePath, List.copyOf(children));
 	}
 
 	private static final class ResolutionProgress {
@@ -259,25 +390,45 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 		private void complete(final Path sourcePath) {
 			completed++;
-			progressor.advanceTo(completed, "Resolved artifact " + completed + " of " + total + ": "
+			progressor.advanceTo(completed, "Examined artifact " + completed + " of " + total + ": "
 					+ PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
 
-	private record ResolvedBucket(Bucket bucket, ResolvedArchiveNode root) {
+	private record CrawledArchive(ArchiveDescriptor descriptor, Archive clues) {
 	}
 
-	private record ResolvedArchiveNode(Optional<GearResolution> resolution, Path sourcePath,
-			List<ResolvedArchiveNode> children) {
+	private record ResolvedArchive(ArchiveDescriptor descriptor, ResolvedArchiveNode root) {
+	}
+
+	private record ResolvedArchiveNode(Optional<GearResolution> resolution,
+			// Retained as a Path to avoid constructing an ARI for every archive node.
+			Path relativeSourcePath, List<ResolvedArchiveNode> children) {
+	}
+
+	private record RegisteredArchive(ArchiveDescriptor descriptor, ArchiveManager manager, ArchiveSource source) {
+	}
+
+	private record ModelArchiveDefinition(ArchiveDescriptor archiveDescriptor, Model model)
+			implements ArchiveDefinition {
+
+		@Override
+		public ArchiveFolderClueFinder archiveFolderClueFinder() {
+			return model.archiveFolderClueFinder();
+		}
+
+		@Override
+		public List<ArchivePathFilter> pathFilters() {
+			return model.pathFilters();
+		}
 	}
 
 	private static final class RetroIdRegistry {
 
 		private final Map<Object, List<String>> occurrences = new LinkedHashMap<>();
 
-		private void register(final GearResolution resolution, final Path sourcePath) {
-			resolution.retroId().ifPresent(
-					id -> occurrences.computeIfAbsent(id, ignored -> new ArrayList<>()).add(sourcePath.toString()));
+		private void register(final Object retroId, final ARI source) {
+			occurrences.computeIfAbsent(retroId, ignored -> new ArrayList<>()).add(source.toString());
 		}
 
 		private void assertUnique() {

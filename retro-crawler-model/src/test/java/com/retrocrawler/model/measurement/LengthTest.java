@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.model.measurement.Length.Unit;
 
 class LengthTest {

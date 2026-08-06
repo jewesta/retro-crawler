@@ -2,7 +2,7 @@ package com.retrocrawler.app.cli;
 
 import java.util.Objects;
 
-import com.retrocrawler.core.stash.GearBucket;
+import com.retrocrawler.core.stash.ArchiveGear;
 import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.core.stash.Stash;
 
@@ -14,9 +14,9 @@ final class AsciiTreePrinter {
 
 	static <G> void printStash(final Stash<G> stash) {
 		Objects.requireNonNull(stash, "stash");
-		for (final GearBucket<G> bucket : stash.buckets()) {
-			System.out.println(String.valueOf(bucket.bucket()));
-			final var roots = bucket.roots();
+		for (final ArchiveGear<G> archive : stash.archives()) {
+			System.out.println(archive.archive().name() + " [" + archive.archive().root() + "]");
+			final var roots = archive.roots();
 			for (int i = 0; i < roots.size(); i++) {
 				final boolean last = i == roots.size() - 1;
 				printNode(roots.get(i), "", last);

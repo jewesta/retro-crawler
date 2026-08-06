@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.Confidence;
 import com.retrocrawler.core.util.RetroAttribute;
 
 /**

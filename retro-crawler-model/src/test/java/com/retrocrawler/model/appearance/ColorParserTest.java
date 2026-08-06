@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.archive.clues.Confidence;
+import com.retrocrawler.core.gear.Confidence;
 
 class ColorParserTest {
 

@@ -20,19 +20,22 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.ArchiveRoots;
+import com.retrocrawler.core.archive.ArchiveDescriptor;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class AnonymousClueAmbiguityTest {
+
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
 
 	@TempDir
 	private Path archiveRoot;
@@ -40,11 +43,11 @@ class AnonymousClueAmbiguityTest {
 	@Test
 	void retainsAnAnonymousClueWhenEquallyConfidentParsersDisagree() throws IOException {
 		Files.createDirectory(archiveRoot.resolve("ambiguous"));
-		final Model model = Model.from(Set.of(AmbiguousArchive.class, AmbiguousGear.class),
-				ArchiveRoots.from(archiveRoot));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository()).build();
+		final Model model = Model.from(Set.of(AmbiguousArchive.class, AmbiguousGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
+				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<AmbiguousGear> gear = crawler.crawlGear(new Progressor(), ReindexScope.all(), AmbiguousGear.class);
+		final List<AmbiguousGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), AmbiguousGear.class);
 
 		assertNull(gear.getFirst().firstMeaning);
 		assertNull(gear.getFirst().secondMeaning);
@@ -80,8 +83,8 @@ class AnonymousClueAmbiguityTest {
 	public static final class AmbiguousClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return "ambiguous".equals(folderName) ? Set.of(Clue.of("overlap")) : Set.of();
+		public Clues find(final String folderName) {
+			return "ambiguous".equals(folderName) ? Clues.of(Clue.of("overlap")) : Clues.none();
 		}
 	}
 

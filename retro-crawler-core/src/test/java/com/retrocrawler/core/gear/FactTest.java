@@ -9,7 +9,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.Confidence;
 
 class FactTest {
 

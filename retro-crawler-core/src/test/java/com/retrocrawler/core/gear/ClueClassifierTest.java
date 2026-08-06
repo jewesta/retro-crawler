@@ -1,7 +1,7 @@
 package com.retrocrawler.core.gear;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
@@ -9,6 +9,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
+import com.retrocrawler.core.archive.clues.DuplicateClueException;
 
 class ClueClassifierTest {
 
@@ -16,24 +18,27 @@ class ClueClassifierTest {
 	void classifiesAnAnonymousKnownKeyAsAMissingValueClue() {
 		final ClueClassifier classifier = new ClueClassifier(Set.of("sn"));
 
-		final Set<Clue> clues = classifier.classify(Set.of(Clue.of("SN"), Clue.of("AGP"), Clue.of("")));
+		final Clues clues = classifier.classify(Clues.of(Clue.of("SN"), Clue.of("AGP"), Clue.of("")));
 
-		assertTrue(clue(clues, "sn").isMissingValue());
+		assertTrue(clues.get("sn").orElseThrow().isMissingValue());
 		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().equals(Set.of("AGP"))));
 		assertFalse(clues.stream().anyMatch(value -> value.value().contains("")));
 	}
 
 	@Test
-	void letsARealValueReplaceAMissingValueFromAnotherFinder() {
+	void rejectsARealValueAndMissingValueFromSeparateClues() {
 		final ClueClassifier classifier = new ClueClassifier(Set.of("sn"));
+		final Clues observed = Clues.of(Clue.of("SN"), Clue.of("sn", "12345"));
 
-		final Set<Clue> clues = classifier.classify(Set.of(Clue.of("SN"), Clue.of("sn", "12345")));
+		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
+				() -> classifier.classify(observed));
 
-		assertEquals(Set.of("12345"), clue(clues, "sn").value());
-		assertFalse(clue(clues, "sn").isMissingValue());
-	}
-
-	private static Clue clue(final Set<Clue> clues, final String key) {
-		return clues.stream().filter(candidate -> key.equals(candidate.key())).findFirst().orElseThrow();
+		/*
+		 * The rejected observation is named in its raw form. Classifying strips
+		 * the anonymous clue down to a missing-value clue, so the message would
+		 * otherwise not show what the archive actually said.
+		 */
+		assertTrue(failure.getMessage().contains("sn"));
+		assertTrue(failure.getMessage().contains("SN"));
 	}
 }

@@ -25,6 +25,7 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -73,7 +74,7 @@ class ModelParserFactoryTest {
 
 		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
 
-		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "custom-on")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "custom-on")));
 		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
@@ -138,7 +139,7 @@ class ModelParserFactoryTest {
 		assertEquals(List.of("state"), keys);
 		assertEquals(0, FactorySelectedEnumParser.instances);
 
-		final Artifact artifact = new Artifact(Set.of(Clue.of("state", "factory-value")));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "factory-value")));
 		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
@@ -171,7 +172,7 @@ class ModelParserFactoryTest {
 		assertTrue(failure.getMessage().contains(AutoDetectParser.class.getSimpleName()));
 	}
 
-	@RetroCollection(id = "annotation_default_parsers", locations = "/not/read")
+	@RetroCollection(id = "annotation_default_parsers")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(string = AnnotationStringParser.class, integer = AnnotationIntegerParser.class,
 			instant = AnnotationInstantParser.class, localDate = AnnotationLocalDateParser.class,
@@ -179,18 +180,18 @@ class ModelParserFactoryTest {
 	public static final class AnnotatedDefaultsCollection {
 	}
 
-	@RetroCollection(id = "built_in_default_parsers", locations = "/not/read")
+	@RetroCollection(id = "built_in_default_parsers")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	public static final class BuiltInDefaultsCollection {
 	}
 
-	@RetroCollection(id = "annotation_default_enum_parser", locations = "/not/read")
+	@RetroCollection(id = "annotation_default_enum_parser")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = AnnotationEnumParser.class)
 	public static final class AnnotatedEnumDefaultsCollection {
 	}
 
-	@RetroCollection(id = "factory_default_enum_parser", locations = "/not/read")
+	@RetroCollection(id = "factory_default_enum_parser")
 	@RetroClues(fromFolderName = EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = FactorySelectedEnumParser.class)
 	public static final class FactoryEnumDefaultsCollection {
@@ -464,8 +465,8 @@ class ModelParserFactoryTest {
 	public static final class EmptyClueFinder implements FolderNameClueFinder {
 
 		@Override
-		public Set<Clue> find(final String folderName) {
-			return Set.of();
+		public Clues find(final String folderName) {
+			return Clues.none();
 		}
 	}
 }

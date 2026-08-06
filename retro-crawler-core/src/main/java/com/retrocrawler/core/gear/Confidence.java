@@ -1,4 +1,4 @@
-package com.retrocrawler.core.archive.clues;
+package com.retrocrawler.core.gear;
 
 /**
  * Do not change order, ordinal is used for priority.

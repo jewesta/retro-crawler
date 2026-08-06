@@ -1,7 +1,5 @@
 package com.retrocrawler.core.archive.clues;
 
-import java.util.Set;
-
 /**
  * Extracts clues for the current archive folder from its transient, pruned
  * folder tree.
@@ -14,6 +12,6 @@ import java.util.Set;
  */
 public interface TreeClueFinder extends ClueFinder {
 
-	Set<Clue> find(ArchiveFolderView folder);
+	Clues find(ArchiveFolderView folder);
 
 }
