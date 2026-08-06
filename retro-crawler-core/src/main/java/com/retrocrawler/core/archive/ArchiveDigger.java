@@ -26,7 +26,7 @@ import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
@@ -52,7 +52,7 @@ public class ArchiveDigger {
 
 	private final ArchiveDescriptor descriptor;
 
-	private final ArchivePathClueFinder clueFinder;
+	private final ArchiveFolderClueFinder clueFinder;
 
 	private final CrawlPlanning planning;
 

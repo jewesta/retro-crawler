@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
@@ -141,7 +141,7 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final Progressor cancellingProgressor = new Progressor();
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
 			cancellingProgressor.cancel("Stop.");
 			return Clues.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
@@ -159,7 +159,7 @@ class ArchiveManagerTest {
 		Files.createDirectory(archiveDirectory.resolve("broken"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(folder -> {
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
 			throw new IllegalStateException("Finder broke at " + folder);
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
@@ -341,7 +341,7 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(
 				folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);

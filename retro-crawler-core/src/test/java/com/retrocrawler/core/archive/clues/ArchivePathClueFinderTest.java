@@ -32,7 +32,7 @@ class ArchivePathClueFinderTest {
 		final ArchiveFile image = () -> folder.path().resolve("front.jpeg");
 		final FileNameClueFinder fileNames = paths -> Clues
 				.of(Clue.of("image", paths.stream().map(FileNameClueFinder::portablePath).collect(Collectors.toSet())));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(null, List.of(), List.of(fileNames));
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(null, List.of(), List.of(fileNames));
 
 		final Clues clues = finder.find(folder, List.of(image), emptySession(root), new Progressor());
 
@@ -45,7 +45,7 @@ class ArchivePathClueFinderTest {
 		final ArchiveFolder folder = () -> root.path().resolve("folder");
 		final FolderNameClueFinder folderFinder = ignored -> Clues.of(Clue.of("bus", "ISA"));
 		final TreeClueFinder treeFinder = ignored -> Clues.of(Clue.of("bus", "PCI"));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(folderFinder, List.of(), List.of(),
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(folderFinder, List.of(), List.of(),
 				List.of(treeFinder));
 		final Progressor progressor = new Progressor();
 		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
@@ -64,7 +64,7 @@ class ArchivePathClueFinderTest {
 		final ArchiveFolder folder = () -> root.path().resolve("folder");
 		final FolderNameClueFinder folderFinder = ignored -> Clues.of(Clue.of("folder observation"));
 		final TreeClueFinder treeFinder = ignored -> Clues.of(Clue.of("tree observation"));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(folderFinder, List.of(), List.of(),
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(folderFinder, List.of(), List.of(),
 				List.of(treeFinder));
 		final Progressor progressor = new Progressor();
 		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
@@ -80,7 +80,7 @@ class ArchivePathClueFinderTest {
 	void leavesLocalCluesUntouchedWhenNoTreeFinderIsConfigured() {
 		final ArchiveFolder root = () -> Path.of("/archive");
 		final ArchiveFolder folder = () -> root.path().resolve("folder");
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(ignored -> Clues.of(Clue.of("bus", "ISA")),
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(ignored -> Clues.of(Clue.of("bus", "ISA")),
 				List.of(), List.of());
 		final Progressor progressor = new Progressor();
 		final Clues localClues = finder.find(folder, List.of(), emptySession(root), progressor);
@@ -99,7 +99,7 @@ class ArchivePathClueFinderTest {
 			throw randomFailure;
 		};
 		final FileNameClueFinder working = ignored -> Clues.of(Clue.of("image", "front.jpeg"));
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(broken, List.of(), List.of(working));
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(broken, List.of(), List.of(working));
 		final Progressor progressor = new Progressor(FailureMode.FAIL_LATE);
 
 		final Clues clues = finder.find(folder, List.of(file), emptySession(root), progressor);

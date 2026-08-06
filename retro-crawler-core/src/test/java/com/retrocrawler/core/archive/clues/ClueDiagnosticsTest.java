@@ -118,7 +118,7 @@ class ClueDiagnosticsTest {
 	void reportsTheFinderAndSourceForAFailureTheFinderDidNotLocate() {
 		final ArchiveFolder root = () -> Path.of("/archive");
 		final ArchiveFolder folder = () -> root.path().resolve("Example Board");
-		final ArchivePathClueFinder finder = new ArchivePathClueFinder(new BracketishFinder(), List.of(), List.of());
+		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(new BracketishFinder(), List.of(), List.of());
 
 		final ClueFindingException failure = assertThrows(ClueFindingException.class,
 				() -> finder.find(folder, List.of(), session(root), new Progressor()));

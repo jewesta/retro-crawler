@@ -25,7 +25,7 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
@@ -50,14 +50,14 @@ public final class Model {
 
 	private final String collectionId;
 	private final String collectionName;
-	private final ArchivePathClueFinder archivePathClueFinder;
+	private final ArchiveFolderClueFinder archivePathClueFinder;
 	private final Configuration configuration;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
 	private final List<ArchivePathFilter> pathFilters;
 
 	private Model(final String collectionId, final String collectionName,
-			final ArchivePathClueFinder archivePathClueFinder, final Configuration configuration,
+			final ArchiveFolderClueFinder archivePathClueFinder, final Configuration configuration,
 			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
 		this.collectionId = Objects.requireNonNull(collectionId, "collectionId");
 		this.collectionName = Objects.requireNonNull(collectionName, "collectionName");
@@ -113,7 +113,7 @@ public final class Model {
 		return Optional.ofNullable(workingDirectory);
 	}
 
-	public ArchivePathClueFinder archivePathClueFinder() {
+	public ArchiveFolderClueFinder archivePathClueFinder() {
 		return archivePathClueFinder;
 	}
 
@@ -157,7 +157,7 @@ public final class Model {
 				declaration.type(), runtimeCatalogConfigurations);
 		final Configuration configuration = effectiveConfiguration(collection, runtimeConfiguration);
 		final RetroFactDefaultParser defaultParsers = declaration.type().getAnnotation(RetroFactDefaultParser.class);
-		final ArchivePathClueFinder clueFinder = ArchivePathClueFinder.of(clues);
+		final ArchiveFolderClueFinder clueFinder = ArchiveFolderClueFinder.of(clues);
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
 				catalogConfigurations, defaultParsers, runtimeParserFactories);
 

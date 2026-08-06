@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileContentClueFinder;
@@ -98,7 +98,7 @@ class ArchiveDiggerSourceTest {
 	private static ArchiveDigger digger(final Path root, final ArchiveSource source,
 			final FileContentClueFinder contentFinder) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test", root);
-		final ArchivePathClueFinder clues = new ArchivePathClueFinder(
+		final ArchiveFolderClueFinder clues = new ArchiveFolderClueFinder(
 				name -> "gear".equals(name) ? Clues.of(Clue.of("kind", "gear")) : Clues.none(), List.of(contentFinder),
 				List.of());
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), source);

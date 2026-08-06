@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.FileNameClueFinder;
@@ -84,10 +84,10 @@ class ArchiveDiggerPathFilterTest {
 		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", root);
 	}
 
-	private static ArchivePathClueFinder clueFinder() {
+	private static ArchiveFolderClueFinder clueFinder() {
 		final FileNameClueFinder files = paths -> Clues
 				.of(Clue.of("files", Set.copyOf(paths.stream().map(Path::getFileName).map(Path::toString).toList())));
-		return new ArchivePathClueFinder(folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of(files));
+		return new ArchiveFolderClueFinder(folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of(files));
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

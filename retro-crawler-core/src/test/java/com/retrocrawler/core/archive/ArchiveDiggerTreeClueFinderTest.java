@@ -23,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
-import com.retrocrawler.core.archive.clues.ArchivePathClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
@@ -55,7 +55,7 @@ class ArchiveDiggerTreeClueFinderTest {
 			}
 			return originClues(folder);
 		};
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(
 				name -> "Child artifact".equals(name) ? Clues.of(Clue.of("kind", "part")) : Clues.none(), List.of(),
 				List.of(), List.of(treeFinder));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
@@ -80,7 +80,7 @@ class ArchiveDiggerTreeClueFinderTest {
 		final TreeClueFinder treeFinder = folder -> folder.folders().stream()
 				.anyMatch(child -> "Kleinanzeigen".equals(child.name())) ? Clues.of(Clue.of("origin", "Kleinanzeigen"))
 						: Clues.none();
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(null, List.of(), List.of(),
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(null, List.of(), List.of(),
 				List.of(treeFinder));
 
 		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder)).dig(root,
@@ -97,7 +97,7 @@ class ArchiveDiggerTreeClueFinderTest {
 		Files.createDirectory(broken.resolve("Nested artifact"));
 		final IllegalStateException randomFailure = new IllegalStateException("Broken folder clue.");
 		final List<String> rootFolders = new ArrayList<>();
-		final ArchivePathClueFinder clueFinder = new ArchivePathClueFinder(name -> {
+		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(name -> {
 			if ("Broken artifact".equals(name)) {
 				throw randomFailure;
 			}

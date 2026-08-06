@@ -16,7 +16,7 @@ import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Reflection;
 
-public class ArchivePathClueFinder {
+public class ArchiveFolderClueFinder implements ClueFinder{
 
 	private final FolderNameClueFinder folderNameClueFinder;
 
@@ -26,13 +26,13 @@ public class ArchivePathClueFinder {
 
 	private final List<TreeClueFinder> treeClueFinders;
 
-	public ArchivePathClueFinder(final FolderNameClueFinder folderNameClueFinder,
+	public ArchiveFolderClueFinder(final FolderNameClueFinder folderNameClueFinder,
 			final List<FileContentClueFinder> fileContentClueFinders,
 			final List<FileNameClueFinder> fileNameClueFinders) {
 		this(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders, List.of());
 	}
 
-	public ArchivePathClueFinder(final FolderNameClueFinder folderNameClueFinder,
+	public ArchiveFolderClueFinder(final FolderNameClueFinder folderNameClueFinder,
 			final List<FileContentClueFinder> fileContentClueFinders,
 			final List<FileNameClueFinder> fileNameClueFinders, final List<TreeClueFinder> treeClueFinders) {
 		this.folderNameClueFinder = folderNameClueFinder;
@@ -173,7 +173,7 @@ public class ArchivePathClueFinder {
 		return clues.clues();
 	}
 
-	public static ArchivePathClueFinder of(final RetroClues clues) {
+	public static ArchiveFolderClueFinder of(final RetroClues clues) {
 		Objects.requireNonNull(clues, "clues");
 
 		final FolderNameClueFinder folderNameClueFinder;
@@ -193,7 +193,7 @@ public class ArchivePathClueFinder {
 				.map(Reflection::newInstance).map(TreeClueFinder.class::cast).toList();
 
 		// Let the constructor enforce that at least one finder is present.
-		return new ArchivePathClueFinder(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders,
+		return new ArchiveFolderClueFinder(folderNameClueFinder, fileContentClueFinders, fileNameClueFinders,
 				treeClueFinders);
 	}
 
