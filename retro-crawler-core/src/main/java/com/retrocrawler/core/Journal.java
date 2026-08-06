@@ -26,11 +26,11 @@ public final class Journal {
 	private final List<Exception> failures = new ArrayList<>();
 
 	public Journal() {
-		this(new Progressor(), FailureMode.FAIL_EARLY);
+		this(Progressor.create(), FailureMode.FAIL_EARLY);
 	}
 
 	public Journal(final FailureMode failureMode) {
-		this(new Progressor(), failureMode);
+		this(Progressor.create(), failureMode);
 	}
 
 	public Journal(final Progressor progressor) {

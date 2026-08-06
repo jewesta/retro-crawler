@@ -130,6 +130,18 @@ plus crawler-level aggregation. `crawlAll` is what pays for it.
     the root timestamp remains the last complete archive crawl. Adding the
     persisted timestamp changes the node shape and advances the cache to format
     5.
+16. Progress tracking again follows the PEPPER 2 architecture rather than the
+    initial RetroCrawler reimplementation. `ProgressSupplier` is the read-only
+    monitor contract, `ProgressController` drives and splits progress, and
+    `Progressor` combines both. `AbstractProgressor` and `ProgressorImpl`
+    restore `reset(max)`, base conversions, delegating weighted
+    sub-progressors, the rolling update-token ETA, collection following,
+    automatic progress, and the no-op progressor. RetroCrawler layers flexible
+    `ProgressStage` values, accuracy and work units, cancellation, and terminal
+    state onto that mechanism. The port deliberately removes PEPPER's
+    `Translatable`, logger, Spring, Jackson, Apache Collections, and console
+    integration dependencies; `Journal` remains the separate umbrella for
+    progress and recorded failures.
 
 ## Archive Resource Identifiers
 
@@ -553,6 +565,10 @@ file resource values from archive-root-relative to artifact-relative, and format
 - [x] Add `Journal`-controlled fail-early and fail-late operation modes across
       clue finding and gear resolution, retaining every exception occurrence
       while bounding only final rendering.
+- [x] Replace the provisional progress implementation with a dependency-free
+      PEPPER 2 port, restoring its controller/supplier split, normalized
+      sub-progressors, scaling, update-token ETA, and utility controllers while
+      retaining RetroCrawler's structured operation state.
 - [ ] Follow-up issues for the remaining open review findings: artifact
       location and repository removal and enumeration.
 - [x] Run focused and reactor verification.
@@ -610,3 +626,14 @@ file resource values from archive-root-relative to artifact-relative, and format
   continuation across archives and the no-partial-cache boundary while showing
   that the numeric-key case is an isolated occurrence rather than a widespread
   naming pattern.
+- Re-verified after restoring the PEPPER 2 Progressor architecture: canonical
+  `prettify --assert --select uncommitted` passed for all 22 selected Java
+  sources, and `mvn clean install` passed for the full seven-module reactor with
+  363 tests, 0 failures, and 0 errors. The focused Progressor tests cover
+  controller scaling, base conversions, weighted and nested sub-progressors,
+  reset, no-op behavior, cancellation, structured stages, terminal states, and
+  serialized parallel advancement.
+- The updated `prettify --assert --select branch` also identified 13
+  already-committed Issue 34 sources that its current cleanup rules would now
+  rewrite. They are unrelated to the Progressor port and were deliberately not
+  folded into this change.

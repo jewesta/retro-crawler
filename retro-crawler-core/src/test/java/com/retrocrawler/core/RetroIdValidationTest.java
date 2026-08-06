@@ -138,7 +138,8 @@ class RetroIdValidationTest {
 		Files.createDirectories(archiveRoot.resolve("id-200002"));
 		final List<ProgressSnapshot> events = new java.util.ArrayList<>();
 
-		crawler().crawlAllGear(new Journal(Progressor.observing(events::add)), ReindexScope.all(), TestGear.class);
+		crawler().crawlAllGear(new Journal(Progressor.observing(progress -> events.add(progress.snapshot()))),
+				ReindexScope.all(), TestGear.class);
 
 		final List<ProgressSnapshot> resolving = events.stream()
 				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();

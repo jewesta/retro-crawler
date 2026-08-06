@@ -42,7 +42,7 @@ class ArchiveDiggerPathFilterTest {
 		final ArchiveDefinition archive = definition(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
 				new IgnoreQNAPSystemPaths());
 		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 		final Journal journal = new Journal(progressor);
 		final ArchiveNode result;
 		final ArchiveDigPlan plan;

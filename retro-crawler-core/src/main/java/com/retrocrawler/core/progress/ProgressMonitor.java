@@ -1,7 +1,7 @@
 package com.retrocrawler.core.progress;
 
 /**
- * Observes immutable progress snapshots.
+ * Observes immutable progress suppliers.
  *
  * <p>
  * Adapted from progressor code developed by Relimit GmbH. Used in RetroCrawler
@@ -10,5 +10,5 @@ package com.retrocrawler.core.progress;
 @FunctionalInterface
 public interface ProgressMonitor {
 
-	void onProgress(ProgressSnapshot progress);
+	void monitorProgress(ProgressSupplier progress);
 }

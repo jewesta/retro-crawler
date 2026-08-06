@@ -67,7 +67,8 @@ class RetroCrawlerResolutionFailureTest {
 		final Path duplicate = Files.createDirectory(archiveRoot.resolve("duplicate"));
 		Files.createDirectory(duplicate.resolve("explosion"));
 		final List<ProgressSnapshot> events = new ArrayList<>();
-		final Journal journal = new Journal(Progressor.observing(events::add), FailureMode.FAIL_LATE);
+		final Journal journal = new Journal(Progressor.observing(progress -> events.add(progress.snapshot())),
+				FailureMode.FAIL_LATE);
 		final RecordingFactory factory = new RecordingFactory();
 
 		final CrawlException report = assertThrows(CrawlException.class,

@@ -41,7 +41,7 @@ class JournalTest {
 
 	@Test
 	void retainsTheConfiguredProgressor() {
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 
 		assertSame(progressor, new Journal(progressor).progressor());
 	}

@@ -138,7 +138,7 @@ class RetroCrawlerBuilderTest {
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
 				.archive(ARCHIVE).build();
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 		final Journal journal = new Journal(progressor);
 		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
 

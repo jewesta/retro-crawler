@@ -35,7 +35,7 @@ class ArchiveDiggerPlanningTest {
 		createTree();
 		final ArchiveDigger digger = digger(new CrawlPlanning(3, 5, 100, Duration.ofMinutes(1)));
 		final List<ProgressSnapshot> events = new ArrayList<>();
-		final Progressor progressor = Progressor.observing(events::add);
+		final Progressor progressor = Progressor.observing(progress -> events.add(progress.snapshot()));
 		final Journal journal = new Journal(progressor);
 
 		final ArchiveDigPlan plan;
@@ -67,8 +67,8 @@ class ArchiveDiggerPlanningTest {
 
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			final ArchiveDigPlan plan = digger.plan(List.of(target), new Progressor());
-			final ArchiveDigTarget secondTarget = digger.target(session, second, new Progressor()).orElseThrow();
+			final ArchiveDigPlan plan = digger.plan(List.of(target), Progressor.create());
+			final ArchiveDigTarget secondTarget = digger.target(session, second, Progressor.create()).orElseThrow();
 
 			assertEquals(2, plan.analyzedDepth());
 			assertEquals(1, plan.totalRegions());
@@ -80,7 +80,7 @@ class ArchiveDiggerPlanningTest {
 	void reusesListingsCollectedByTheAnalysisSweep() throws IOException {
 		Files.createDirectory(root.resolve("known"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 		final Journal journal = new Journal(progressor);
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
@@ -98,7 +98,7 @@ class ArchiveDiggerPlanningTest {
 	void reusesEntryClassificationCollectedByTheAnalysisSweep() throws IOException {
 		final Path changingEntry = Files.createFile(root.resolve("changing-entry"));
 		final ArchiveDigger digger = digger(new CrawlPlanning(2, 1, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = new Progressor();
+		final Progressor progressor = Progressor.create();
 		final Journal journal = new Journal(progressor);
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
