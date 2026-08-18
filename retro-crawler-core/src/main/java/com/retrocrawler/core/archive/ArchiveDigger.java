@@ -44,7 +44,6 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
 
 public class ArchiveDigger {
@@ -85,12 +84,11 @@ public class ArchiveDigger {
 
 	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
 		Objects.requireNonNull(journal, "journal");
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Instant crawledAt = Instant.now();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
-			final ArchiveDigPlan plan = plan(List.of(target), progressor);
+			final ArchiveDigPlan plan = plan(List.of(target), journal);
 			final ArchiveNode result = dig(target, plan, crawledAt, journal);
 			final List<Exception> failures = journal.failures();
 			if (failures.size() > failuresBeforeCrawling) {
@@ -110,11 +108,11 @@ public class ArchiveDigger {
 		return new ArchiveDigTarget(session, root, root);
 	}
 
-	Optional<ArchiveDigTarget> target(final ArchiveSession session, final Path path, final Progressor progressor)
+	Optional<ArchiveDigTarget> target(final ArchiveSession session, final Path path, final Journal journal)
 			throws IOException {
 		Objects.requireNonNull(session, "session");
 		Objects.requireNonNull(path, "path");
-		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(journal, "journal");
 		final ArchiveFolder root = Objects.requireNonNull(session.root(), "session.root()");
 		final Path normalizedRoot = root.path().normalize();
 		final Path normalizedPath = path.normalize();
@@ -128,7 +126,7 @@ public class ArchiveDigger {
 
 		ArchiveFolder current = root;
 		for (final Path folderName : normalizedRoot.relativize(normalizedPath)) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			final Path expected = current.path().resolve(folderName).normalize();
 			final Optional<ArchiveFolder> child = sourceListing(session, current).folders().stream()
 					.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
@@ -140,10 +138,10 @@ public class ArchiveDigger {
 		return Optional.of(new ArchiveDigTarget(session, root, current));
 	}
 
-	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Progressor progressor) throws IOException {
+	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Journal journal) throws IOException {
 		Objects.requireNonNull(targets, "targets");
-		Objects.requireNonNull(progressor, "progressor");
-		progressor.throwIfCancelled();
+		Objects.requireNonNull(journal, "journal");
+		journal.throwIfCancelled();
 
 		final List<ArchiveDigPlan.Region> initialRegions = new ArrayList<>();
 		for (final ArchiveDigTarget target : targets) {
@@ -157,10 +155,10 @@ public class ArchiveDigger {
 		final Map<ArchiveDigPlan.FolderKey, FolderListing> analyzedListings = new LinkedHashMap<>();
 		List<ArchiveDigPlan.Region> frontier = initialRegions;
 		int depth = 0;
-		reportPlanning(progressor, depth, frontier.size(), false);
+		reportPlanning(journal, depth, frontier.size(), false);
 
 		while (frontier.size() < planning.targetRegions() && depth < planning.maximumDepth()) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 
 			final Set<ArchiveDigPlan.FolderKey> unanalyzed = frontier.stream().map(ArchiveDigPlan.Region::key)
 					.filter(key -> !analyzedListings.containsKey(key))
@@ -173,7 +171,7 @@ public class ArchiveDigger {
 			final List<ArchiveDigPlan.Region> next = new ArrayList<>();
 			boolean expanded = false;
 			for (final ArchiveDigPlan.Region region : frontier) {
-				progressor.throwIfCancelled();
+				journal.throwIfCancelled();
 				FolderListing listing = analyzedListings.get(region.key());
 				if (listing == null) {
 					listing = list(region.session(), region.folder());
@@ -192,13 +190,13 @@ public class ArchiveDigger {
 
 			depth++;
 			frontier = next;
-			reportPlanning(progressor, depth, frontier.size(), false);
+			reportPlanning(journal, depth, frontier.size(), false);
 			if (!expanded) {
 				break;
 			}
 		}
 
-		reportPlanning(progressor, depth, frontier.size(), true);
+		reportPlanning(journal, depth, frontier.size(), true);
 		return new ArchiveDigPlan(analyzedListings, frontier, depth);
 	}
 
@@ -207,12 +205,12 @@ public class ArchiveDigger {
 		return elapsed.compareTo(planning.maximumDuration()) >= 0;
 	}
 
-	private static void reportPlanning(final Progressor progressor, final int depth, final int regions,
+	private static void reportPlanning(final Journal journal, final int depth, final int regions,
 			final boolean complete) {
 		final String message = complete
 				? "Crawl planning complete at depth " + depth + ": " + regions + " approximate archive regions."
 				: "Planning crawl depth " + depth + ": " + regions + " candidate archive regions.";
-		progressor.indeterminate(CrawlProgressStages.PLANNING, message);
+		journal.indeterminate(CrawlProgressStages.PLANNING, message);
 	}
 
 	private FolderListing list(final ArchiveSession session, final ArchiveFolder folder) throws IOException {
@@ -277,12 +275,11 @@ public class ArchiveDigger {
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
 			final ArchiveDigPlan plan, final Instant crawledAt, final Journal journal, final boolean parentInsideRegion)
 			throws IOException {
-		final Progressor progressor = journal.progressor();
 		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(session, folder);
 		final boolean insideRegion = parentInsideRegion || startsRegion;
-		plan.reportCurrent(folder, insideRegion, progressor);
+		plan.reportCurrent(folder, insideRegion, journal);
 
 		FolderListing found = plan.listing(session, folder).orElse(null);
 		if (found == null) {
@@ -292,25 +289,25 @@ public class ArchiveDigger {
 
 		final Path relativeFolder = root.path().relativize(folder.path());
 		final int failuresBeforeFinding = journal.failureCount();
-		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor,
+		final Clues localClues = clueFinder.find(folder, listing.files(), session, journal,
 				failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
 		boolean failed = journal.failureCount() > failuresBeforeFinding;
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 
 		final List<DigResult> children = new ArrayList<>();
 		for (final ArchiveFolder child : listing.folders()) {
 			children.add(digFolder(session, root, child, plan, crawledAt, journal, insideRegion));
 		}
 
-		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
+		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, journal);
 		Clues clues = localClues;
 		if (!failed) {
 			final int failuresBeforeEnriching = journal.failureCount();
-			clues = clueFinder.enrich(localClues, folderView, progressor,
+			clues = clueFinder.enrich(localClues, folderView, journal,
 					failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
 			failed = journal.failureCount() > failuresBeforeEnriching;
 		}
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 
 		Artifact artifact = null;
 		FolderOutcome outcome;
@@ -340,13 +337,13 @@ public class ArchiveDigger {
 		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
 		final ArchiveNode result = new ArchiveNode(pathName, crawledAt, artifact, effectiveChildren);
 		if (startsRegion) {
-			plan.completeRegion(folder, progressor);
+			plan.completeRegion(folder, journal);
 		}
 		return new DigResult(result, outcome);
 	}
 
 	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
-			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
+			final List<ArchiveFile> files, final List<DigResult> children, final Journal journal) {
 		/*
 		 * Children are pruned deliberately, not as an optimization. The archive
 		 * tree expresses gear containment, never gear type, so a tree finder
@@ -367,7 +364,7 @@ public class ArchiveDigger {
 				case FolderOutcome.Failed ignored -> Stream.<ArchiveFolderView> empty();
 				}).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
-				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
+				.map(file -> new DefaultArchiveFileView(session, file, journal)).map(ArchiveFileView.class::cast)
 				.toList();
 		return new DefaultArchiveFolderView(folder.name(), metadataFolders, fileViews);
 	}
@@ -424,13 +421,13 @@ public class ArchiveDigger {
 		}
 	}
 
-	private record DefaultArchiveFileView(ArchiveSession session, ArchiveFile file, Progressor progressor)
+	private record DefaultArchiveFileView(ArchiveSession session, ArchiveFile file, Journal journal)
 			implements ArchiveFileView {
 
 		private DefaultArchiveFileView {
 			Objects.requireNonNull(session, "session");
 			Objects.requireNonNull(file, "file");
-			Objects.requireNonNull(progressor, "progressor");
+			Objects.requireNonNull(journal, "journal");
 		}
 
 		@Override
@@ -441,10 +438,10 @@ public class ArchiveDigger {
 		@Override
 		public <T> Optional<T> peek(final Function<? super InputStream, ? extends T> inspector) {
 			Objects.requireNonNull(inspector, "inspector");
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			try {
 				final Optional<T> result = session.access(file, inspector::apply);
-				progressor.throwIfCancelled();
+				journal.throwIfCancelled();
 				return result;
 			} catch (final IOException e) {
 				throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);

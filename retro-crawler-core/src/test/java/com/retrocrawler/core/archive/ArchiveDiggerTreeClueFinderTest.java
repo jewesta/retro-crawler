@@ -114,7 +114,7 @@ class ArchiveDiggerTreeClueFinderTest {
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			archive = digger.dig(target, digger.plan(List.of(target), journal.progressor()), journal);
+			archive = digger.dig(target, digger.plan(List.of(target), journal), journal);
 		}
 
 		assertTrue(rootFolders.isEmpty());

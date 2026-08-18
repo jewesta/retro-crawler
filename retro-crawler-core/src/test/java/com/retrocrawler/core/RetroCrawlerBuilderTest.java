@@ -43,6 +43,7 @@ import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.progress.ProgressState;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Stash;
@@ -173,6 +174,49 @@ class RetroCrawlerBuilderTest {
 		assertThrows(IllegalStateException.class, () -> crawler.crawlAll(journal, ReindexScope.none(), failingFactory));
 		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
 		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
+	}
+
+	@Test
+	void preservesCrawlerCancellationAsTerminalCancellation() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
+				.archive(ARCHIVE).build();
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
+		final GearTreeFactory<Object, Object, Object> cancellingFactory = new GearTreeFactory<>() {
+
+			@Override
+			public Class<Object> gearType() {
+				return Object.class;
+			}
+
+			@Override
+			public void beginArchive(final ArchiveDescriptor archive) {
+				// Nothing to record.
+			}
+
+			@Override
+			public void endArchive(final ArchiveDescriptor archive) {
+				// Nothing to record.
+			}
+
+			@Override
+			public Object addNode(final Object parent, final Object gear) {
+				throw new AssertionError("No gear expected.");
+			}
+
+			@Override
+			public Object build() {
+				journal.cancel("Stopping crawl.");
+				journal.throwIfCancelled();
+				throw new AssertionError("Cancellation must abort the crawl.");
+			}
+		};
+
+		assertThrows(ProgressCancelledException.class,
+				() -> crawler.crawlAll(journal, ReindexScope.none(), cancellingFactory));
+		assertEquals(ProgressState.CANCELLED, progressor.state());
+		assertEquals("Stopping crawl.", progressor.message());
 	}
 
 	@Test

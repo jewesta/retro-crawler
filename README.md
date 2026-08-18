@@ -397,11 +397,11 @@ repository boundary so an incompatible payload is never parsed as the current
 
 ## Journal, Progress, and Failure Handling
 
-Crawler operations accept an operation-scoped `Journal`. Its `Progressor`
-publishes immutable, structured snapshots with an extensible stage,
-human-readable message, exact or approximate work units, timing, and operation
-state. A lightweight message view is available for simple command-line or GUI
-integrations:
+Crawler operations accept an operation-scoped `Journal`. The journal owns the
+progress lifecycle together with the failure record. Its underlying
+`Progressor` remains a neutral progress mechanism, while immutable structured
+progress is exposed read-only through `journal.progress()`. A lightweight
+message view is available for simple command-line or GUI integrations:
 
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
@@ -409,10 +409,10 @@ Journal journal = new Journal(progressor);
 List<MyGear> gear = crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
 ```
 
-Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl
-at its next checkpoint. For larger workflows, progressors can be divided into
-nested equal or weighted windows with `splitIntoEqualParts(...)` and
-`splitInRelationTo(...)`.
+Once supplied, progress control belongs to the journal. Calling
+`journal.cancel("Stopping.")` is thread-visible and aborts the crawl at its next
+checkpoint. Successful operations complete their journal automatically;
+failures and cancellation retain distinct terminal states.
 
 Journals fail early by default. A catalogue-validation crawl can instead record
 every independently recoverable clue-finding or gear-resolution exception and

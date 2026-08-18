@@ -142,7 +142,7 @@ class ArchiveManagerTest {
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final Journal cancellingJournal = new Journal();
 		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
-			cancellingJournal.progressor().cancel("Stop.");
+			cancellingJournal.cancel("Stop.");
 			return Clues.of(Clue.of("folder", folder));
 		}, List.of(), List.of());
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),

@@ -21,6 +21,7 @@ import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.ProgressSupplier;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.demo.DemoModels;
 import com.vaadin.flow.component.AttachEvent;
@@ -81,7 +82,7 @@ public class SearchView extends HorizontalLayout {
 
 	private final Paragraph messageBar = new Paragraph();
 
-	private Progressor progressor;
+	private Journal journal;
 
 	private final List<DemoArchive> demoArchives;
 
@@ -155,7 +156,9 @@ public class SearchView extends HorizontalLayout {
 
 		final Button cancel = retroButton("Cancel Indexing");
 		cancel.addClickListener(event -> {
-			progressor.cancel("Cancel requested...");
+			if (journal != null) {
+				journal.cancel("Cancel requested...");
+			}
 			logger.info("Repository indexing cancelled.");
 		});
 
@@ -259,23 +262,22 @@ public class SearchView extends HorizontalLayout {
 
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final DemoArchive archive = activeArchive;
-		final Progressor activeProgressor = createProgressor(ui);
-		final Journal journal = new Journal(activeProgressor);
+		final Journal activeJournal = new Journal(createProgressor(ui));
 		final RetroCrawler crawler = archive.crawler();
-		this.progressor = activeProgressor;
-		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
+		this.journal = activeJournal;
+		activeJournal.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return crawler.crawl(archive.archive().id(), journal, reindexScope, new VaadinTreeDataFactory());
+				return crawler.crawl(archive.archive().id(), activeJournal, reindexScope, new VaadinTreeDataFactory());
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}).thenAccept(successResult -> ui.access(() -> {
-			activeProgressor.complete(INDEX_READY);
+			messageBar.setText(INDEX_READY);
 			setParts(successResult);
 		})).exceptionally(failureException -> {
 			ui.access(() -> {
-				activeProgressor.fail(INDEX_FAILED + " " + failureException.getMessage());
+				messageBar.setText(INDEX_FAILED + " " + failureException.getMessage());
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
@@ -331,8 +333,8 @@ public class SearchView extends HorizontalLayout {
 		return parts;
 	}
 
-	protected Optional<Progressor> getProgressor() {
-		return Optional.ofNullable(progressor);
+	protected Optional<ProgressSupplier> getProgress() {
+		return Optional.ofNullable(journal).map(Journal::progress);
 	}
 
 	private static final Image drums(final int i) {

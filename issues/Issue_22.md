@@ -152,6 +152,12 @@ Lifecycle vocabulary should distinguish:
 - **pull/query** — pure reads of the installed state that never crawl or
   resolve.
 
+Each refresh or reindex is accompanied by one operation-scoped `Journal`. The
+journal is the authority for progress stages, advancement, cancellation, and
+terminal state as well as recoverable failures. The neutral `Progressor`
+remains an injected mechanism behind it; operation code and callers report and
+cancel through the journal, while observation is exposed read-only.
+
 `rebuild` is avoided because it does not say whether clues are being reused,
 sources are being reread, or only Gear is being resolved again. Refresh and
 reindex are visibly state-changing operations even if they live on the

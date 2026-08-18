@@ -40,7 +40,6 @@ import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressCancelledException;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
 class RetroCrawlerImpl implements RetroCrawler {
@@ -179,26 +178,17 @@ class RetroCrawlerImpl implements RetroCrawler {
 		Objects.requireNonNull(journal, "journal");
 		Objects.requireNonNull(reindexScope, "reindexScope");
 		Objects.requireNonNull(factory, "factory");
-		final Progressor progressor = journal.progressor();
-		progressor.throwIfCancelled();
-
-		try {
-			return crawlToCompletion(selected, journal, reindexScope, factory);
-		} catch (final IOException | RuntimeException failure) {
-			reportFailure(progressor, failure);
-			throw failure;
-		}
+		return journal.track("Crawl", () -> crawlToCompletion(selected, journal, reindexScope, factory));
 	}
 
 	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Journal journal,
 			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
-		final Progressor progressor = journal.progressor();
 		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
 		requireRoutableSubtrees(selected, reindexScope);
 
 		final List<CrawledArchive> crawled = new ArrayList<>();
 		for (final RegisteredArchive registered : selected) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			final ReindexScope scope = routedScope(registered.descriptor(), reindexScope);
 			final int failuresBeforeArchive = journal.failureCount();
 			try {
@@ -215,11 +205,11 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final long artifactCount = crawled.stream().mapToLong(archive -> countArtifacts(archive.clues().root())).sum();
 		final String resolutionMessage = artifactCount == 0 ? "No artifacts to resolve."
 				: "Resolving " + artifactCount + " artifacts.";
-		progressor.begin(CrawlProgressStages.RESOLVING, resolutionMessage, artifactCount, ProgressAccuracy.EXACT);
+		journal.begin(CrawlProgressStages.RESOLVING, resolutionMessage, artifactCount, ProgressAccuracy.EXACT);
 
 		final List<ResolvedArchive> resolvedArchives = new ArrayList<>();
 		for (final CrawledArchive archive : crawled) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			final Path archiveRoot = Path.of(archive.clues().basePath());
 			final ResolvedArchiveNode resolvedRoot = resolve(archive.descriptor().id(), archive.clues().root(),
 					archiveRoot, archiveRoot, retroIds, journal);
@@ -236,16 +226,13 @@ class RetroCrawlerImpl implements RetroCrawler {
 		}
 
 		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			factory.beginArchive(resolvedArchive.descriptor());
-			emitCompressed(resolvedArchive.descriptor().id(), resolvedArchive.root(), null, factory, gearType,
-					progressor);
+			emitCompressed(resolvedArchive.descriptor().id(), resolvedArchive.root(), null, factory, gearType, journal);
 			factory.endArchive(resolvedArchive.descriptor());
 		}
 
-		final R result = factory.build();
-		progressor.complete("Crawl complete.");
-		return result;
+		return factory.build();
 	}
 
 	private void requireRoutableSubtrees(final Collection<RegisteredArchive> selected,
@@ -273,21 +260,6 @@ class RetroCrawlerImpl implements RetroCrawler {
 		return routed.isEmpty() ? ReindexScope.none() : ReindexScope.subtrees(routed);
 	}
 
-	private static String failureDescription(final Throwable failure) {
-		final String message = failure.getMessage();
-		return message == null || message.isBlank() ? failure.getClass().getSimpleName() : message;
-	}
-
-	private static void reportFailure(final Progressor progressor, final Throwable failure) {
-		try {
-			progressor.fail("Crawl failed: " + failureDescription(failure));
-		} catch (final RuntimeException reportingFailure) {
-			if (reportingFailure != failure) {
-				failure.addSuppressed(reportingFailure);
-			}
-		}
-	}
-
 	private static long countArtifacts(final ArchiveNode node) {
 		if (node == null) {
 			return 0;
@@ -309,9 +281,9 @@ class RetroCrawlerImpl implements RetroCrawler {
 	 * children (lifting)
 	 */
 	private <R, N, G> void emitCompressed(final ArchiveId archiveId, final ResolvedArchiveNode node, final N parent,
-			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Progressor progressor) {
+			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Journal journal) {
 
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 		final Optional<Object> resolved = node.resolution().map(GearResolution::gear);
 
 		final N nextParent;
@@ -328,7 +300,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			return;
 		}
 		for (final ResolvedArchiveNode child : children) {
-			emitCompressed(archiveId, child, nextParent, factory, gearType, progressor);
+			emitCompressed(archiveId, child, nextParent, factory, gearType, journal);
 		}
 	}
 
@@ -343,14 +315,13 @@ class RetroCrawlerImpl implements RetroCrawler {
 			journal.record(new GearResolutionException(source, failure));
 			return Optional.empty();
 		} finally {
-			journal.progressor().advance("Examined artifact: " + PathNames.abbreviatePathName(sourcePath.toString()));
+			journal.advance("Examined artifact: " + PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
 
 	private ResolvedArchiveNode resolve(final ArchiveId archiveId, final ArchiveNode node, final Path archiveRoot,
 			final Path sourcePath, final RetroIdRegistry retroIds, final Journal journal) {
-		final Progressor progressor = journal.progressor();
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 		final Artifact artifact = node.artifact();
 		final Path relativeSourcePath = archiveRoot.relativize(sourcePath);
 		final Optional<GearResolution> resolution;

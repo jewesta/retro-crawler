@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.progress.ProgressCancelledException;
+import com.retrocrawler.core.progress.ProgressState;
 import com.retrocrawler.core.progress.Progressor;
 
 class JournalTest {
@@ -40,10 +42,65 @@ class JournalTest {
 	}
 
 	@Test
-	void retainsTheConfiguredProgressor() {
+	void exposesTheConfiguredProgressorAsReadOnlyProgress() {
 		final Progressor progressor = Progressor.create();
 
-		assertSame(progressor, new Journal(progressor).progressor());
+		assertSame(progressor, new Journal(progressor).progress());
+	}
+
+	@Test
+	void tracksSuccessfulOperationToCompletion() throws Exception {
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
+
+		final String result = journal.track("Refresh", () -> "finished");
+
+		assertEquals("finished", result);
+		assertEquals(ProgressState.COMPLETE, progressor.state());
+		assertEquals("Refresh complete.", progressor.message());
+	}
+
+	@Test
+	void tracksFailedOperationAndPropagatesTheSameException() {
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
+		final Exception expected = new Exception("Broken.");
+
+		final Exception thrown = assertThrows(Exception.class, () -> journal.track("Refresh", () -> {
+			throw expected;
+		}));
+
+		assertSame(expected, thrown);
+		assertEquals(ProgressState.FAILED, progressor.state());
+		assertEquals("Refresh failed: Broken.", progressor.message());
+	}
+
+	@Test
+	void preservesCancellationAsItsOwnTerminalState() {
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
+
+		assertThrows(ProgressCancelledException.class, () -> journal.track("Refresh", () -> {
+			journal.cancel("Stopping.");
+			journal.throwIfCancelled();
+			return null;
+		}));
+
+		assertEquals(ProgressState.CANCELLED, progressor.state());
+		assertEquals("Stopping.", progressor.message());
+	}
+
+	@Test
+	void finishedOperationCannotBeCancelledOrTrackedAgain() throws Exception {
+		final Progressor progressor = Progressor.create();
+		final Journal journal = new Journal(progressor);
+		journal.track("Refresh", () -> null);
+
+		journal.cancel("Too late.");
+
+		assertEquals(ProgressState.COMPLETE, progressor.state());
+		assertEquals("Refresh complete.", progressor.message());
+		assertThrows(IllegalStateException.class, () -> journal.track("Another refresh", () -> null));
 	}
 
 }

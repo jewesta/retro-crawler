@@ -10,10 +10,10 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.CrawlProgressStages;
+import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressAccuracy;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
 final class ArchiveDigPlan {
@@ -81,22 +81,22 @@ final class ArchiveDigPlan {
 		return analyzedDepth;
 	}
 
-	void reportCurrent(final ArchiveFolder folder, final boolean insideRegion, final Progressor progressor) {
+	void reportCurrent(final ArchiveFolder folder, final boolean insideRegion, final Journal journal) {
 		final long current = Math.min(completedRegions + 1, totalRegions());
 		final String prefix = insideRegion ? "Crawling archive region " + current + " of " + totalRegions() + ": "
 				: "Crawling archive structure: ";
 		final String message = prefix + PathNames.abbreviatePathName(folder.path().toString());
 		if (!progressStarted) {
-			progressor.begin(CrawlProgressStages.CRAWLING, message, totalRegions(), ProgressAccuracy.APPROXIMATE);
+			journal.begin(CrawlProgressStages.CRAWLING, message, totalRegions(), ProgressAccuracy.APPROXIMATE);
 			progressStarted = true;
 			return;
 		}
-		progressor.advanceTo(completedRegions, message);
+		journal.advanceTo(completedRegions, message);
 	}
 
-	void completeRegion(final ArchiveFolder folder, final Progressor progressor) {
+	void completeRegion(final ArchiveFolder folder, final Journal journal) {
 		completedRegions++;
-		progressor.advanceTo(completedRegions, "Completed archive region " + completedRegions + " of " + totalRegions()
+		journal.advanceTo(completedRegions, "Completed archive region " + completedRegions + " of " + totalRegions()
 				+ ": " + PathNames.abbreviatePathName(folder.path().toString()));
 	}
 }

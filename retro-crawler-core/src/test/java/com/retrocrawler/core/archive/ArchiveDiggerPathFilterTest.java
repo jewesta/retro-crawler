@@ -23,7 +23,6 @@ import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerPathFilterTest {
 
@@ -42,13 +41,12 @@ class ArchiveDiggerPathFilterTest {
 		final ArchiveDefinition archive = definition(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
 				new IgnoreQNAPSystemPaths());
 		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = Progressor.create();
-		final Journal journal = new Journal(progressor);
+		final Journal journal = new Journal();
 		final ArchiveNode result;
 		final ArchiveDigPlan plan;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			plan = digger.plan(List.of(target), progressor);
+			plan = digger.plan(List.of(target), journal);
 			result = digger.dig(target, plan, journal);
 		}
 

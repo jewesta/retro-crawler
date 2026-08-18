@@ -23,7 +23,6 @@ import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.Progressor;
 
 public class ArchiveManager {
 
@@ -52,26 +51,24 @@ public class ArchiveManager {
 	}
 
 	private Archive fromSource(final Journal journal) throws IOException {
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Path root = descriptor.root();
 		final Instant crawledAt = clock.instant();
 		final ArchiveNode rootNode;
 		try (OpenedRoot opened = new OpenedRoot(root)) {
-			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), progressor);
-			progressor.throwIfCancelled();
+			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), journal);
+			journal.throwIfCancelled();
 			rootNode = digger.dig(opened.target(), plan, crawledAt, journal);
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
-		progressor.throwIfCancelled();
-		progressor.indeterminate(CrawlProgressStages.STOWING, "Stowing away the extracted clue archive.");
+		journal.throwIfCancelled();
+		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
 
 	private Archive fromSubtrees(final Journal journal, final Collection<ARI> requestedSubtrees) throws IOException {
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
@@ -81,16 +78,16 @@ public class ArchiveManager {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
 			for (final LocatedSubtree subtree : located) {
 				final ArchiveDigTarget target = digger
-						.target(opened.target().session(), subtree.requestedPath(), progressor)
+						.target(opened.target().session(), subtree.requestedPath(), journal)
 						.orElseThrow(() -> new IllegalArgumentException(
 								"Archive subtree is not an existing folder; re-index its existing parent instead: "
 										+ subtree.requestedPath()));
 				targets.add(target);
 			}
-			final ArchiveDigPlan plan = digger.plan(targets, progressor);
+			final ArchiveDigPlan plan = digger.plan(targets, journal);
 
 			for (int index = 0; index < located.size(); index++) {
-				progressor.throwIfCancelled();
+				journal.throwIfCancelled();
 				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, journal);
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
@@ -98,8 +95,8 @@ public class ArchiveManager {
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 
 		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
-		progressor.throwIfCancelled();
-		progressor.indeterminate(CrawlProgressStages.STOWING, "Stowing away the partially rebuilt clue archive.");
+		journal.throwIfCancelled();
+		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
