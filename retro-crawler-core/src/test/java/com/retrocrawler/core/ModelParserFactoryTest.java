@@ -22,6 +22,8 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -43,6 +45,7 @@ import com.retrocrawler.core.gear.parser.StringParser;
 class ModelParserFactoryTest {
 
 	private static final Path ARCHIVE_ROOT = Path.of("/archive");
+	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
 	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
 			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 
@@ -75,7 +78,7 @@ class ModelParserFactoryTest {
 		assertEquals(List.of(EnumState.class), AnnotationEnumParser.enumTypes);
 
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "custom-on")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(SOURCE, artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 
@@ -140,7 +143,7 @@ class ModelParserFactoryTest {
 		assertEquals(0, FactorySelectedEnumParser.instances);
 
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("state", "factory-value")));
-		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(artifact, CONTEXT).orElseThrow();
+		final EnumFactGear gear = (EnumFactGear) model.gearResolver().resolve(SOURCE, artifact, CONTEXT).orElseThrow();
 		assertEquals(EnumState.ON, gear.state());
 	}
 

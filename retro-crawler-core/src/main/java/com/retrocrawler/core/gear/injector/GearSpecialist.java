@@ -25,8 +25,8 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 		 * Order is important! The AnyAttributeInjector must come last because
 		 * it (potentially) injects what the other injectors skipped.
 		 */
-		this.injectors = List.of(new DeclaredFactsInjector(adapter), new StandaloneIdInjector(adapter),
-				new AnyAttributeInjector());
+		this.injectors = List.of(new RetroSourceInjector(), new DeclaredFactsInjector(adapter),
+				new StandaloneIdInjector(adapter), new AnyAttributeInjector());
 	}
 
 	public GearDescriptor gearDefinition() {
@@ -45,7 +45,7 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 
 		// The birth of a new gear
 		final Object gear = Reflection.newInstance(descriptor.type());
-		final GearInjectionSession session = new GearInjectionSession(descriptor, gear, attributes);
+		final GearInjectionSession session = new GearInjectionSession(descriptor, gear, context.source(), attributes);
 		for (final Injector injector : injectors) {
 			injector.inject(session);
 		}

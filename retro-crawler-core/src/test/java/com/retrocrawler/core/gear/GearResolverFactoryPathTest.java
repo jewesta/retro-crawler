@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.Configuration;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -18,6 +20,8 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
 class GearResolverFactoryPathTest {
+
+	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
 
 	@Test
 	void autoDetectsPathParserForScalarAndCollectionFacts() {
@@ -28,7 +32,7 @@ class GearResolverFactoryPathTest {
 
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
 				new Node(root, root.resolve("gear")));
-		final PathGear gear = (PathGear) resolver.resolve(artifact, context).orElseThrow();
+		final PathGear gear = (PathGear) resolver.resolve(SOURCE, artifact, context).orElseThrow();
 
 		assertEquals(root.resolve("gear/front.jpeg"), gear.picture);
 		assertEquals(Set.of(root.resolve("gear/disk-one.img"), root.resolve("gear/disk-two.img")), gear.images);

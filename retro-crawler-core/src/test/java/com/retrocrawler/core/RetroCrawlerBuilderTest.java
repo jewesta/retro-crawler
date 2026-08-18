@@ -21,6 +21,7 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.annotation.RetroSource;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
@@ -129,8 +130,9 @@ class RetroCrawlerBuilderTest {
 
 		final Stash<TestGear> stash = crawler.crawlAllStash(new Journal(), ReindexScope.none(), TestGear.class);
 
-		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")),
-				stash.archives().getFirst().roots().getFirst().source());
+		final var node = stash.archives().getFirst().roots().getFirst();
+		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")), node.source());
+		assertEquals(node.source(), node.gear().source);
 	}
 
 	@Test
@@ -320,6 +322,9 @@ class RetroCrawlerBuilderTest {
 
 	@RetroGear(AnyGearMatcher.class)
 	public static class TestGear {
+
+		@RetroSource
+		private ARI source;
 
 		@RetroAnyAttribute
 		private final Map<String, RetroAttribute> attributes = new HashMap<>();

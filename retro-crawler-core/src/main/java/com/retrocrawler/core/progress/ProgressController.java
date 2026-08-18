@@ -17,6 +17,10 @@ public interface ProgressController extends ProgressSplitter {
 		return advanceBy(1);
 	}
 
+	default ProgressController advance(String message) {
+		return advanceBy(1, message);
+	}
+
 	ProgressController advanceBy(double delta);
 
 	ProgressController advanceBy(double delta, String message);

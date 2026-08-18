@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.gear.GearDescriptor;
 import com.retrocrawler.core.gear.RetroAttributes;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -12,13 +13,16 @@ final class GearInjectionSession {
 
 	private final GearDescriptor descriptor;
 	private final Object gear;
+	private final ARI source;
 	private final RetroAttributes attributes;
 
 	private final Map<String, RetroAttribute> unassigned;
 
-	GearInjectionSession(final GearDescriptor descriptor, final Object gear, final RetroAttributes attributes) {
+	GearInjectionSession(final GearDescriptor descriptor, final Object gear, final ARI source,
+			final RetroAttributes attributes) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.gear = Objects.requireNonNull(gear, "gear");
+		this.source = Objects.requireNonNull(source, "source");
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
 
 		/*
@@ -43,6 +47,10 @@ final class GearInjectionSession {
 
 	Object gear() {
 		return gear;
+	}
+
+	ARI source() {
+		return source;
 	}
 
 	RetroAttributes attributes() {

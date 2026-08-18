@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.Configuration;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -22,6 +24,8 @@ import com.retrocrawler.core.gear.parser.ParseContext;
 
 class GearResolverDuplicateClueTest {
 
+	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
+
 	@Test
 	void rejectsSeparateCluesThatResolveToTheSameSemanticKey() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(BusGear.class));
@@ -30,7 +34,7 @@ class GearResolverDuplicateClueTest {
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
 				new Node(root, root.resolve("gear")));
 
-		assertThrows(DuplicateClueException.class, () -> resolver.resolve(artifact, context));
+		assertThrows(DuplicateClueException.class, () -> resolver.resolve(SOURCE, artifact, context));
 	}
 
 	@Test
@@ -41,7 +45,7 @@ class GearResolverDuplicateClueTest {
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
 				new Node(root, root.resolve("gear")));
 
-		final BusGear gear = (BusGear) resolver.resolve(artifact, context).orElseThrow();
+		final BusGear gear = (BusGear) resolver.resolve(SOURCE, artifact, context).orElseThrow();
 
 		assertEquals(Set.of(Bus.ISA, Bus.PCI, Bus.AGP), gear.bus);
 	}

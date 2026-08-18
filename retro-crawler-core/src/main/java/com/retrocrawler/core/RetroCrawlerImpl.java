@@ -214,14 +214,16 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 		final RetroIdRegistry retroIds = new RetroIdRegistry();
 		final long artifactCount = crawled.stream().mapToLong(archive -> countArtifacts(archive.clues().root())).sum();
-		final ResolutionProgress resolutionProgress = new ResolutionProgress(artifactCount, progressor);
+		final String resolutionMessage = artifactCount == 0 ? "No artifacts to resolve."
+				: "Resolving " + artifactCount + " artifacts.";
+		progressor.begin(ProgressStage.RESOLVING, resolutionMessage, artifactCount, ProgressAccuracy.EXACT);
 
 		final List<ResolvedArchive> resolvedArchives = new ArrayList<>();
 		for (final CrawledArchive archive : crawled) {
 			progressor.throwIfCancelled();
 			final Path archiveRoot = Path.of(archive.clues().basePath());
 			final ResolvedArchiveNode resolvedRoot = resolve(archive.descriptor().id(), archive.clues().root(),
-					archiveRoot, archiveRoot, retroIds, resolutionProgress, journal);
+					archiveRoot, archiveRoot, retroIds, journal);
 			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot));
 		}
 
@@ -332,9 +334,9 @@ class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path archiveRoot,
-			final Path sourcePath, final ResolutionProgress progress, final Journal journal) {
+			final Path sourcePath, final Journal journal) {
 		try {
-			return resolver.resolveWithIdentity(artifact,
+			return resolver.resolveWithIdentity(source, artifact,
 					new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
 		} catch (final ProgressCancelledException cancellation) {
 			throw cancellation;
@@ -342,13 +344,12 @@ class RetroCrawlerImpl implements RetroCrawler {
 			journal.record(new GearResolutionException(source, failure));
 			return Optional.empty();
 		} finally {
-			progress.complete(sourcePath);
+			journal.progressor().advance("Examined artifact: " + PathNames.abbreviatePathName(sourcePath.toString()));
 		}
 	}
 
 	private ResolvedArchiveNode resolve(final ArchiveId archiveId, final ArchiveNode node, final Path archiveRoot,
-			final Path sourcePath, final RetroIdRegistry retroIds, final ResolutionProgress progress,
-			final Journal journal) {
+			final Path sourcePath, final RetroIdRegistry retroIds, final Journal journal) {
 		final Progressor progressor = journal.progressor();
 		progressor.throwIfCancelled();
 		final Artifact artifact = node.artifact();
@@ -358,7 +359,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			resolution = Optional.empty();
 		} else {
 			final ARI source = ARI.of(collectionId, archiveId, relativeSourcePath);
-			resolution = resolveArtifact(source, artifact, archiveRoot, sourcePath, progress, journal);
+			resolution = resolveArtifact(source, artifact, archiveRoot, sourcePath, journal);
 			resolution.ifPresent(value -> value.retroId().ifPresent(id -> retroIds.register(id, source)));
 		}
 
@@ -366,33 +367,11 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final List<ArchiveNode> archiveChildren = node.children();
 		if (archiveChildren != null) {
 			for (final ArchiveNode child : archiveChildren) {
-				children.add(resolve(archiveId, child, archiveRoot, sourcePath.resolve(child.folder()), retroIds,
-						progress, journal));
+				children.add(
+						resolve(archiveId, child, archiveRoot, sourcePath.resolve(child.folder()), retroIds, journal));
 			}
 		}
 		return new ResolvedArchiveNode(resolution, relativeSourcePath, List.copyOf(children));
-	}
-
-	private static final class ResolutionProgress {
-
-		private final long total;
-
-		private final Progressor progressor;
-
-		private long completed;
-
-		private ResolutionProgress(final long total, final Progressor progressor) {
-			this.total = total;
-			this.progressor = progressor;
-			final String message = total == 0 ? "No artifacts to resolve." : "Resolving " + total + " artifacts.";
-			progressor.begin(ProgressStage.RESOLVING, message, total, ProgressAccuracy.EXACT);
-		}
-
-		private void complete(final Path sourcePath) {
-			completed++;
-			progressor.advanceTo(completed, "Examined artifact " + completed + " of " + total + ": "
-					+ PathNames.abbreviatePathName(sourcePath.toString()));
-		}
 	}
 
 	private record CrawledArchive(ArchiveDescriptor descriptor, Archive clues) {

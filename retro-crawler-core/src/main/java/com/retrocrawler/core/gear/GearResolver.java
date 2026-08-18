@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -190,12 +191,14 @@ public class GearResolver {
 		return bestSoFar;
 	}
 
-	public Optional<Object> resolve(final Artifact artifact, final ParseContext parseContext) {
-		return resolveWithIdentity(artifact, parseContext).map(GearResolution::gear);
+	public Optional<Object> resolve(final ARI source, final Artifact artifact, final ParseContext parseContext) {
+		return resolveWithIdentity(source, artifact, parseContext).map(GearResolution::gear);
 	}
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final ParseContext parseContext) {
+	public Optional<GearResolution> resolveWithIdentity(final ARI source, final Artifact artifact,
+			final ParseContext parseContext) {
+		Objects.requireNonNull(source, "source");
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(parseContext, "parseContext");
 
@@ -219,7 +222,7 @@ public class GearResolver {
 		Confidence bestConfidence = Confidence.NONE;
 		for (final GearSpecialist specialist : gearSpecialists.values()) {
 			final Class<?> gearType = specialist.gearDefinition().type();
-			final GearContext context = new GearContext(gearType, artifact, detectionAttributes);
+			final GearContext context = new GearContext(gearType, source, artifact, detectionAttributes);
 			final Confidence confidence = specialist.matches(context);
 
 			// The user might try to be clever and return null instead of a confidence
@@ -254,7 +257,7 @@ public class GearResolver {
 		final Class<?> bestType = best.gearDefinition().type();
 		final Set<String> selectedContextualKeys = contextualFactKeys.getOrDefault(bestType, Set.of());
 		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys);
-		final GearContext context = new GearContext(bestType, artifact, attributes);
+		final GearContext context = new GearContext(bestType, source, artifact, attributes);
 		/*
 		 * The gear specialist is asked to build a gear. Since it was confident
 		 * it could do that we expect it to return a non-null value. Building
