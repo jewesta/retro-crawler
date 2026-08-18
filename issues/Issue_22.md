@@ -245,6 +245,12 @@ known from the Artifact being resolved; representing it as an `@ari` clue
 would falsely turn framework provenance into observed archive evidence and
 duplicate location data.
 
+Parser context uses an `ArtifactLocation` containing the archive root and the
+current Artifact's source path. This runtime path pair is deliberately not
+called a node: it has no tree structure and exists only to resolve contextual
+facts such as artifact-relative paths. It remains distinct from the ARI, which
+is the authoritative logical source address.
+
 ### ARI and @RetroId are different
 
 An ARI identifies the source Artifact that produced one resolved Gear occurrence

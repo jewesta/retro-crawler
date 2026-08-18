@@ -18,8 +18,8 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveManager;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.CrawlPlanning;
-import com.retrocrawler.core.archive.Node;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
@@ -308,7 +308,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			final Path sourcePath, final Journal journal) {
 		try {
 			return resolver.resolveWithIdentity(source, artifact,
-					new ParseContext(configuration, new Node(archiveRoot, sourcePath)));
+					new ParseContext(configuration, new ArtifactLocation(archiveRoot, sourcePath)));
 		} catch (final ProgressCancelledException cancellation) {
 			throw cancellation;
 		} catch (final RuntimeException failure) {

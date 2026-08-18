@@ -209,9 +209,9 @@ to close, so they were closed rather than deferred.
   parameter of two `ArchiveFolderClueFinder.find` overloads that nothing called,
   superseded by the `ArchiveFolder`/`ArchiveSession` overload the digger uses,
   and it carried a compatibility constructor for a compatibility no longer
-  exercised. Meanwhile `Node` models the same rooted-path-with-below-check idea
-  and is used. Two types for one concept; `ArchivePath` and both dead overloads
-  are gone.
+  exercised. Meanwhile the type then named `Node` (now `ArtifactLocation`)
+  models the same rooted-path-with-below-check idea and is used. Two types for
+  one concept; `ArchivePath` and both dead overloads are gone.
 - `Confidence` lived in `archive.clues` but is meaningless to a `Clue`. Only
   `Fact`, `RatedFact`, and matchers use it, so it moved to `gear`. This also
   makes the package boundary state the clue/fact rule instead of blurring it.

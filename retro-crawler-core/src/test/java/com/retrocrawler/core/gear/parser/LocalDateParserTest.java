@@ -10,7 +10,7 @@ import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.gear.Confidence;
 
 class LocalDateParserTest {
@@ -70,6 +70,6 @@ class LocalDateParserTest {
 
 	private static ParseContext context(final Locale locale) {
 		return new ParseContext(Configuration.builder().locale(locale).build(),
-				new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+				new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 	}
 }

@@ -32,7 +32,7 @@ public final class PathParser implements FactParser<Path> {
 			return RatedFact.none("Expected an artifact-relative path but got: " + rawValue);
 		}
 
-		final Path effective = context.currentNode().path().resolve(relative).normalize();
+		final Path effective = context.artifactLocation().sourcePath().resolve(relative).normalize();
 		return RatedFact.exact(effective);
 	}
 }

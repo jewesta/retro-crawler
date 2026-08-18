@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.RatedFact;
 
@@ -20,7 +20,7 @@ class PathParserTest {
 	void bindsARelativePathToTheCurrentArtifact() {
 		final Path root = Path.of("/mounted/archive");
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("shelf/gear")));
+				new ArtifactLocation(root, root.resolve("shelf/gear")));
 
 		final RatedFact<Path> fact = parser.parse("front.jpeg", context);
 
@@ -32,7 +32,7 @@ class PathParserTest {
 	void preservesAResourcePathBelowTheArtifact() {
 		final Path root = Path.of("/mounted/archive");
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("shelf/gear")));
+				new ArtifactLocation(root, root.resolve("shelf/gear")));
 
 		final RatedFact<Path> fact = parser.parse("Box/front.jpeg", context);
 
@@ -43,7 +43,7 @@ class PathParserTest {
 	void rejectsAbsoluteAndEscapingPaths() {
 		final Path root = Path.of("/mounted/archive");
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("shelf/gear")));
+				new ArtifactLocation(root, root.resolve("shelf/gear")));
 
 		assertTrue(parser.parse("/outside/front.jpeg", context).value().isEmpty());
 		assertTrue(parser.parse("../outside/front.jpeg", context).value().isEmpty());

@@ -12,7 +12,7 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -31,7 +31,7 @@ class GearResolverFactoryPathTest {
 		final Path root = Path.of("/mounted/archive");
 
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("gear")));
+				new ArtifactLocation(root, root.resolve("gear")));
 		final PathGear gear = (PathGear) resolver.resolve(SOURCE, artifact, context).orElseThrow();
 
 		assertEquals(root.resolve("gear/front.jpeg"), gear.picture);

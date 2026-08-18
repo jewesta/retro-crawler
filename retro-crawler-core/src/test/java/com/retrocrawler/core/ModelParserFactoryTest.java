@@ -24,7 +24,7 @@ import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -47,7 +47,7 @@ class ModelParserFactoryTest {
 	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
 	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+			new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 
 	@BeforeEach
 	void resetParserObservations() {

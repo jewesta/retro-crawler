@@ -141,8 +141,8 @@ class ModelConfigurationTest {
 		assertEquals(1, gear.size());
 		final ParseContext context = RecordingParser.observedContext;
 		assertSame(model.configuration(), context.config());
-		assertEquals(archiveRoot, context.currentNode().archiveRoot());
-		assertEquals(archiveRoot.resolve("gear"), context.currentNode().path());
+		assertEquals(archiveRoot, context.artifactLocation().archiveRoot());
+		assertEquals(archiveRoot.resolve("gear"), context.artifactLocation().sourcePath());
 	}
 
 	@RetroCollection(id = "default_configuration")

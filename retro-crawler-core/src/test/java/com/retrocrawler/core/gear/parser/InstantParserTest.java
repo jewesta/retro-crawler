@@ -9,14 +9,14 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.gear.Confidence;
 
 class InstantParserTest {
 
 	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+			new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
 
 	private final InstantParser parser = new InstantParser();
 

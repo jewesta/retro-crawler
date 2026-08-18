@@ -50,16 +50,18 @@ outside tests and did not represent a runtime requirement.
 - Interpretation configuration is general parser configuration, not date-parser
   configuration.
 - The parser invocation context is the extension seam for both general
-  configuration and the current archive node. The public `ParseContext` exposes
-  only `config()` and `currentNode()`.
+  configuration and the current artifact location. The public `ParseContext`
+  exposes only `config()` and `artifactLocation()` (originally
+  `currentNode()`).
 - `Configuration` is an immutable value containing the effective `Locale`,
   `ZoneId` time zone, and `Clock`. Its clock is always normalized to its
   configured time zone.
 - Portable `locale` and `timeZone` defaults are part of `@RetroCollection`
   rather than a separate configuration annotation. A builder-supplied clock
   remains runtime configuration.
-- The parser-facing `Node` is a small located runtime value exposing the archive
-  root and current path. It is deliberately distinct from the persisted,
+- The parser-facing value introduced here as `Node` was subsequently renamed
+  `ArtifactLocation`: it exposes the archive root and current artifact source
+  path and remains deliberately distinct from the persisted,
   deployment-independent `ArchiveNode`.
 - Automatic regional defaults should follow the host's format locale and system
   time zone so the naive laptop case behaves as expected. Explicit configuration

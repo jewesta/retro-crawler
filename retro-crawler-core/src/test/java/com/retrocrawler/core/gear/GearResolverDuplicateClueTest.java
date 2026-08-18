@@ -13,7 +13,7 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -32,7 +32,7 @@ class GearResolverDuplicateClueTest {
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("bus", "PCI"), Clue.of("AGP")));
 		final Path root = Path.of("/archive");
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("gear")));
+				new ArtifactLocation(root, root.resolve("gear")));
 
 		assertThrows(DuplicateClueException.class, () -> resolver.resolve(SOURCE, artifact, context));
 	}
@@ -43,7 +43,7 @@ class GearResolverDuplicateClueTest {
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("ISA"), Clue.of("PCI"), Clue.of("AGP")));
 		final Path root = Path.of("/archive");
 		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new Node(root, root.resolve("gear")));
+				new ArtifactLocation(root, root.resolve("gear")));
 
 		final BusGear gear = (BusGear) resolver.resolve(SOURCE, artifact, context).orElseThrow();
 
