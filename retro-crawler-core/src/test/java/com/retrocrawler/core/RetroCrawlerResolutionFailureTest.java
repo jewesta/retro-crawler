@@ -36,7 +36,6 @@ import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressSnapshot;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 
 class RetroCrawlerResolutionFailureTest {
@@ -85,7 +84,7 @@ class RetroCrawlerResolutionFailureTest {
 		assertInstanceOf(IllegalStateException.class, failures.getLast().getCause());
 		assertEquals(report.failures(), journal.failures());
 		final List<ProgressSnapshot> resolving = events.stream()
-				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();
+				.filter(event -> event.stage().equals(CrawlProgressStages.RESOLVING)).toList();
 		assertEquals(2, resolving.getLast().completed());
 		assertEquals(2, resolving.getLast().total());
 		assertEquals(0, factory.calls);

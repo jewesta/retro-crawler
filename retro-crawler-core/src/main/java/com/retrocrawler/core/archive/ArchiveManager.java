@@ -17,12 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 
 public class ArchiveManager {
@@ -65,7 +65,7 @@ public class ArchiveManager {
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
 		progressor.throwIfCancelled();
-		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
+		progressor.indeterminate(CrawlProgressStages.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
@@ -99,7 +99,7 @@ public class ArchiveManager {
 
 		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
 		progressor.throwIfCancelled();
-		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the partially rebuilt clue archive.");
+		progressor.indeterminate(CrawlProgressStages.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}

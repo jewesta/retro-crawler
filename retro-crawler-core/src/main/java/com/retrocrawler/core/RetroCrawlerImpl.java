@@ -40,7 +40,6 @@ import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressCancelledException;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
@@ -216,7 +215,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 		final long artifactCount = crawled.stream().mapToLong(archive -> countArtifacts(archive.clues().root())).sum();
 		final String resolutionMessage = artifactCount == 0 ? "No artifacts to resolve."
 				: "Resolving " + artifactCount + " artifacts.";
-		progressor.begin(ProgressStage.RESOLVING, resolutionMessage, artifactCount, ProgressAccuracy.EXACT);
+		progressor.begin(CrawlProgressStages.RESOLVING, resolutionMessage, artifactCount, ProgressAccuracy.EXACT);
 
 		final List<ResolvedArchive> resolvedArchives = new ArrayList<>();
 		for (final CrawledArchive archive : crawled) {

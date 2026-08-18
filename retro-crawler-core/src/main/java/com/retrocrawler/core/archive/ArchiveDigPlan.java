@@ -9,10 +9,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressAccuracy;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.PathNames;
 
@@ -87,7 +87,7 @@ final class ArchiveDigPlan {
 				: "Crawling archive structure: ";
 		final String message = prefix + PathNames.abbreviatePathName(folder.path().toString());
 		if (!progressStarted) {
-			progressor.begin(ProgressStage.CRAWLING, message, totalRegions(), ProgressAccuracy.APPROXIMATE);
+			progressor.begin(CrawlProgressStages.CRAWLING, message, totalRegions(), ProgressAccuracy.APPROXIMATE);
 			progressStarted = true;
 			return;
 		}

@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
@@ -43,7 +44,6 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.Hashes;
 
@@ -212,7 +212,7 @@ public class ArchiveDigger {
 		final String message = complete
 				? "Crawl planning complete at depth " + depth + ": " + regions + " approximate archive regions."
 				: "Planning crawl depth " + depth + ": " + regions + " candidate archive regions.";
-		progressor.indeterminate(ProgressStage.PLANNING, message);
+		progressor.indeterminate(CrawlProgressStages.PLANNING, message);
 	}
 
 	private FolderListing list(final ArchiveSession session, final ArchiveFolder folder) throws IOException {

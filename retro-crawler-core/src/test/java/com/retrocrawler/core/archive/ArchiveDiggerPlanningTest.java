@@ -14,6 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
@@ -22,7 +23,6 @@ import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressSnapshot;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerPlanningTest {
@@ -51,7 +51,7 @@ class ArchiveDiggerPlanningTest {
 		assertEquals(2, archive.children().size());
 
 		final List<ProgressSnapshot> crawling = events.stream()
-				.filter(event -> event.stage().equals(ProgressStage.CRAWLING)).toList();
+				.filter(event -> event.stage().equals(CrawlProgressStages.CRAWLING)).toList();
 		final ProgressSnapshot last = crawling.getLast();
 		assertEquals(ProgressAccuracy.APPROXIMATE, last.accuracy());
 		assertEquals(4, last.completed());

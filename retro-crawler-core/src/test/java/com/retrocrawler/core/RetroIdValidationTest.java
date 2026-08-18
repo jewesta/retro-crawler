@@ -37,7 +37,6 @@ import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressSnapshot;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.ProgressState;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -142,7 +141,7 @@ class RetroIdValidationTest {
 				ReindexScope.all(), TestGear.class);
 
 		final List<ProgressSnapshot> resolving = events.stream()
-				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();
+				.filter(event -> event.stage().equals(CrawlProgressStages.RESOLVING)).toList();
 		assertEquals(0, resolving.getFirst().completed());
 		assertEquals(2, resolving.getFirst().total());
 		assertEquals(2, resolving.getLast().completed());
