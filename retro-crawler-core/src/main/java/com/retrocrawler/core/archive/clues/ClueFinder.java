@@ -8,6 +8,19 @@ package com.retrocrawler.core.archive.clues;
  * not resolve clues into facts or consult the model's known fact-key registry;
  * that interpretation belongs to gear resolution.
  */
+@FunctionalInterface
 public interface ClueFinder {
+
+	/**
+	 * Examines one candidate artifact after all of its child folders have been
+	 * classified.
+	 * <p>
+	 * The view contains the candidate folder's own name and direct files. Its
+	 * nested folders are limited to children that were positively established
+	 * as clue-free metadata folders; child artifacts and failed folders are
+	 * structurally absent. Every returned clue belongs to the view's root
+	 * folder.
+	 */
+	Clues find(ArchiveFolderView folder);
 
 }

@@ -3,13 +3,9 @@ package com.retrocrawler.core.archive.clues;
 /** The kind of source a {@link ClueFinder} inspects. */
 public enum ClueSourceKind {
 
-	FOLDER_NAME("folder name"),
+	FOLDER_VIEW("archive folder"),
 
-	FILE_NAME("file names"),
-
-	FILE_CONTENT("file content"),
-
-	FOLDER_TREE("folder tree");
+	FILE_CONTENT("file content");
 
 	private final String label;
 

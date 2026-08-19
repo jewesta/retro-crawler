@@ -15,13 +15,10 @@ public interface ArchiveFileView {
 	String name();
 
 	/**
-	 * Inspects the file content on demand.
+	 * Inspects this file when its archive source exposes content.
 	 * <p>
 	 * The supplied stream is valid only for the duration of the inspector call
 	 * and must not be closed or retained by the inspector.
-	 */
-	/**
-	 * Inspects this file when its archive source exposes content.
 	 *
 	 * @return the non-null inspection result, or empty when content is
 	 *         unavailable

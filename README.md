@@ -75,7 +75,7 @@ A finder that tracks offsets can hand them over, and the rejection then points a
 the tag you actually wrote:
 
 ```
-Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the folder name.
+Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the archive folder.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [ISA], duplicate values: [PCI].
   Example Board [bus ISA] [200001] [bus PCI]
                 ^^^^^^^^^ first
@@ -95,7 +95,7 @@ the `Clues` a finder hands back:
 ```
 Graphics Cards/Example Board [bus AGP]/retro.md: RetroMarkdownClueFinder read the file content.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [AGP], duplicate values: [PCI].
-  The first clue was observed where BracketClueFinder read the folder name of 'Example Board [bus AGP]', line 1, column 15.
+  The first clue was observed where BracketClueFinder read the archive folder, line 1, column 15.
     Example Board [bus AGP]
                   ^^^^^^^^^
   The duplicate clue was observed where RetroMarkdownClueFinder read the file content of 'retro.md', line 3, column 1.
@@ -126,14 +126,18 @@ For each folder, registered `ClueFinder`s extract clues and produce an `Artifact
 
 The extracted clue archive is stowed away through an application-selected `Repository` so that expensive rescans can be avoided. The bundled `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
 
-Most clue finders inspect only the current folder name or its direct files.
-Collections with meaningful metadata subtrees may additionally configure
-`TreeClueFinder`s. These run depth-first in post-order through a transient
-`ArchiveFolderView`, may inspect file content lazily through
-`ArchiveFileView.peek(...)` when the configured source exposes it, and return
-clues for the current folder. Child
-folders that already established an artifact are pruned from the view, so a
+Every finder implements the same small contract and runs once per candidate
+folder, after its children have been classified. It receives an
+`ArchiveFolderView` containing the candidate's name, its direct files, and only
+those child folders that were positively established as clue-free metadata
+folders. Child artifacts and failed folders are structurally absent, so a
 finder cannot cross into another potential collection part.
+
+A finder decides which parts of that view matter. It may use the folder name,
+enumerate files and metadata subfolders, and inspect file content lazily through
+`ArchiveFileView.peek(...)` when the source exposes it. Finders are independent:
+several may inspect the same file, while the one-authority-per-clue-key rule
+governs what they are allowed to return.
 
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
@@ -154,8 +158,8 @@ RetroCrawler's collection and gear model can be configured via annotations:
   roots and providers are runtime crawler configuration.
 
 - `@RetroClues`
-  Declares which folder names, file names, file contents, and folder trees
-  produce crawl-time clues.
+  Declares the ordered `ClueFinder`s that inspect each candidate's pruned
+  archive view and produce crawl-time clues.
 
 - `@RetroGear`
   Declares a gear type and its matcher.
@@ -279,7 +283,8 @@ RetroCrawler retains control of planning and depth-first traversal. File
 content is optional. When available, the session invokes a generic
 `ArchiveFileAccessor` synchronously and closes the supplied `InputStream`
 before returning its result. An empty result means that content was not
-available and content-based clue finders contribute no clue for that file.
+available. A finder sees that as an empty `Optional` and can continue without a
+content-derived clue.
 
 Public resources are addressed by an Archive Resource Identifier (`ARI`). An
 ARI contains the collection id, archive id, and archive-relative resource path,

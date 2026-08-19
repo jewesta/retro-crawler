@@ -23,9 +23,9 @@ import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
@@ -362,8 +362,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 			implements ArchiveDefinition {
 
 		@Override
-		public ArchiveFolderClueFinder archiveFolderClueFinder() {
-			return model.archiveFolderClueFinder();
+		public List<ClueFinder> clueFinders() {
+			return model.clueFinders();
 		}
 
 		@Override

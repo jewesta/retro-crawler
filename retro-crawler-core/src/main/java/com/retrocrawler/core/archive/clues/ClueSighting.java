@@ -8,8 +8,8 @@ package com.retrocrawler.core.archive.clues;
  * duplicate can be reported against both observations rather than only the
  * second one. The position travels with {@link Clues} so that it survives a
  * finder handing its work back, and stops at the {@link Artifact} boundary,
- * which is where a cached archive can no longer point into anything. The
- * source is never carried: it belongs to the finder currently running.
+ * which is where a cached archive can no longer point into anything. The source
+ * is never carried: it belongs to the finder currently running.
  *
  * @param source
  *            what was read, or {@code null} when a finder accumulates on its
@@ -26,7 +26,10 @@ record ClueSighting(ClueSource source, ClueLocation location) {
 		return source != null || location != null;
 	}
 
-	/** Renders {@code BracketClueFinder read the folder name, line 1, column 15}. */
+	/**
+	 * Renders
+	 * {@code BracketClueFinder read the archive folder, line 1, column 15}.
+	 */
 	String describe() {
 		if (source == null) {
 			return location == null ? "an unreported position" : location.describe();

@@ -8,21 +8,23 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueLocation;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
 /**
  * Reads the collection's bracket language while retaining unknown or malformed
  * groups as anonymous clues.
  */
-public final class BracketClueFinder implements FolderNameClueFinder {
+public final class BracketClueFinder implements ClueFinder {
 
 	@Override
-	public Clues find(final String folderName) {
+	public Clues find(final ArchiveFolderView folder) {
+		final String folderName = folder.name();
 		Objects.requireNonNull(folderName, "folderName");
 
 		final int firstOpeningBracket = folderName.indexOf('[');

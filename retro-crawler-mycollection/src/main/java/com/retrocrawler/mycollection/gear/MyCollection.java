@@ -21,10 +21,12 @@ import com.retrocrawler.mycollection.clues.StandardImageClueFinder;
 		IgnoreQNAPSystemPaths.class,
 		IgnoreSynologySystemPaths.class
 })
-@RetroClues(fromFolderName = BracketClueFinder.class, fromFileContents = RetroMarkdownClueFinder.class,
-		fromFileNames = {
-				StandardImageClueFinder.class, FloppyImageClueFinder.class
-		})
+@RetroClues({
+		BracketClueFinder.class,
+		RetroMarkdownClueFinder.class,
+		StandardImageClueFinder.class,
+		FloppyImageClueFinder.class
+})
 public final class MyCollection {
 
 	private MyCollection() {

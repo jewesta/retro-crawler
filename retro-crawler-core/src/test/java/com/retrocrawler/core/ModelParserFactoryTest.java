@@ -25,10 +25,11 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArtifactLocation;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
@@ -176,7 +177,7 @@ class ModelParserFactoryTest {
 	}
 
 	@RetroCollection(id = "annotation_default_parsers")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(string = AnnotationStringParser.class, integer = AnnotationIntegerParser.class,
 			instant = AnnotationInstantParser.class, localDate = AnnotationLocalDateParser.class,
 			path = AnnotationPathParser.class)
@@ -184,18 +185,18 @@ class ModelParserFactoryTest {
 	}
 
 	@RetroCollection(id = "built_in_default_parsers")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class BuiltInDefaultsCollection {
 	}
 
 	@RetroCollection(id = "annotation_default_enum_parser")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = AnnotationEnumParser.class)
 	public static final class AnnotatedEnumDefaultsCollection {
 	}
 
 	@RetroCollection(id = "factory_default_enum_parser")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = FactorySelectedEnumParser.class)
 	public static final class FactoryEnumDefaultsCollection {
 	}
@@ -465,10 +466,10 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	public static final class EmptyClueFinder implements FolderNameClueFinder {
+	public static final class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}

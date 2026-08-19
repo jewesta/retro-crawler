@@ -28,10 +28,11 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -78,7 +79,7 @@ class CacheModelEvolutionTest {
 	}
 
 	@RetroCollection(id = "cache_model_evolution")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
@@ -108,10 +109,11 @@ class CacheModelEvolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			return "serial-pending".equals(folderName) ? Clues.of(Clue.of("SN")) : Clues.none();
 		}
 	}

@@ -53,6 +53,84 @@ The settled vocabulary is:
 - Every hierarchy node has an authoritative source ARI.
 - A Gear object may optionally receive that ARI through `@RetroSource`.
 
+## Unified Clue Discovery (2026-08-19)
+
+The original clue-finder categories preserved an abandoned write-back model:
+folder-name clues and immediate-file-name clues were distinct because a changed
+clue was once expected to be written back to the corresponding source. With
+clues now immutable crawl evidence and no write-back path planned, that
+strictness no longer expresses a useful domain boundary.
+
+Clue discovery therefore has one extension point:
+
+```java
+@FunctionalInterface
+public interface ClueFinder {
+
+    Clues find(ArchiveFolderView folder);
+}
+```
+
+Every configured finder runs once for each candidate folder, in configuration
+order, after the folder's children have been classified. The bottom-up crawl
+avoids a chicken-and-egg dependency: children establish their own artifact
+boundaries first, then the parent receives a structurally pruned view containing
+only:
+
+- the candidate folder's own name;
+- its direct files;
+- child folders positively established as clue-free metadata folders.
+
+Child artifacts and failed folders carry no readable view upward. A finder may
+walk the remaining metadata subtree but cannot cross into another potential
+piece of Gear. Folder ancestry remains location, never type evidence.
+
+Finders decide for themselves which parts of the view they inspect. Several
+finders may inspect the same file and one finder may inspect several files; the
+old one-finder/one-file restriction had meaning only for write-back. Independent
+finders still may not claim the same explicit clue key, so source ownership is
+enforced at the evidence level rather than by assigning files to finder types.
+
+No abstract finder hierarchy is introduced. Helpers may be added later when
+concrete implementations reveal genuine reusable mechanics, but inheritance is
+not part of the public contract.
+
+This is deliberately a breaking refactor. `FolderNameClueFinder`,
+`FileNameClueFinder`, `FileContentClueFinder`, `TreeClueFinder`, the blind
+sentinel, and the `ArchiveFolderClueFinder` dispatcher are removed rather than
+retained as compatibility facades. `@RetroClues` now declares one ordered array
+of `ClueFinder` classes.
+
+Diagnostics remain precise without specialized finder types. The digger observes
+which files a finder actually peeks: exactly one inspected file produces a
+file-content source location, while a finder that inspects zero or several files
+is reported against the candidate archive folder.
+
+The first implementation spans core, demo, personal collection adapter, app,
+and CLI. Focused tests cover post-order pruning, independent finder ordering,
+duplicate-key rejection, fail-late continuation, several finders inspecting the
+same file, and exact single-file diagnostics. Canonical formatting passes for
+all 47 changed Java sources, and the full seven-module `mvn clean install`
+passes.
+
+### Review follow-up: clue provenance
+
+The `FinderObservation` wrappers and public `ClueSourceKind` introduced during
+the first implementation are provisional and must not remain in the final
+refactor. They infer a source from the number of files a finder peeks, which is
+diagnostic-only and can misattribute a clue from a finder that reads several
+kinds of evidence.
+
+Before removing them, settle explicit clue provenance. A finder class can be
+attached automatically at the finder boundary and records *who* made the
+observation. It does not necessarily record *where* the evidence came from once
+one unified finder may inspect the candidate folder and several files. The open
+design choice is whether the artifact folder's ARI plus finder type is sufficient
+provenance, or whether every clue should additionally retain the exact source
+resource ARI supplied explicitly by the finder. Any exact resource provenance
+must be carried by the clue through `Artifact`, repository serialization, and
+Fact resolution; it must not be another crawl-only diagnostic side channel.
+
 ### Product boundary
 
 ```text

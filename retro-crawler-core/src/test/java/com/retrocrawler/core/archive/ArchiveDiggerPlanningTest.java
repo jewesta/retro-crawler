@@ -16,9 +16,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.progress.ProgressAccuracy;
@@ -114,8 +114,7 @@ class ArchiveDiggerPlanningTest {
 	private ArchiveDigger digger(final CrawlPlanning planning) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("planning_test"), "Planning test",
 				root);
-		final ArchiveFolderClueFinder clues = new ArchiveFolderClueFinder(folder -> Clues.of(Clue.of("folder", folder)),
-				List.of(), List.of());
+		final ClueFinder clues = folder -> Clues.of(Clue.of("folder", folder.name()));
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), planning);
 	}
 

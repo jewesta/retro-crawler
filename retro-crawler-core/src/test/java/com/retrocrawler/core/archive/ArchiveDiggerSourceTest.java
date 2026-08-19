@@ -24,11 +24,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.Journal;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FileContentClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -91,37 +90,27 @@ class ArchiveDiggerSourceTest {
 		assertFalse(Files.exists(temporaryDirectory.resolve("gear")));
 	}
 
-	private static ArchiveDigger digger(final ArchiveSource source, final FileContentClueFinder contentFinder) {
+	private static ArchiveDigger digger(final ArchiveSource source, final ClueFinder contentFinder) {
 		return digger(ROOT, source, contentFinder);
 	}
 
-	private static ArchiveDigger digger(final Path root, final ArchiveSource source,
-			final FileContentClueFinder contentFinder) {
+	private static ArchiveDigger digger(final Path root, final ArchiveSource source, final ClueFinder contentFinder) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test", root);
-		final ArchiveFolderClueFinder clues = new ArchiveFolderClueFinder(
-				name -> "gear".equals(name) ? Clues.of(Clue.of("kind", "gear")) : Clues.none(), List.of(contentFinder),
-				List.of());
-		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), source);
+		final ClueFinder nameFinder = folder -> "gear".equals(folder.name()) ? Clues.of(Clue.of("kind", "gear"))
+				: Clues.none();
+		return new ArchiveDigger(new TestArchiveDefinition(descriptor, List.of(nameFinder, contentFinder)), source);
 	}
 
-	private static FileContentClueFinder contentFinder(final AtomicBoolean invoked) {
-		return new FileContentClueFinder() {
-
-			@Override
-			public boolean matches(final String fileName) {
-				return "evidence.txt".equals(fileName);
-			}
-
-			@Override
-			public Clues find(final InputStream content) {
-				invoked.set(true);
-				try {
-					return Clues.of(Clue.of("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
-				} catch (final IOException e) {
-					throw new IllegalStateException(e);
-				}
-			}
-		};
+	private static ClueFinder contentFinder(final AtomicBoolean invoked) {
+		return folder -> folder.files().stream().filter(file -> "evidence.txt".equals(file.name())).findFirst()
+				.flatMap(file -> file.peek(content -> {
+					invoked.set(true);
+					try {
+						return Clues.of(Clue.of("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
+					} catch (final IOException e) {
+						throw new IllegalStateException(e);
+					}
+				})).orElseGet(Clues::none);
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

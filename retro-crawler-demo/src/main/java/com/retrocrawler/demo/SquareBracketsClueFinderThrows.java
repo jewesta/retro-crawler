@@ -1,10 +1,11 @@
 package com.retrocrawler.demo;
 
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 
-public class SquareBracketsClueFinderThrows implements FolderNameClueFinder {
+public class SquareBracketsClueFinderThrows implements ClueFinder {
 
 	public static final String OPENING_BRACKETS = "[";
 
@@ -15,7 +16,7 @@ public class SquareBracketsClueFinderThrows implements FolderNameClueFinder {
 	}
 
 	@Override
-	public Clues find(final String folderName) {
+	public Clues find(final ArchiveFolderView folder) {
 		return Clues.of(Clue.of("foo", "bar"));
 	}
 

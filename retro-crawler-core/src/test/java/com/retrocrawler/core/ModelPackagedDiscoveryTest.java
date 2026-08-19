@@ -58,7 +58,7 @@ class ModelPackagedDiscoveryTest {
 			@com.retrocrawler.core.annotation.RetroCollection(
 					id = "packaged_model")
 			@com.retrocrawler.core.annotation.RetroClues(
-					fromFolderName = com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class)
+					com.retrocrawler.core.discovery.fixture.EmptyClueFinder.class)
 			public class PackagedArchive {
 			}
 			""");

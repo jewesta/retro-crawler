@@ -91,9 +91,9 @@ These instructions apply to the entire repository.
    says nothing about the key-level rule that actually applies.
    Because the rule rejects rather than merges, it must say where. Report a
    clue failure against the archive location that caused it: the digger
-   completes every `ClueFindingException` with the archive-relative folder, and
-   `ArchiveFolderClueFinder` names the finder and the source it was reading. A
-   finder that already tracks offsets should pass a `ClueLocation` when it
+   completes every `ClueFindingException` with the archive-relative folder and
+   observes the unified finder to name the source it was reading. A finder that
+   already tracks offsets should pass a `ClueLocation` when it
    accumulates a clue, so a rejection can point at the tag the cataloguer
    actually wrote. `Clues` carries those positions so they survive a finder
    handing its work back, and `Artifact` drops them, because a cached archive
@@ -112,13 +112,13 @@ These instructions apply to the entire repository.
    determine what its gear *is*: `Graphics Cards/GeForce 2` does not make the
    GeForce 2 a graphics card, because moving that folder would silently change
    the item's type. Clue finders may read a folder's own name; they must not
-   read classification from its parents. A `TreeClueFinder` may descend through
+   read classification from its parents. A `ClueFinder` may descend through
    non-gear subfolders belonging to one item, but folders that already
    established an artifact are pruned from its view and must stay pruned. The
    tree carries where a thing is, never what a thing is.
    Metadata-folder status is established, never inferred. Only a folder the
    crawl positively read and found no clue in is one, and only such a folder may
-   be read through by an ancestor's tree finder; a folder in any other state,
+   be read through by an ancestor's finder; a folder in any other state,
    including one the crawl never determined, stays opaque. Keep this structural:
    a `FolderOutcome` carries the readable view only when it has established the
    right to offer one, so a folder holding another item's evidence has nothing

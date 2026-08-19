@@ -25,9 +25,10 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.GearContext;
@@ -69,7 +70,7 @@ class ContextualFactResolutionTest {
 	}
 
 	@RetroCollection(id = "contextual_fact_resolution")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 	}
 
@@ -116,10 +117,11 @@ class ContextualFactResolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			if ("typed".equals(folderName)) {
 				return Clues.of(Clue.of("HDD"), Clue.of("2.5\""));
 			}

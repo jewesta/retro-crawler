@@ -23,11 +23,12 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.GearTreeFactory;
@@ -122,17 +123,18 @@ class RetroCrawlerResolutionFailureTest {
 	}
 
 	@RetroCollection(id = "resolution_failure_test")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			return switch (folderName) {
 			case "clue_failure" -> throw new IllegalArgumentException("Clue finder broke.");
 			case "duplicate" -> Clues.of(Clue.of("SN"), Clue.of("sn", "12345"));

@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.archive.clues.ArchiveFileView;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
@@ -19,12 +22,12 @@ class BracketClueFinderTest {
 
 	@Test
 	void ignoresFolderNamesWithoutBracketTags() {
-		assertTrue(finder.find("Grouping folder").isEmpty());
+		assertTrue(finder.find(folder("Grouping folder")).isEmpty());
 	}
 
 	@Test
 	void keepsTitleTextRegardlessOfTagPosition() {
-		final Clues clues = finder.find("[AGP] Example Graphics Board [200001]");
+		final Clues clues = finder.find(folder("[AGP] Example Graphics Board [200001]"));
 
 		assertEquals(Set.of("Example Graphics Board"), clues.get(AttributeNames.TITLE).orElseThrow().value());
 		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().contains("AGP")));
@@ -33,14 +36,14 @@ class BracketClueFinderTest {
 
 	@Test
 	void readsNamedGroups() {
-		final Clues clues = finder.find("Board [SN 200003]");
+		final Clues clues = finder.find(folder("Board [SN 200003]"));
 
 		assertEquals(Set.of("200003"), clues.get(AttributeNames.SERIAL_NUMBER).orElseThrow().value());
 	}
 
 	@Test
 	void normalizesNamedKeyCaseWithoutInterpretingItsVocabulary() {
-		final Clues clues = finder.find("Board [trw 10510] [MAC 00-00-C0-0D-66-AB]");
+		final Clues clues = finder.find(folder("Board [trw 10510] [MAC 00-00-C0-0D-66-AB]"));
 
 		assertEquals(Set.of("10510"), clues.get(AttributeNames.THE_RETRO_WEB_ID).orElseThrow().value());
 		assertEquals(Set.of("00-00-C0-0D-66-AB"), clues.get(AttributeNames.MAC_ADDRESS).orElseThrow().value());
@@ -48,7 +51,7 @@ class BracketClueFinderTest {
 
 	@Test
 	void distinguishesDecimalCommasFromListSeparators() {
-		final Clues clues = finder.find("Memory [3,5] [ISA, PCI] [Alias one, two] [Set 2 x 1,125MB]");
+		final Clues clues = finder.find(folder("Memory [3,5] [ISA, PCI] [Alias one, two] [Set 2 x 1,125MB]"));
 
 		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().equals(Set.of("3,5"))));
 		assertTrue(
@@ -59,28 +62,48 @@ class BracketClueFinderTest {
 
 	@Test
 	void ignoresAnEmptyGroupAndDoesNotDeriveATitleFromIt() {
-		assertTrue(finder.find("Board []").isEmpty());
+		assertTrue(finder.find(folder("Board []")).isEmpty());
 	}
 
 	@Test
 	void pointsAtBothBracketGroupsWhenTheyClaimOneKey() {
 		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
-				() -> finder.find("Example Board [bus ISA] [200001] [bus PCI]"));
+				() -> finder.find(folder("Example Board [bus ISA] [200001] [bus PCI]")));
 
 		assertEquals("""
-				Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
-				First values: [ISA], duplicate values: [PCI].
-				  Example Board [bus ISA] [200001] [bus PCI]
-				                ^^^^^^^^^ first
-				                                   ^^^^^^^^^ duplicate""", failure.getMessage());
+			Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
+			First values: [ISA], duplicate values: [PCI].
+			  Example Board [bus ISA] [200001] [bus PCI]
+			                ^^^^^^^^^ first
+			                                   ^^^^^^^^^ duplicate""", failure.getMessage());
 	}
 
 	@Test
 	void retainsMalformedGroups() {
-		final Clues clues = finder.find("Board [unfinished");
+		final Clues clues = finder.find(folder("Board [unfinished"));
 
 		assertTrue(clues.stream().filter(Clue::isAnonymous).anyMatch(value -> value.value().contains("[unfinished")));
 		assertEquals(Set.of("Board"), clues.get(AttributeNames.TITLE).orElseThrow().value());
+	}
+
+	private static ArchiveFolderView folder(final String name) {
+		return new ArchiveFolderView() {
+
+			@Override
+			public String name() {
+				return name;
+			}
+
+			@Override
+			public List<ArchiveFolderView> folders() {
+				return List.of();
+			}
+
+			@Override
+			public List<ArchiveFileView> files() {
+				return List.of();
+			}
+		};
 	}
 
 }

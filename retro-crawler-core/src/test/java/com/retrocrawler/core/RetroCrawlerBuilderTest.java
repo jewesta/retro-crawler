@@ -30,11 +30,12 @@ import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -360,7 +361,7 @@ class RetroCrawlerBuilderTest {
 	}
 
 	@RetroCollection(id = "factory_test")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class TestArchiveConfiguration {
 	}
 
@@ -377,10 +378,10 @@ class RetroCrawlerBuilderTest {
 		}
 	}
 
-	public static class EmptyClueFinder implements FolderNameClueFinder {
+	public static class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}

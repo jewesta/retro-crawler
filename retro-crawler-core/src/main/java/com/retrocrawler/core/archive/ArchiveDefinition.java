@@ -2,7 +2,7 @@ package com.retrocrawler.core.archive;
 
 import java.util.List;
 
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 
 /**
@@ -13,7 +13,8 @@ public interface ArchiveDefinition {
 
 	ArchiveDescriptor archiveDescriptor();
 
-	ArchiveFolderClueFinder archiveFolderClueFinder();
+	/** The clue finders applied to every candidate folder, in order. */
+	List<ClueFinder> clueFinders();
 
 	List<ArchivePathFilter> pathFilters();
 }

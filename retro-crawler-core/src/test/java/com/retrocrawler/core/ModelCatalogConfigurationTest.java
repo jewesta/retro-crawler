@@ -23,9 +23,9 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
@@ -128,13 +128,13 @@ class ModelCatalogConfigurationTest {
 	}
 
 	@RetroCollection(id = "catalog_configuration")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactCatalog(parser = TestCatalogParser.class, catalogFile = "annotation.tsv")
 	public static final class AnnotatedCollection {
 	}
 
 	@RetroCollection(id = "default_catalog_configuration")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class DefaultConfiguredCollection {
 	}
 
@@ -158,10 +158,10 @@ class ModelCatalogConfigurationTest {
 		}
 	}
 
-	public static final class EmptyClueFinder implements FolderNameClueFinder {
+	public static final class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}

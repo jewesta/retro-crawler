@@ -22,9 +22,9 @@ import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.FailureMode;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressCancelledException;
@@ -141,10 +141,10 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final Journal cancellingJournal = new Journal();
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
+		final ClueFinder clueFinder = folder -> {
 			cancellingJournal.cancel("Stop.");
-			return Clues.of(Clue.of("folder", folder));
-		}, List.of(), List.of());
+			return Clues.of(Clue.of("folder", folder.name()));
+		};
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
@@ -159,9 +159,9 @@ class ArchiveManagerTest {
 		Files.createDirectory(archiveDirectory.resolve("broken"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
+		final ClueFinder clueFinder = folder -> {
 			throw new IllegalStateException("Finder broke at " + folder);
-		}, List.of(), List.of());
+		};
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 		final Journal failLate = new Journal(FailureMode.FAIL_LATE);
@@ -341,8 +341,7 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(
-				folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of());
+		final ClueFinder clueFinder = folder -> Clues.of(Clue.of("folder", folder.name()));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);
 	}

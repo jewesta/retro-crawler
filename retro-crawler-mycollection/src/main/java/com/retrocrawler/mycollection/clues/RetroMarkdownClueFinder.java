@@ -8,32 +8,42 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.retrocrawler.core.archive.clues.ArchiveFileView;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.ClueLocation;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FileContentClueFinder;
 import com.retrocrawler.mycollection.AttributeNames;
 
 /**
  * Reads a UTF-8 {@code retro.md} collection note. Optional flat front matter
  * supplies keyed clues while the Markdown body supplies {@code desc}.
  */
-public final class RetroMarkdownClueFinder implements FileContentClueFinder {
+public final class RetroMarkdownClueFinder implements ClueFinder {
 
 	private static final String FILE_NAME = "retro.md";
 
 	private static final String DELIMITER = "---";
 
 	@Override
-	public boolean matches(final String fileName) {
-		return FILE_NAME.equalsIgnoreCase(fileName);
+	public Clues find(final ArchiveFolderView folder) {
+		final java.util.List<ArchiveFileView> notes = folder.files().stream()
+				.filter(file -> FILE_NAME.equalsIgnoreCase(file.name())).toList();
+		if (notes.isEmpty()) {
+			return Clues.none();
+		}
+		if (notes.size() > 1) {
+			throw new ClueFindingException(
+					"Expected at most one " + FILE_NAME + " file but found " + notes.size() + ".", null);
+		}
+		return notes.getFirst().peek(this::read).orElseGet(Clues::none);
 	}
 
-	@Override
-	public Clues find(final InputStream is) {
+	private Clues read(final InputStream is) {
 		try {
 			return parse(new String(is.readAllBytes(), StandardCharsets.UTF_8));
 		} catch (final IOException e) {
@@ -49,9 +59,9 @@ public final class RetroMarkdownClueFinder implements FileContentClueFinder {
 
 		final Map<String, Set<String>> valuesByKey = new LinkedHashMap<>();
 		/*
-		 * Where each key was first declared. A duplicate rejected later can then
-		 * be pointed at the front matter line that produced this clue rather
-		 * than at the document as a whole.
+		 * Where each key was first declared. A duplicate rejected later can
+		 * then be pointed at the front matter line that produced this clue
+		 * rather than at the document as a whole.
 		 */
 		final Map<String, Integer> offsetByKey = new LinkedHashMap<>();
 		int cursor = first.next();

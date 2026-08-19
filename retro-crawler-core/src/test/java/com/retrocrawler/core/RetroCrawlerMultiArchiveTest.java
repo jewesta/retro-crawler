@@ -25,9 +25,10 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -239,14 +240,15 @@ class RetroCrawlerMultiArchiveTest {
 	}
 
 	@RetroCollection(id = "failing_multi_archive_test")
-	@RetroClues(fromFolderName = ThrowingClueFinder.class)
+	@RetroClues(ThrowingClueFinder.class)
 	public static class FailingArchiveConfiguration {
 	}
 
-	public static class ThrowingClueFinder implements FolderNameClueFinder {
+	public static class ThrowingClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			throw new IllegalStateException("Unexpected clue-finder failure at " + folderName);
 		}
 	}
