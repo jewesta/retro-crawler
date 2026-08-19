@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
@@ -77,7 +80,7 @@ class JsonFileRepositoryTest {
 		final ArchiveId id = ArchiveId.of("missing_value");
 		final Artifact artifact = new Artifact(Clues.of(Clue.missingValue("sn")));
 		final ArchiveNode root = new ArchiveNode("root", artifact, null);
-		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
+		repository.stowaway(Archive.of("test_collection", id, temporaryDirectory.resolve("root"), root));
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
@@ -90,6 +93,68 @@ class JsonFileRepositoryTest {
 		assertTrue(storedClue.isEmpty());
 		assertEquals("sn", clue.key());
 		assertTrue(clue.isMissingValue());
+	}
+
+	@Test
+	void storesSourcesRelativeToTheirArtifactAndRestoresFullAris() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("compact_sources");
+		final Path artifactPath = Path.of("cards", "Rage 128");
+		final ARI folder = ARI.of("test_collection", id, artifactPath);
+		final ARI image = ARI.of("test_collection", id, artifactPath.resolve("front image.jpg"));
+		final ARI manual = ARI.of("test_collection", id, artifactPath.resolve("documentation/manual.md"));
+		final Clue clue = Clue.of("evidence", "Rage 128").from(List.of(folder, image, manual));
+		final Artifact artifact = new Artifact(Clues.of(clue));
+		final ArchiveNode gear = new ArchiveNode("Rage 128", artifact, null);
+		final ArchiveNode cards = new ArchiveNode("cards", null, List.of(gear));
+		final ArchiveNode root = new ArchiveNode(".", null, List.of(cards));
+		repository.stowaway(Archive.of("test_collection", id, temporaryDirectory.resolve("archive"), root));
+
+		final JsonNode json = new ObjectMapper()
+				.readTree(repositoryDirectory.resolve("archive_compact_sources.json").toFile());
+		final JsonNode sources = json.at("/root/children/0/children/0/artifact/evidence/sources");
+		final Archive retrieved = repository.retrieve(id).orElseThrow();
+		final Clue retrievedClue = retrieved.root().children().getFirst().children().getFirst().artifact().clues()
+				.get("evidence").orElseThrow();
+
+		assertEquals("test_collection", json.path("collectionId").asText());
+		assertEquals(".", sources.get(0).asText());
+		assertEquals("./front image.jpg", sources.get(1).asText());
+		assertEquals("./documentation/manual.md", sources.get(2).asText());
+		assertEquals(List.of(folder, image, manual), retrievedClue.sources());
+	}
+
+	@Test
+	void rejectsASourceOutsideItsArtifactWhenStowingAway() {
+		final Repository repository = new JsonFileRepository(temporaryDirectory.resolve("repository"));
+		final ArchiveId id = ArchiveId.of("outside_source");
+		final ARI outside = ARI.of("test_collection", id, Path.of("shared/index.md"));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("evidence", "text").from(outside)));
+		final ArchiveNode root = new ArchiveNode(".", null, List.of(new ArchiveNode("gear", artifact, null)));
+		final Archive archive = Archive.of("test_collection", id, temporaryDirectory.resolve("archive"), root);
+
+		assertThrows(RepositoryException.class, () -> repository.stowaway(archive));
+	}
+
+	@Test
+	void rejectsAStoredRelativeSourceThatEscapesItsArtifact() throws IOException {
+		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
+		final Repository repository = new JsonFileRepository(repositoryDirectory);
+		final ArchiveId id = ArchiveId.of("escaping_source");
+		final ARI source = ARI.of("test_collection", id, Path.of("gear/evidence.txt"));
+		final Artifact artifact = new Artifact(Clues.of(Clue.of("evidence", "text").from(source)));
+		final ArchiveNode root = new ArchiveNode(".", null, List.of(new ArchiveNode("gear", artifact, null)));
+		repository.stowaway(Archive.of("test_collection", id, temporaryDirectory.resolve("archive"), root));
+
+		final Path jsonPath = repositoryDirectory.resolve("archive_escaping_source.json");
+		final ObjectMapper mapper = new ObjectMapper();
+		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
+		((ArrayNode) json.at("/root/children/0/artifact/evidence/sources")).set(0,
+				TextNode.valueOf("./../outside.txt"));
+		mapper.writeValue(jsonPath.toFile(), json);
+
+		assertThrows(RepositoryException.class, () -> repository.retrieve(id));
 	}
 
 	@Test
@@ -114,7 +179,7 @@ class JsonFileRepositoryTest {
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("crawl_timestamp");
 		final ArchiveNode root = new ArchiveNode("root", crawledAt, null, null);
-		repository.stowaway(Archive.of(id, temporaryDirectory.resolve("root"), root));
+		repository.stowaway(Archive.of("test_collection", id, temporaryDirectory.resolve("root"), root));
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_crawl_timestamp.json").toFile());
@@ -233,7 +298,7 @@ class JsonFileRepositoryTest {
 
 	private Archive archive(final ArchiveId id, final String folder) {
 		final ArchiveNode root = new ArchiveNode(folder, null, null);
-		return Archive.of(id, temporaryDirectory.resolve(folder), root);
+		return Archive.of("test_collection", id, temporaryDirectory.resolve(folder), root);
 	}
 
 }

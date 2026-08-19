@@ -61,7 +61,7 @@ public class ArchiveManager {
 			rootNode = digger.dig(opened.target(), plan, crawledAt, journal);
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
-		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
+		final Archive archive = Archive.of(digger.collectionId(), descriptor.id(), root, rootNode);
 		journal.throwIfCancelled();
 		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
@@ -94,7 +94,7 @@ public class ArchiveManager {
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 
-		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
+		final Archive archive = Archive.of(stored.collectionId(), stored.id(), Path.of(stored.basePath()), root);
 		journal.throwIfCancelled();
 		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
@@ -155,11 +155,15 @@ public class ArchiveManager {
 			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version " + stored.version()
 					+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 		}
+		if (!digger.collectionId().equals(stored.collectionId())) {
+			throw new RepositoryException("Stored archive '" + stored.id() + "' belongs to collection '"
+					+ stored.collectionId() + "' instead of configured collection '" + digger.collectionId() + "'.");
+		}
 		final Path configuredRoot = descriptor.root();
 		if (normalize(Path.of(stored.basePath())).equals(normalize(configuredRoot))) {
 			return stored;
 		}
-		return Archive.of(stored.id(), configuredRoot, stored.root());
+		return Archive.of(stored.collectionId(), stored.id(), configuredRoot, stored.root());
 	}
 
 	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<ARI> requestedSubtrees) {

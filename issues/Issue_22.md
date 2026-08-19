@@ -147,6 +147,28 @@ omitted when empty, and the incompatible cache shape advances the archive cache
 format to version 6. Compatibility with earlier issue-branch cache files is not
 required.
 
+The in-memory and public clue representation always retains complete ARIs. The
+version 6 JSON cache avoids repeating their common prefixes by storing the
+collection namespace once on the archive and using its existing tree position
+as the artifact context. A source equal to the artifact is stored as `.`, and a
+source below it as `./...`. Retrieval validates contextual paths and
+reconstructs complete ARIs before constructing any clue. Relative paths
+containing traversal are rejected at the repository boundary.
+
+Source validity is stricter than path containment. Before accumulating a
+finder's returned `Clues`, the digger checks every declared ARI against the
+actual pruned `ArchiveFolderView` supplied to that finder. The candidate folder,
+its files, and readable metadata descendants are valid; a child artifact or
+failed/pruned folder is not valid even though its path is below the candidate.
+One invalid source rejects the complete finder result atomically. Since no
+valid source can lie outside this boundary, the cache accepts only contextual
+`.` and `./...` source forms and has no full-ARI fallback.
+
+The contextual cache follow-up is formatter-clean across its ten Java sources.
+Its focused tests cover compact round-tripping, exact pruned-view enforcement,
+collection identity, out-of-artifact rejection, and traversal rejection; the
+final full seven-module `mvn clean install` passes with 263 core tests.
+
 ### Product boundary
 
 ```text

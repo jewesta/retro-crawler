@@ -106,6 +106,11 @@ These instructions apply to the entire repository.
    several contributing resource ARIs per clue; accessing, listing, or peeking
    at a resource never implies that it caused a clue. Folder and file views
    carry authoritative ARIs and provide convenient sourced clue factories.
+   Every declared source must be an exact member of the pruned folder view the
+   finder received. Being path-wise below the candidate is insufficient because
+   a child artifact is deliberately absent from that view. Validate a finder's
+   complete returned `Clues` before accumulating any of it, and reject the
+   complete result when one source falls outside the readable boundary.
    Persist finder names and explicitly declared sources through `Artifact` and
    into the source `Clue` retained by a resolved `Fact`; omit absent sources
    rather than inventing them.

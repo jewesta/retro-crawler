@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -87,6 +88,29 @@ class ArchiveDiggerFolderViewTest {
 		assertNotNull(archive.artifact());
 		assertEquals(Set.of("Kleinanzeigen"), clue(archive, "origin").value());
 		assertNull(child(archive, "Kleinanzeigen").artifact());
+	}
+
+	@Test
+	void rejectsASourceInsideAPrunedChildArtifact() throws IOException {
+		Files.createDirectory(root.resolve("Child artifact"));
+		final ARI childSource = ARI.of("test_collection", descriptor().id(), Path.of("Child artifact"));
+		final ClueFinder childFinder = new FirstTestClueFinder(
+				folder -> "Child artifact".equals(folder.name()) ? Clues.of(folder.clue("kind", "part"))
+						: Clues.none());
+		final ClueFinder parentFinder = new SecondTestClueFinder(
+				folder -> folder.name().equals(root.getFileName().toString())
+						? Clues.of(Clue.of("borrowed", "child evidence").from(childSource))
+						: Clues.none());
+		final ArchiveDigger digger = new ArchiveDigger(
+				new TestArchiveDefinition(descriptor(), List.of(childFinder, parentFinder)));
+
+		final ClueFindingException failure = assertThrows(ClueFindingException.class,
+				() -> digger.dig(root, new Journal()));
+
+		assertEquals("SecondTestClueFinder", failure.finder().orElseThrow());
+		assertEquals(ARI.of("test_collection", descriptor().id(), Path.of("")), failure.source().orElseThrow());
+		assertTrue(failure.getCause().getMessage().contains("Clue 'borrowed' declares source '" + childSource));
+		assertTrue(failure.getCause().getMessage().contains("not present in the pruned archive view"));
 	}
 
 	@Test

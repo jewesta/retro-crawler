@@ -76,7 +76,7 @@ class RetroCrawlerBuilderTest {
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
 		final Repository repository = new FixedArchiveRepository(
-				Archive.of(ArchiveId.of("factory_test"), ROOT, archiveRoot));
+				Archive.of("factory_test", ArchiveId.of("factory_test"), ROOT, archiveRoot));
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
@@ -125,7 +125,8 @@ class RetroCrawlerBuilderTest {
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("name", "test gear")));
 		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
 				List.of(new ArchiveNode("shelf", artifact, List.of())));
-		final Repository repository = new FixedArchiveRepository(Archive.of(ARCHIVE.id(), ROOT, archiveRoot));
+		final Repository repository = new FixedArchiveRepository(
+				Archive.of("factory_test", ARCHIVE.id(), ROOT, archiveRoot));
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
@@ -398,7 +399,7 @@ class RetroCrawlerBuilderTest {
 		@Override
 		public Optional<Archive> retrieve(final ArchiveId id) {
 			retrieveCount++;
-			return Optional.of(Archive.of(id, ROOT, new ArchiveNode(".", null, null)));
+			return Optional.of(Archive.of("factory_test", id, ROOT, new ArchiveNode(".", null, null)));
 		}
 	}
 

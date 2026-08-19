@@ -16,8 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
@@ -73,9 +75,11 @@ public class JsonFileRepository implements Repository {
 		Path temporaryPath = null;
 		try {
 			temporaryPath = Files.createTempFile(directory, ".retro-crawler-", ".json");
-			mapper.writerWithDefaultPrettyPrinter().writeValue(temporaryPath.toFile(), archive);
+			final ObjectNode stored = mapper.valueToTree(archive);
+			ArchiveJsonSources.compact(stored);
+			mapper.writerWithDefaultPrettyPrinter().writeValue(temporaryPath.toFile(), stored);
 			moveIntoPlace(temporaryPath, jsonPath);
-		} catch (final IOException e) {
+		} catch (final IOException | RuntimeException e) {
 			throw new RepositoryException("Could not stow away archive as JSON at: " + jsonPath, e);
 		} finally {
 			deleteTemporaryFile(temporaryPath);
@@ -117,7 +121,9 @@ public class JsonFileRepository implements Repository {
 			if (version != ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION.value().intValue()) {
 				throw unsupportedVersion(jsonPath, version);
 			}
-			final Archive archive = mapper.readValue(jsonFile, Archive.class);
+			final JsonNode stored = mapper.readTree(jsonFile);
+			ArchiveJsonSources.expand(stored);
+			final Archive archive = mapper.treeToValue(stored, Archive.class);
 			if (archive == null) {
 				throw new RepositoryException("Stored JSON does not contain an archive at: " + jsonPath);
 			}
@@ -129,7 +135,9 @@ public class JsonFileRepository implements Repository {
 				throw unsupportedVersion(jsonPath, archive.version().value().intValue());
 			}
 			return Optional.of(archive);
-		} catch (final IOException e) {
+		} catch (final RepositoryException e) {
+			throw e;
+		} catch (final IOException | RuntimeException e) {
 			throw new RepositoryException("Could not retrieve archive from JSON at: " + jsonPath, e);
 		}
 	}

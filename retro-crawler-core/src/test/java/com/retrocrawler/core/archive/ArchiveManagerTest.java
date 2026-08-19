@@ -55,7 +55,8 @@ class ArchiveManagerTest {
 		final Path configuredRoot = temporaryDirectory.resolve("desktop-mount");
 		final ArchiveDescriptor descriptor = descriptor(configuredRoot);
 		final ArchiveNode storedRoot = new ArchiveNode(".", null, null);
-		final Archive stored = Archive.of(descriptor.id(), Path.of("/nas-container/archive"), storedRoot);
+		final Archive stored = Archive.of("test_collection", descriptor.id(), Path.of("/nas-container/archive"),
+				storedRoot);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 
 		final Archive rebound = manager(descriptor, repository).archive(journal, ReindexScope.none());
@@ -78,6 +79,7 @@ class ArchiveManagerTest {
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 		assertSame(result, repository.stowedAway);
+		assertEquals("test_collection", result.collectionId());
 	}
 
 	@Test
@@ -105,6 +107,23 @@ class ArchiveManagerTest {
 
 		final Archive result = manager.archive(journal, ReindexScope.none());
 
+		assertEquals(1, repository.retrieveCount);
+		assertEquals(1, repository.stowawayCount);
+		assertSame(result, repository.stowedAway);
+	}
+
+	@Test
+	void archiveFromAnotherCollectionIsCrawledAgain() throws IOException {
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final Archive stored = Archive.of("another_collection", descriptor.id(), archiveDirectory,
+				new ArchiveNode(".", null, null));
+		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
+		final ArchiveManager manager = manager(descriptor, repository);
+
+		final Archive result = manager.archive(journal, ReindexScope.none());
+
+		assertEquals("test_collection", result.collectionId());
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 		assertSame(result, repository.stowedAway);
@@ -333,7 +352,7 @@ class ArchiveManagerTest {
 	}
 
 	private static Archive emptyStoredArchive(final ArchiveDescriptor descriptor) {
-		return Archive.of(descriptor.id(), descriptor.root(), new ArchiveNode(".", null, null));
+		return Archive.of("test_collection", descriptor.id(), descriptor.root(), new ArchiveNode(".", null, null));
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {

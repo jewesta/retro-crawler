@@ -124,6 +124,19 @@ Positions stop at the artifact. A retrieved clue retains source ARIs but no
 snapshot of the source text, so a cached offset could point into content that
 has since changed.
 
+The JSON cache uses the archive tree as context rather than repeating complete
+ARIs on every clue. The collection namespace is stored once per archive; a
+source equal to its artifact is stored as `.` and a source below it as an
+artifact-relative `./...` path. Retrieval always expands the stored form back
+into full ARIs before constructing the clue.
+
+A finder may cite only the candidate folder or a resource present in its exact
+pruned `ArchiveFolderView`. A path merely being below the artifact is not
+enough: a pruned child artifact is outside the readable evidence boundary. If
+any returned clue declares another source, that finder's complete result is
+rejected before accumulation. Consequently the cache has no full-ARI fallback
+for clue sources; every stored source is contextual.
+
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
 Gear types are **not** required to implement framework interfaces and require only a no-arg constructor. It's "bring your own type".
@@ -424,7 +437,8 @@ and rebuilds it from that source.
 JSON cache format version 6 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
-`Archive` shape.
+`Archive` shape. Artifact-relative clue sources are also checked for traversal;
+they cannot escape the artifact that supplies their context.
 
 ---
 

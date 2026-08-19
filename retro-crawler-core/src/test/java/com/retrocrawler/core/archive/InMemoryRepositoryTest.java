@@ -55,7 +55,7 @@ class InMemoryRepositoryTest {
 	}
 
 	private static Archive archive(final String id) {
-		return Archive.of(ArchiveId.of(id), Path.of(id), new ArchiveNode(id, null, null));
+		return Archive.of("test_collection", ArchiveId.of(id), Path.of(id), new ArchiveNode(id, null, null));
 	}
 
 }

@@ -114,6 +114,10 @@ public class ArchiveDigger {
 		return finders;
 	}
 
+	String collectionId() {
+		return archive.collectionId();
+	}
+
 	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
 		Objects.requireNonNull(journal, "journal");
 		final int failuresBeforeCrawling = journal.failureCount();
@@ -311,6 +315,7 @@ public class ArchiveDigger {
 			final String finderName = finder.getClass().getSimpleName();
 			try {
 				final Clues found = Objects.requireNonNull(finder.find(folder), "finder.find(folder)");
+				requireReadableSources(found, folder);
 				clues.foundBy(finderName).addAll(found);
 			} catch (final ProgressCancelledException cancelled) {
 				throw cancelled;
@@ -319,6 +324,38 @@ public class ArchiveDigger {
 			}
 		}
 		return clues.clues();
+	}
+
+	private static Set<ARI> readableSources(final ArchiveFolderView folder) {
+		final Set<ARI> sources = new HashSet<>();
+		collectReadableSources(folder, sources);
+		return Set.copyOf(sources);
+	}
+
+	private static void collectReadableSources(final ArchiveFolderView folder, final Set<ARI> sources) {
+		sources.add(folder.ari());
+		folder.files().forEach(file -> sources.add(file.ari()));
+		folder.folders().forEach(child -> collectReadableSources(child, sources));
+	}
+
+	private static void requireReadableSources(final Clues clues, final ArchiveFolderView folder) {
+		final ARI candidateFolder = folder.ari();
+		Set<ARI> readable = null;
+		for (final Clue clue : clues) {
+			for (final ARI source : clue.sources()) {
+				if (candidateFolder.equals(source)) {
+					continue;
+				}
+				if (readable == null) {
+					readable = readableSources(folder);
+				}
+				if (!readable.contains(source)) {
+					throw new IllegalArgumentException("Clue '" + clue.key() + "' declares source '" + source
+							+ "', which is not present in the pruned archive view rooted at '" + candidateFolder
+							+ "'.");
+				}
+			}
+		}
 	}
 
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,

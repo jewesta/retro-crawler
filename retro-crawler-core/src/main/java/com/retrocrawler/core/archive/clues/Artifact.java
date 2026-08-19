@@ -31,6 +31,11 @@ import com.retrocrawler.core.archive.ARI;
  */
 public class Artifact {
 
+	private static final String JSON_VALUE = "value";
+	private static final String JSON_FINDER = "finder";
+	private static final String JSON_SOURCES = "sources";
+	private static final Set<String> JSON_PROPERTIES = Set.of(JSON_VALUE, JSON_FINDER, JSON_SOURCES);
+
 	/*
 	 * Not final because Jackson populates an artifact field by field through
 	 * jsonSetter(...). Every value this field ever holds is nevertheless a
@@ -79,10 +84,10 @@ public class Artifact {
 		final Map<String, Object> storedClues = new LinkedHashMap<>();
 		clues.forEach(clue -> {
 			final Map<String, Object> storedClue = new LinkedHashMap<>();
-			storedClue.put("value", storedValue(clue));
-			clue.finder().ifPresent(finder -> storedClue.put("finder", finder));
+			storedClue.put(JSON_VALUE, storedValue(clue));
+			clue.finder().ifPresent(finder -> storedClue.put(JSON_FINDER, finder));
 			if (!clue.sources().isEmpty()) {
-				storedClue.put("sources", clue.sources().stream().map(ARI::toString).toList());
+				storedClue.put(JSON_SOURCES, clue.sources().stream().map(ARI::toString).toList());
 			}
 			storedClues.put(clue.key(), Collections.unmodifiableMap(storedClue));
 		});
@@ -96,17 +101,17 @@ public class Artifact {
 					+ (value == null ? "null" : value.getClass().getName()));
 		}
 		for (final Object property : stored.keySet()) {
-			if (!(property instanceof final String name) || !Set.of("value", "finder", "sources").contains(name)) {
+			if (!(property instanceof final String name) || !JSON_PROPERTIES.contains(name)) {
 				throw new IllegalArgumentException("Unexpected property on stored clue '" + key + "': " + property);
 			}
 		}
-		if (!stored.containsKey("value")) {
+		if (!stored.containsKey(JSON_VALUE)) {
 			throw new IllegalArgumentException("Stored clue '" + key + "' has no value.");
 		}
 
-		final Set<String> values = storedValues(key, stored.get("value"));
-		final String finder = storedFinder(key, stored.get("finder"));
-		final List<ARI> sources = storedSources(key, stored.get("sources"));
+		final Set<String> values = storedValues(key, stored.get(JSON_VALUE));
+		final String finder = storedFinder(key, stored.get(JSON_FINDER));
+		final List<ARI> sources = storedSources(key, stored.get(JSON_SOURCES));
 		final Clue clue = new Clue(key, values, finder, sources);
 		clues = clues.and(clue);
 	}
