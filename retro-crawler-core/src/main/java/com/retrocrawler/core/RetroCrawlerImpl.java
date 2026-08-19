@@ -95,12 +95,12 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 	@Override
 	public ArchiveDescriptor archive(final ArchiveId archiveId) {
-		return registeredArchive(archiveId).descriptor();
+		return assertArchive(archiveId).descriptor();
 	}
 
 	@Override
 	public ARI identify(final ArchiveId archiveId, final Path sourcePath) {
-		final RegisteredArchive archive = registeredArchive(archiveId);
+		final RegisteredArchive archive = assertArchive(archiveId);
 		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
 		final Path configuredRoot = archive.descriptor().root().normalize();
 		if (!requested.startsWith(configuredRoot)) {
@@ -112,7 +112,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 
 	@Override
 	public <T> Optional<T> inspect(final ARI source, final ArchiveFileAccessor<T> inspector) throws IOException {
-		final RegisteredArchive archive = registeredArchive(source);
+		final RegisteredArchive archive = assertArchive(source);
 		Objects.requireNonNull(inspector, "inspector");
 		final Path configuredRoot = archive.descriptor().root();
 
@@ -142,7 +142,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 		throw new NoSuchFileException(source.toString());
 	}
 
-	private RegisteredArchive registeredArchive(final ArchiveId archiveId) {
+	private RegisteredArchive assertArchive(final ArchiveId archiveId) {
 		Objects.requireNonNull(archiveId, "archiveId");
 		final RegisteredArchive archive = archives.get(archiveId);
 		if (archive == null) {
@@ -151,19 +151,19 @@ class RetroCrawlerImpl implements RetroCrawler {
 		return archive;
 	}
 
-	private RegisteredArchive registeredArchive(final ARI source) {
+	private RegisteredArchive assertArchive(final ARI source) {
 		Objects.requireNonNull(source, "source");
 		if (!collectionId.equals(source.collectionId())) {
 			throw new IllegalArgumentException("ARI belongs to collection '" + source.collectionId()
 					+ "' but this crawler represents collection '" + collectionId + "': " + source);
 		}
-		return registeredArchive(source.archiveId());
+		return assertArchive(source.archiveId());
 	}
 
 	@Override
 	public <R, N, G> R crawl(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
 			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(List.of(registeredArchive(archiveId)), journal, reindexScope, factory);
+		return crawl(List.of(assertArchive(archiveId)), journal, reindexScope, factory);
 	}
 
 	@Override
@@ -241,7 +241,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			return;
 		}
 		for (final ARI subtree : reindexScope.subtrees()) {
-			registeredArchive(subtree);
+			assertArchive(subtree);
 			final boolean selectedArchive = selected.stream()
 					.anyMatch(archive -> subtree.archiveId().equals(archive.descriptor().id()));
 			if (!selectedArchive) {
