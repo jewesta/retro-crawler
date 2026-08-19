@@ -56,7 +56,7 @@ These instructions apply to the entire repository.
    protocol integrations in thin adapters that use the same public API as the
    CLI, Vaadin sample application, and other consumers. Preserve provenance
    through the resolution process so an answer about a piece of gear can be
-   traced back to its archive, source path, clues, and facts.
+   traced back to its archive, source ARIs, clues, and facts.
 
 8. **Keep clues and facts on separate levels.**
    A `Clue` is model-independent evidence observed while crawling an archive;
@@ -90,15 +90,25 @@ These instructions apply to the entire repository.
    equality on purpose, so a set promises a uniqueness it cannot enforce and
    says nothing about the key-level rule that actually applies.
    Because the rule rejects rather than merges, it must say where. Report a
-   clue failure against the archive location that caused it: the digger
-   completes every `ClueFindingException` with the archive-relative folder and
-   observes the unified finder to name the source it was reading. A finder that
-   already tracks offsets should pass a `ClueLocation` when it
-   accumulates a clue, so a rejection can point at the tag the cataloguer
-   actually wrote. `Clues` carries those positions so they survive a finder
-   handing its work back, and `Artifact` drops them, because a cached archive
-   has nothing left to point into. Never let a clue failure escape a crawl
-   without naming its folder.
+   clue failure against the authoritative ARI that caused it. The digger
+   attaches the running finder's unique simple class name and defaults the
+   failure source to the candidate folder; `ArchiveFileView.peek(...)` replaces
+   that default with the exact file ARI when the failure occurs while inspecting
+   content. A finder that already tracks offsets should pass a `ClueLocation`
+   when it accumulates a clue, so a rejection can point at the tag the
+   cataloguer actually wrote. `Clues` carries those positions so they survive a
+   finder handing its work back, and `Artifact` drops them, because a cached
+   archive has no active source text to point into. Never let a clue failure
+   escape a crawl without an ARI.
+   Finder identity and clue provenance are durable rather than diagnostic side
+   channels. The crawler retains the producing finder's unique simple class
+   name on every returned clue. A finder may explicitly declare zero, one, or
+   several contributing resource ARIs per clue; accessing, listing, or peeking
+   at a resource never implies that it caused a clue. Folder and file views
+   carry authoritative ARIs and provide convenient sourced clue factories.
+   Persist finder names and explicitly declared sources through `Artifact` and
+   into the source `Clue` retained by a resolved `Fact`; omit absent sources
+   rather than inventing them.
 
 10. **Express gear relation through archive location, never through
    hierarchy-derived type.**

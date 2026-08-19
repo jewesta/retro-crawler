@@ -2,10 +2,12 @@ package com.retrocrawler.mycollection.clues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -14,6 +16,8 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
@@ -30,6 +34,7 @@ class CollectionFileClueFindersTest {
 		final Clues clues = finder.find(markdownFolder(markdown));
 
 		assertEquals(Set.of(markdown), clues.get(AttributeNames.DESC).orElseThrow().value());
+		assertTrue(clues.get(AttributeNames.DESC).orElseThrow().sources().isEmpty());
 	}
 
 	@Test
@@ -96,6 +101,7 @@ class CollectionFileClueFindersTest {
 		assertEquals(Set.of("ANGLED.JPEG"), clues.get(AttributeNames.IMAGE_ANGLED).orElseThrow().value());
 		assertEquals(Set.of("front.jpeg"), clues.get(AttributeNames.IMAGE_FRONT).orElseThrow().value());
 		assertEquals(Set.of("back.jpeg"), clues.get(AttributeNames.IMAGE_BACK).orElseThrow().value());
+		assertEquals(List.of(ari("front.jpeg")), clues.get(AttributeNames.IMAGE_FRONT).orElseThrow().sources());
 		assertEquals(3, clues.size());
 	}
 
@@ -109,6 +115,8 @@ class CollectionFileClueFindersTest {
 		assertEquals(Set.of("FD-0007", "FD-0008"), clues.get(AttributeNames.FLOPPY_IMAGE_ID).orElseThrow().value());
 		assertEquals(Set.of("FD-0007.img", "fd-0008 Boot disk.ima"),
 				clues.get(AttributeNames.FLOPPY_IMAGES).orElseThrow().value());
+		assertEquals(List.of(ari("FD-0007.img"), ari("fd-0008 Boot disk.ima")),
+				clues.get(AttributeNames.FLOPPY_IMAGES).orElseThrow().sources());
 	}
 
 	private static ArchiveFolderView markdownFolder(final String markdown) {
@@ -117,6 +125,11 @@ class CollectionFileClueFindersTest {
 
 	private static ArchiveFolderView folder(final String name, final ArchiveFileView... files) {
 		return new ArchiveFolderView() {
+
+			@Override
+			public ARI ari() {
+				return ARI.of("test_collection", ArchiveId.of("test_archive"), Path.of(name));
+			}
 
 			@Override
 			public String name() {
@@ -144,6 +157,11 @@ class CollectionFileClueFindersTest {
 		return new ArchiveFileView() {
 
 			@Override
+			public ARI ari() {
+				return ARI.of("test_collection", ArchiveId.of("test_archive"), Path.of("gear", name));
+			}
+
+			@Override
 			public String name() {
 				return name;
 			}
@@ -153,5 +171,9 @@ class CollectionFileClueFindersTest {
 				return Optional.of(Objects.requireNonNull(inspector.apply(new ByteArrayInputStream(bytes))));
 			}
 		};
+	}
+
+	private static ARI ari(final String fileName) {
+		return ARI.of("test_collection", ArchiveId.of("test_archive"), Path.of("gear", fileName));
 	}
 }

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -82,7 +81,7 @@ class JsonFileRepositoryTest {
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_missing_value.json").toFile());
-		final JsonNode storedClue = json.at("/root/artifact/sn");
+		final JsonNode storedClue = json.at("/root/artifact/sn/value");
 		final Artifact retrieved = repository.retrieve(id).orElseThrow().root().artifact();
 		final Clue clue = retrieved.clues().stream().findFirst().orElseThrow();
 

@@ -21,7 +21,7 @@ public class SquareBracketsClueFinder implements ClueFinder {
 
 	public static final String CLOSING_BRACKETS = "]";
 
-	private static final Clue parse(final String keyValueString) {
+	private static Clue parse(final ArchiveFolderView folder, final String keyValueString) {
 		final String trimmed = keyValueString.trim();
 
 		final int firstSpace = trimmed.indexOf(' ');
@@ -63,9 +63,9 @@ public class SquareBracketsClueFinder implements ClueFinder {
 		}
 
 		if (key == null) {
-			return Clue.of(values);
+			return folder.clue(values);
 		}
-		return Clue.of(key.toLowerCase(Locale.ROOT), values);
+		return folder.clue(key.toLowerCase(Locale.ROOT), values);
 	}
 
 	@Override
@@ -90,13 +90,13 @@ public class SquareBracketsClueFinder implements ClueFinder {
 		final int indexOfFirstAttribute = folderName.indexOf(SquareBracketsClueFinder.OPENING_BRACKETS);
 		if (indexOfFirstAttribute == -1) {
 			// Path name has only title attribute
-			return clues.add(Clue.of(AttributeNames.TITLE, folderName)).clues();
+			return clues.add(folder.clue(AttributeNames.TITLE, folderName)).clues();
 		}
 
 		if (indexOfFirstAttribute > 0) {
 			final String title = folderName.substring(0, indexOfFirstAttribute).trim();
 			if (!title.isEmpty()) {
-				clues.add(Clue.of(AttributeNames.TITLE, title));
+				clues.add(folder.clue(AttributeNames.TITLE, title));
 			}
 		}
 
@@ -112,7 +112,7 @@ public class SquareBracketsClueFinder implements ClueFinder {
 			final ClueLocation location = ClueLocation.in(folderName, indexOfFirstAttribute + m.start(),
 					m.end() - m.start());
 			try {
-				clues.add(parse(keyValueString), location);
+				clues.add(parse(folder, keyValueString), location);
 			} catch (final IllegalArgumentException malformed) {
 				throw new ClueFindingException(malformed.getMessage(), location, malformed);
 			}

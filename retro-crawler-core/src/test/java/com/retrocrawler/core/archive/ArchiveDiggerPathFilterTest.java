@@ -86,13 +86,13 @@ class ArchiveDiggerPathFilterTest {
 	}
 
 	private static ClueFinder clueFinder() {
-		return folder -> {
+		return new TestClueFinder(folder -> {
 			final ClueAccumulator clues = Clues.accumulator().add(Clue.of("folder", folder.name()));
 			if (!folder.files().isEmpty()) {
 				clues.add(Clue.of("files", Set.copyOf(folder.files().stream().map(ArchiveFileView::name).toList())));
 			}
 			return clues.clues();
-		};
+		});
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

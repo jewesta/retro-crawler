@@ -36,6 +36,13 @@ A raw key–value observation derived from:
 
 Clues are always **string-based** and may contain multiple values. This is a raw representation of a **potential** property of a piece in your collection.
 
+Every crawled clue retains the unique simple class name of the finder that
+produced it. A finder may also declare the exact archive resources that
+contributed to an individual clue. Those sources are stable `ARI`s, never
+physical paths. The list is optional: no declared source means that the finder
+makes no resource-level provenance claim, and merely accessing a resource never
+causes RetroCrawler to infer one.
+
 Within one artifact, every clue key has exactly one authority. One clue may
 contain several values, but separate clues from different finders must not
 claim the same explicit key. An anonymous observation must likewise not compete
@@ -57,10 +64,17 @@ one observation at a time:
 
 ```java
 final ClueAccumulator clues = Clues.accumulator();
-clues.add(Clue.of("bus", "AGP"));
-clues.add(Clue.of("Example Graphics Board"));
+clues.add(folder.clue("bus", "AGP"));
+clues.add(folder.clue("Example Graphics Board"));
 return clues.clues();
 ```
+
+`ArchiveFolderView` and `ArchiveFileView` carry their authoritative ARIs. Their
+`clue(...)` factories attach that resource to the new clue. A finder that does
+not want to make an exact source claim uses `Clue.of(...)` instead. Sources for
+an aggregate clue are added deliberately while the finder loops over its
+contributors; there is no bulk operation that assigns every accessed resource
+to every returned clue.
 
 A second clue claiming a key already taken is rejected with a
 `DuplicateClueException` right where it is observed.
@@ -68,14 +82,16 @@ A second clue claiming a key already taken is rejected with a
 ### Clue diagnostics
 Because RetroCrawler rejects a conflict instead of merging it, a failed crawl
 has to say where. Every clue failure leaves a crawl as a `ClueFindingException`
-with a compiler-style header naming the archive-relative folder, the finder, and
-the source it was reading — the original condition stays available as the cause.
+with a compiler-style header naming an authoritative resource ARI and the
+finder. A failure inside `ArchiveFileView.peek(...)` names that exact file;
+otherwise the candidate folder is the accurate default. The original condition
+stays available as the cause.
 
 A finder that tracks offsets can hand them over, and the rejection then points at
 the tag you actually wrote:
 
 ```
-Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the archive folder.
+ari:/my_collection/hardware/Graphics%20Cards/Example%20Board: BracketClueFinder failed while finding clues.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [ISA], duplicate values: [PCI].
   Example Board [bus ISA] [200001] [bus PCI]
                 ^^^^^^^^^ first
@@ -88,23 +104,25 @@ Pass a `ClueLocation` when you accumulate:
 clues.add(Clue.of(key, values), ClueLocation.in(folderName, openingBracket, length));
 ```
 
-A finder that reports nothing still produces the header. When the two conflicting
-clues come from *different* finders, both are drawn — the positions travel with
-the `Clues` a finder hands back:
+A finder that reports no exact source still produces the header. When the two
+conflicting clues come from *different* finders, their durable finder and source
+provenance are both reported — text positions travel with the `Clues` a finder
+hands back:
 
 ```
-Graphics Cards/Example Board [bus AGP]/retro.md: RetroMarkdownClueFinder read the file content.
+ari:/my_collection/hardware/Graphics%20Cards/Example%20Board: RetroMarkdownClueFinder failed while finding clues.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [AGP], duplicate values: [PCI].
-  The first clue was observed where BracketClueFinder read the archive folder, line 1, column 15.
+  The first clue was observed by BracketClueFinder from ari:/my_collection/hardware/Graphics%20Cards/Example%20Board, line 1, column 15.
     Example Board [bus AGP]
                   ^^^^^^^^^
-  The duplicate clue was observed where RetroMarkdownClueFinder read the file content of 'retro.md', line 3, column 1.
+  The duplicate clue was observed by RetroMarkdownClueFinder, line 3, column 1.
     bus: PCI
     ^^^
 ```
 
-Positions stop at the artifact: a retrieved archive has no folder name or
-document left to point into, so they would otherwise describe text nobody read.
+Positions stop at the artifact. A retrieved clue retains source ARIs but no
+snapshot of the source text, so a cached offset could point into content that
+has since changed.
 
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
@@ -137,7 +155,9 @@ A finder decides which parts of that view matter. It may use the folder name,
 enumerate files and metadata subfolders, and inspect file content lazily through
 `ArchiveFileView.peek(...)` when the source exposes it. Finders are independent:
 several may inspect the same file, while the one-authority-per-clue-key rule
-governs what they are allowed to return.
+governs what they are allowed to return. Every folder and file view has an ARI;
+using its `clue(...)` factory records that exact source, while `Clue.of(...)`
+deliberately records none.
 
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
@@ -159,7 +179,10 @@ RetroCrawler's collection and gear model can be configured via annotations:
 
 - `@RetroClues`
   Declares the ordered `ClueFinder`s that inspect each candidate's pruned
-  archive view and produce crawl-time clues.
+  archive view and produce crawl-time clues. Each finder must be a named class
+  with a simple name unique within the configured list, because that compact
+  name is retained as durable clue provenance. Registering the same finder
+  twice and using two classes with the same simple name are both rejected.
 
 - `@RetroGear`
   Declares a gear type and its matcher.
@@ -314,6 +337,11 @@ Provider paths remain crawl-time coordinates used to derive artifact-relative
 clues and to rebind caches; providers must not require them to be locally
 accessible. ARIs are the stable application-facing resource identity.
 
+Clue finders receive that identity directly through `ArchiveFolderView.ari()`
+and `ArchiveFileView.ari()`. The archive definition derives each one from its
+collection identity, archive descriptor, and archive-relative resource path.
+Finders never need the physical archive root to record provenance.
+
 When a file-name clue refers to a resource belonging to an artifact, its cached
 path is relative to that artifact rather than to the archive root. A direct
 `front.jpeg` is therefore stored as `front.jpeg`; a resource below the artifact
@@ -393,7 +421,7 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
-JSON cache format version 5 is inspected before the stored payload is
+JSON cache format version 6 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
 `Archive` shape.

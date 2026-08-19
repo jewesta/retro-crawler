@@ -47,16 +47,15 @@ class ArchiveDiggerFolderViewTest {
 
 		final List<String> inspectionOrder = new ArrayList<>();
 		final List<String> rootFolders = new ArrayList<>();
-		final ClueFinder metadataFinder = folder -> {
+		final ClueFinder metadataFinder = new SecondTestClueFinder(folder -> {
 			inspectionOrder.add(folder.name());
 			if (folder.name().equals(root.getFileName().toString())) {
 				folder.folders().stream().map(ArchiveFolderView::name).forEach(rootFolders::add);
 			}
 			return originClues(folder);
-		};
-		final ClueFinder nameFinder = folder -> "Child artifact".equals(folder.name())
-				? Clues.of(Clue.of("kind", "part"))
-				: Clues.none();
+		});
+		final ClueFinder nameFinder = new FirstTestClueFinder(
+				folder -> "Child artifact".equals(folder.name()) ? Clues.of(Clue.of("kind", "part")) : Clues.none());
 		final ArchiveDigger digger = new ArchiveDigger(
 				new TestArchiveDefinition(descriptor(), List.of(nameFinder, metadataFinder)));
 
@@ -77,9 +76,10 @@ class ArchiveDiggerFolderViewTest {
 	@Test
 	void aFinderCanEstablishAnArtifactFromTheMetadataSubtree() throws IOException {
 		Files.createDirectory(root.resolve("Kleinanzeigen"));
-		final ClueFinder metadataFinder = folder -> folder.folders().stream()
-				.anyMatch(child -> "Kleinanzeigen".equals(child.name())) ? Clues.of(Clue.of("origin", "Kleinanzeigen"))
-						: Clues.none();
+		final ClueFinder metadataFinder = new TestClueFinder(
+				folder -> folder.folders().stream().anyMatch(child -> "Kleinanzeigen".equals(child.name()))
+						? Clues.of(Clue.of("origin", "Kleinanzeigen"))
+						: Clues.none());
 
 		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), metadataFinder)).dig(root,
 				new Journal());
@@ -95,18 +95,18 @@ class ArchiveDiggerFolderViewTest {
 		Files.createDirectory(broken.resolve("Nested artifact"));
 		final IllegalStateException randomFailure = new IllegalStateException("Broken folder clue.");
 		final List<String> rootFolders = new ArrayList<>();
-		final ClueFinder artifactFinder = folder -> {
+		final ClueFinder artifactFinder = new FirstTestClueFinder(folder -> {
 			if ("Broken artifact".equals(folder.name())) {
 				throw randomFailure;
 			}
 			return "Nested artifact".equals(folder.name()) ? Clues.of(Clue.of("kind", "part")) : Clues.none();
-		};
-		final ClueFinder boundaryObserver = folder -> {
+		});
+		final ClueFinder boundaryObserver = new SecondTestClueFinder(folder -> {
 			if (folder.name().equals(root.getFileName().toString())) {
 				folder.folders().stream().map(ArchiveFolderView::name).forEach(rootFolders::add);
 			}
 			return Clues.none();
-		};
+		});
 		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
 		final ArchiveDigger digger = new ArchiveDigger(
@@ -124,7 +124,8 @@ class ArchiveDiggerFolderViewTest {
 		assertEquals(1, journal.failureCount());
 		final ClueFindingException recorded = (ClueFindingException) journal.failures().getFirst();
 		assertEquals(descriptor().id(), recorded.archiveId().orElseThrow());
-		assertEquals(Path.of("Broken artifact"), recorded.folder().orElseThrow());
+		assertEquals(ARI.of("test_collection", descriptor().id(), Path.of("Broken artifact")),
+				recorded.source().orElseThrow());
 		assertSame(randomFailure, recorded.getCause());
 	}
 
@@ -136,7 +137,7 @@ class ArchiveDiggerFolderViewTest {
 			}
 			for (final ArchiveFileView file : child.files()) {
 				if ("Konversation.txt".equals(file.name())) {
-					file.peek(this::read).ifPresent(value -> clues.add(Clue.of("origin-detail", value)));
+					file.peek(this::read).ifPresent(value -> clues.add(file.clue("origin-detail", value)));
 				}
 			}
 		}

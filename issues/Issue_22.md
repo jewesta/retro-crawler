@@ -64,7 +64,6 @@ strictness no longer expresses a useful domain boundary.
 Clue discovery therefore has one extension point:
 
 ```java
-@FunctionalInterface
 public interface ClueFinder {
 
     Clues find(ArchiveFolderView folder);
@@ -101,35 +100,52 @@ sentinel, and the `ArchiveFolderClueFinder` dispatcher are removed rather than
 retained as compatibility facades. `@RetroClues` now declares one ordered array
 of `ClueFinder` classes.
 
-Diagnostics remain precise without specialized finder types. The digger observes
-which files a finder actually peeks: exactly one inspected file produces a
-file-content source location, while a finder that inspects zero or several files
-is reported against the candidate archive folder.
+Diagnostics remain precise without specialized finder types or inferred
+access provenance. Every folder and file view has an authoritative ARI. A
+failure raised inside `ArchiveFileView.peek(...)` is attached to that file ARI;
+other finder failures accurately default to the candidate folder ARI.
 
-The first implementation spans core, demo, personal collection adapter, app,
-and CLI. Focused tests cover post-order pruning, independent finder ordering,
+The completed refactor spans core, demo, personal collection adapter, app, and
+CLI. Focused tests cover post-order pruning, independent finder ordering,
 duplicate-key rejection, fail-late continuation, several finders inspecting the
-same file, and exact single-file diagnostics. Canonical formatting passes for
-all 47 changed Java sources, and the full seven-module `mvn clean install`
-passes.
+same file, exact file-failure ARIs, zero/one/multiple explicitly declared
+sources, finder-name collisions, synthetic clue provenance, and JSON
+round-tripping. Canonical formatter assertions pass for all 35 added or modified
+Java sources, and the full seven-module `mvn clean install` passes.
 
-### Review follow-up: clue provenance
+### Settled clue provenance
 
-The `FinderObservation` wrappers and public `ClueSourceKind` introduced during
-the first implementation are provisional and must not remain in the final
-refactor. They infer a source from the number of files a finder peeks, which is
-diagnostic-only and can misattribute a clue from a finder that reads several
-kinds of evidence.
+Finder identity and exact source provenance now live on `Clue` and survive the
+`Artifact` cache boundary. They are distinct statements:
 
-Before removing them, settle explicit clue provenance. A finder class can be
-attached automatically at the finder boundary and records *who* made the
-observation. It does not necessarily record *where* the evidence came from once
-one unified finder may inspect the candidate folder and several files. The open
-design choice is whether the artifact folder's ARI plus finder type is sufficient
-provenance, or whether every clue should additionally retain the exact source
-resource ARI supplied explicitly by the finder. Any exact resource provenance
-must be carried by the clue through `Artifact`, repository serialization, and
-Fact resolution; it must not be another crawl-only diagnostic side channel.
+- The digger automatically attaches `finder.getClass().getSimpleName()` to
+  every clue returned by that finder. Finder simple names form a model-local
+  namespace. `ArchiveDigger` rejects anonymous, local, synthetic, or lambda
+  finders, the same finder class configured twice, and distinct classes sharing
+  one simple name. The validation error uses fully qualified names to explain a
+  collision without bloating every serialized clue.
+- A finder may explicitly declare zero, one, or several exact source ARIs per
+  clue. An empty list is a deliberate absence of a resource-level claim.
+  Accessing, listing, or peeking at a resource is never treated as evidence that
+  the resource caused every clue returned by the finder.
+- `ArchiveDefinition` supplies the collection namespace and derives stable ARIs
+  through `ariFrom(resourcePath)`. `ArchiveFolderView` and `ArchiveFileView`
+  receive those authoritative identities and offer `clue(...)` convenience
+  methods that create a clue sourced from the view. Aggregate finders add the
+  contributing ARIs deliberately while looping over their evidence; there is no
+  bulk operation that assigns provenance to a completed `Clues` bundle.
+- Framework-generated `@id` and `@folder` clues have neither a finder nor source
+  list. Their origin is already inherent in their reserved keys.
+
+The provisional `FinderObservation`, observed-view wrappers, `ClueSource`,
+`ClueSourceKind`, and `ClueSighting` are removed. Crawl-time `ClueLocation`
+offsets remain transient and are dropped at `Artifact`; finder names and source
+ARIs are durable and are preserved by facts through their source clue.
+
+Artifact JSON now stores each clue as a value/provenance object. `sources` is
+omitted when empty, and the incompatible cache shape advances the archive cache
+format to version 6. Compatibility with earlier issue-branch cache files is not
+required.
 
 ### Product boundary
 

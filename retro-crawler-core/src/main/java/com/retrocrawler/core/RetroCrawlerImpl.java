@@ -362,6 +362,11 @@ class RetroCrawlerImpl implements RetroCrawler {
 			implements ArchiveDefinition {
 
 		@Override
+		public String collectionId() {
+			return model.collectionId();
+		}
+
+		@Override
 		public List<ClueFinder> clueFinders() {
 			return model.clueFinders();
 		}

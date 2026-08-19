@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
@@ -23,16 +24,24 @@ public final class StandardImageClueFinder implements ClueFinder {
 	@Override
 	public Clues find(final ArchiveFolderView folder) {
 		final Map<String, Set<String>> valuesByKey = new java.util.LinkedHashMap<>();
+		final Map<String, java.util.List<ArchiveFileView>> sourcesByKey = new java.util.LinkedHashMap<>();
 		for (final var file : folder.files()) {
 			final String fileName = file.name().toLowerCase(Locale.ROOT);
 			final String key = KEYS_BY_FILE_NAME.get(fileName);
 			if (key != null) {
 				valuesByKey.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).add(file.name());
+				sourcesByKey.computeIfAbsent(key, ignored -> new java.util.ArrayList<>()).add(file);
 			}
 		}
 
 		final ClueAccumulator clues = Clues.accumulator();
-		valuesByKey.forEach((key, values) -> clues.add(Clue.of(key, Set.copyOf(values))));
+		valuesByKey.forEach((key, values) -> {
+			Clue clue = Clue.of(key, Set.copyOf(values));
+			for (final ArchiveFileView source : sourcesByKey.get(key)) {
+				clue = clue.from(source.ari());
+			}
+			clues.add(clue);
+		});
 		return clues.clues();
 	}
 }

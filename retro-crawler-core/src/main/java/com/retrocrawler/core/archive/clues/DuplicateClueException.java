@@ -27,17 +27,18 @@ public class DuplicateClueException extends RetroCrawlerException {
 	 * Reports a rejected duplicate against both observations, pointing into the
 	 * source wherever the finders tracked a position.
 	 */
-	DuplicateClueException(final Clue previous, final ClueSighting previousSighting, final Clue duplicate,
-			final ClueSighting duplicateSighting) {
-		super(message(previous, previousSighting, duplicate, duplicateSighting));
+	DuplicateClueException(final Clue previous, final ClueLocation previousLocation, final Clue duplicate,
+			final ClueLocation duplicateLocation) {
+		super(message(previous, previousLocation, duplicate, duplicateLocation));
 	}
 
-	private static String message(final Clue previous, final ClueSighting previousSighting, final Clue duplicate,
-			final ClueSighting duplicateSighting) {
+	private static String message(final Clue previous, final ClueLocation previousLocation, final Clue duplicate,
+			final ClueLocation duplicateLocation) {
 		final StringBuilder message = new StringBuilder("Duplicate clue key '").append(duplicate.key())
 				.append("'. One artifact may contain only one clue for a key. First values: ").append(previous.value())
 				.append(", duplicate values: ").append(duplicate.value()).append(".");
-		pointer(previousSighting, duplicateSighting).ifPresent(pointer -> message.append('\n').append(pointer));
+		pointer(previous, previousLocation, duplicate, duplicateLocation)
+				.ifPresent(pointer -> message.append('\n').append(pointer));
 		return message.toString();
 	}
 
@@ -47,30 +48,46 @@ public class DuplicateClueException extends RetroCrawlerException {
 	 * clues claiming one key from two different sources is the case a single
 	 * caret cannot express, and it is also the interesting one.
 	 */
-	private static Optional<String> pointer(final ClueSighting previous, final ClueSighting duplicate) {
-		final ClueLocation first = previous.location();
-		final ClueLocation second = duplicate.location();
+	private static Optional<String> pointer(final Clue previous, final ClueLocation first, final Clue duplicate,
+			final ClueLocation second) {
 		if (first != null && first.sharesExcerptWith(second)) {
 			return Optional
 					.of("  " + first.excerpt() + "\n  " + first.caret() + " first\n  " + second.caret() + " duplicate");
 		}
 
 		final StringBuilder pointer = new StringBuilder();
-		append(pointer, "first", previous);
-		if (!pointer.isEmpty() && duplicate.isKnown()) {
+		append(pointer, "first", previous, first);
+		if (!pointer.isEmpty() && isKnown(duplicate, second)) {
 			pointer.append('\n');
 		}
-		append(pointer, "duplicate", duplicate);
+		append(pointer, "duplicate", duplicate, second);
 		return pointer.isEmpty() ? Optional.empty() : Optional.of(pointer.toString());
 	}
 
-	private static void append(final StringBuilder pointer, final String label, final ClueSighting sighting) {
-		if (!sighting.isKnown()) {
+	private static boolean isKnown(final Clue clue, final ClueLocation location) {
+		return clue.finder().isPresent() || !clue.sources().isEmpty() || location != null;
+	}
+
+	private static void append(final StringBuilder pointer, final String label, final Clue clue,
+			final ClueLocation location) {
+		if (!isKnown(clue, location)) {
 			return;
 		}
-		pointer.append("  The ").append(label).append(" clue was observed where ").append(sighting.describe())
-				.append('.');
-		final ClueLocation location = sighting.location();
+		pointer.append("  The ").append(label).append(" clue was observed");
+		clue.finder().ifPresent(finder -> pointer.append(" by ").append(finder));
+		if (!clue.sources().isEmpty()) {
+			pointer.append(" from ");
+			if (clue.sources().size() == 1) {
+				pointer.append(clue.sources().getFirst());
+			} else {
+				pointer.append(clue.sources());
+			}
+		}
+		if (location != null) {
+			pointer.append(clue.finder().isPresent() || !clue.sources().isEmpty() ? ", " : " at ")
+					.append(location.describe());
+		}
+		pointer.append('.');
 		if (location != null && location.excerpt() != null) {
 			pointer.append("\n    ").append(location.excerpt()).append("\n    ").append(location.caret());
 		}

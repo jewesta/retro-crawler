@@ -141,10 +141,10 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final Journal cancellingJournal = new Journal();
-		final ClueFinder clueFinder = folder -> {
+		final ClueFinder clueFinder = new TestClueFinder(folder -> {
 			cancellingJournal.cancel("Stop.");
 			return Clues.of(Clue.of("folder", folder.name()));
-		};
+		});
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
@@ -159,9 +159,9 @@ class ArchiveManagerTest {
 		Files.createDirectory(archiveDirectory.resolve("broken"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final ClueFinder clueFinder = folder -> {
+		final ClueFinder clueFinder = new TestClueFinder(folder -> {
 			throw new IllegalStateException("Finder broke at " + folder);
-		};
+		});
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 		final Journal failLate = new Journal(FailureMode.FAIL_LATE);
@@ -341,7 +341,7 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ClueFinder clueFinder = folder -> Clues.of(Clue.of("folder", folder.name()));
+		final ClueFinder clueFinder = new TestClueFinder(folder -> Clues.of(Clue.of("folder", folder.name())));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);
 	}

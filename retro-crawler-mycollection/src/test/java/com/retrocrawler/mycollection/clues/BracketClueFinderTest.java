@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
@@ -39,6 +42,8 @@ class BracketClueFinderTest {
 		final Clues clues = finder.find(folder("Board [SN 200003]"));
 
 		assertEquals(Set.of("200003"), clues.get(AttributeNames.SERIAL_NUMBER).orElseThrow().value());
+		assertEquals(List.of(ARI.of("test_collection", ArchiveId.of("test_archive"), Path.of("Board [SN 200003]"))),
+				clues.get(AttributeNames.SERIAL_NUMBER).orElseThrow().sources());
 	}
 
 	@Test
@@ -88,6 +93,11 @@ class BracketClueFinderTest {
 
 	private static ArchiveFolderView folder(final String name) {
 		return new ArchiveFolderView() {
+
+			@Override
+			public ARI ari() {
+				return ARI.of("test_collection", ArchiveId.of("test_archive"), Path.of(name));
+			}
 
 			@Override
 			public String name() {

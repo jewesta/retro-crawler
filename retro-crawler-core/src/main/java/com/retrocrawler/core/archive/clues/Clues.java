@@ -14,8 +14,8 @@ import java.util.stream.Stream;
  * Every clue key has exactly one authority within an artifact. {@code Clues}
  * carries that invariant in the type rather than in whichever collaborator
  * happens to assemble the clues. An instance can only come into existence
- * through a {@link ClueAccumulator}, so each clue is inspected once, where it is
- * observed, and never re-inspected while travelling from a
+ * through a {@link ClueAccumulator}, so each clue is inspected once, where it
+ * is observed, and never re-inspected while travelling from a
  * {@link ClueFinder} to an {@link Artifact}.
  * <p>
  * A {@code Set<Clue>} cannot express this. {@link Clue} deliberately keeps
@@ -69,8 +69,8 @@ public final class Clues implements Iterable<Clue> {
 	}
 
 	/**
-	 * Continues accumulating from clues already observed. Seeding is a copy, not
-	 * a second inspection: {@code observed} is key-unique by construction.
+	 * Continues accumulating from clues already observed. Seeding is a copy,
+	 * not a second inspection: {@code observed} is key-unique by construction.
 	 */
 	public static ClueAccumulator accumulator(final Clues observed) {
 		return new ClueAccumulator(Objects.requireNonNull(observed, "observed"));
@@ -78,8 +78,8 @@ public final class Clues implements Iterable<Clue> {
 
 	/**
 	 * Returns these clues together with the incoming ones. Only the incoming
-	 * clues are inspected, and they are inspected against the receiver, so a key
-	 * claimed on both sides is still rejected.
+	 * clues are inspected, and they are inspected against the receiver, so a
+	 * key claimed on both sides is still rejected.
 	 */
 	public Clues and(final Clues incoming) {
 		Objects.requireNonNull(incoming, "incoming");
@@ -110,11 +110,11 @@ public final class Clues implements Iterable<Clue> {
 	/**
 	 * The same clues without their crawl-time positions.
 	 * <p>
-	 * An {@link Artifact} is the cache boundary, and diagnostics do not cross
-	 * it: an artifact retrieved from the repository has no folder name or
-	 * document left to point into, so a position that survived the cache would
-	 * describe text nobody read this run. Dropping it here also keeps positions
-	 * alive for exactly one folder's crawl rather than for the whole archive.
+	 * An {@link Artifact} is the cache boundary, and positions do not cross it:
+	 * a retrieved clue retains source ARIs but no snapshot of the source text,
+	 * so a cached offset could point into content that has since changed.
+	 * Dropping it here also keeps positions alive for exactly one folder's
+	 * crawl rather than for the whole archive.
 	 */
 	Clues withoutLocations() {
 		return hasLocations() ? new Clues(cluesByKey, Map.of()) : this;

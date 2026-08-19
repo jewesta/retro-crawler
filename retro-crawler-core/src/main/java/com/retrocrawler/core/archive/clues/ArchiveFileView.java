@@ -8,9 +8,11 @@ import java.util.function.Function;
  * Read-only, crawl-time view of a file in an {@link ArchiveFolderView}.
  * <p>
  * The file content is opened only when {@link #peek(Function)} is called. The
- * crawler owns and closes the supplied stream after the inspector returns.
+ * crawler owns and closes the supplied stream after the inspector returns. The
+ * view's {@link #ari()} is authoritative and its clue factories attach the file
+ * as explicit provenance.
  */
-public interface ArchiveFileView {
+public interface ArchiveFileView extends ArchiveResourceView {
 
 	String name();
 

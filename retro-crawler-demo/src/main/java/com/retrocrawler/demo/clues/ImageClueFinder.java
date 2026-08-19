@@ -1,7 +1,6 @@
 package com.retrocrawler.demo.clues;
 
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
-import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -15,9 +14,9 @@ public class ImageClueFinder implements ClueFinder {
 		folder.files().forEach(file -> {
 			final String fileName = file.name();
 			if (fileName.equalsIgnoreCase("front.jpeg")) {
-				clues.add(Clue.of(AttributeNames.PIC_FRONT, fileName));
+				clues.add(file.clue(AttributeNames.PIC_FRONT, fileName));
 			} else if (fileName.equalsIgnoreCase("back.jpeg")) {
-				clues.add(Clue.of(AttributeNames.PIC_BACK, fileName));
+				clues.add(file.clue(AttributeNames.PIC_BACK, fileName));
 			}
 		});
 		return clues.clues();

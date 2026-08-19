@@ -53,6 +53,8 @@ class ArchiveDiggerSourceTest {
 		final ArchiveNode gear = archive.children().getFirst();
 		assertNotNull(gear.artifact());
 		assertEquals(Set.of("remote evidence"), clue(gear, "content").value());
+		assertEquals(List.of(ARI.of("test_collection", ArchiveId.of("source_test"), Path.of("gear/evidence.txt"))),
+				clue(gear, "content").sources());
 		assertTrue(source.sessionClosed);
 		assertTrue(source.contentClosed);
 	}
@@ -96,21 +98,22 @@ class ArchiveDiggerSourceTest {
 
 	private static ArchiveDigger digger(final Path root, final ArchiveSource source, final ClueFinder contentFinder) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("source_test"), "Source test", root);
-		final ClueFinder nameFinder = folder -> "gear".equals(folder.name()) ? Clues.of(Clue.of("kind", "gear"))
-				: Clues.none();
+		final ClueFinder nameFinder = new FirstTestClueFinder(
+				folder -> "gear".equals(folder.name()) ? Clues.of(Clue.of("kind", "gear")) : Clues.none());
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, List.of(nameFinder, contentFinder)), source);
 	}
 
 	private static ClueFinder contentFinder(final AtomicBoolean invoked) {
-		return folder -> folder.files().stream().filter(file -> "evidence.txt".equals(file.name())).findFirst()
-				.flatMap(file -> file.peek(content -> {
+		return new TestClueFinder(folder -> folder.files().stream().filter(file -> "evidence.txt".equals(file.name()))
+				.findFirst().flatMap(file -> file.peek(content -> {
 					invoked.set(true);
 					try {
-						return Clues.of(Clue.of("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
+						return Clues
+								.of(file.clue("content", new String(content.readAllBytes(), StandardCharsets.UTF_8)));
 					} catch (final IOException e) {
 						throw new IllegalStateException(e);
 					}
-				})).orElseGet(Clues::none);
+				})).orElseGet(Clues::none));
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

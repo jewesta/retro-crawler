@@ -35,7 +35,6 @@ import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
-import com.retrocrawler.core.archive.clues.ClueSource;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
@@ -47,13 +46,16 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.util.Hashes;
 
 public class ArchiveDigger {
 
 	private static final Logger logger = LoggerFactory.getLogger(ArchiveDigger.class);
 
-	private final ArchiveDescriptor descriptor;
+	private final ArchiveDefinition archive;
+
+	private final ArchiveId archiveId;
 
 	private final List<ClueFinder> clueFinders;
 
@@ -76,15 +78,40 @@ public class ArchiveDigger {
 	}
 
 	public ArchiveDigger(final ArchiveDefinition archive, final ArchiveSource source, final CrawlPlanning planning) {
-		Objects.requireNonNull(archive, "archive");
-		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
-		this.clueFinders = List.copyOf(Objects.requireNonNull(archive.clueFinders(), "archive.clueFinders()"));
+		this.archive = Objects.requireNonNull(archive, "archive");
+		this.archiveId = Objects.requireNonNull(
+				Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()").id(),
+				"archive.archiveDescriptor().id()");
+		archive.ariFrom(Path.of(""));
+		this.clueFinders = validatedFinders(archive.clueFinders());
 		if (clueFinders.isEmpty()) {
 			throw new IllegalArgumentException("Require at least one clue finder.");
 		}
 		this.source = Objects.requireNonNull(source, "source");
 		this.planning = Objects.requireNonNull(planning, "planning");
 		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
+	}
+
+	private static List<ClueFinder> validatedFinders(final List<ClueFinder> configured) {
+		final List<ClueFinder> finders = List.copyOf(Objects.requireNonNull(configured, "archive.clueFinders()"));
+		final Map<String, Class<?>> typesByName = new LinkedHashMap<>();
+		for (final ClueFinder finder : finders) {
+			Objects.requireNonNull(finder, "archive.clueFinders() must not contain null");
+			final Class<?> type = finder.getClass();
+			final String name = type.getSimpleName();
+			if (name.isBlank() || type.isAnonymousClass() || type.isLocalClass() || type.isSynthetic()) {
+				throw new IllegalArgumentException(
+						"A configured clue finder must be a named class because its simple name "
+								+ "is retained as clue provenance: " + type.getName());
+			}
+			final Class<?> previous = typesByName.putIfAbsent(name, type);
+			if (previous != null) {
+				throw new IllegalArgumentException("Ambiguous clue finder name '" + name
+						+ "'. Configured finder names must be unique, but it identifies both " + previous.getName()
+						+ " and " + type.getName() + ".");
+			}
+		}
+		return finders;
 	}
 
 	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
@@ -268,9 +295,8 @@ public class ArchiveDigger {
 	}
 
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
-		final String archiveId = descriptor.id().value();
 		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
-		final String basis = archiveId + "::" + relative;
+		final String basis = archiveId.value() + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
 		final String id = Hashes.toHex(hash, 16);
 
@@ -282,15 +308,14 @@ public class ArchiveDigger {
 		final ClueAccumulator clues = Clues.accumulator();
 		for (final ClueFinder finder : clueFinders) {
 			journal.throwIfCancelled();
-			final FinderObservation observation = new FinderObservation(finder);
+			final String finderName = finder.getClass().getSimpleName();
 			try {
-				final Clues found = Objects.requireNonNull(finder.find(observation.observe(folder)),
-						"finder.find(folder)");
-				clues.observing(observation.source()).addAll(found);
-			} catch (final com.retrocrawler.core.progress.ProgressCancelledException cancelled) {
+				final Clues found = Objects.requireNonNull(finder.find(folder), "finder.find(folder)");
+				clues.foundBy(finderName).addAll(found);
+			} catch (final ProgressCancelledException cancelled) {
 				throw cancelled;
 			} catch (final RuntimeException failure) {
-				failures.accept(ClueFindingException.from(observation.source(), failure));
+				failures.accept(ClueFindingException.from(finderName, folder.ari(), failure));
 			}
 		}
 		return clues.clues();
@@ -317,10 +342,10 @@ public class ArchiveDigger {
 		}
 
 		final Path relativeFolder = root.path().relativize(folder.path());
-		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, journal);
+		final ArchiveFolderView folderView = folderView(session, folder, relativeFolder, listing.files(), children,
+				journal);
 		final int failuresBeforeFinding = journal.failureCount();
-		final Clues clues = findClues(folderView, journal,
-				failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
+		final Clues clues = findClues(folderView, journal, journal::record);
 		final boolean failed = journal.failureCount() > failuresBeforeFinding;
 		journal.throwIfCancelled();
 
@@ -342,8 +367,7 @@ public class ArchiveDigger {
 				logger.info("Found artifact at: " + relativeFolder);
 			} catch (final DuplicateClueException duplicate) {
 				// A synthetic clue collided; no finder was reading anything.
-				journal.record(new ClueFindingException(duplicate.getMessage(), null, duplicate).in(descriptor.id(),
-						relativeFolder));
+				journal.record(ClueFindingException.from(null, folderView.ari(), duplicate));
 				outcome = new FolderOutcome.Failed();
 			}
 		}
@@ -357,8 +381,9 @@ public class ArchiveDigger {
 		return new DigResult(result, outcome);
 	}
 
-	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
-			final List<ArchiveFile> files, final List<DigResult> children, final Journal journal) {
+	private ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
+			final Path relativeFolder, final List<ArchiveFile> files, final List<DigResult> children,
+			final Journal journal) {
 		/*
 		 * Children are pruned deliberately, not as an optimization. The archive
 		 * tree expresses gear containment, never gear type, so a finder may
@@ -379,9 +404,10 @@ public class ArchiveDigger {
 				case FolderOutcome.Failed ignored -> Stream.<ArchiveFolderView> empty();
 				}).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
-				.map(file -> new DefaultArchiveFileView(session, file, journal)).map(ArchiveFileView.class::cast)
-				.toList();
-		return new DefaultArchiveFolderView(folder.name(), metadataFolders, fileViews);
+				.map(file -> new DefaultArchiveFileView(archive.ariFrom(relativeFolder.resolve(file.name())), session,
+						file, journal))
+				.map(ArchiveFileView.class::cast).toList();
+		return new DefaultArchiveFolderView(archive.ariFrom(relativeFolder), folder.name(), metadataFolders, fileViews);
 	}
 
 	/**
@@ -426,20 +452,22 @@ public class ArchiveDigger {
 	private record DigResult(ArchiveNode node, FolderOutcome outcome) {
 	}
 
-	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders, List<ArchiveFileView> files)
-			implements ArchiveFolderView {
+	private record DefaultArchiveFolderView(ARI ari, String name, List<ArchiveFolderView> folders,
+			List<ArchiveFileView> files) implements ArchiveFolderView {
 
 		private DefaultArchiveFolderView {
+			Objects.requireNonNull(ari, "ari");
 			Objects.requireNonNull(name, "name");
 			folders = List.copyOf(Objects.requireNonNull(folders, "folders"));
 			files = List.copyOf(Objects.requireNonNull(files, "files"));
 		}
 	}
 
-	private record DefaultArchiveFileView(ArchiveSession session, ArchiveFile file, Journal journal)
+	private record DefaultArchiveFileView(ARI ari, ArchiveSession session, ArchiveFile file, Journal journal)
 			implements ArchiveFileView {
 
 		private DefaultArchiveFileView {
+			Objects.requireNonNull(ari, "ari");
 			Objects.requireNonNull(session, "session");
 			Objects.requireNonNull(file, "file");
 			Objects.requireNonNull(journal, "journal");
@@ -458,72 +486,14 @@ public class ArchiveDigger {
 				final Optional<T> result = session.access(file, inspector::apply);
 				journal.throwIfCancelled();
 				return result;
+			} catch (final ProgressCancelledException cancelled) {
+				throw cancelled;
 			} catch (final IOException e) {
-				throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
+				throw ClueFindingException.at(ari,
+						new ClueFileIOException("Could not inspect clue file at: " + ari, e));
+			} catch (final RuntimeException failure) {
+				throw ClueFindingException.at(ari, failure);
 			}
-		}
-	}
-
-	/** Tracks the resources one unified finder actually inspects. */
-	private static final class FinderObservation {
-
-		private final ClueFinder finder;
-
-		private final Set<String> inspectedFiles = new LinkedHashSet<>();
-
-		private FinderObservation(final ClueFinder finder) {
-			this.finder = Objects.requireNonNull(finder, "finder");
-		}
-
-		private ArchiveFolderView observe(final ArchiveFolderView folder) {
-			return new ObservedArchiveFolderView(folder, this, "");
-		}
-
-		private ClueSource source() {
-			return inspectedFiles.size() == 1 ? ClueSource.fileContent(inspectedFiles.iterator().next(), finder)
-					: ClueSource.folderView(finder);
-		}
-	}
-
-	private record ObservedArchiveFolderView(ArchiveFolderView delegate, FinderObservation observation,
-			String relativePath) implements ArchiveFolderView {
-
-		@Override
-		public String name() {
-			return delegate.name();
-		}
-
-		@Override
-		public List<ArchiveFolderView> folders() {
-			return delegate.folders().stream().map(
-					folder -> new ObservedArchiveFolderView(folder, observation, child(relativePath, folder.name())))
-					.map(ArchiveFolderView.class::cast).toList();
-		}
-
-		@Override
-		public List<ArchiveFileView> files() {
-			return delegate.files().stream()
-					.map(file -> new ObservedArchiveFileView(file, observation, child(relativePath, file.name())))
-					.map(ArchiveFileView.class::cast).toList();
-		}
-
-		private static String child(final String parent, final String name) {
-			return parent.isEmpty() ? name : parent + "/" + name;
-		}
-	}
-
-	private record ObservedArchiveFileView(ArchiveFileView delegate, FinderObservation observation, String relativePath)
-			implements ArchiveFileView {
-
-		@Override
-		public String name() {
-			return delegate.name();
-		}
-
-		@Override
-		public <T> Optional<T> peek(final Function<? super InputStream, ? extends T> inspector) {
-			observation.inspectedFiles.add(relativePath);
-			return delegate.peek(inspector);
 		}
 	}
 }

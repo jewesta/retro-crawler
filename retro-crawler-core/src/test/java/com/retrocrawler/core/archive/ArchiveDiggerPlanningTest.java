@@ -114,7 +114,7 @@ class ArchiveDiggerPlanningTest {
 	private ArchiveDigger digger(final CrawlPlanning planning) {
 		final ArchiveDescriptor descriptor = new ArchiveDescriptor(ArchiveId.of("planning_test"), "Planning test",
 				root);
-		final ClueFinder clues = folder -> Clues.of(Clue.of("folder", folder.name()));
+		final ClueFinder clues = new TestClueFinder(folder -> Clues.of(Clue.of("folder", folder.name())));
 		return new ArchiveDigger(new TestArchiveDefinition(descriptor, clues), planning);
 	}
 
