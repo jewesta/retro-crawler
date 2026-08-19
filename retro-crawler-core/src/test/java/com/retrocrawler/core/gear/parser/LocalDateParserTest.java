@@ -10,12 +10,12 @@ import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.ArtifactLocation;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.gear.Confidence;
 
 class LocalDateParserTest {
 
-	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final LocalDate EXPECTED = LocalDate.of(2024, 1, 30);
 
 	private final LocalDateParser parser = new LocalDateParser();
@@ -70,6 +70,6 @@ class LocalDateParserTest {
 
 	private static ParseContext context(final Locale locale) {
 		return new ParseContext(Configuration.builder().locale(locale).build(),
-				new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+				ARI.of("test", ArchiveId.of("archive"), Path.of("gear")));
 	}
 }

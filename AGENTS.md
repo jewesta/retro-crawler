@@ -114,6 +114,11 @@ These instructions apply to the entire repository.
    Persist finder names and explicitly declared sources through `Artifact` and
    into the source `Clue` retained by a resolved `Fact`; omit absent sources
    rather than inventing them.
+   Addressable archive resources remain ARIs after resolution. `ParseContext`
+   carries the current artifact ARI, and the default `ARIParser` resolves raw
+   artifact-relative references below it. Never inject a provider `Path` into
+   Gear merely to convert it back into an ARI at consumption time; provider
+   paths are internal crawl coordinates.
 
 10. **Express gear relation through archive location, never through
    hierarchy-derived type.**

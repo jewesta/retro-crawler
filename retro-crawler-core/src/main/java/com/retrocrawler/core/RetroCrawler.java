@@ -2,7 +2,6 @@ package com.retrocrawler.core;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,15 +88,6 @@ public interface RetroCrawler {
 	 *             if no such archive is registered
 	 */
 	ArchiveDescriptor archive(ArchiveId archiveId);
-
-	/**
-	 * Identifies one provider path as a stable resource within the selected
-	 * archive.
-	 *
-	 * @throws IllegalArgumentException
-	 *             if the path is outside the selected archive's root
-	 */
-	ARI identify(ArchiveId archiveId, Path sourcePath);
 
 	/**
 	 * Synchronously inspects the content of an archive file.

@@ -113,6 +113,17 @@ public final class ARI {
 		return resourcePath;
 	}
 
+	/**
+	 * Identifies a resource below this one.
+	 *
+	 * @throws IllegalArgumentException
+	 *             if the path is absolute or contains traversal
+	 */
+	public ARI resolve(final Path relativeResourcePath) {
+		Objects.requireNonNull(relativeResourcePath, "relativeResourcePath");
+		return new ARI(collectionId, archiveId, resourcePath.resolve(relativeResourcePath));
+	}
+
 	/** The canonical URI representation. */
 	public URI uri() {
 		return uri;

@@ -167,7 +167,7 @@ valid source can lie outside this boundary, the cache accepts only contextual
 The contextual cache follow-up is formatter-clean across its ten Java sources.
 Its focused tests cover compact round-tripping, exact pruned-view enforcement,
 collection identity, out-of-artifact rejection, and traversal rejection; the
-final full seven-module `mvn clean install` passes with 263 core tests.
+full seven-module build passes.
 
 ### Product boundary
 
@@ -361,11 +361,23 @@ known from the Artifact being resolved; representing it as an `@ari` clue
 would falsely turn framework provenance into observed archive evidence and
 duplicate location data.
 
-Parser context uses an `ArtifactLocation` containing the archive root and the
-current Artifact's source path. This runtime path pair is deliberately not
-called a node: it has no tree structure and exists only to resolve contextual
-facts such as artifact-relative paths. It remains distinct from the ARI, which
-is the authoritative logical source address.
+Parser context carries the current Artifact's authoritative ARI together with
+the collection configuration. `ARIParser` resolves artifact-relative resource
+observations such as `front.jpeg` directly against that identity. Resource facts
+therefore remain ARIs throughout resolution and consumption; no physical or
+provider path enters Gear merely to be converted back into an ARI later.
+
+The superseded `ArtifactLocation`, archive-resource `PathParser`, and
+`RetroCrawler.identify(ArchiveId, Path)` bridge are removed. Provider paths
+remain internal crawling coordinates. The demo and personal collection models
+use `ARI` and `Set<ARI>` for photographs and disk images, and consumers pass
+those values directly to `RetroCrawler.inspect(...)`.
+
+The ARI-first resource follow-up passes canonical formatting and the full
+seven-module `mvn clean install`, including 264 core tests. Focused coverage
+includes safe ARI resolution, scalar and collection auto-detection, direct
+filesystem and ZIP inspection, provider-independent image facts, cached clues
+surviving an archive-root move, and end-to-end demo image resolution.
 
 ### ARI and @RetroId are different
 

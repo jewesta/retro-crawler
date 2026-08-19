@@ -18,9 +18,11 @@ import java.util.function.Function;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
+import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
@@ -30,7 +32,6 @@ import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.InstantParser;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.LocalDateParser;
-import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.Reflection;
 import com.retrocrawler.core.util.TypeName;
@@ -239,9 +240,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 					parserFactories);
 		}
 
-		if (fieldType == Path.class) {
-			final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
-					: defaultParsers.path();
+		if (fieldType == ARI.class) {
+			final Class<? extends FactParser<ARI>> parserType = defaultParsers == null ? ARIParser.class
+					: defaultParsers.ari();
 			return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
 					parserFactories);
 		}
@@ -273,9 +274,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 						+ "or specify a parser explicitly (not " + TypeName.simple(AutoDetectParser.class) + ").");
 			}
 			final Class<?> elementType = genericType.get();
-			if (elementType == Path.class) {
-				final Class<? extends FactParser<Path>> parserType = defaultParsers == null ? PathParser.class
-						: defaultParsers.path();
+			if (elementType == ARI.class) {
+				final Class<? extends FactParser<ARI>> parserType = defaultParsers == null ? ARIParser.class
+						: defaultParsers.ari();
 				return configuredParser(key, parserType, workingDirectory, catalogConfigurations.get(parserType),
 						parserFactories);
 			}

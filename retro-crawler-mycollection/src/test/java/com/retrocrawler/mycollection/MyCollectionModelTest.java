@@ -466,10 +466,10 @@ class MyCollectionModelTest {
 			This description belongs to the containing gear.
 			""";
 		Files.writeString(folder.resolve("retro.md"), markdown);
-		final Path angled = Files.createFile(folder.resolve("angled.jpeg"));
-		final Path front = Files.createFile(folder.resolve("front.jpeg"));
-		final Path back = Files.createFile(folder.resolve("back.jpeg"));
-		final Path floppy = Files.createFile(folder.resolve("FD-0007 System disk.img"));
+		Files.createFile(folder.resolve("angled.jpeg"));
+		Files.createFile(folder.resolve("front.jpeg"));
+		Files.createFile(folder.resolve("back.jpeg"));
+		Files.createFile(folder.resolve("FD-0007 System disk.img"));
 
 		final MyGear gear = gear(crawler().crawlAllGear(new Journal(), ReindexScope.all(), MyGear.class),
 				"Documented object [200005]");
@@ -481,15 +481,16 @@ class MyCollectionModelTest {
 		assertEquals(Optional.of("TEST-FCC-123"), gear.getFccId());
 		assertEquals(Optional.of(FunctionalCondition.DEFECTIVE), gear.getHealth());
 		assertEquals(Optional.of(Tested.POST), gear.getTested());
-		assertEquals(Optional.of(angled), gear.getAngledImage());
-		assertEquals(Optional.of(front), gear.getFrontImage());
-		assertEquals(Optional.of(back), gear.getBackImage());
+		final Path resourceFolder = Path.of("Documented object [200005]");
+		assertEquals(Optional.of(ari(resourceFolder.resolve("angled.jpeg"))), gear.getAngledImage());
+		assertEquals(Optional.of(ari(resourceFolder.resolve("front.jpeg"))), gear.getFrontImage());
+		assertEquals(Optional.of(ari(resourceFolder.resolve("back.jpeg"))), gear.getBackImage());
 		assertEquals(Set.of(new FloppyImageId("FD-0007")), gear.getFloppyImageIds());
-		assertEquals(Set.of(floppy), gear.getFloppyImages());
+		assertEquals(Set.of(ari(resourceFolder.resolve("FD-0007 System disk.img"))), gear.getFloppyImages());
 	}
 
 	@Test
-	void rebindsCachedArtifactRelativeFileCluesToANewArchiveRoot() throws IOException {
+	void keepsCachedResourceArisStableAcrossArchiveRootMoves() throws IOException {
 		final Path nasRoot = Files.createDirectory(archiveRoot.resolve("nas-root"));
 		final Path gearFolder = Files.createDirectory(nasRoot.resolve("Portable object [200006]"));
 		Files.createFile(gearFolder.resolve("front.jpeg"));
@@ -507,8 +508,7 @@ class MyCollectionModelTest {
 				crawler(desktopRoot, repository).crawlAllGear(new Journal(), ReindexScope.none(), MyGear.class),
 				"Portable object [200006]");
 
-		assertEquals(Optional.of(desktopRoot.resolve("Portable object [200006]").resolve("front.jpeg")),
-				rebound.getFrontImage());
+		assertEquals(Optional.of(ari(Path.of("Portable object [200006]", "front.jpeg"))), rebound.getFrontImage());
 	}
 
 	@Test
@@ -611,6 +611,10 @@ class MyCollectionModelTest {
 	private static MyGear gear(final List<MyGear> gear, final String folderName) {
 		return gear.stream().filter(candidate -> folderName.equals(candidate.getFolderName())).findFirst()
 				.orElseThrow();
+	}
+
+	private static ARI ari(final Path resourcePath) {
+		return ARI.of("my_collection", ARCHIVE_ID, resourcePath);
 	}
 
 	private static final class MemoryRepository implements Repository {

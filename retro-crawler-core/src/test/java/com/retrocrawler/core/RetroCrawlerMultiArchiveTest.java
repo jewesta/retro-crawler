@@ -72,10 +72,9 @@ class RetroCrawlerMultiArchiveTest {
 				.archive(FIRST, contentSource(FIRST_ROOT, "first evidence"))
 				.archive(SECOND, contentSource(SECOND_ROOT, "second evidence")).build();
 
-		final Optional<String> first = crawler.inspect(crawler.identify(FIRST.id(), FIRST_ROOT.resolve("evidence.txt")),
+		final Optional<String> first = crawler.inspect(ari(FIRST, Path.of("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
-		final Optional<String> second = crawler.inspect(
-				crawler.identify(SECOND.id(), SECOND_ROOT.resolve("evidence.txt")),
+		final Optional<String> second = crawler.inspect(ari(SECOND, Path.of("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
 
 		assertEquals(Optional.of("first evidence"), first);
@@ -128,7 +127,7 @@ class RetroCrawlerMultiArchiveTest {
 		firstSource.openedRoots.clear();
 		secondSource.openedRoots.clear();
 
-		crawler.crawlAllGear(new Journal(), ReindexScope.subtree(crawler.identify(SECOND.id(), SECOND_ROOT)),
+		crawler.crawlAllGear(new Journal(), ReindexScope.subtree(ari(SECOND, Path.of(""))),
 				RetroCrawlerBuilderTest.TestGear.class);
 
 		assertTrue(firstSource.openedRoots.isEmpty());
@@ -149,7 +148,7 @@ class RetroCrawlerMultiArchiveTest {
 	@Test
 	void rejectsASubtreeFromAnArchiveOutsideTheSelectedCrawl() {
 		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
-		final ARI secondRoot = crawler.identify(SECOND.id(), SECOND_ROOT);
+		final ARI secondRoot = ari(SECOND, Path.of(""));
 
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
 				() -> crawler.crawlGear(FIRST.id(), new Journal(), ReindexScope.subtree(secondRoot),
@@ -201,6 +200,10 @@ class RetroCrawlerMultiArchiveTest {
 
 	private static ArchiveDescriptor descriptor(final String id, final Path root) {
 		return new ArchiveDescriptor(ArchiveId.of(id), id, root);
+	}
+
+	private static ARI ari(final ArchiveDescriptor archive, final Path resourcePath) {
+		return ARI.of("factory_test", archive.id(), resourcePath);
 	}
 
 	private static ArchiveSource contentSource(final Path root, final String value) {

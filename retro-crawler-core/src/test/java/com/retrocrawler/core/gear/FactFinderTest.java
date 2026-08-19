@@ -9,16 +9,16 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.ArtifactLocation;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.gear.parser.EnumParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
 class FactFinderTest {
 
-	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+			ARI.of("test", ArchiveId.of("archive"), Path.of("gear")));
 
 	private enum Bus {
 		AGP,

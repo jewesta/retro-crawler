@@ -24,6 +24,7 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -128,7 +129,7 @@ class ModelConfigurationTest {
 	}
 
 	@Test
-	void passesEffectiveConfigurationAndCurrentNodeToParsers() throws IOException {
+	void passesEffectiveConfigurationAndArtifactAriToParsers() throws IOException {
 		Files.createDirectory(archiveRoot.resolve("gear"));
 		final Clock fixedClock = Clock.fixed(FIXED_INSTANT, ZoneId.of("Europe/Berlin"));
 		final Model model = Model.builder().typesFrom(Set.of(RuntimeContextCollection.class, RuntimeContextGear.class))
@@ -142,8 +143,7 @@ class ModelConfigurationTest {
 		assertEquals(1, gear.size());
 		final ParseContext context = RecordingParser.observedContext;
 		assertSame(model.configuration(), context.config());
-		assertEquals(archiveRoot, context.artifactLocation().archiveRoot());
-		assertEquals(archiveRoot.resolve("gear"), context.artifactLocation().sourcePath());
+		assertEquals(ARI.of("runtime_context", ARCHIVE_ID, Path.of("gear")), context.source());
 	}
 
 	@RetroCollection(id = "default_configuration")

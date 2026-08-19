@@ -15,7 +15,6 @@ import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroSource;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -24,17 +23,15 @@ import com.retrocrawler.core.gear.parser.ParseContext;
 
 class RetroSourceTest {
 
-	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
 	private static final Artifact ARTIFACT = new Artifact(Clues.of(Clue.of("name", "gear")));
-	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new ArtifactLocation(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(), SOURCE);
 
 	@Test
 	void injectsTheRequiredResolutionSourceWhenRequestedByGear() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(SourceGear.class));
 
-		final SourceGear gear = (SourceGear) resolver.resolve(SOURCE, ARTIFACT, CONTEXT).orElseThrow();
+		final SourceGear gear = (SourceGear) resolver.resolve(ARTIFACT, CONTEXT).orElseThrow();
 
 		assertEquals(SOURCE, gear.source);
 	}
@@ -43,16 +40,14 @@ class RetroSourceTest {
 	void leavesGearWithoutRetroSourceUnchanged() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(GearWithoutSource.class));
 
-		final GearWithoutSource gear = (GearWithoutSource) resolver.resolve(SOURCE, ARTIFACT, CONTEXT).orElseThrow();
+		final GearWithoutSource gear = (GearWithoutSource) resolver.resolve(ARTIFACT, CONTEXT).orElseThrow();
 
 		assertEquals("gear", gear.name);
 	}
 
 	@Test
-	void requiresAriForEveryResolution() {
-		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(GearWithoutSource.class));
-
-		assertThrows(NullPointerException.class, () -> resolver.resolve(null, ARTIFACT, CONTEXT));
+	void requiresAriForEveryParseContext() {
+		assertThrows(NullPointerException.class, () -> new ParseContext(Configuration.builder().build(), null));
 	}
 
 	@Test

@@ -330,13 +330,11 @@ but no physical root or provider details:
 ari:/retro_pc_demo/incoming_material/Graphics%20Cards/Voodoo%203/front.jpg
 ```
 
-The crawler can identify a provider path during migration from path-based
-application data. Gear trees and `Stash` nodes already carry their source ARI:
+Gear trees, `Stash` nodes, and resource-valued Gear facts carry ARIs directly:
 
 ```java
-ARI source = crawler.identify(incomingMaterial.id(), sourcePath);
-Optional<byte[]> image = crawler.inspect(
-        source, InputStream::readAllBytes);
+ARI imageSource = gear.getFrontImage().orElseThrow();
+Optional<byte[]> image = crawler.inspect(imageSource, InputStream::readAllBytes);
 ```
 
 The crawler rejects an ARI from a different collection or an unknown archive.
@@ -346,9 +344,9 @@ short-lived session as well as the content stream. `Optional.empty()` means the
 provider recognizes the file but does not expose its content; a missing or
 folder address raises `NoSuchFileException`.
 
-Provider paths remain crawl-time coordinates used to derive artifact-relative
-clues and to rebind caches; providers must not require them to be locally
-accessible. ARIs are the stable application-facing resource identity.
+Provider paths remain internal crawl-time coordinates; providers must not
+require them to be locally accessible. ARIs are the application-facing resource
+identity.
 
 Clue finders receive that identity directly through `ArchiveFolderView.ari()`
 and `ArchiveFileView.ari()`. The archive definition derives each one from its
@@ -358,8 +356,9 @@ Finders never need the physical archive root to record provenance.
 When a file-name clue refers to a resource belonging to an artifact, its cached
 path is relative to that artifact rather than to the archive root. A direct
 `front.jpeg` is therefore stored as `front.jpeg`; a resource below the artifact
-may be stored as `Box/front.jpeg`. Path facts are rebound against the artifact's
-current provider path during resolution.
+may be stored as `Box/front.jpeg`. `ARIParser` resolves that raw observation
+against the artifact ARI during Gear resolution. The resulting fact therefore
+remains independent of the current provider and physical archive root.
 
 Every persisted archive node records when its complete subtree was last
 crawled. All nodes rebuilt by one full or multi-subtree operation receive the

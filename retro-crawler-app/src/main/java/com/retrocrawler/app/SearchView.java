@@ -288,13 +288,12 @@ public class SearchView extends HorizontalLayout {
 	private Optional<Component> archiveImage(final VaadinGearNode node) {
 		final DemoArchive archive = activeArchive;
 		final RetroCrawler crawler = archive.crawler();
-		return node.gear().getPicFront().map(path -> {
-			final String fileName = path.getFileName().toString();
+		return node.gear().getPicFront().map(imageSource -> {
+			final String fileName = imageSource.resourcePath().getFileName().toString();
 			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
-				final Optional<byte[]> content = crawler.inspect(crawler.identify(archive.archive().id(), path),
-						InputStream::readAllBytes);
+				final Optional<byte[]> content = crawler.inspect(imageSource, InputStream::readAllBytes);
 				if (content.isEmpty()) {
-					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);
+					return DownloadResponse.error(404, "Archive source did not expose content for: " + imageSource);
 				}
 				final byte[] bytes = content.get();
 				return new DownloadResponse(new ByteArrayInputStream(bytes), fileName, "image/jpeg", bytes.length);

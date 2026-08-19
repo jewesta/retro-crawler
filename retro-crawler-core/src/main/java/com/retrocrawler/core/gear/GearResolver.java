@@ -191,16 +191,15 @@ public class GearResolver {
 		return bestSoFar;
 	}
 
-	public Optional<Object> resolve(final ARI source, final Artifact artifact, final ParseContext parseContext) {
-		return resolveWithIdentity(source, artifact, parseContext).map(GearResolution::gear);
+	public Optional<Object> resolve(final Artifact artifact, final ParseContext parseContext) {
+		return resolveWithIdentity(artifact, parseContext).map(GearResolution::gear);
 	}
 
 	@SuppressWarnings(Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE)
-	public Optional<GearResolution> resolveWithIdentity(final ARI source, final Artifact artifact,
-			final ParseContext parseContext) {
-		Objects.requireNonNull(source, "source");
+	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final ParseContext parseContext) {
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(parseContext, "parseContext");
+		final ARI source = parseContext.source();
 
 		/*
 		 * We are now looking at the given artifact and we want to turn it into

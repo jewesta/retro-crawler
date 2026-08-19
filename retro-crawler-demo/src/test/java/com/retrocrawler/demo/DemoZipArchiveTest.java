@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -34,7 +35,7 @@ class DemoZipArchiveTest {
 		final String folder = "ATI VGA Wonder 16 [SN VHK 144994] [200326]";
 		final MyKnownGear graphicsCard = gear.stream().filter(candidate -> folder.equals(candidate.getFolderName()))
 				.findFirst().orElseThrow();
-		assertEquals(zip.resolve("Graphics Cards").resolve(folder).resolve("front.jpeg"),
+		assertEquals(ARI.of("retro_pc_demo", archive.id(), Path.of("Graphics Cards", folder, "front.jpeg")),
 				graphicsCard.getPicFront().orElseThrow());
 	}
 }

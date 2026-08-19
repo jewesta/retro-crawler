@@ -13,7 +13,6 @@ import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
-import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -30,22 +29,18 @@ class GearResolverDuplicateClueTest {
 	void rejectsSeparateCluesThatResolveToTheSameSemanticKey() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(BusGear.class));
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("bus", "PCI"), Clue.of("AGP")));
-		final Path root = Path.of("/archive");
-		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new ArtifactLocation(root, root.resolve("gear")));
+		final ParseContext context = new ParseContext(Configuration.builder().build(), SOURCE);
 
-		assertThrows(DuplicateClueException.class, () -> resolver.resolve(SOURCE, artifact, context));
+		assertThrows(DuplicateClueException.class, () -> resolver.resolve(artifact, context));
 	}
 
 	@Test
 	void combinesSeveralAnonymousObservationsIntoOneCollectionFact() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(BusGear.class));
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("ISA"), Clue.of("PCI"), Clue.of("AGP")));
-		final Path root = Path.of("/archive");
-		final ParseContext context = new ParseContext(Configuration.builder().build(),
-				new ArtifactLocation(root, root.resolve("gear")));
+		final ParseContext context = new ParseContext(Configuration.builder().build(), SOURCE);
 
-		final BusGear gear = (BusGear) resolver.resolve(SOURCE, artifact, context).orElseThrow();
+		final BusGear gear = (BusGear) resolver.resolve(artifact, context).orElseThrow();
 
 		assertEquals(Set.of(Bus.ISA, Bus.PCI, Bus.AGP), gear.bus);
 	}

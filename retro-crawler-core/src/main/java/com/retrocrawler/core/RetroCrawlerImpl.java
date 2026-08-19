@@ -18,7 +18,6 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveDigger;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ArchiveManager;
-import com.retrocrawler.core.archive.ArtifactLocation;
 import com.retrocrawler.core.archive.CrawlPlanning;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
@@ -96,18 +95,6 @@ class RetroCrawlerImpl implements RetroCrawler {
 	@Override
 	public ArchiveDescriptor archive(final ArchiveId archiveId) {
 		return assertArchive(archiveId).descriptor();
-	}
-
-	@Override
-	public ARI identify(final ArchiveId archiveId, final Path sourcePath) {
-		final RegisteredArchive archive = assertArchive(archiveId);
-		final Path requested = Objects.requireNonNull(sourcePath, "sourcePath").normalize();
-		final Path configuredRoot = archive.descriptor().root().normalize();
-		if (!requested.startsWith(configuredRoot)) {
-			throw new IllegalArgumentException(
-					"Source path is outside archive '" + archive.descriptor().id() + "': " + sourcePath);
-		}
-		return ARI.of(collectionId, archiveId, configuredRoot.relativize(requested));
 	}
 
 	@Override
@@ -304,11 +291,10 @@ class RetroCrawlerImpl implements RetroCrawler {
 		}
 	}
 
-	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path archiveRoot,
-			final Path sourcePath, final Journal journal) {
+	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path sourcePath,
+			final Journal journal) {
 		try {
-			return resolver.resolveWithIdentity(source, artifact,
-					new ParseContext(configuration, new ArtifactLocation(archiveRoot, sourcePath)));
+			return resolver.resolveWithIdentity(artifact, new ParseContext(configuration, source));
 		} catch (final ProgressCancelledException cancellation) {
 			throw cancellation;
 		} catch (final RuntimeException failure) {
@@ -329,7 +315,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			resolution = Optional.empty();
 		} else {
 			final ARI source = ARI.of(collectionId, archiveId, relativeSourcePath);
-			resolution = resolveArtifact(source, artifact, archiveRoot, sourcePath, journal);
+			resolution = resolveArtifact(source, artifact, sourcePath, journal);
 			resolution.ifPresent(value -> value.retroId().ifPresent(id -> retroIds.register(id, source)));
 		}
 
