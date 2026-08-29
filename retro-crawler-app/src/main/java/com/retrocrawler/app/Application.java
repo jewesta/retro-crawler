@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 import com.vaadin.flow.component.page.Push;
-import com.vaadin.flow.shared.communication.PushMode;
 import com.vaadin.flow.shared.ui.Transport;
 import com.vaadin.flow.theme.lumo.Lumo;
 
@@ -21,7 +20,7 @@ import com.vaadin.flow.theme.lumo.Lumo;
 @SpringBootApplication
 @StyleSheet(Lumo.STYLESHEET)
 @StyleSheet("themes/retro-crawler/styles.css")
-@Push(value = PushMode.MANUAL, transport = Transport.WEBSOCKET)
+@Push(transport = Transport.WEBSOCKET)
 public class Application implements AppShellConfigurator {
 
 	public static void main(final String[] args) {

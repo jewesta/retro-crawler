@@ -786,6 +786,10 @@ silently presenting a first-wins match as certain.
 - Accessing or crawling a Stash rebuilds the bar for that immutable snapshot;
   changing a control immediately re-pulls a lifted Batch from the in-memory
   Stash and updates the existing tree without crawling or resolving again.
+- The Vaadin application uses automatic WebSocket push. Progress, terminal
+  status, filter-bar rebuilding, and tree replacement are therefore flushed
+  consistently after their asynchronous `UI.access` callbacks; no callback
+  has to remember a separate manual push.
 - The filesystem and ZIP demo archives are alternative representations of the
   same Gear, so the application now gives each source option its own crawler
   and Stash. Collection-wide Retro ID uniqueness remains intact instead of
@@ -796,7 +800,7 @@ silently presenting a first-wins match as certain.
   `FilterBarTest` additionally covers relevant-definition discovery, all four
   generated control shapes, immediate combined filtering, choice counts, and
   rebuilding for another definition set. The complete seven-module reactor
-  passes 394 tests.
+  passes 395 tests.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.

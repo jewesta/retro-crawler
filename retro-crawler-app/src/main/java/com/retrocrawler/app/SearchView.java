@@ -330,7 +330,6 @@ public class SearchView extends HorizontalLayout {
 			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
 			drums.setSrc(drums(frame).getSrc());
 			messageBar.setText(message);
-			ui.push();
 		}));
 	}
 
