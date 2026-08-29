@@ -49,6 +49,23 @@ class StashQueryTest {
 	}
 
 	@Test
+	void conditionallyFiltersOneSubtypeWithoutEliminatingOtherGear() {
+		final Parent retainedParent = new Parent("retained", false);
+		final Child retainedChild = new Child("retained child", true);
+		final Child excludedChild = new Child("excluded child", false);
+		final GearNode<Object> root = new GearNode<>(retainedParent, source(FIRST_ID, "parent"),
+				List.of(new GearNode<>(retainedChild, source(FIRST_ID, "parent/retained"), List.of()),
+						new GearNode<>(excludedChild, source(FIRST_ID, "parent/excluded"), List.of())));
+
+		final Batch<BaseGear> result = stash(root).query(BaseGear.class).whereIf(Child.class, Child::working).pull();
+
+		assertEquals(List.of(retainedParent, retainedChild), result.gear());
+		assertEquals(retainedParent, result.archives().getFirst().roots().getFirst().gear());
+		assertEquals(List.of(retainedChild),
+				result.archives().getFirst().roots().getFirst().children().stream().map(GearNode::gear).toList());
+	}
+
+	@Test
 	void archiveCriteriaAreImmutableIntersectingAndPreserveStashOrder() {
 		final Parent first = new Parent("first", true);
 		final Parent second = new Parent("second", true);

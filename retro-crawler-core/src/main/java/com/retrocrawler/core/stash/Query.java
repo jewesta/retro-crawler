@@ -75,6 +75,16 @@ public final class Query<G> {
 		return new Query<>(stash, gearType, archiveIds, selected);
 	}
 
+	/**
+	 * Adds a predicate that applies only to Gear assignable to the supplied
+	 * type. Gear of every other type remains selected.
+	 */
+	public <S extends G> Query<G> whereIf(final Class<S> selectedType, final Predicate<? super S> predicate) {
+		final Class<S> nonNullType = Objects.requireNonNull(selectedType, "selectedType");
+		final Predicate<? super S> nonNullPredicate = Objects.requireNonNull(predicate, "predicate");
+		return where(gear -> !nonNullType.isInstance(gear) || nonNullPredicate.test(nonNullType.cast(gear)));
+	}
+
 	/** Materializes this query as an immutable typed and lifted Batch. */
 	public Batch<G> pull() {
 		final List<ArchiveGear<G>> selectedArchives = new ArrayList<>();

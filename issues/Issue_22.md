@@ -302,6 +302,11 @@ Batch<GraphicsCard> workingCards = stash
         .where(archiveIds)
         .where(GraphicsCard::isWorking)
         .pull();
+
+Batch<RetroHardware> agpCardsAmongEverythingElse = stash
+        .query(RetroHardware.class)
+        .whereIf(GraphicsCard.class, card -> card.bus() == Bus.AGP)
+        .pull();
 ```
 
 Archive and predicate criteria merely accumulate a selection recipe over the
@@ -316,10 +321,13 @@ The Batch also exposes the same occurrences as an immutable pre-order
 stored Gear is an Object and there are no additional criteria, its Batch
 reproduces the exact natural hierarchy without lifting.
 
-`where(Predicate<? super G>)` is an in-process Java convenience, not the later
+`whereIf(Class<S>, Predicate<? super S>)` applies its predicate only to Gear of
+the named subtype and retains every other selected type. A rejected node's
+selected descendants follow the same lifting rule as any other rejected node.
+Both predicate methods are in-process Java conveniences, not the later
 machine-readable query language: a predicate cannot be described to an
-unfamiliar client or serialized across a protocol boundary. Structured
-criteria will extend `Query<G>` without changing the Stash/Query/Batch split.
+unfamiliar client or serialized across a protocol boundary. Structured criteria
+will extend `Query<G>` without changing the Stash/Query/Batch split.
 
 ## Source Provenance and Identity
 

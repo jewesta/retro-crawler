@@ -390,7 +390,14 @@ Batch<RetroHardware> working = stash.query(RetroHardware.class)
         .where(museumCollection.id())
         .where(RetroHardware::isWorking)
         .pull();
+
+Batch<RetroHardware> agpCardsAmongEverythingElse = stash.query(RetroHardware.class)
+        .whereIf(GraphicsCard.class, card -> card.bus() == Bus.AGP)
+        .pull();
 ```
+
+`whereIf` applies its predicate only to the named Gear type. Other selected
+Gear remains in the Batch.
 
 Every `GearNode` retains the ARI of the artifact that produced it. Complete
 Stash construction validates Retro ID uniqueness across all registered
