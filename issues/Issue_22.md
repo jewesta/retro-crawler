@@ -768,7 +768,8 @@ silently presenting a first-wins match as certain.
 - RetroCrawler, Stash, and Batch expose model filters. Stash and Batch lazily
   cache local `FilterAvailability`, retaining zero-count global choices, and
   Query accepts exact Fact-value criteria without eliminating non-applicable
-  Gear types.
+  Gear types. Stash and Batch share the `FilterDefinitions` discovery
+  contract.
 - Focused tests cover the four filter shapes, same-key reuse across Gear types,
   global-versus-present choices, lazy caching, and structured Query behavior.
   The complete seven-module reactor passes 390 tests.

@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import com.retrocrawler.core.gear.filter.FilterAvailability;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
+import com.retrocrawler.core.gear.filter.FilterDefinitions;
 
 /**
  * An immutable, typed result pulled from a Stash.
@@ -15,7 +16,7 @@ import com.retrocrawler.core.gear.filter.FilterDefinition;
  * materialized {@link #gear()} view contains the same occurrences in pre-order.
  * Selection belongs to Query; a Batch only exposes its materialized result.
  */
-public final class Batch<G> {
+public final class Batch<G> implements FilterDefinitions {
 
 	private final List<ArchiveGear<G>> archives;
 
@@ -48,9 +49,7 @@ public final class Batch<G> {
 		return roots;
 	}
 
-	/**
-	 * Every structured filter inherited from the immutable collection model.
-	 */
+	@Override
 	public List<FilterDefinition<?>> filters() {
 		return filterAvailability.filters();
 	}

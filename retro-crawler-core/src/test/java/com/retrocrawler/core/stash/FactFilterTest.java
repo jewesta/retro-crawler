@@ -30,6 +30,7 @@ import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.filter.FilterAvailability;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
+import com.retrocrawler.core.gear.filter.FilterDefinitions;
 import com.retrocrawler.core.gear.filter.FilterType;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
@@ -82,6 +83,7 @@ class FactFilterTest {
 				stash.availability(title));
 		final FilterAvailability.Exact<Edition> editionAvailability = exact(stash.availability(edition));
 
+		assertEquals(model.filters(), filters(stash));
 		assertSame(availability, stash.availability(bus));
 		assertEquals(2, availability.populatedOccurrences());
 		assertEquals(
@@ -110,7 +112,7 @@ class FactFilterTest {
 		final FilterAvailability.Choices<Bus> availability = choices(result.availability(bus));
 
 		assertEquals(List.of(agpCard, magazine), result.gear());
-		assertEquals(model.filters(), result.filters());
+		assertEquals(model.filters(), filters(result));
 		assertEquals(1, availability.populatedOccurrences());
 		assertEquals(List.of(1L, 0L, 0L, 0L),
 				availability.options().stream().map(FilterAvailability.Option::matchingOccurrences).toList());
@@ -132,6 +134,10 @@ class FactFilterTest {
 	private static Model model() {
 		return Model.from(Set.of(FilterCollection.class, GraphicsCard.class, Motherboard.class, Magazine.class,
 				RawFactGear.class));
+	}
+
+	private static List<FilterDefinition<?>> filters(final FilterDefinitions definitions) {
+		return definitions.filters();
 	}
 
 	@SuppressWarnings("unchecked")

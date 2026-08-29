@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import com.retrocrawler.core.gear.filter.FilterAvailability;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
+import com.retrocrawler.core.gear.filter.FilterDefinitions;
 
 /**
  * The complete immutable, model-dependent arrangement of resolved Gear.
@@ -15,7 +16,7 @@ import com.retrocrawler.core.gear.filter.FilterDefinition;
  * view rather than the collection's source of truth. Its gear stays grouped by
  * the archive it was found in, so every result keeps its provenance.
  */
-public final class Stash {
+public final class Stash implements FilterDefinitions {
 
 	private final List<ArchiveGear<Object>> archives;
 
@@ -39,9 +40,7 @@ public final class Stash {
 		return archives;
 	}
 
-	/**
-	 * Every structured filter inherited from the immutable collection model.
-	 */
+	@Override
 	public List<FilterDefinition<?>> filters() {
 		return filterAvailability.filters();
 	}
