@@ -3,7 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.PackagingOriginParser;
@@ -12,7 +12,12 @@ import com.retrocrawler.model.packaging.PackagingOriginParser;
  * Maps the collection's original-packaging marker to the portable packaging
  * vocabulary.
  */
-public final class CollectionPackagingOriginParser implements FactParser<PackagingOrigin> {
+public final class CollectionPackagingOriginParser implements EnumFactParser<PackagingOrigin> {
+
+	@Override
+	public Class<PackagingOrigin> enumType() {
+		return PackagingOrigin.class;
+	}
 
 	private final PackagingOriginParser delegate = new PackagingOriginParser();
 

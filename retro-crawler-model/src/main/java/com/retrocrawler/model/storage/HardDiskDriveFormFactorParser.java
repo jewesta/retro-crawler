@@ -6,10 +6,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class HardDiskDriveFormFactorParser implements FactParser<HardDiskDriveFormFactor> {
+public final class HardDiskDriveFormFactorParser implements EnumFactParser<HardDiskDriveFormFactor> {
+
+	@Override
+	public Class<HardDiskDriveFormFactor> enumType() {
+		return HardDiskDriveFormFactor.class;
+	}
 
 	private static final Pattern FORM_FACTOR = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);

@@ -3,8 +3,18 @@ package com.retrocrawler.core.gear.parser;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.filter.FilterType;
 
 public interface FactParser<T> {
+
+	/**
+	 * Describes how values produced by this parser participate in structured
+	 * filtering. Parsers with richer semantics override the exact default,
+	 * usually by implementing a specialized parser interface.
+	 */
+	default FilterType<T> filterType() {
+		return FilterType.exact();
+	}
 
 	/**
 	 * The parser is handed one raw value. If the {@link Clue}'s value contains

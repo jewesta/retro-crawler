@@ -390,9 +390,16 @@ class ModelParserFactoryTest {
 	public static final class FactorySelectedEnumParser implements EnumFactParser<EnumState> {
 
 		private static int instances;
+		private final Class<EnumState> enumType;
 
 		public FactorySelectedEnumParser(final Class<EnumState> enumType) {
+			this.enumType = enumType;
 			instances++;
+		}
+
+		@Override
+		public Class<EnumState> enumType() {
+			return enumType;
 		}
 
 		@Override

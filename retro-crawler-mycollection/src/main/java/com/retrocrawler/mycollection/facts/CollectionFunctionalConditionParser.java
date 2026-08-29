@@ -3,7 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.FunctionalConditionParser;
@@ -12,7 +12,12 @@ import com.retrocrawler.model.condition.FunctionalConditionParser;
  * Maps the collection's German health markers to the portable functional
  * condition vocabulary.
  */
-public final class CollectionFunctionalConditionParser implements FactParser<FunctionalCondition> {
+public final class CollectionFunctionalConditionParser implements EnumFactParser<FunctionalCondition> {
+
+	@Override
+	public Class<FunctionalCondition> enumType() {
+		return FunctionalCondition.class;
+	}
 
 	private final FunctionalConditionParser delegate = new FunctionalConditionParser();
 

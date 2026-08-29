@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
+import com.retrocrawler.core.gear.filter.FilterType;
 
 /** An immutable, typed selection over one immutable Stash snapshot. */
 public final class Query<G> {
@@ -85,6 +87,28 @@ public final class Query<G> {
 		return where(gear -> !nonNullType.isInstance(gear) || nonNullPredicate.test(nonNullType.cast(gear)));
 	}
 
+	/**
+	 * Requires the supplied Fact value wherever that Fact applies. Gear types
+	 * to which the Fact does not apply remain selected.
+	 */
+	public <T> Query<G> where(final FilterDefinition<T> filter, final T value) {
+		Objects.requireNonNull(filter, "filter");
+		final T required = Objects.requireNonNull(value, "value");
+		if (stash.filters().stream().noneMatch(candidate -> candidate == filter)) {
+			throw new IllegalArgumentException("Filter does not belong to this model: " + filter.key());
+		}
+		if (!filter.valueType().isInstance(required)) {
+			throw new IllegalArgumentException("Filter '" + filter.key() + "' requires values of type "
+					+ filter.valueType().getName() + " but got " + required.getClass().getName() + ".");
+		}
+		if (filter.filterType() instanceof final FilterType.Choices<?> choices
+				&& !choices.options().contains(required)) {
+			throw new IllegalArgumentException(
+					"Filter '" + filter.key() + "' does not declare choice " + required + ".");
+		}
+		return where(gear -> !filter.appliesTo(gear) || filter.values(gear).contains(required));
+	}
+
 	/** Materializes this query as an immutable typed and lifted Batch. */
 	public Batch<G> pull() {
 		final List<ArchiveGear<G>> selectedArchives = new ArrayList<>();
@@ -94,7 +118,7 @@ public final class Query<G> {
 			}
 			selectedArchives.add(new ArchiveGear<>(archive.archive(), select(archive.roots())));
 		}
-		return new Batch<>(selectedArchives);
+		return new Batch<>(selectedArchives, stash.filters());
 	}
 
 	private List<GearNode<G>> select(final List<GearNode<Object>> nodes) {

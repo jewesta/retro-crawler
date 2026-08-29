@@ -3,6 +3,7 @@ package com.retrocrawler.core.gear.parser;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -11,9 +12,14 @@ import com.retrocrawler.core.gear.RatedFact;
 /**
  * Parses exact points in time from ISO offset timestamps or epoch milliseconds.
  */
-public final class InstantParser implements FactParser<Instant> {
+public final class InstantParser implements OrderedFactParser<Instant> {
 
 	private static final Pattern INTEGER = Pattern.compile("[+-]?\\d+");
+
+	@Override
+	public Comparator<? super Instant> order() {
+		return Comparator.naturalOrder();
+	}
 
 	@Override
 	public RatedFact<Instant> parse(final String rawValue, final ParseContext context) {

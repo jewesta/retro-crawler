@@ -13,6 +13,7 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveSource;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.stash.Stash;
 
 /**
@@ -72,6 +73,9 @@ public interface RetroCrawler {
 
 	/** All archives registered with this crawler, in composition order. */
 	List<ArchiveDescriptor> archives();
+
+	/** Every structured filter defined by this crawler's immutable model. */
+	List<FilterDefinition<?>> filters();
 
 	/**
 	 * The collection namespace shared by every ARI produced by this crawler.

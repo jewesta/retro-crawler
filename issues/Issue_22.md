@@ -331,6 +331,52 @@ machine-readable query language: a predicate cannot be described to an
 unfamiliar client or serialized across a protocol boundary. Structured criteria
 will extend `Query<G>` without changing the Stash/Query/Batch split.
 
+### Fact-derived filters
+
+The model author has already named the collection's filterable concepts through
+`@RetroFact`. RetroCrawler therefore does not introduce a second facet registry.
+One semantic Fact key produces exactly one `FilterDefinition<T>` across every
+Gear class that declares it. Existing same-key validation requires those
+declarations to agree on value shape, cardinality, parser, optionality,
+strictness, and contextual behavior.
+
+The effective `FactParser<T>` supplies a non-optional `FilterType<T>` after
+automatic parser selection has completed. The common parser families define
+the useful defaults:
+
+- strings are `Text` filters;
+- enums and catalog-backed closed domains are ordered `Choices`;
+- integers, instants, and local dates are `Range` filters;
+- another parser receives `Exact` equality unless it declares richer
+  semantics.
+
+The filter definition holds the key, value type, cardinality, filter type,
+applicable Gear types, and framework-owned value extraction. Thus a filter is
+defined by the Fact key, not independently for each Gear class.
+
+`RetroCrawler.filters()` exposes the model-wide definitions and, for a choice
+filter, every conceivable declared option. `Stash.filters()` and
+`Batch.filters()` expose those same definitions. Their
+`availability(definition)` operation lazily computes and caches data-set-local
+availability:
+
+- every declared choice remains visible, together with its matching Gear
+  occurrence count and `present()` predicate;
+- a range reports its observed minimum, maximum, and populated occurrence
+  count;
+- text and exact filters report their populated occurrence count.
+
+Counts are per Gear occurrence. Repeated equal values on one multi-valued Fact
+therefore count once for that option. A Batch derives availability from its
+lifted result rather than inheriting the Stash's counts, but it retains absent
+declared choices with a zero count.
+
+`Query.where(FilterDefinition<T>, T)` is the first structured criterion. It
+requires the selected value for every Gear type to which the Fact applies;
+applicable Gear with no value fails the criterion, while Gear types that do not
+declare the Fact remain selected. This gives the intended “AGP graphics cards,
+but keep unrelated Gear” behavior without naming a Gear subtype in the query.
+
 ## Source Provenance and Identity
 
 ### Optional @RetroSource
@@ -714,6 +760,18 @@ silently presenting a first-wins match as certain.
   `stash.query(Type.class).where(archiveIds).where(predicate).pull()` returns a
   typed immutable lifted `Batch<G>` with archive-grouped, cumulative-root, and
   lazily cached flat Gear views.
+- Fact parsers now expose non-optional structured filter semantics. One
+  `FilterDefinition` is derived per Fact key and shared by every declaring Gear
+  type; enum and catalog parsers expose global choices, string parsers expose
+  text, integer and temporal parsers expose ranges, and other parsers default
+  to exact equality.
+- RetroCrawler, Stash, and Batch expose model filters. Stash and Batch lazily
+  cache local `FilterAvailability`, retaining zero-count global choices, and
+  Query accepts exact Fact-value criteria without eliminating non-applicable
+  Gear types.
+- Focused tests cover the four filter shapes, same-key reuse across Gear types,
+  global-versus-present choices, lazy caching, and structured Query behavior.
+  The complete seven-module reactor passes 390 tests.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
@@ -723,8 +781,8 @@ silently presenting a first-wins match as certain.
 
 ## Remaining Design Questions
 
-- What additional immutable criteria belong on native `Query<G>` beyond
-  archive selection and Java predicates?
+- Which range, text, negation, and multi-choice operations should follow the
+  first exact Fact-value criterion on native `Query<G>`?
 - What hierarchy-building strategy should the future `pull(...)` overload
   accept while keeping the default lifted source hierarchy?
 - How should equal-confidence Gear matches and partially resolved Gear be

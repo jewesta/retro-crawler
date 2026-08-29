@@ -30,6 +30,7 @@ import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
 import com.retrocrawler.core.gear.TypeSource;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
 import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
@@ -122,6 +123,11 @@ public final class Model {
 
 	public Configuration configuration() {
 		return configuration;
+	}
+
+	/** Every structured filter derived from the model's semantic Fact keys. */
+	public List<FilterDefinition<?>> filters() {
+		return gearResolver.filters();
 	}
 
 	GearResolver gearResolver() {

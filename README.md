@@ -401,6 +401,38 @@ Gear remains in the Batch. A Batch retains its archive groups through
 `archives()` and exposes their cumulative forest through `roots()`. Its flat
 `gear()` view is derived lazily and cached.
 
+Every semantic Fact key also contributes exactly one structured
+`FilterDefinition`, even when several Gear types declare that Fact. The
+definition records its value type, cardinality, applicable Gear types, and the
+non-optional `FilterType` supplied by the effective `FactParser`. Built-in
+string parsers describe text filters, enum parsers describe ordered choices,
+integer and temporal parsers describe ranges, and an ordinary custom parser
+defaults to exact equality.
+
+`crawler.filters()` exposes the complete model vocabulary. For a choice
+filter, that includes every conceivable declared option. A Stash or Batch
+exposes the same definitions and lazily computes and caches their observed
+availability. For example, after selecting the typed `busFilter` definition
+from that list:
+
+```java
+FilterAvailability.Choices<?> available =
+        (FilterAvailability.Choices<?>) stash.availability(busFilter);
+
+List<? extends FilterAvailability.Option<?>> options = available.options();
+Batch<RetroHardware> agp = stash.query(RetroHardware.class)
+        .where(busFilter, ExpansionBus.AGP)
+        .pull();
+```
+
+Each choice option remains in `options()` when absent; its
+`matchingOccurrences()` is then zero and `present()` is false. Counts describe
+Gear occurrences rather than raw repeated values. A Fact criterion applies to
+all Gear types that declare its key, rejects applicable Gear with no matching
+value, and retains Gear types to which the Fact does not apply. Batch
+availability is recomputed over the materialized result, so a UI can update its
+facets after a pull without losing globally conceivable options.
+
 Every `GearNode` retains the ARI of the artifact that produced it. Complete
 Stash construction validates Retro ID uniqueness across all registered
 archives. A subtree crawl is routed by its ARI; other archives reuse their

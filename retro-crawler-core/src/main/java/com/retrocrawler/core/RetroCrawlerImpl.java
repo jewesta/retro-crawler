@@ -34,6 +34,7 @@ import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.GearResolver;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressCancelledException;
@@ -90,6 +91,11 @@ class RetroCrawlerImpl implements RetroCrawler {
 	@Override
 	public List<ArchiveDescriptor> archives() {
 		return archiveDescriptors;
+	}
+
+	@Override
+	public List<FilterDefinition<?>> filters() {
+		return resolver.filters();
 	}
 
 	@Override
@@ -238,7 +244,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 					toGearNodes(resolvedArchive.descriptor().id(), List.of(resolvedArchive.root()), journal)));
 		}
 
-		return new Stash(resultArchives);
+		return new Stash(resultArchives, resolver.filters());
 	}
 
 	private void requireRoutableSubtrees(final ReindexScope reindexScope) {

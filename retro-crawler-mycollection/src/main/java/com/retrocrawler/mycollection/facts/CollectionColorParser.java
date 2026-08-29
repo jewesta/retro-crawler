@@ -3,7 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.appearance.ColorParser;
@@ -12,7 +12,12 @@ import com.retrocrawler.model.appearance.ColorParser;
  * Adapts established German color markers from this collection to the portable
  * named-color vocabulary.
  */
-public final class CollectionColorParser implements FactParser<Color> {
+public final class CollectionColorParser implements EnumFactParser<Color> {
+
+	@Override
+	public Class<Color> enumType() {
+		return Color.class;
+	}
 
 	private final ColorParser delegate = new ColorParser();
 

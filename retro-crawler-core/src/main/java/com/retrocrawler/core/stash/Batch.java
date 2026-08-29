@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.retrocrawler.core.gear.filter.FilterAvailability;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
+
 /**
  * An immutable, typed result pulled from a Stash.
  * <p>
@@ -20,13 +23,16 @@ public final class Batch<G> {
 
 	private volatile List<G> gear;
 
-	Batch(final List<ArchiveGear<G>> archives) {
+	private final FilterAvailabilityIndex filterAvailability;
+
+	Batch(final List<ArchiveGear<G>> archives, final List<FilterDefinition<?>> filters) {
 		this.archives = List.copyOf(Objects.requireNonNull(archives, "archives"));
 		final List<GearNode<G>> accumulatedRoots = new ArrayList<>();
 		for (final ArchiveGear<G> archive : this.archives) {
 			accumulatedRoots.addAll(archive.roots());
 		}
 		this.roots = List.copyOf(accumulatedRoots);
+		filterAvailability = new FilterAvailabilityIndex(filters, roots);
 	}
 
 	/** Matching Gear grouped into its archive-specific lifted hierarchies. */
@@ -40,6 +46,18 @@ public final class Batch<G> {
 	 */
 	public List<GearNode<G>> roots() {
 		return roots;
+	}
+
+	/**
+	 * Every structured filter inherited from the immutable collection model.
+	 */
+	public List<FilterDefinition<?>> filters() {
+		return filterAvailability.filters();
+	}
+
+	/** Lazily computes this result's availability for one model filter. */
+	public <T> FilterAvailability<T> availability(final FilterDefinition<T> filter) {
+		return filterAvailability.availability(filter);
 	}
 
 	/**

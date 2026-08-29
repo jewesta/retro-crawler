@@ -3,7 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.packaging.SealStateParser;
@@ -12,7 +12,12 @@ import com.retrocrawler.model.packaging.SealStateParser;
  * Maps the collection's German seal-state markers to the portable packaging
  * vocabulary.
  */
-public final class CollectionSealStateParser implements FactParser<SealState> {
+public final class CollectionSealStateParser implements EnumFactParser<SealState> {
+
+	@Override
+	public Class<SealState> enumType() {
+		return SealState.class;
+	}
 
 	private final SealStateParser delegate = new SealStateParser();
 

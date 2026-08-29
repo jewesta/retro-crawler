@@ -3,10 +3,15 @@ package com.retrocrawler.model.hardware;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class ComputerFormFactorParser implements FactParser<ComputerFormFactor> {
+public final class ComputerFormFactorParser implements EnumFactParser<ComputerFormFactor> {
+
+	@Override
+	public Class<ComputerFormFactor> enumType() {
+		return ComputerFormFactor.class;
+	}
 
 	@Override
 	public RatedFact<ComputerFormFactor> parse(final String rawValue, final ParseContext context) {

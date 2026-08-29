@@ -3,13 +3,18 @@ package com.retrocrawler.model.condition;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English names for specific damage kinds.
  */
-public final class DamageKindParser implements FactParser<DamageKind> {
+public final class DamageKindParser implements EnumFactParser<DamageKind> {
+
+	@Override
+	public Class<DamageKind> enumType() {
+		return DamageKind.class;
+	}
 
 	@Override
 	public RatedFact<DamageKind> parse(final String rawValue, final ParseContext context) {

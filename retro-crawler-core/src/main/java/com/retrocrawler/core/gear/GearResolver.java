@@ -1,6 +1,7 @@
 package com.retrocrawler.core.gear;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
@@ -32,13 +34,21 @@ public class GearResolver {
 
 	private final Map<Class<?>, Set<String>> contextualFactKeys;
 
+	private final List<FilterDefinition<?>> filters;
+
 	// package-private: only factories construct this
 	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders,
-			final Map<Class<?>, Set<String>> contextualFactKeys) {
+			final Map<Class<?>, Set<String>> contextualFactKeys, final List<FilterDefinition<?>> filters) {
 		this.gearSpecialists = Objects.requireNonNull(specialists, "specialists");
 		this.factFinders = Objects.requireNonNull(factFinders, "factFinders");
 		this.contextualFactKeys = Objects.requireNonNull(contextualFactKeys, "contextualFactKeys");
+		this.filters = List.copyOf(Objects.requireNonNull(filters, "filters"));
 		this.clueClassifier = new ClueClassifier(factFinders.keySet());
+	}
+
+	/** Every structured filter derived from this resolver's Fact model. */
+	public List<FilterDefinition<?>> filters() {
+		return filters;
 	}
 
 	private record BestAnonymousMatch(String key, Confidence confidence, boolean contextual, boolean ambiguous) {

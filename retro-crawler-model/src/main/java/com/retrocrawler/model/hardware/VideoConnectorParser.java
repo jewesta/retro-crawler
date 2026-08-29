@@ -3,10 +3,15 @@ package com.retrocrawler.model.hardware;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class VideoConnectorParser implements FactParser<VideoConnector> {
+public final class VideoConnectorParser implements EnumFactParser<VideoConnector> {
+
+	@Override
+	public Class<VideoConnector> enumType() {
+		return VideoConnector.class;
+	}
 
 	@Override
 	public RatedFact<VideoConnector> parse(final String rawValue, final ParseContext context) {

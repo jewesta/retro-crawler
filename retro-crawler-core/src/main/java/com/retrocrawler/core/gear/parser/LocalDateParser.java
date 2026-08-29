@@ -14,6 +14,7 @@ import java.time.format.ResolverStyle;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,12 +28,17 @@ import com.retrocrawler.core.gear.RatedFact;
 /**
  * Parses complete calendar dates using ISO syntax and the configured locale.
  */
-public final class LocalDateParser implements FactParser<LocalDate> {
+public final class LocalDateParser implements OrderedFactParser<LocalDate> {
 
 	private static final List<FormatStyle> LOCALIZED_STYLES = List.of(FormatStyle.FULL, FormatStyle.LONG,
 			FormatStyle.MEDIUM, FormatStyle.SHORT);
 	private static final List<Character> NUMERIC_SEPARATORS = List.of('.', '-', '/');
 	private static final ConcurrentMap<Locale, List<DateTimeFormatter>> FORMATTERS = new ConcurrentHashMap<>();
+
+	@Override
+	public Comparator<? super LocalDate> order() {
+		return Comparator.naturalOrder();
+	}
 
 	@Override
 	public RatedFact<LocalDate> parse(final String rawValue, final ParseContext context) {

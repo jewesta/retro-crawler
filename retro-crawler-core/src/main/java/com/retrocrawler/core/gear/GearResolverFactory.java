@@ -6,8 +6,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -21,6 +24,7 @@ import com.retrocrawler.core.annotation.RetroId;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.catalog.CatalogLoader;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
@@ -64,7 +68,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		 * RetroGear. Some might end up in the Set because of package scanning;
 		 * One might only serve as the archive descriptor.
 		 */
-		final Map<Class<?>, GearSpecialist> specialists = new HashMap<>();
+		final Map<Class<?>, GearSpecialist> specialists = new LinkedHashMap<>();
 		for (final Class<?> type : types) {
 			GearDescriptor.of(type).ifPresent(gd -> specialists.put(type, new GearSpecialist(gd)));
 		}
@@ -76,9 +80,10 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		assertConsistentRetroId(specialists);
 
 		// Collect all known attribute definitions and ensure no contradictions.
-		final Map<String, FactDescriptor> attributes = new HashMap<>();
+		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
 		final Map<String, Class<?>> declaringTypes = new HashMap<>();
 		final Map<Class<?>, Set<String>> contextualFactKeys = new HashMap<>();
+		final Map<String, Map<Class<?>, Field>> filterBindings = new LinkedHashMap<>();
 
 		for (final GearSpecialist specialist : specialists.values()) {
 			final GearDescriptor definition = specialist.gearDefinition();
@@ -88,6 +93,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			for (final Entry<String, FactDescriptor> entry : definition.attributes().entrySet()) {
 				final String key = entry.getKey();
 				final FactDescriptor incoming = entry.getValue();
+				filterBindings.computeIfAbsent(key, ignored -> new LinkedHashMap<>()).put(type, incoming.field());
 				if (incoming.isContextual()) {
 					contextualKeys.add(key);
 				}
@@ -104,9 +110,12 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 
 		// Build FactFinders (one per key) for FactDefinition only.
-		final Map<String, FactFinder> factFinders = new HashMap<>();
+		final Map<String, FactFinder> factFinders = new LinkedHashMap<>();
+		final List<FilterDefinition<?>> filters = new ArrayList<>();
 
-		for (final Entry<String, FactDescriptor> entry : attributes.entrySet()) {
+		final List<Entry<String, FactDescriptor>> orderedAttributes = attributes.entrySet().stream()
+				.sorted(Entry.comparingByKey()).toList();
+		for (final Entry<String, FactDescriptor> entry : orderedAttributes) {
 			final String key = entry.getKey();
 			final FactDescriptor attrDef = entry.getValue();
 
@@ -132,9 +141,13 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final boolean strict = factDef.isStrict();
 
 			factFinders.put(key, new FactFinder(key, parser, fieldType, strict, factDef.isContextual()));
+			filters.add(ReflectedFilterDefinition.create(key, factDef,
+					Objects.requireNonNull(parser.filterType(), "filterType for " + parser.getClass().getName()),
+					filterBindings.get(key)));
 		}
 
-		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys));
+		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys),
+				List.copyOf(filters));
 	}
 
 	private static FactParser<?> configuredParser(final String key, final Class<? extends FactParser<?>> parserType,

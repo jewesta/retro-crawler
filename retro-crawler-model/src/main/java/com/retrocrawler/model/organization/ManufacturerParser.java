@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.RatedFact;
+import com.retrocrawler.core.gear.filter.FilterType;
 import com.retrocrawler.core.gear.parser.AbstractCatalogFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
@@ -27,6 +28,11 @@ public final class ManufacturerParser extends AbstractCatalogFactParser<Manufact
 	public ManufacturerParser(final ManufacturerCatalog catalog) {
 		super(Objects.requireNonNull(catalog, "catalog").catalog());
 		manufacturerCatalog = catalog;
+	}
+
+	@Override
+	public FilterType<Manufacturer> filterType() {
+		return FilterType.choices(manufacturerCatalog.entries());
 	}
 
 	@Override
