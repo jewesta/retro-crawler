@@ -1,44 +1,33 @@
 package com.retrocrawler.app;
 
-import com.retrocrawler.core.archive.ARI;
-import com.retrocrawler.core.archive.ArchiveDescriptor;
-import com.retrocrawler.core.gear.GearTreeFactory;
+import com.retrocrawler.core.stash.ArchiveGear;
+import com.retrocrawler.core.stash.Batch;
+import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.data.provider.hierarchy.TreeData;
 
-final class VaadinTreeDataFactory implements GearTreeFactory<TreeData<VaadinGearNode>, VaadinGearNode, MyKnownGear> {
+final class VaadinTreeDataFactory {
 
-	private final TreeData<VaadinGearNode> data = new TreeData<>();
-
-	@Override
-	public Class<MyKnownGear> gearType() {
-		return MyKnownGear.class;
+	private VaadinTreeDataFactory() {
+		// static utility class
 	}
 
-	@Override
-	public void beginArchive(final ArchiveDescriptor archive) {
-		// no-op
-	}
-
-	@Override
-	public void endArchive(final ArchiveDescriptor archive) {
-		// no-op
-	}
-
-	@Override
-	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear) {
-		throw new IllegalStateException("The Vaadin tree requires the Gear source ARI.");
-	}
-
-	@Override
-	public VaadinGearNode addNode(final VaadinGearNode parent, final MyKnownGear gear, final ARI source) {
-		final VaadinGearNode node = new VaadinGearNode(gear, source);
-		data.addItem(parent, node);
-		return node;
-	}
-
-	@Override
-	public TreeData<VaadinGearNode> build() {
+	static TreeData<VaadinGearNode> from(final Batch<MyKnownGear> batch) {
+		final TreeData<VaadinGearNode> data = new TreeData<>();
+		for (final ArchiveGear<MyKnownGear> archive : batch.archives()) {
+			for (final GearNode<MyKnownGear> root : archive.roots()) {
+				add(data, null, root);
+			}
+		}
 		return data;
+	}
+
+	private static void add(final TreeData<VaadinGearNode> data, final VaadinGearNode parent,
+			final GearNode<MyKnownGear> source) {
+		final VaadinGearNode node = new VaadinGearNode(source.gear(), source.source());
+		data.addItem(parent, node);
+		for (final GearNode<MyKnownGear> child : source.children()) {
+			add(data, node, child);
+		}
 	}
 }

@@ -17,7 +17,7 @@ public record StashStats(long archiveCount, long rootCount, long nodeCount, long
 		gearByType = Map.copyOf(Objects.requireNonNull(gearByType, "gearByType"));
 	}
 
-	public static StashStats from(final Stash<?> stash) {
+	public static StashStats from(final Stash stash) {
 		Objects.requireNonNull(stash, "stash");
 
 		final MutableStats stats = new MutableStats();

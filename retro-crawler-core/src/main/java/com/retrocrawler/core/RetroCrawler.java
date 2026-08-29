@@ -13,18 +13,15 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveSource;
-import com.retrocrawler.core.gear.FlatListFactory;
-import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.stash.Stash;
-import com.retrocrawler.core.stash.StashFactory;
 
 /**
  * Applies one shared model to the archives registered with it.
  * <p>
  * Every archive has exactly one root, its own source provider, its own
- * repository entry, and its own crawl lifecycle. Aggregation across archives is
- * a crawler operation: {@code crawlAll} resolves every registered archive in
- * one pass and validates Retro ID uniqueness across all of them.
+ * repository entry, and its own crawl lifecycle. Every operation resolves the
+ * complete configured collection and validates Retro ID uniqueness across all
+ * archives.
  */
 public interface RetroCrawler {
 
@@ -108,54 +105,23 @@ public interface RetroCrawler {
 	 */
 	<T> Optional<T> inspect(ARI source, ArchiveFileAccessor<T> inspector) throws IOException;
 
-	/** Crawls and resolves the selected archive through the shared model. */
-	<R, N, G> R crawl(ArchiveId archiveId, Journal journal, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
-			throws IOException;
-
 	/**
-	 * Crawls and resolves every registered archive in one pass.
+	 * Accesses the current immutable Stash.
 	 * <p>
-	 * Retro ID uniqueness is validated across all archives. A subtree reindex
-	 * scope is routed to the archive identified by each requested ARI; archives
-	 * without a requested subtree reuse their stored clue archive.
+	 * A Stash already produced by this crawler is returned directly. Otherwise,
+	 * stored clue archives are resolved and only archives without stored clues
+	 * are physically crawled.
 	 */
-	<R, N, G> R crawlAll(Journal journal, ReindexScope reindexScope, GearTreeFactory<R, N, G> factory)
-			throws IOException;
+	Stash access(Journal journal) throws IOException;
 
 	/**
-	 * Convenience method that builds a hierarchical {@link Stash} from the
-	 * selected archive.
+	 * Physically crawls the requested scope and returns the resulting complete
+	 * immutable Stash.
+	 * <p>
+	 * Archives and subtrees outside the requested scope reuse their stored
+	 * clues. The new Stash becomes current only after the complete crawl and
+	 * resolution succeeds.
 	 */
-	default <G> Stash<G> crawlStash(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
-			final Class<G> gearType) throws IOException {
-		return crawl(archiveId, journal, reindexScope, new StashFactory<>(gearType));
-	}
-
-	/**
-	 * Convenience method that builds one hierarchical {@link Stash} across
-	 * every registered archive.
-	 */
-	default <G> Stash<G> crawlAllStash(final Journal journal, final ReindexScope reindexScope, final Class<G> gearType)
-			throws IOException {
-		return crawlAll(journal, reindexScope, new StashFactory<>(gearType));
-	}
-
-	/**
-	 * Convenience method that returns matching gear from the selected archive
-	 * as a flat list.
-	 */
-	default <G> List<G> crawlGear(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
-			final Class<G> gearType) throws IOException {
-		return crawl(archiveId, journal, reindexScope, new FlatListFactory<>(gearType));
-	}
-
-	/**
-	 * Convenience method that returns matching gear from every registered
-	 * archive as one flat list.
-	 */
-	default <G> List<G> crawlAllGear(final Journal journal, final ReindexScope reindexScope, final Class<G> gearType)
-			throws IOException {
-		return crawlAll(journal, reindexScope, new FlatListFactory<>(gearType));
-	}
+	Stash crawl(Journal journal, ReindexScope reindexScope) throws IOException;
 
 }

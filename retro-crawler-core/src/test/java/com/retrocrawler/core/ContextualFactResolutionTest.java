@@ -55,7 +55,8 @@ class ContextualFactResolutionTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<BaseGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), BaseGear.class);
+		final List<BaseGear> gear = crawler.crawl(new Journal(), ReindexScope.all()).query(BaseGear.class).pull()
+				.gear();
 
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());

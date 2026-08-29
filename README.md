@@ -21,8 +21,8 @@ One `RetroCrawler` applies a shared model to every archive registered with it.
 Each archive keeps its own identity, root, source provider, repository entry,
 and crawl lifecycle, so a collection spread across several disks, mounts, or
 media is composed as several archives rather than as several roots of one.
-Aggregation is a crawler operation: `crawlAll` resolves every archive in one
-pass and validates Retro ID uniqueness across all of them.
+Every access or crawl resolves a complete Stash across those archives and
+validates Retro ID uniqueness across all of them.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -367,23 +367,35 @@ untouched branches, so the root timestamp remains the time of the last complete
 archive crawl. These timestamps record cache age; RetroCrawler does not
 currently attempt automatic source-change detection.
 
-Crawling either selects one archive by identity or spans all of them:
+Crawling always produces a complete immutable `Stash` spanning every configured
+archive. `access` returns the parked Stash, or resolves stored clue archives on
+first access and physically crawls only archives whose stored clues are missing.
+An explicit `crawl` physically rereads the requested scope and parks its result
+only after the complete candidate succeeds:
 
 ```java
 Journal journal = new Journal();
 
-Stash<RetroHardware> museum = crawler.crawlStash(
-        museumCollection.id(), journal, reindexScope, RetroHardware.class);
+Stash stash = crawler.access(journal);
 
-Stash<RetroHardware> everything = crawler.crawlAllStash(
-        journal, reindexScope, RetroHardware.class);
+Stash recrawled = crawler.crawl(
+        new Journal(), ReindexScope.subtree(changedShelf));
 ```
 
-A `Stash` keeps its gear grouped per archive, and every `GearNode` retains the
-ARI of the artifact that produced it. `crawlAll` validates Retro ID uniqueness
-across all registered archives and routes a subtree reindex scope by each ARI's
-archive identity; archives without a requested subtree reuse their stored clue
-archive.
+A `Stash` contains every recognized Gear in its natural archive hierarchy. A
+typed immutable query is materialized as a lifted `Batch<G>`:
+
+```java
+Batch<RetroHardware> working = stash.query(RetroHardware.class)
+        .archive(museumCollection.id())
+        .where(RetroHardware::isWorking)
+        .pull();
+```
+
+Every `GearNode` retains the ARI of the artifact that produced it. Complete
+Stash construction validates Retro ID uniqueness across all registered
+archives. A subtree crawl is routed by its ARI; other archives reuse their
+stored clue archives.
 
 ---
 
@@ -452,7 +464,9 @@ message view is available for simple command-line or GUI integrations:
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
 Journal journal = new Journal(progressor);
-List<MyGear> gear = crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
+Batch<MyGear> gear = crawler.crawl(journal, ReindexScope.all())
+        .query(MyGear.class)
+        .pull();
 ```
 
 Once supplied, progress control belongs to the journal. Calling
@@ -467,7 +481,7 @@ fail after all recoverable work has been examined:
 ```java
 Journal journal = new Journal(FailureMode.FAIL_LATE);
 try {
-    crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
+    crawler.crawl(journal, ReindexScope.all());
 } catch (CrawlException report) {
     List<Exception> allFailures = report.failures();
 }
@@ -478,8 +492,8 @@ message shows only the first 50. An archive with a clue-finding failure is not
 stored or resolved, but clean archives continue into resolution. A resolution
 failure is recorded against its artifact ARI; that artifact contributes no
 gear, while its descendants and the remaining archives are still examined.
-RetroCrawler throws the final report before invoking the result factory, so a
-failed operation never exposes a partial result.
+RetroCrawler throws the final report before constructing or parking the Stash,
+so a failed operation never exposes a partial result.
 
 ---
 

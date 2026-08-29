@@ -3,8 +3,8 @@ package com.retrocrawler.app.cli;
 import java.util.Objects;
 
 import com.retrocrawler.core.stash.ArchiveGear;
+import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.core.stash.GearNode;
-import com.retrocrawler.core.stash.Stash;
 
 final class AsciiTreePrinter {
 
@@ -12,9 +12,9 @@ final class AsciiTreePrinter {
 		// static utility class
 	}
 
-	static <G> void printStash(final Stash<G> stash) {
-		Objects.requireNonNull(stash, "stash");
-		for (final ArchiveGear<G> archive : stash.archives()) {
+	static <G> void print(final Batch<G> batch) {
+		Objects.requireNonNull(batch, "batch");
+		for (final ArchiveGear<G> archive : batch.archives()) {
 			System.out.println(archive.archive().name() + " [" + archive.archive().root() + "]");
 			final var roots = archive.roots();
 			for (int i = 0; i < roots.size(); i++) {

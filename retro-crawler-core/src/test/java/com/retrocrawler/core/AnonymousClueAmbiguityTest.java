@@ -48,7 +48,8 @@ class AnonymousClueAmbiguityTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<AmbiguousGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), AmbiguousGear.class);
+		final List<AmbiguousGear> gear = crawler.crawl(new Journal(), ReindexScope.all()).query(AmbiguousGear.class)
+				.pull().gear();
 
 		assertNull(gear.getFirst().firstMeaning);
 		assertNull(gear.getFirst().secondMeaning);

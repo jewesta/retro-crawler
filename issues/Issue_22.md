@@ -38,17 +38,20 @@ queries. Natural-language interpretation itself does not belong in
 
 This section reconciles the original Issue 22 query direction with the later
 RetroCrawler concept discussion. It replaces earlier provisional designs based
-on `GearEntry`, a Java `Batch` type, a public `StashSnapshot`, a
-`FindingAid` facade, or a `Hierarchy` wrapper.
+on `GearEntry`, a public `StashSnapshot`, a `FindingAid` facade, or a
+`Hierarchy` wrapper. The `Batch<G>` decision was revisited once Batch gained
+responsibility for a typed lifted hierarchy rather than merely wrapping a list.
 
 The settled vocabulary is:
 
 - `RetroCrawler` is the configured crawling and resolution engine.
 - `Stash` is the long-lived, user-facing interface to all currently recognized
   Gear.
-- A user **pulls a batch** of one assignable Gear type from the Stash.
-- That batch is an immutable `List<G>`; “batch” is domain language, not a Java
-  type.
+- `Stash` remains the non-generic “everything” object.
+- `stash.query(Type.class)` creates an immutable typed `Query<G>`; criteria
+  narrow that query without changing the Stash.
+- `Query.pull()` materializes an immutable typed `Batch<G>` whose hierarchy
+  lifts matching descendants through excluded Gear.
 - The source hierarchy is an immutable forest of `GearNode<Object>`.
 - Every hierarchy node has an authoritative source ARI.
 - A Gear object may optionally receive that ARI through `@RetroSource`.
@@ -185,8 +188,8 @@ archive sources          Repository
                  v
               Stash
         /        |         \
-   pull batch  hierarchy  structured query/trace
-     List<G>    forest       documents
+   typed query  pull batch  structured query/trace
+    Query<G>    Batch<G>       documents
         |          |             |
      Java/CLI    Vaadin       CLI/agents
 ```
@@ -200,12 +203,13 @@ RetroCrawler crawler = RetroCrawler.builder()
         // model, repository, archives
         .build();
 
-Stash stash = crawler.stash();
+Stash stash = crawler.access(journal);
 ```
 
-The exact initial-refresh signature remains to be designed, but the ownership
-is settled: the Stash is the communication object between a user and their
-Gear, while RetroCrawler supplies its engine.
+`access` returns the parked Stash, resolves stored clues on cold access, and
+crawls only where stored clues are missing. `crawl` deliberately rereads a
+physical scope and returns a new complete Stash. The Stash is the communication
+object between a user and their Gear, while RetroCrawler supplies its engine.
 
 ### Complete eager resolution
 
@@ -227,10 +231,11 @@ typed batches, source hierarchy, queries
 
 This gives the Stash truthful whole-collection semantics:
 
-- Matching and construction failures occur while refreshing the Stash rather
-  than during an unrelated later pull.
-- Retro ID uniqueness is validated across the complete selected collection.
-- Every Artifact is parsed and matched once per refresh, not once per Gear type.
+- Matching and construction failures occur while accessing or crawling the
+  Stash rather than during an unrelated later pull.
+- Retro ID uniqueness is validated across the complete configured collection.
+- Every Artifact is parsed and matched once per produced Stash, not once per
+  Gear type.
 - Whole-collection statistics actually describe everything currently known.
 - A batch is a predictable in-memory selection.
 
@@ -243,9 +248,9 @@ archives so model changes can reinterpret them without reindexing.
 
 ### Stash state and lifecycle
 
-The Stash is long-lived, but each installed resolved state is immutable. A
-refresh or reindex builds and validates a complete candidate before atomically
-replacing the current state:
+Each Stash is an immutable snapshot. The configured RetroCrawler parks the
+current Stash reference; an explicit crawl builds and validates a complete new
+candidate before atomically replacing that reference:
 
 ```text
 current state -> build candidate -> validate -> install candidate
@@ -253,83 +258,68 @@ current state -> build candidate -> validate -> install candidate
                        '-> failure: retain current state
 ```
 
-Lists and hierarchy roots already returned to a caller remain immutable views
-of the state from which they were pulled; a later refresh does not silently
-change them. This does not require a public `StashSnapshot` type initially.
-The implementation may keep such a state object internally and introduce it
-publicly only if a concrete use case needs explicit revision handling.
+Stashes, Queries, Batches, and hierarchy roots already returned to a caller
+remain tied to the old snapshot; a later crawl never changes them. A public
+`StashSnapshot` wrapper would therefore duplicate the Stash itself.
 
-Lifecycle vocabulary should distinguish:
+Lifecycle vocabulary is now:
 
-- **refresh** — rebuild the complete resolved state, reusing stored clue
-  archives and crawling only where no usable stored archive exists;
-- **reindex** — explicitly reread the requested archive scope before resolving
-  a new complete state;
-- **pull/query** — pure reads of the installed state that never crawl or
-  resolve.
+- **access** — return the parked Stash; on cold access resolve stored clue
+  archives, physically crawling only archives with no usable stored clues;
+- **crawl** — explicitly reread the requested physical scope, resolve a new
+  complete Stash, and park it only after success;
+- **query/pull** — pure in-memory reads of one immutable Stash.
 
-Each refresh or reindex is accompanied by one operation-scoped `Journal`. The
+Each cold access or crawl is accompanied by one operation-scoped `Journal`. The
 journal is the authority for progress stages, advancement, cancellation, and
 terminal state as well as recoverable failures. The neutral `Progressor`
 remains an injected mechanism behind it; operation code and callers report and
 cancel through the journal, while observation is exposed read-only.
 
-`rebuild` is avoided because it does not say whether clues are being reused,
-sources are being reread, or only Gear is being resolved again. Refresh and
-reindex are visibly state-changing operations even if they live on the
-user-facing Stash facade.
+There is no public `resolve` operation. Repeated resolution through the same
+immutable Model has no new input. After a JVM restart, cold `access` resolves
+the persisted clues once; within the process it returns the parked Stash.
 
 ## Pulling a Batch
 
-The first native retrieval API should be deliberately small:
+The Stash is deliberately non-generic and always means everything recognized
+in the snapshot. It exposes the all-Gear shorthand and starts typed immutable
+queries:
 
 ```java
-<G> List<G> pull(Class<G> gearType);
+Batch<Object> pull();
 
-<G> List<G> pull(
-        Class<G> gearType,
-        Predicate<? super G> filter);
+<G> Query<G> query(Class<G> desiredReturnType);
 ```
 
-For example:
+`query` uses assignability, so the desired type can be a concrete Gear class, a
+shared application interface or base class, or `Object` when the model has no
+more useful common denominator. Query criteria are immutable and composable:
 
 ```java
-List<GraphicsCard> cards =
-        stash.pull(GraphicsCard.class);
-
-List<GraphicsCard> workingCards =
-        stash.pull(GraphicsCard.class, GraphicsCard::isWorking);
+Batch<GraphicsCard> workingCards = stash
+        .query(GraphicsCard.class)
+        .archives(archiveIds)
+        .where(GraphicsCard::isWorking)
+        .pull();
 ```
 
-The returned list is the batch pulled from the Stash. A dedicated `Batch<G>`
-class would add no value at this stage:
+Archive and predicate criteria merely accumulate a selection recipe over the
+same Stash; they do not copy, crawl, resolve, or mutate Gear. `pull` evaluates
+all criteria once and constructs a `Batch<G>`. Its archive groups contain a
+typed `GearNode<G>` forest. A matching descendant whose parent is excluded is
+lifted to the nearest retained ancestor, or to an archive root if none remains.
+The Batch also exposes the same occurrences as an immutable pre-order
+`List<G>`.
 
-- `List<G>` already provides the requested type.
-- `List.copyOf(...)` provides immutable snapshot behavior.
-- Predicates and streams provide ordinary Java filtering and grouping.
-- Whole-collection statistics belong to the Stash.
-- Hierarchy is an orthogonal view of the complete Stash, not an intrinsic
-  property of a typed flat selection.
+`stash.pull()` delegates to `stash.query(Object.class).pull()`. Because every
+stored Gear is an Object and there are no additional criteria, its Batch
+reproduces the exact natural hierarchy without lifting.
 
-RetroCrawler does not require a common Gear base class. Selection therefore
-uses assignability:
-
-```java
-gearType.isInstance(gear)
-```
-
-`pull(GraphicsCard.class)` includes instances of `GraphicsCard` and its
-subclasses. A caller that deliberately wants every recognized object can use:
-
-```java
-List<Object> everything = stash.pull(Object.class);
-```
-
-No synthetic Gear interface or special “all Gear” token is needed.
-
-The Java predicate overload is a convenience for in-process callers. It is not
-the later machine-readable query language: a predicate cannot be described to
-an unfamiliar client or serialized across a protocol boundary.
+`where(Predicate<? super G>)` is an in-process Java convenience, not the later
+machine-readable query language: a predicate cannot be described to an
+unfamiliar client or serialized across a protocol boundary. Structured
+criteria will extend `Query<G>` without changing the Stash/Query/Batch split.
 
 ## Source Provenance and Identity
 
@@ -404,18 +394,18 @@ folders. In the motivating collection it expresses “belongs to,” “is store
 inside,” or “is stored alongside.” It carries where Gear is arranged; it never
 determines what the Gear is.
 
-The hierarchy is exposed as an immutable, ordered forest using the existing
-`GearNode<G>` type:
+The Stash stores the hierarchy as immutable ordered archive groups using the
+existing `GearNode<G>` type:
 
 ```java
-List<GearNode<Object>> sourceHierarchy();
+List<ArchiveGear<Object>> archives();
 ```
 
-The outer list contains the roots. `GearNode` already has exactly the required
-Gear, source ARI, and immutable children. A separate `HierarchyNode` would
-duplicate that type without adding a concept. No `Hierarchy<G>` wrapper is
-warranted until whole-hierarchy behavior exists that cannot live naturally on
-the Stash or be derived by traversal.
+Each archive group contains its descriptor and roots. `GearNode` already has
+exactly the required Gear, source ARI, and immutable children. A separate
+`HierarchyNode` would duplicate that type without adding a concept. No
+`Hierarchy<G>` wrapper is warranted until whole-hierarchy behavior exists that
+cannot live naturally on the Stash, Query, or Batch.
 
 The hierarchy is heterogeneous because containment and adjacency do not imply
 one common Gear type. A computer may contain a graphics card, storage device,
@@ -438,7 +428,7 @@ Vaadin can consume the forest mechanically without a core dependency:
 
 ```java
 treeGrid.setItems(
-        stash.sourceHierarchy(),
+        stash.query(MyKnownGear.class).pull().archives().getFirst().roots(),
         GearNode::children);
 ```
 
@@ -520,10 +510,10 @@ The structured read API should answer bounded questions such as:
 
 The exact names remain open, but the semantic split is firm:
 
-- `pull`, describe, find, retrieve, trace, and locate are reads of installed
-  Stash state;
-- refresh and reindex are explicit lifecycle commands that prepare and install
-  another complete state.
+- `pull`, describe, find, retrieve, trace, and locate are reads of one immutable
+  Stash;
+- access and crawl are the lifecycle commands that obtain or replace the
+  crawler's parked Stash.
 
 ### Native values versus wire documents
 
@@ -569,8 +559,8 @@ inspect_gear
 trace_gear
 locate_files
 stash_stats
-refresh_stash
-reindex_archive
+access_stash
+crawl_archive
 ```
 
 The adapter translates protocol schemas to the public Stash API. It must not
@@ -582,9 +572,9 @@ remains responsible for deterministic collection facts and traceability.
 
 ## Existing Factories
 
-`GearTreeFactory`, `StashFactory`, and `FlatListFactory` currently make the
-crawl result caller-shaped while resolution is running. That mechanism helped
-establish the source tree, but it is not the new user-facing retrieval model:
+`GearTreeFactory`, `StashFactory`, and `FlatListFactory` made the crawl result
+caller-shaped while resolution was running. That mechanism helped establish
+the source tree, but contradicted the complete Stash retrieval model:
 
 - supplying a Gear type filters before the complete Stash exists;
 - tree callbacks expose a mutable construction protocol;
@@ -592,30 +582,26 @@ establish the source tree, but it is not the new user-facing retrieval model:
 - a generic caller must already know a suitable Java base class;
 - the factory result decides which provenance survives.
 
-The complete Stash should become the canonical result first. `pull(...)` then
-replaces the ordinary flat-list factory use case, and `sourceHierarchy()`
-replaces UI-specific tree construction for the source hierarchy.
-
-Existing factory methods may remain temporarily for compatibility or as
-implementation machinery. A new generic projection abstraction should not be
-introduced until a concrete result shape exists that cannot be built from the
-immutable batch and hierarchy APIs.
+The factories and the generic result-producing crawler methods have therefore
+been removed. RetroCrawler constructs the complete heterogeneous Stash
+directly; `Query<G>` and `Batch<G>` perform every caller-specific projection in
+memory afterward.
 
 ## Delivery Direction
 
 A useful incremental order is:
 
-1. Make `Stash` non-generic and ensure its installed state contains every
-   recognized Gear from every selected archive.
-2. Add immutable, assignable `pull(Class)` and `pull(Class, Predicate)`
-   operations.
+1. Make `Stash` non-generic and ensure it contains every recognized Gear from
+   every configured archive.
+2. Add immutable typed `Query<G>` criteria and materialized lifted `Batch<G>`
+   results.
 3. Add optional `@RetroSource` injection while keeping ARI out of clues and
    facts.
-4. Expose the heterogeneous source forest as `List<GearNode<Object>>` and
-   adapt Vaadin and CLI callers.
-5. Define refresh/reindex lifecycle, atomic state replacement, and
-   whole-Stash statistics plus per-archive status.
-6. Preserve resolution evidence in the installed state and add exact retrieval
+4. Expose the heterogeneous source forest by archive and adapt Vaadin and CLI
+   callers.
+5. Complete access/crawl lifecycle details and add whole-Stash statistics plus
+   per-archive status.
+6. Preserve resolution evidence in the Stash and add exact retrieval
    and trace access by ARI and present Retro ID.
 7. Expose neutral collection schema, value documents, and structured query
    criteria.
@@ -631,26 +617,27 @@ include focused tests for new contracts.
    resolved Gear.
 2. A Stash contains all recognized Gear eagerly; type selection never triggers
    resolution.
-3. `Stash` is not generic. The requested Gear type belongs to `pull(...)`.
-4. Users pull a batch, but the batch is an immutable `List<G>`, not a
-   `Batch<G>` class.
-5. `Object.class` is the explicit all-Gear selection when no common user base
-   class exists.
-6. No `GearEntry` wrapper is added.
-7. Every Gear resolution receives an ARI as required framework context;
+3. `Stash` is not generic. The desired return type belongs to
+   `query(Class<G>)`.
+4. `Query<G>` is an immutable selection recipe tied to one Stash snapshot.
+5. `Batch<G>` is the immutable typed materialization, retaining both a lifted
+   hierarchy and a flat pre-order Gear list.
+6. `stash.pull()` is the all-Gear shorthand and returns `Batch<Object>`.
+7. No `GearEntry` wrapper is added.
+8. Every Gear resolution receives an ARI as required framework context;
    `@RetroSource` optionally mirrors it into a Gear object without creating a
    clue or fact.
-8. `GearNode` is the canonical stored Gear occurrence and the node of the
+9. `GearNode` is the canonical stored Gear occurrence and the node of the
    heterogeneous immutable source forest; neither `HierarchyNode` nor a
    `Hierarchy` wrapper is added.
-9. Archive location remains the only Gear relation. The hierarchy never
+10. Archive location remains the only Gear relation. The hierarchy never
    determines Gear type.
-10. Returned batches and hierarchy forests are immutable views of one installed
-    Stash state.
-11. The Repository continues to store clue archives, not resolved Stash state.
-12. Native Java values and machine-readable query documents are separate
+11. Stashes, Queries, Batches, and hierarchy forests are immutable views of one
+    snapshot; a successful crawl parks a new Stash without changing old ones.
+12. The Repository continues to store clue archives, not resolved Stash state.
+13. Native Java values and machine-readable query documents are separate
     boundaries.
-13. Natural-language interpretation and protocol integrations remain outside
+14. Natural-language interpretation and protocol integrations remain outside
     core.
 
 ## Relationship to Other Issues
@@ -685,14 +672,15 @@ silently presenting a first-wins match as certain.
       lost.
 - [x] Reconcile the later Stash, batch, source, and hierarchy concept
       discussion.
-- [x] Settle the native vocabulary and absence of `GearEntry`, `Batch`, and
-      `Hierarchy` wrapper types.
-- [ ] Make the Stash complete, heterogeneous, non-generic, and user-facing.
-- [ ] Add typed immutable pull operations.
+- [x] Settle the native vocabulary and absence of `GearEntry` and `Hierarchy`
+      wrapper types.
+- [x] Make the Stash complete, heterogeneous, non-generic, immutable, parked by
+      RetroCrawler, and user-facing.
+- [x] Add immutable typed Query criteria and lifted Batch materialization.
 - [x] Add and validate optional `@RetroSource` while requiring ARI throughout
       resolution.
-- [ ] Expose the source hierarchy forest and adapt existing clients.
-- [ ] Define lifecycle and atomic state replacement.
+- [x] Expose the source hierarchy forest by archive and adapt Vaadin and CLI.
+- [x] Establish `access` versus physical `crawl` and atomic Stash parking.
 - [ ] Expand statistics and per-archive freshness/status.
 - [ ] Retain resolution evidence and add retrieval/trace access.
 - [ ] Define collection and query-schema discovery.
@@ -702,14 +690,31 @@ silently presenting a first-wins match as certain.
 - [ ] Add JSON-oriented CLI commands.
 - [ ] Add a thin AI/protocol adapter outside core.
 
+### Implementation update (2026-08-29)
+
+- `RetroCrawler` now exposes `access(Journal)` and
+  `crawl(Journal, ReindexScope)` as its only Stash-producing operations.
+- It parks one immutable complete Stash. Hot access returns that instance;
+  successful physical crawls atomically park a new instance, while old Stashes
+  remain unchanged.
+- `Stash` is non-generic and stores every resolved occurrence as an
+  archive-grouped `GearNode<Object>` forest.
+- `stash.pull()` returns `Batch<Object>`;
+  `stash.query(Type.class).archives(...).where(...).pull()` returns a typed
+  immutable lifted `Batch<G>` with both hierarchy and flat Gear views.
+- The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
+  projection path was removed. Vaadin, CLI, demo, core, and collection callers
+  now project from Stash through Query and Batch.
+- Canonical formatting passes for all 24 changed Java source files. The focused
+  core suite passes 264 tests, and the complete seven-module reactor passes 385
+  tests.
+
 ## Remaining Design Questions
 
-- Does obtaining `crawler.stash()` perform the initial refresh, or is the
-  initial lifecycle command explicit?
-- What are the exact refresh and reindex signatures, return values, and
-  concurrency semantics?
-- How should archive scoping and archive display metadata accompany the flat
-  list of source-hierarchy roots?
+- What additional immutable criteria belong on native `Query<G>` beyond
+  archive selection and Java predicates?
+- What hierarchy-building strategy should the future `pull(...)` overload
+  accept while keeping the default lifted source hierarchy?
 - How should equal-confidence Gear matches and partially resolved Gear be
   represented?
 - How much evidence should ordinary inspection return, and how much belongs
@@ -731,7 +736,8 @@ silently presenting a first-wins match as certain.
 - Embeddings or a vector database as the first query implementation.
 - A mandatory Gear interface or superclass.
 - A mandatory `@RetroSource` field.
-- A Java `Batch` wrapper for a plain immutable list.
+- A `Batch` wrapper that contains only a plain immutable list and loses the
+  hierarchy or source occurrence.
 - A `GearEntry` wrapper duplicating Gear plus ARI.
 - A `Hierarchy` wrapper without whole-hierarchy behavior.
 - Alternate relation types beside archive location.

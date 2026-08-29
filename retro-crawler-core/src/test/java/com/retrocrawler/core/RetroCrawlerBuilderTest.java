@@ -1,13 +1,14 @@
 package com.retrocrawler.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +43,7 @@ import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
-import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
-import com.retrocrawler.core.progress.ProgressCancelledException;
-import com.retrocrawler.core.progress.ProgressState;
-import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -63,61 +60,13 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
 
-		final Stash<TestGear> result = crawler.crawlAllStash(new Journal(), ReindexScope.none(), TestGear.class);
+		final Stash result = crawler.access(new Journal());
+		final Stash accessedAgain = crawler.access(new Journal());
 
 		assertEquals(1, repository.retrieveCount);
+		assertSame(result, accessedAgain);
 		assertEquals(1, result.archives().size());
 		assertEquals(ARCHIVE, result.archives().getFirst().archive());
-	}
-
-	@Test
-	void suppliesArtifactSourceAriToTreeFactory() throws IOException {
-		final Artifact artifact = new Artifact(Clues.of(Clue.of("name", "test gear")));
-		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
-				List.of(new ArchiveNode("shelf", artifact, List.of())));
-		final Repository repository = new FixedArchiveRepository(
-				Archive.of("factory_test", ArchiveId.of("factory_test"), ROOT, archiveRoot));
-		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
-				.build();
-		final List<ARI> sources = new ArrayList<>();
-		final GearTreeFactory<List<ARI>, TestGear, TestGear> factory = new GearTreeFactory<>() {
-
-			@Override
-			public Class<TestGear> gearType() {
-				return TestGear.class;
-			}
-
-			@Override
-			public void beginArchive(final ArchiveDescriptor archive) {
-				// no-op
-			}
-
-			@Override
-			public void endArchive(final ArchiveDescriptor archive) {
-				// no-op
-			}
-
-			@Override
-			public TestGear addNode(final TestGear parent, final TestGear gear) {
-				throw new AssertionError("Expected the source-ARI overload.");
-			}
-
-			@Override
-			public TestGear addNode(final TestGear parent, final TestGear gear, final ARI source) {
-				sources.add(source);
-				return gear;
-			}
-
-			@Override
-			public List<ARI> build() {
-				return List.copyOf(sources);
-			}
-		};
-
-		final List<ARI> result = crawler.crawlAll(new Journal(), ReindexScope.none(), factory);
-
-		assertEquals(List.of(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf"))), result);
 	}
 
 	@Test
@@ -131,94 +80,11 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository).archive(ARCHIVE)
 				.build();
 
-		final Stash<TestGear> stash = crawler.crawlAllStash(new Journal(), ReindexScope.none(), TestGear.class);
+		final Stash stash = crawler.access(new Journal());
 
 		final var node = stash.archives().getFirst().roots().getFirst();
 		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")), node.source());
-		assertEquals(node.source(), node.gear().source);
-	}
-
-	@Test
-	void reportsFactoryFailureAsTerminalProgress() {
-		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
-				.archive(ARCHIVE).build();
-		final Progressor progressor = Progressor.create();
-		final Journal journal = new Journal(progressor);
-		final GearTreeFactory<Object, Object, Object> failingFactory = new GearTreeFactory<>() {
-
-			@Override
-			public Class<Object> gearType() {
-				return Object.class;
-			}
-
-			@Override
-			public void beginArchive(final ArchiveDescriptor archive) {
-				// Nothing to record.
-			}
-
-			@Override
-			public void endArchive(final ArchiveDescriptor archive) {
-				// Nothing to record.
-			}
-
-			@Override
-			public Object addNode(final Object parent, final Object gear) {
-				throw new AssertionError("No gear expected.");
-			}
-
-			@Override
-			public Object build() {
-				throw new IllegalStateException("Factory broke.");
-			}
-		};
-
-		assertThrows(IllegalStateException.class, () -> crawler.crawlAll(journal, ReindexScope.none(), failingFactory));
-		assertEquals(ProgressState.FAILED, progressor.snapshot().state());
-		assertEquals("Crawl failed: Factory broke.", progressor.snapshot().message());
-	}
-
-	@Test
-	void preservesCrawlerCancellationAsTerminalCancellation() {
-		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
-		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
-				.archive(ARCHIVE).build();
-		final Progressor progressor = Progressor.create();
-		final Journal journal = new Journal(progressor);
-		final GearTreeFactory<Object, Object, Object> cancellingFactory = new GearTreeFactory<>() {
-
-			@Override
-			public Class<Object> gearType() {
-				return Object.class;
-			}
-
-			@Override
-			public void beginArchive(final ArchiveDescriptor archive) {
-				// Nothing to record.
-			}
-
-			@Override
-			public void endArchive(final ArchiveDescriptor archive) {
-				// Nothing to record.
-			}
-
-			@Override
-			public Object addNode(final Object parent, final Object gear) {
-				throw new AssertionError("No gear expected.");
-			}
-
-			@Override
-			public Object build() {
-				journal.cancel("Stopping crawl.");
-				journal.throwIfCancelled();
-				throw new AssertionError("Cancellation must abort the crawl.");
-			}
-		};
-
-		assertThrows(ProgressCancelledException.class,
-				() -> crawler.crawlAll(journal, ReindexScope.none(), cancellingFactory));
-		assertEquals(ProgressState.CANCELLED, progressor.state());
-		assertEquals("Stopping crawl.", progressor.message());
+		assertEquals(node.source(), ((TestGear) node.gear()).source);
 	}
 
 	@Test
@@ -334,10 +200,27 @@ class RetroCrawlerBuilderTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ARCHIVE, source).build();
 
-		crawler.crawlAllGear(new Journal(), ReindexScope.all(), TestGear.class);
+		final Stash first = crawler.crawl(new Journal(), ReindexScope.all());
+		assertSame(first, crawler.access(new Journal()));
+		final Stash second = crawler.crawl(new Journal(), ReindexScope.all());
+		assertNotSame(first, second);
+		assertSame(second, crawler.access(new Journal()));
 
 		assertTrue(opened.get());
 		assertTrue(closed.get());
+	}
+
+	@Test
+	void requiresAPhysicalScopeForCrawl() {
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new RecordingRepository())
+				.archive(ARCHIVE).build();
+
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> crawler.crawl(new Journal(), ReindexScope.none()));
+
+		assertEquals("crawl requires a physical reindex scope; use access to reuse stored clues.",
+				failure.getMessage());
 	}
 
 	@Test

@@ -54,13 +54,9 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
 
-		crawler.crawlGear(FIRST.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
-		assertTrue(secondSource.openedRoots.isEmpty());
-
-		crawler.crawlGear(SECOND.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
-
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
 		assertEquals(List.of(FIRST.id(), SECOND.id()), crawler.archives().stream().map(ArchiveDescriptor::id).toList());
 		assertEquals(SECOND, crawler.archive(SECOND.id()));
@@ -87,8 +83,7 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
 
-		final Stash<RetroCrawlerBuilderTest.TestGear> stash = crawler.crawlAllStash(new Journal(), ReindexScope.all(),
-				RetroCrawlerBuilderTest.TestGear.class);
+		final Stash stash = crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -107,7 +102,7 @@ class RetroCrawlerMultiArchiveTest {
 		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
 		final CrawlException report = assertThrows(CrawlException.class,
-				() -> crawler.crawlAllGear(journal, ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class));
+				() -> crawler.crawl(journal, ReindexScope.all()));
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -123,12 +118,11 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource firstSource = new RecordingSource();
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
-		crawler.crawlAllGear(new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 		firstSource.openedRoots.clear();
 		secondSource.openedRoots.clear();
 
-		crawler.crawlAllGear(new Journal(), ReindexScope.subtree(ari(SECOND, Path.of(""))),
-				RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.subtree(ari(SECOND, Path.of(""))));
 
 		assertTrue(firstSource.openedRoots.isEmpty());
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -139,22 +133,10 @@ class RetroCrawlerMultiArchiveTest {
 		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
 		final ARI unknown = ARI.of(crawler.collectionId(), ArchiveId.of("third"), Path.of("subtree"));
 
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> crawler
-				.crawlAllGear(new Journal(), ReindexScope.subtree(unknown), RetroCrawlerBuilderTest.TestGear.class));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> crawler.crawl(new Journal(), ReindexScope.subtree(unknown)));
 
 		assertEquals("Unknown archive: third", failure.getMessage());
-	}
-
-	@Test
-	void rejectsASubtreeFromAnArchiveOutsideTheSelectedCrawl() {
-		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
-		final ARI secondRoot = ari(SECOND, Path.of(""));
-
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> crawler.crawlGear(FIRST.id(), new Journal(), ReindexScope.subtree(secondRoot),
-						RetroCrawlerBuilderTest.TestGear.class));
-
-		assertEquals("ARI does not belong to an archive selected for this crawl: " + secondRoot, failure.getMessage());
 	}
 
 	@Test
@@ -173,7 +155,7 @@ class RetroCrawlerMultiArchiveTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model()).repository(new InMemoryRepository())
 				.archive(archive).build();
 
-		crawler.crawlGear(archive.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(archive), crawler.archives());
 	}

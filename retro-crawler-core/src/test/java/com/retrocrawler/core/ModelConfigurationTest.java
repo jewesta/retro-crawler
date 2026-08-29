@@ -137,8 +137,8 @@ class ModelConfigurationTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<RuntimeContextGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(),
-				RuntimeContextGear.class);
+		final List<RuntimeContextGear> gear = crawler.crawl(new Journal(), ReindexScope.all())
+				.query(RuntimeContextGear.class).pull().gear();
 
 		assertEquals(1, gear.size());
 		final ParseContext context = RecordingParser.observedContext;

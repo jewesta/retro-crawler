@@ -30,7 +30,8 @@ class DemoZipArchiveTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(archive, new ZipArchiveSource()).build();
 
-		final List<MyKnownGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), MyKnownGear.class);
+		final List<MyKnownGear> gear = crawler.crawl(new Journal(), ReindexScope.all()).query(MyKnownGear.class).pull()
+				.gear();
 
 		final String folder = "ATI VGA Wonder 16 [SN VHK 144994] [200326]";
 		final MyKnownGear graphicsCard = gear.stream().filter(candidate -> folder.equals(candidate.getFolderName()))

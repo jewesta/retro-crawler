@@ -23,7 +23,10 @@ import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.ProgressSupplier;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.Batch;
+import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.demo.DemoModels;
+import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -151,7 +154,9 @@ public class SearchView extends HorizontalLayout {
 		crawl.addClickListener(event -> {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
 			activeArchive = Objects.requireNonNull(archives.getValue(), "selected archive");
-			refreshAsync(eventUI, ReindexScope.all());
+			final ARI archiveRoot = ARI.of(activeArchive.crawler().collectionId(), activeArchive.archive().id(),
+					Path.of(""));
+			refreshAsync(eventUI, ReindexScope.subtree(archiveRoot));
 		});
 
 		final Button cancel = retroButton("Cancel Indexing");
@@ -268,7 +273,10 @@ public class SearchView extends HorizontalLayout {
 		activeJournal.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return crawler.crawl(archive.archive().id(), activeJournal, reindexScope, new VaadinTreeDataFactory());
+				final Stash stash = reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(activeJournal)
+						: crawler.crawl(activeJournal, reindexScope);
+				final Batch<MyKnownGear> gear = stash.query(MyKnownGear.class).archive(archive.archive().id()).pull();
+				return VaadinTreeDataFactory.from(gear);
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}

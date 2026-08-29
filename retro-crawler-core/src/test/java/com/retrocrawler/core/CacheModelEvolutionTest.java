@@ -51,7 +51,7 @@ class CacheModelEvolutionTest {
 		final Model initialModel = Model.from(Set.of(TestArchive.class, InitialGear.class));
 		final RetroCrawler initialCrawler = RetroCrawler.builder().model(initialModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		initialCrawler.crawlAllGear(new Journal(), ReindexScope.all(), InitialGear.class);
+		initialCrawler.crawl(new Journal(), ReindexScope.all());
 
 		final Archive cachedArchive = repository.archive;
 		assertEquals(1, repository.stowawayCount);
@@ -60,8 +60,7 @@ class CacheModelEvolutionTest {
 		final Model evolvedModel = Model.from(Set.of(TestArchive.class, EvolvedGear.class));
 		final RetroCrawler evolvedCrawler = RetroCrawler.builder().model(evolvedModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		final List<EvolvedGear> gear = evolvedCrawler.crawlAllGear(new Journal(), ReindexScope.none(),
-				EvolvedGear.class);
+		final List<EvolvedGear> gear = evolvedCrawler.access(new Journal()).query(EvolvedGear.class).pull().gear();
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().serialNumber);

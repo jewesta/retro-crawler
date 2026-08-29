@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,10 +34,12 @@ import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.gear.GearResolution;
 import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.GearResolver;
-import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressCancelledException;
+import com.retrocrawler.core.stash.ArchiveGear;
+import com.retrocrawler.core.stash.GearNode;
+import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.util.PathNames;
 
 class RetroCrawlerImpl implements RetroCrawler {
@@ -52,6 +53,10 @@ class RetroCrawlerImpl implements RetroCrawler {
 	private final GearResolver resolver;
 
 	private final Configuration configuration;
+
+	private final Object stashLock = new Object();
+
+	private volatile Stash currentStash;
 
 	// package-private: only factories construct this
 	RetroCrawlerImpl(final Model model, final List<ArchiveBinding> archiveBindings, final CrawlPlanning planning,
@@ -148,33 +153,48 @@ class RetroCrawlerImpl implements RetroCrawler {
 	}
 
 	@Override
-	public <R, N, G> R crawl(final ArchiveId archiveId, final Journal journal, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(List.of(assertArchive(archiveId)), journal, reindexScope, factory);
+	public Stash access(final Journal journal) throws IOException {
+		Objects.requireNonNull(journal, "journal");
+		final Stash available = currentStash;
+		if (available != null) {
+			return journal.track("Access", () -> available);
+		}
+
+		synchronized (stashLock) {
+			if (currentStash == null) {
+				currentStash = produceStash("Access", journal, ReindexScope.none());
+				return currentStash;
+			}
+			return journal.track("Access", () -> currentStash);
+		}
 	}
 
 	@Override
-	public <R, N, G> R crawlAll(final Journal journal, final ReindexScope reindexScope,
-			final GearTreeFactory<R, N, G> factory) throws IOException {
-		return crawl(archives.values(), journal, reindexScope, factory);
-	}
-
-	private <R, N, G> R crawl(final Collection<RegisteredArchive> selected, final Journal journal,
-			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
-
+	public Stash crawl(final Journal journal, final ReindexScope reindexScope) throws IOException {
 		Objects.requireNonNull(journal, "journal");
 		Objects.requireNonNull(reindexScope, "reindexScope");
-		Objects.requireNonNull(factory, "factory");
-		return journal.track("Crawl", () -> crawlToCompletion(selected, journal, reindexScope, factory));
+		if (reindexScope.kind() == ReindexScope.Kind.NONE) {
+			throw new IllegalArgumentException(
+					"crawl requires a physical reindex scope; use access to reuse stored clues.");
+		}
+
+		synchronized (stashLock) {
+			final Stash candidate = produceStash("Crawl", journal, reindexScope);
+			currentStash = candidate;
+			return candidate;
+		}
 	}
 
-	private <R, N, G> R crawlToCompletion(final Collection<RegisteredArchive> selected, final Journal journal,
-			final ReindexScope reindexScope, final GearTreeFactory<R, N, G> factory) throws IOException {
-		final Class<G> gearType = Objects.requireNonNull(factory.gearType(), "factory.gearType() must not return null");
-		requireRoutableSubtrees(selected, reindexScope);
+	private Stash produceStash(final String operationName, final Journal journal, final ReindexScope reindexScope)
+			throws IOException {
+		return journal.track(operationName, () -> crawlToCompletion(journal, reindexScope));
+	}
+
+	private Stash crawlToCompletion(final Journal journal, final ReindexScope reindexScope) throws IOException {
+		requireRoutableSubtrees(reindexScope);
 
 		final List<CrawledArchive> crawled = new ArrayList<>();
-		for (final RegisteredArchive registered : selected) {
+		for (final RegisteredArchive registered : archives.values()) {
 			journal.throwIfCancelled();
 			final ReindexScope scope = routedScope(registered.descriptor(), reindexScope);
 			final int failuresBeforeArchive = journal.failureCount();
@@ -212,29 +232,21 @@ class RetroCrawlerImpl implements RetroCrawler {
 			throw new CrawlException(journal.failures());
 		}
 
+		final List<ArchiveGear<Object>> resultArchives = new ArrayList<>();
 		for (final ResolvedArchive resolvedArchive : resolvedArchives) {
-			journal.throwIfCancelled();
-			factory.beginArchive(resolvedArchive.descriptor());
-			emitCompressed(resolvedArchive.descriptor().id(), resolvedArchive.root(), null, factory, gearType, journal);
-			factory.endArchive(resolvedArchive.descriptor());
+			resultArchives.add(new ArchiveGear<>(resolvedArchive.descriptor(),
+					toGearNodes(resolvedArchive.descriptor().id(), List.of(resolvedArchive.root()), journal)));
 		}
 
-		return factory.build();
+		return new Stash(resultArchives);
 	}
 
-	private void requireRoutableSubtrees(final Collection<RegisteredArchive> selected,
-			final ReindexScope reindexScope) {
+	private void requireRoutableSubtrees(final ReindexScope reindexScope) {
 		if (reindexScope.kind() != ReindexScope.Kind.SUBTREES) {
 			return;
 		}
 		for (final ARI subtree : reindexScope.subtrees()) {
 			assertArchive(subtree);
-			final boolean selectedArchive = selected.stream()
-					.anyMatch(archive -> subtree.archiveId().equals(archive.descriptor().id()));
-			if (!selectedArchive) {
-				throw new IllegalArgumentException(
-						"ARI does not belong to an archive selected for this crawl: " + subtree);
-			}
 		}
 	}
 
@@ -261,34 +273,21 @@ class RetroCrawlerImpl implements RetroCrawler {
 		return count;
 	}
 
-	/**
-	 * Emits a compressed gear tree: - If node resolves to gear of the desired
-	 * type: emit factory node and pass it to children as parent - If node does
-	 * not resolve or type does not match: emit nothing, keep same parent for
-	 * children (lifting)
-	 */
-	private <R, N, G> void emitCompressed(final ArchiveId archiveId, final ResolvedArchiveNode node, final N parent,
-			final GearTreeFactory<R, N, G> factory, final Class<G> gearType, final Journal journal) {
-
-		journal.throwIfCancelled();
-		final Optional<Object> resolved = node.resolution().map(GearResolution::gear);
-
-		final N nextParent;
-		if (resolved.isPresent() && gearType.isInstance(resolved.get())) {
-			final G typed = gearType.cast(resolved.get());
-			final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
-			nextParent = factory.addNode(parent, typed, source);
-		} else {
-			nextParent = parent;
+	private List<GearNode<Object>> toGearNodes(final ArchiveId archiveId, final List<ResolvedArchiveNode> nodes,
+			final Journal journal) {
+		final List<GearNode<Object>> result = new ArrayList<>();
+		for (final ResolvedArchiveNode node : nodes) {
+			journal.throwIfCancelled();
+			final List<GearNode<Object>> children = toGearNodes(archiveId, node.children(), journal);
+			if (node.resolution().isPresent()) {
+				final Object gear = node.resolution().orElseThrow().gear();
+				final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
+				result.add(new GearNode<>(gear, source, children));
+			} else {
+				result.addAll(children);
+			}
 		}
-
-		final List<ResolvedArchiveNode> children = node.children();
-		if (children.isEmpty()) {
-			return;
-		}
-		for (final ResolvedArchiveNode child : children) {
-			emitCompressed(archiveId, child, nextParent, factory, gearType, journal);
-		}
+		return List.copyOf(result);
 	}
 
 	private Optional<GearResolution> resolveArtifact(final ARI source, final Artifact artifact, final Path sourcePath,
