@@ -397,7 +397,9 @@ Batch<RetroHardware> agpCardsAmongEverythingElse = stash.query(RetroHardware.cla
 ```
 
 `whereIf` applies its predicate only to the named Gear type. Other selected
-Gear remains in the Batch.
+Gear remains in the Batch. A Batch retains its archive groups through
+`archives()` and exposes their cumulative forest through `roots()`. Its flat
+`gear()` view is derived lazily and cached.
 
 Every `GearNode` retains the ARI of the artifact that produced it. Complete
 Stash construction validates Retro ID uniqueness across all registered

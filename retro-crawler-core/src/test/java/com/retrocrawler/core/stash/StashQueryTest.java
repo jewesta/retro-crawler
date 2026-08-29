@@ -1,6 +1,7 @@
 package com.retrocrawler.core.stash;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
@@ -28,6 +29,8 @@ class StashQueryTest {
 		final Batch<Object> result = stash.pull();
 
 		assertEquals(List.of(parent, child), result.gear());
+		assertSame(result.gear(), result.gear());
+		assertEquals(List.of(parent), result.roots().stream().map(GearNode::gear).toList());
 		assertEquals(parent, result.archives().getFirst().roots().getFirst().gear());
 		assertEquals(child, result.archives().getFirst().roots().getFirst().children().getFirst().gear());
 	}
@@ -80,6 +83,7 @@ class StashQueryTest {
 		final Query<Parent> intersection = reversedSelection.where(SECOND_ID);
 
 		assertEquals(List.of(first, second), all.pull().gear());
+		assertEquals(List.of(first, second), all.pull().roots().stream().map(GearNode::gear).toList());
 		assertEquals(List.of(first, second), reversedSelection.pull().gear());
 		assertEquals(List.of(second), intersection.pull().gear());
 	}

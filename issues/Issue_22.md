@@ -51,7 +51,8 @@ The settled vocabulary is:
 - `stash.query(Type.class)` creates an immutable typed `Query<G>`; criteria
   narrow that query without changing the Stash.
 - `Query.pull()` materializes an immutable typed `Batch<G>` whose hierarchy
-  lifts matching descendants through excluded Gear.
+  lifts matching descendants through excluded Gear. Batch retains archive
+  groups, also exposes their cumulative roots, and lazily caches its flat view.
 - The source hierarchy is an immutable forest of `GearNode<Object>`.
 - Every hierarchy node has an authoritative source ARI.
 - A Gear object may optionally receive that ARI through `@RetroSource`.
@@ -314,8 +315,9 @@ same Stash; they do not copy, crawl, resolve, or mutate Gear. `pull` evaluates
 all criteria once and constructs a `Batch<G>`. Its archive groups contain a
 typed `GearNode<G>` forest. A matching descendant whose parent is excluded is
 lifted to the nearest retained ancestor, or to an archive root if none remains.
-The Batch also exposes the same occurrences as an immutable pre-order
-`List<G>`.
+The Batch retains those groups through `archives()`, combines their roots in
+Stash archive order through `roots()`, and exposes the same occurrences through
+a lazily flattened and cached immutable pre-order `List<G>` from `gear()`.
 
 `stash.pull()` delegates to `stash.query(Object.class).pull()`. Because every
 stored Gear is an Object and there are no additional criteria, its Batch
@@ -436,7 +438,7 @@ Vaadin can consume the forest mechanically without a core dependency:
 
 ```java
 treeGrid.setItems(
-        stash.query(MyKnownGear.class).pull().archives().getFirst().roots(),
+        stash.query(MyKnownGear.class).pull().roots(),
         GearNode::children);
 ```
 
@@ -628,8 +630,9 @@ include focused tests for new contracts.
 3. `Stash` is not generic. The desired return type belongs to
    `query(Class<G>)`.
 4. `Query<G>` is an immutable selection recipe tied to one Stash snapshot.
-5. `Batch<G>` is the immutable typed materialization, retaining both a lifted
-   hierarchy and a flat pre-order Gear list.
+5. `Batch<G>` is the immutable typed materialization. It retains archive groups,
+   exposes their cumulative lifted roots, and lazily derives and caches its flat
+   pre-order Gear list. It performs no further filtering.
 6. `stash.pull()` is the all-Gear shorthand and returns `Batch<Object>`.
 7. No `GearEntry` wrapper is added.
 8. Every Gear resolution receives an ARI as required framework context;
@@ -709,12 +712,13 @@ silently presenting a first-wins match as certain.
   archive-grouped `GearNode<Object>` forest.
 - `stash.pull()` returns `Batch<Object>`;
   `stash.query(Type.class).where(archiveIds).where(predicate).pull()` returns a
-  typed immutable lifted `Batch<G>` with both hierarchy and flat Gear views.
+  typed immutable lifted `Batch<G>` with archive-grouped, cumulative-root, and
+  lazily cached flat Gear views.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
 - Canonical formatting passes for all 24 changed Java source files. The focused
-  core suite passes 264 tests, and the complete seven-module reactor passes 385
+  core suite passes 265 tests, and the complete seven-module reactor passes 386
   tests.
 
 ## Remaining Design Questions

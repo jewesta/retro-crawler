@@ -1,6 +1,5 @@
 package com.retrocrawler.app;
 
-import com.retrocrawler.core.stash.ArchiveGear;
 import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.demo.gear.MyKnownGear;
@@ -14,10 +13,8 @@ final class VaadinTreeDataFactory {
 
 	static TreeData<VaadinGearNode> from(final Batch<MyKnownGear> batch) {
 		final TreeData<VaadinGearNode> data = new TreeData<>();
-		for (final ArchiveGear<MyKnownGear> archive : batch.archives()) {
-			for (final GearNode<MyKnownGear> root : archive.roots()) {
-				add(data, null, root);
-			}
+		for (final GearNode<MyKnownGear> root : batch.roots()) {
+			add(data, null, root);
 		}
 		return data;
 	}
