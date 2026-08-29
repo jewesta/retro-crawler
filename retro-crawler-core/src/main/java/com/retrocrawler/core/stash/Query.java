@@ -38,9 +38,9 @@ public final class Query<G> {
 		return new Query<>(stash, gearType, archiveIds, List.of());
 	}
 
-	/** Limits this query to one archive. */
-	public Query<G> archive(final ArchiveId archiveId) {
-		return archives(List.of(Objects.requireNonNull(archiveId, "archiveId")));
+	/** Adds an archive criterion that limits this query to one archive. */
+	public Query<G> where(final ArchiveId archiveId) {
+		return where(List.of(Objects.requireNonNull(archiveId, "archiveId")));
 	}
 
 	/**
@@ -48,7 +48,7 @@ public final class Query<G> {
 	 * their selections. Result ordering always follows the Stash's archive
 	 * order.
 	 */
-	public Query<G> archives(final Collection<ArchiveId> selectedArchiveIds) {
+	public Query<G> where(final Collection<ArchiveId> selectedArchiveIds) {
 		Objects.requireNonNull(selectedArchiveIds, "selectedArchiveIds");
 		final Set<ArchiveId> known = new LinkedHashSet<>();
 		for (final ArchiveGear<Object> archive : stash.archives()) {

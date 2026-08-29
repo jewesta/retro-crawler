@@ -387,7 +387,7 @@ typed immutable query is materialized as a lifted `Batch<G>`:
 
 ```java
 Batch<RetroHardware> working = stash.query(RetroHardware.class)
-        .archive(museumCollection.id())
+        .where(museumCollection.id())
         .where(RetroHardware::isWorking)
         .pull();
 ```

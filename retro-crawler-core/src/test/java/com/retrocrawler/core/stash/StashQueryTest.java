@@ -59,8 +59,8 @@ class StashQueryTest {
 						List.of(new GearNode<>(second, source(SECOND_ID, "second"), List.of())))));
 		final Query<Parent> all = stash.query(Parent.class);
 
-		final Query<Parent> reversedSelection = all.archives(List.of(SECOND_ID, FIRST_ID));
-		final Query<Parent> intersection = reversedSelection.archive(SECOND_ID);
+		final Query<Parent> reversedSelection = all.where(List.of(SECOND_ID, FIRST_ID));
+		final Query<Parent> intersection = reversedSelection.where(SECOND_ID);
 
 		assertEquals(List.of(first, second), all.pull().gear());
 		assertEquals(List.of(first, second), reversedSelection.pull().gear());
@@ -72,7 +72,7 @@ class StashQueryTest {
 		final Stash stash = stash(new GearNode<>(new Parent("first", true), source(FIRST_ID, "first"), List.of()));
 
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> stash.query(Object.class).archive(ArchiveId.of("unknown")));
+				() -> stash.query(Object.class).where(ArchiveId.of("unknown")));
 
 		assertEquals("Unknown archive: unknown", failure.getMessage());
 	}

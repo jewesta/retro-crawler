@@ -275,7 +275,7 @@ public class SearchView extends HorizontalLayout {
 			try {
 				final Stash stash = reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(activeJournal)
 						: crawler.crawl(activeJournal, reindexScope);
-				final Batch<MyKnownGear> gear = stash.query(MyKnownGear.class).archive(archive.archive().id()).pull();
+				final Batch<MyKnownGear> gear = stash.query(MyKnownGear.class).where(archive.archive().id()).pull();
 				return VaadinTreeDataFactory.from(gear);
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);

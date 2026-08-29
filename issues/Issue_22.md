@@ -299,7 +299,7 @@ more useful common denominator. Query criteria are immutable and composable:
 ```java
 Batch<GraphicsCard> workingCards = stash
         .query(GraphicsCard.class)
-        .archives(archiveIds)
+        .where(archiveIds)
         .where(GraphicsCard::isWorking)
         .pull();
 ```
@@ -700,8 +700,8 @@ silently presenting a first-wins match as certain.
 - `Stash` is non-generic and stores every resolved occurrence as an
   archive-grouped `GearNode<Object>` forest.
 - `stash.pull()` returns `Batch<Object>`;
-  `stash.query(Type.class).archives(...).where(...).pull()` returns a typed
-  immutable lifted `Batch<G>` with both hierarchy and flat Gear views.
+  `stash.query(Type.class).where(archiveIds).where(predicate).pull()` returns a
+  typed immutable lifted `Batch<G>` with both hierarchy and flat Gear views.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
