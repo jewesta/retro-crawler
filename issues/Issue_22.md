@@ -366,6 +366,11 @@ availability:
   count;
 - text and exact filters report their populated occurrence count.
 
+The Stash and Batch `FilterDefinitions` contract also exposes
+`filters(FilterSelection)`. `ALL` is equivalent to the zero-argument method;
+`RELEVANT` retains, in model order, only definitions with at least one populated
+Gear occurrence in that data set.
+
 Counts are per Gear occurrence. Repeated equal values on one multi-valued Fact
 therefore count once for that option. A Batch derives availability from its
 lifted result rather than inheriting the Stash's counts, but it retains absent
@@ -768,8 +773,8 @@ silently presenting a first-wins match as certain.
 - RetroCrawler, Stash, and Batch expose model filters. Stash and Batch lazily
   cache local `FilterAvailability`, retaining zero-count global choices, and
   Query accepts exact Fact-value criteria without eliminating non-applicable
-  Gear types. Stash and Batch share the `FilterDefinitions` discovery
-  contract.
+  Gear types. Stash and Batch share the `FilterDefinitions` discovery contract,
+  including `filters(ALL)` and the data-set-local `filters(RELEVANT)` selection.
 - Focused tests cover the four filter shapes, same-key reuse across Gear types,
   global-versus-present choices, lazy caching, and structured Query behavior.
   The complete seven-module reactor passes 390 tests.

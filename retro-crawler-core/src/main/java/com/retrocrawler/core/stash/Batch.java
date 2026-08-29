@@ -55,6 +55,7 @@ public final class Batch<G> implements FilterDefinitions {
 	}
 
 	/** Lazily computes this result's availability for one model filter. */
+	@Override
 	public <T> FilterAvailability<T> availability(final FilterDefinition<T> filter) {
 		return filterAvailability.availability(filter);
 	}

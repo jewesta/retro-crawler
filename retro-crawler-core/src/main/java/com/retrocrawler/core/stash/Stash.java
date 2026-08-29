@@ -48,6 +48,7 @@ public final class Stash implements FilterDefinitions {
 	/**
 	 * Lazily computes this complete collection's availability for one filter.
 	 */
+	@Override
 	public <T> FilterAvailability<T> availability(final FilterDefinition<T> filter) {
 		return filterAvailability.availability(filter);
 	}

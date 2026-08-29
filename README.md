@@ -425,6 +425,11 @@ Batch<RetroHardware> agp = stash.query(RetroHardware.class)
         .pull();
 ```
 
+On a Stash or Batch, `filters(FilterSelection.ALL)` returns that complete model
+vocabulary, while `filters(FilterSelection.RELEVANT)` retains only definitions
+with at least one populated Gear occurrence in that particular data set.
+Zero-argument `filters()` remains the shorthand for all definitions.
+
 Each choice option remains in `options()` when absent; its
 `matchingOccurrences()` is then zero and `present()` is false. Counts describe
 Gear occurrences rather than raw repeated values. A Fact criterion applies to

@@ -1,5 +1,7 @@
 package com.retrocrawler.core.stash;
 
+import static com.retrocrawler.core.gear.filter.FilterSelection.ALL;
+import static com.retrocrawler.core.gear.filter.FilterSelection.RELEVANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -82,8 +84,12 @@ class FactFilterTest {
 		final FilterAvailability.Text titleAvailability = assertInstanceOf(FilterAvailability.Text.class,
 				stash.availability(title));
 		final FilterAvailability.Exact<Edition> editionAvailability = exact(stash.availability(edition));
+		final Batch<GraphicsCard> cards = stash.query(GraphicsCard.class).pull();
 
 		assertEquals(model.filters(), filters(stash));
+		assertSame(stash.filters(), stash.filters(ALL));
+		assertEquals(List.of("bus", "edition", "released", "title"), filterKeys(stash.filters(RELEVANT)));
+		assertEquals(List.of("bus", "released"), filterKeys(cards.filters(RELEVANT)));
 		assertSame(availability, stash.availability(bus));
 		assertEquals(2, availability.populatedOccurrences());
 		assertEquals(
@@ -113,6 +119,7 @@ class FactFilterTest {
 
 		assertEquals(List.of(agpCard, magazine), result.gear());
 		assertEquals(model.filters(), filters(result));
+		assertEquals(List.of("bus", "edition", "released", "title"), filterKeys(result.filters(RELEVANT)));
 		assertEquals(1, availability.populatedOccurrences());
 		assertEquals(List.of(1L, 0L, 0L, 0L),
 				availability.options().stream().map(FilterAvailability.Option::matchingOccurrences).toList());
@@ -138,6 +145,10 @@ class FactFilterTest {
 
 	private static List<FilterDefinition<?>> filters(final FilterDefinitions definitions) {
 		return definitions.filters();
+	}
+
+	private static List<String> filterKeys(final List<FilterDefinition<?>> filters) {
+		return filters.stream().map(FilterDefinition::key).toList();
 	}
 
 	@SuppressWarnings("unchecked")
