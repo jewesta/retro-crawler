@@ -28,26 +28,18 @@ record DemoArchive(String label, RetroCrawler crawler, ArchiveDescriptor archive
 
 		final Model model = Model.from(demoModel.getBasePackage());
 		final ArchiveDescriptor declaredArchive = demoModel.getArchive();
-		final RetroCrawler.Builder builder = RetroCrawler.builder().model(model).repository(repository);
-		final List<ConfiguredArchive> configuredArchives = new ArrayList<>();
+		final List<DemoArchive> configuredArchives = new ArrayList<>();
 		for (final DemoArchiveSource sourceOption : DemoArchiveSource.values()) {
 			final ArchiveDescriptor archive = sourceOption.archive(declaredArchive);
 			sourceOption.materialize(archive);
-			builder.archive(archive, sourceOption.createSource());
-			configuredArchives.add(new ConfiguredArchive(sourceOption, archive));
-		}
-
-		final RetroCrawler crawler = builder.build();
-		return configuredArchives.stream().map(configured -> configured.toDemoArchive(crawler)).toList();
-	}
-
-	private record ConfiguredArchive(DemoArchiveSource source, ArchiveDescriptor archive) {
-
-		DemoArchive toDemoArchive(final RetroCrawler crawler) {
-			final Optional<LocalArchiveFolderOpener> folderOpener = source.localFolders()
+			final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(repository)
+					.archive(archive, sourceOption.createSource()).build();
+			final Optional<LocalArchiveFolderOpener> folderOpener = sourceOption.localFolders()
 					? Optional.of(new LocalArchiveFolderOpener())
 					: Optional.empty();
-			return new DemoArchive(archive.name() + " — " + source.label(), crawler, archive, folderOpener);
+			configuredArchives.add(
+					new DemoArchive(archive.name() + " — " + sourceOption.label(), crawler, archive, folderOpener));
 		}
+		return List.copyOf(configuredArchives);
 	}
 }

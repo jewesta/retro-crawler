@@ -24,7 +24,6 @@ import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.ProgressSupplier;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Batch;
-import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.demo.DemoModels;
 import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
@@ -84,6 +83,8 @@ public class SearchView extends HorizontalLayout {
 	private final ComboBox<DemoArchive> archives = new ComboBox<>();
 
 	private final Paragraph messageBar = new Paragraph();
+
+	private final FilterBar<MyKnownGear> filterBar = new FilterBar<>(MyKnownGear.class, this::setGear);
 
 	private Journal journal;
 
@@ -186,7 +187,7 @@ public class SearchView extends HorizontalLayout {
 		messageArea.setWidthFull();
 		messageArea.setAlignItems(FlexComponent.Alignment.CENTER);
 
-		final VerticalLayout tableArea = new VerticalLayout(messageArea, treeGrid);
+		final VerticalLayout tableArea = new VerticalLayout(messageArea, filterBar, treeGrid);
 		tableArea.setHeightFull();
 		tableArea.getStyle().set("padding-top", "0px");
 
@@ -273,24 +274,27 @@ public class SearchView extends HorizontalLayout {
 		activeJournal.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				final Stash stash = reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(activeJournal)
+				return reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(activeJournal)
 						: crawler.crawl(activeJournal, reindexScope);
-				final Batch<MyKnownGear> gear = stash.query(MyKnownGear.class).where(archive.archive().id()).pull();
-				return VaadinTreeDataFactory.from(gear);
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}).thenAccept(successResult -> ui.access(() -> {
 			messageBar.setText(INDEX_READY);
-			setParts(successResult);
+			filterBar.setSource(successResult, archive.archive().id());
 		})).exceptionally(failureException -> {
 			ui.access(() -> {
 				messageBar.setText(INDEX_FAILED + " " + failureException.getMessage());
+				filterBar.clear();
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
 			return null;
 		});
+	}
+
+	private void setGear(final Batch<MyKnownGear> gear) {
+		setParts(VaadinTreeDataFactory.from(gear));
 	}
 
 	private Optional<Component> archiveImage(final VaadinGearNode node) {

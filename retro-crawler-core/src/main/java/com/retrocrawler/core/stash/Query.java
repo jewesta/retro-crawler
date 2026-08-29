@@ -88,25 +88,41 @@ public final class Query<G> {
 	}
 
 	/**
+	 * Requires at least one value of the supplied Fact to satisfy the predicate
+	 * wherever that Fact applies. Gear types to which the Fact does not apply
+	 * remain selected.
+	 */
+	public <T> Query<G> whereMatching(final FilterDefinition<T> filter, final Predicate<? super T> predicate) {
+		final FilterDefinition<T> ownedFilter = requireOwnedFilter(filter);
+		final Predicate<? super T> required = Objects.requireNonNull(predicate, "predicate");
+		return where(gear -> !ownedFilter.appliesTo(gear) || ownedFilter.values(gear).stream().anyMatch(required));
+	}
+
+	/**
 	 * Requires the supplied Fact value wherever that Fact applies. Gear types
 	 * to which the Fact does not apply remain selected.
 	 */
 	public <T> Query<G> where(final FilterDefinition<T> filter, final T value) {
-		Objects.requireNonNull(filter, "filter");
+		final FilterDefinition<T> ownedFilter = requireOwnedFilter(filter);
 		final T required = Objects.requireNonNull(value, "value");
-		if (stash.filters().stream().noneMatch(candidate -> candidate == filter)) {
-			throw new IllegalArgumentException("Filter does not belong to this model: " + filter.key());
+		if (!ownedFilter.valueType().isInstance(required)) {
+			throw new IllegalArgumentException("Filter '" + ownedFilter.key() + "' requires values of type "
+					+ ownedFilter.valueType().getName() + " but got " + required.getClass().getName() + ".");
 		}
-		if (!filter.valueType().isInstance(required)) {
-			throw new IllegalArgumentException("Filter '" + filter.key() + "' requires values of type "
-					+ filter.valueType().getName() + " but got " + required.getClass().getName() + ".");
-		}
-		if (filter.filterType() instanceof final FilterType.Choices<?> choices
+		if (ownedFilter.filterType() instanceof final FilterType.Choices<?> choices
 				&& !choices.options().contains(required)) {
 			throw new IllegalArgumentException(
-					"Filter '" + filter.key() + "' does not declare choice " + required + ".");
+					"Filter '" + ownedFilter.key() + "' does not declare choice " + required + ".");
 		}
-		return where(gear -> !filter.appliesTo(gear) || filter.values(gear).contains(required));
+		return whereMatching(ownedFilter, required::equals);
+	}
+
+	private <T> FilterDefinition<T> requireOwnedFilter(final FilterDefinition<T> filter) {
+		final FilterDefinition<T> nonNullFilter = Objects.requireNonNull(filter, "filter");
+		if (stash.filters().stream().noneMatch(candidate -> candidate == nonNullFilter)) {
+			throw new IllegalArgumentException("Filter does not belong to this model: " + nonNullFilter.key());
+		}
+		return nonNullFilter;
 	}
 
 	/** Materializes this query as an immutable typed and lifted Batch. */

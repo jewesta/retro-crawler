@@ -775,9 +775,28 @@ silently presenting a first-wins match as certain.
   Query accepts exact Fact-value criteria without eliminating non-applicable
   Gear types. Stash and Batch share the `FilterDefinitions` discovery contract,
   including `filters(ALL)` and the data-set-local `filters(RELEVANT)` selection.
+- `Query.whereMatching(FilterDefinition<T>, Predicate<? super T>)` supplies the
+  general native criterion needed by dynamic consumers for text and range
+  matching while preserving Gear types to which the Fact does not apply.
+- The Vaadin demo now builds a generic `FilterBar<G>` from the selected
+  archive's fixed `Batch.filters(RELEVANT)` definition set. It maps `Choices` to
+  counted model options, `Text` to eager substring input, `Range` to ordered
+  observed bounds, and `Exact` to observed values. No demo Fact keys or value
+  types are hard-coded in the component.
+- Accessing or crawling a Stash rebuilds the bar for that immutable snapshot;
+  changing a control immediately re-pulls a lifted Batch from the in-memory
+  Stash and updates the existing tree without crawling or resolving again.
+- The filesystem and ZIP demo archives are alternative representations of the
+  same Gear, so the application now gives each source option its own crawler
+  and Stash. Collection-wide Retro ID uniqueness remains intact instead of
+  suppressing legitimate duplicate detection. A crawl-level regression test
+  verifies that both alternatives independently resolve the same Retro IDs.
 - Focused tests cover the four filter shapes, same-key reuse across Gear types,
   global-versus-present choices, lazy caching, and structured Query behavior.
-  The complete seven-module reactor passes 390 tests.
+  `FilterBarTest` additionally covers relevant-definition discovery, all four
+  generated control shapes, immediate combined filtering, choice counts, and
+  rebuilding for another definition set. The complete seven-module reactor
+  passes 394 tests.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
@@ -787,8 +806,8 @@ silently presenting a first-wins match as certain.
 
 ## Remaining Design Questions
 
-- Which range, text, negation, and multi-choice operations should follow the
-  first exact Fact-value criterion on native `Query<G>`?
+- Which first-class negation and multi-choice operations should supplement exact
+  matching and the local predicate escape hatch on native `Query<G>`?
 - What hierarchy-building strategy should the future `pull(...)` overload
   accept while keeping the default lifted source hierarchy?
 - How should equal-confidence Gear matches and partially resolved Gear be

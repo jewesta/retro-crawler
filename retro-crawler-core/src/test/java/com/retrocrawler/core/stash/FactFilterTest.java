@@ -127,6 +127,24 @@ class FactFilterTest {
 	}
 
 	@Test
+	void filtersFactValuesWithAConsumerSuppliedPredicate() {
+		final Model model = model();
+		final FilterDefinition<Integer> released = filter(model.filters(), "released", Integer.class);
+		final FilterDefinition<String> title = filter(model.filters(), "title", String.class);
+		final GraphicsCard oldCard = new GraphicsCard(Set.of(Bus.ISA), 1992);
+		final GraphicsCard newerCard = new GraphicsCard(Set.of(Bus.AGP), 1997);
+		final Magazine magazine = new Magazine("Retro Hardware");
+		final Stash stash = stash(model, oldCard, newerCard, magazine);
+
+		final Batch<Object> recentGear = stash.query(Object.class).whereMatching(released, year -> year >= 1995).pull();
+		final Batch<Object> titledGear = stash.query(Object.class)
+				.whereMatching(title, value -> value.toLowerCase(java.util.Locale.ROOT).contains("hardware")).pull();
+
+		assertEquals(List.of(newerCard, magazine), recentGear.gear());
+		assertEquals(List.of(oldCard, newerCard, magazine), titledGear.gear());
+	}
+
+	@Test
 	void rejectsAFilterFromAnotherModelSnapshot() {
 		final Model model = model();
 		final FilterDefinition<Bus> foreign = filter(model().filters(), "bus", Bus.class);
