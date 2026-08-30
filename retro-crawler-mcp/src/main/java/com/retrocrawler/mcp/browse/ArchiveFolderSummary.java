@@ -3,9 +3,11 @@ package com.retrocrawler.mcp.browse;
 import java.util.List;
 import java.util.Objects;
 
+import com.retrocrawler.core.gear.GearType;
+
 /** One indexed archive folder in a bounded browse result. */
 public record ArchiveFolderSummary(String ari, String name, int childFolderCount, long subtreeGearCount,
-		List<String> gearKinds, String crawlStartedAt, String observedAt) {
+		List<GearType> gearTypes, String crawlStartedAt, String observedAt) {
 
 	public ArchiveFolderSummary {
 		Objects.requireNonNull(ari, "ari");
@@ -16,7 +18,7 @@ public record ArchiveFolderSummary(String ari, String name, int childFolderCount
 		if (subtreeGearCount < 0) {
 			throw new IllegalArgumentException("subtreeGearCount must not be negative.");
 		}
-		gearKinds = List.copyOf(Objects.requireNonNull(gearKinds, "gearKinds"));
+		gearTypes = List.copyOf(Objects.requireNonNull(gearTypes, "gearTypes"));
 		Objects.requireNonNull(crawlStartedAt, "crawlStartedAt");
 		Objects.requireNonNull(observedAt, "observedAt");
 	}

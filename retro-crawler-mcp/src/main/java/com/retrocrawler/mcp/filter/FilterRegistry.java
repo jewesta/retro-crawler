@@ -12,27 +12,27 @@ import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.filter.FilterType;
 
 /**
- * Assigns stable protocol identities to one model's filter definitions.
- * Semantic Fact keys are already unique within a model and therefore serve as
- * the MCP identities without introducing a second naming scheme.
+ * Publishes stable protocol keys for one model's filter definitions. Semantic
+ * Fact keys are already unique within a model and therefore serve as the MCP
+ * keys without introducing a second naming scheme.
  */
 public final class FilterRegistry {
 
 	private final FilterCatalog catalog;
 
-	private final Map<String, FilterDefinition<?>> definitionsById;
+	private final Map<String, FilterDefinition<?>> definitionsByKey;
 
-	private final Map<FilterDefinition<?>, String> idsByDefinition;
+	private final Map<FilterDefinition<?>, String> keysByDefinition;
 
 	public FilterRegistry(final String collectionId, final List<FilterDefinition<?>> definitions) {
 		Objects.requireNonNull(definitions, "definitions");
 		final Map<String, FilterDefinition<?>> mappedDefinitions = new LinkedHashMap<>();
-		final Map<FilterDefinition<?>, String> mappedIds = new IdentityHashMap<>();
+		final Map<FilterDefinition<?>, String> mappedKeys = new IdentityHashMap<>();
 		final List<FilterSummary> summaries = definitions.stream()
-				.map(definition -> map(definition, mappedDefinitions, mappedIds)).toList();
+				.map(definition -> map(definition, mappedDefinitions, mappedKeys)).toList();
 		this.catalog = new FilterCatalog(collectionId, summaries);
-		this.definitionsById = Map.copyOf(mappedDefinitions);
-		this.idsByDefinition = Collections.unmodifiableMap(new IdentityHashMap<>(mappedIds));
+		this.definitionsByKey = Map.copyOf(mappedDefinitions);
+		this.keysByDefinition = Collections.unmodifiableMap(new IdentityHashMap<>(mappedKeys));
 	}
 
 	/** The protocol descriptions, in the model's deterministic filter order. */
@@ -40,42 +40,42 @@ public final class FilterRegistry {
 		return catalog;
 	}
 
-	/** Resolves an MCP filter identity to this model's exact definition. */
-	public FilterDefinition<?> definition(final String id) {
-		final String required = Objects.requireNonNull(id, "id");
-		final FilterDefinition<?> definition = definitionsById.get(required);
+	/** Resolves an MCP filter key to this model's exact definition. */
+	public FilterDefinition<?> definition(final String key) {
+		final String required = Objects.requireNonNull(key, "key");
+		final FilterDefinition<?> definition = definitionsByKey.get(required);
 		if (definition == null) {
-			throw new IllegalArgumentException("Unknown filter id: " + required);
+			throw new IllegalArgumentException("Unknown filter key: " + required);
 		}
 		return definition;
 	}
 
-	/** Resolves one of this model's exact definitions to its MCP identity. */
-	public String id(final FilterDefinition<?> definition) {
+	/** Resolves one of this model's exact definitions to its MCP key. */
+	public String key(final FilterDefinition<?> definition) {
 		final FilterDefinition<?> required = Objects.requireNonNull(definition, "definition");
-		final String id = idsByDefinition.get(required);
-		if (id == null) {
+		final String key = keysByDefinition.get(required);
+		if (key == null) {
 			throw new IllegalArgumentException(
 					"Filter definition is not registered with this MCP server: " + required.key());
 		}
-		return id;
+		return key;
 	}
 
 	private static FilterSummary map(final FilterDefinition<?> definition,
-			final Map<String, FilterDefinition<?>> definitionsById,
-			final Map<FilterDefinition<?>, String> idsByDefinition) {
+			final Map<String, FilterDefinition<?>> definitionsByKey,
+			final Map<FilterDefinition<?>, String> keysByDefinition) {
 		final FilterDefinition<?> required = Objects.requireNonNull(definition, "definitions must not contain null");
-		final String id = Objects.requireNonNull(required.key(), "filter key");
-		if (id.isBlank()) {
-			throw new IllegalStateException("A filter definition maps to a blank MCP filter id.");
+		final String key = Objects.requireNonNull(required.key(), "filter key");
+		if (key.isBlank()) {
+			throw new IllegalStateException("A filter definition maps to a blank MCP filter key.");
 		}
-		final FilterDefinition<?> previous = definitionsById.putIfAbsent(id, required);
+		final FilterDefinition<?> previous = definitionsByKey.putIfAbsent(key, required);
 		if (previous != null) {
-			throw new IllegalStateException("Several filter definitions map to MCP filter id '" + id + "'.");
+			throw new IllegalStateException("Several filter definitions map to MCP filter key '" + key + "'.");
 		}
-		idsByDefinition.put(required, id);
+		keysByDefinition.put(required, key);
 		final FilterKind kind = FilterKind.from(required.filterType());
-		return new FilterSummary(id, kind, required.multiple(), operators(kind), choices(required));
+		return new FilterSummary(key, required.name(), kind, required.multiple(), operators(kind), choices(required));
 	}
 
 	private static List<FilterOperator> operators(final FilterKind kind) {

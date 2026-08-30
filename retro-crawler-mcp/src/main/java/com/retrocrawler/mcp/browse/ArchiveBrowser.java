@@ -14,6 +14,7 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.gear.GearType;
 import com.retrocrawler.core.stash.ArchiveCrawlTimes;
 import com.retrocrawler.core.stash.ArchiveGear;
 import com.retrocrawler.core.stash.CrawlObservation;
@@ -131,7 +132,7 @@ public final class ArchiveBrowser {
 
 		private final Map<ARI, Long> subtreeGearCounts = new LinkedHashMap<>();
 
-		private final Map<ARI, LinkedHashSet<String>> gearKinds = new LinkedHashMap<>();
+		private final Map<ARI, LinkedHashSet<GearType>> gearTypes = new LinkedHashMap<>();
 
 		private FolderIndex(final ArchiveDescriptor archive, final Map<ARI, CrawlObservation> observations,
 				final ArchiveGear<Object> gear) {
@@ -158,13 +159,13 @@ public final class ArchiveBrowser {
 			}
 			return new ArchiveFolderSummary(folder.toString(), name(folder), children(folder).size(),
 					subtreeGearCounts.getOrDefault(folder, 0L),
-					List.copyOf(gearKinds.getOrDefault(folder, new LinkedHashSet<>())),
+					List.copyOf(gearTypes.getOrDefault(folder, new LinkedHashSet<>())),
 					observation.crawlStartedAt().toString(), observation.observedAt().toString());
 		}
 
 		private void index(final GearNode<Object> node) {
 			final ARI source = node.source();
-			gearKinds.computeIfAbsent(source, ignored -> new LinkedHashSet<>()).add(gearKind(node.gear()));
+			gearTypes.computeIfAbsent(source, ignored -> new LinkedHashSet<>()).add(node.type());
 			ARI current = source;
 			while (true) {
 				if (observations.containsKey(current)) {
@@ -190,9 +191,5 @@ public final class ArchiveBrowser {
 			return ARI.of(folder.collectionId(), folder.archiveId(), parent == null ? ROOT : parent);
 		}
 
-		private static String gearKind(final Object gear) {
-			final String simpleName = gear.getClass().getSimpleName();
-			return simpleName.isEmpty() ? gear.getClass().getName() : simpleName;
-		}
 	}
 }

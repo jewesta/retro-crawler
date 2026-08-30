@@ -8,10 +8,15 @@ import java.util.Optional;
 
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.util.ModelNames;
 
 public class FactDescriptor {
 
 	protected String key;
+
+	private final String name;
+
+	private final boolean explicitlyNamed;
 
 	private final boolean optional;
 
@@ -28,6 +33,8 @@ public class FactDescriptor {
 		this.field = Objects.requireNonNull(field, "field");
 		this.optional = annotation.optional();
 		this.key = effectiveKey(field, annotation.key());
+		this.explicitlyNamed = !annotation.name().isBlank();
+		this.name = explicitlyNamed ? annotation.name().strip() : ModelNames.displayName(field);
 		this.strict = annotation.strict();
 		this.contextual = annotation.contextual();
 		if (strict && contextual) {
@@ -39,6 +46,14 @@ public class FactDescriptor {
 
 	public String key() {
 		return key;
+	}
+
+	public String name() {
+		return name;
+	}
+
+	public boolean isExplicitlyNamed() {
+		return explicitlyNamed;
 	}
 
 	public boolean isOptional() {

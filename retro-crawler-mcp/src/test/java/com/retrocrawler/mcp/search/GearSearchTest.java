@@ -24,6 +24,7 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.Fact;
+import com.retrocrawler.core.gear.GearType;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.filter.FilterType;
 import com.retrocrawler.core.gear.trace.ResolutionTrace;
@@ -79,8 +80,9 @@ class GearSearchTest {
 		assertThat(result.gear()).extracting(SearchGearHit::source)
 				.containsExactly("ari:/test_collection/hardware/agp");
 		assertThat(result.gear().getFirst().facts()).containsExactly(
-				new SearchFact("bus", List.of("AGP"), "EXACT", false),
-				new SearchFact("title", List.of("AGP Wonder"), "EXACT", false));
+				new SearchFact("bus", "bus", List.of("AGP"), "EXACT", false),
+				new SearchFact("title", "title", List.of("AGP Wonder"), "EXACT", false));
+		assertThat(result.gear().getFirst().type()).isEqualTo(new GearType("card", "card"));
 	}
 
 	@Test
@@ -88,8 +90,8 @@ class GearSearchTest {
 		final SearchGearResult result = search.search(List.of("print"),
 				List.of(new FilterCriterion("title", FilterOperator.CONTAINS, "monthly")), 0, 10);
 
-		assertThat(result.gear()).containsExactly(
-				new SearchGearHit("ari:/test_collection/print/monthly", "Magazine", List.of(), false, 0));
+		assertThat(result.gear()).containsExactly(new SearchGearHit("ari:/test_collection/print/monthly",
+				new GearType("magazine", "magazine"), List.of(), false, 0));
 	}
 
 	@Test
@@ -107,7 +109,7 @@ class GearSearchTest {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> search.search(null,
 						List.of(new FilterCriterion("missing", FilterOperator.EQUALS, "value")), null, null))
-				.withMessage("Unknown filter id: missing");
+				.withMessage("Unknown filter key: missing");
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> search.search(null,
 						List.of(new FilterCriterion("bus", FilterOperator.CONTAINS, "AGP")), null, null))

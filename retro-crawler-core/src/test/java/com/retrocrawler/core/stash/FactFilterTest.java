@@ -61,6 +61,8 @@ class FactFilterTest {
 		assertEquals(List.of("bus", "edition", "raw", "released", "title"),
 				model.filters().stream().map(FilterDefinition::key).toList());
 		assertTrue(bus.multiple());
+		assertEquals("expansion bus", bus.name());
+		assertEquals("title", title.name());
 		assertEquals(List.of(GraphicsCard.class, Motherboard.class), bus.gearTypes());
 		assertEquals(List.of(Bus.values()), choices(bus.filterType()).options());
 		assertFalse(released.multiple());
@@ -232,7 +234,7 @@ class FactFilterTest {
 	@RetroGear(TestMatcher.class)
 	public static final class GraphicsCard {
 
-		@RetroFact(key = "bus", parser = BusParser.class)
+		@RetroFact(key = "bus", name = "expansion bus", parser = BusParser.class)
 		private Set<Bus> buses = Set.of();
 
 		@RetroFact

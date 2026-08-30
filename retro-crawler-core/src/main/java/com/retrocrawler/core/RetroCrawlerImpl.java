@@ -310,7 +310,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			if (node.resolution().isPresent()) {
 				final GearResolution resolution = node.resolution().orElseThrow();
 				final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
-				result.add(new GearNode<>(resolution.gear(), source, resolution.trace(), children));
+				result.add(new GearNode<>(resolution.type(), resolution.gear(), source, resolution.trace(), children));
 			} else {
 				result.addAll(children);
 			}

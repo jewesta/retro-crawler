@@ -30,20 +30,20 @@ class FilterBarTest {
 
 	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("filter_bar_test");
 
-	private static final TestFilter<String> TITLE = new TestFilter<>("title", String.class, FilterType.text(),
-			gear -> List.of(gear.title()));
+	private static final TestFilter<String> TITLE = new TestFilter<>("title", "Title search", String.class,
+			FilterType.text(), gear -> List.of(gear.title()));
 
-	private static final TestFilter<Bus> BUS = new TestFilter<>("bus", Bus.class,
+	private static final TestFilter<Bus> BUS = new TestFilter<>("bus", "Expansion bus", Bus.class,
 			FilterType.choices(List.of(Bus.values())), gear -> List.copyOf(gear.buses()));
 
-	private static final TestFilter<Integer> RELEASED = new TestFilter<>("released", Integer.class,
+	private static final TestFilter<Integer> RELEASED = new TestFilter<>("released", "Release year", Integer.class,
 			FilterType.naturalRange(), gear -> gear.released() == null ? List.of() : List.of(gear.released()));
 
-	private static final TestFilter<Edition> EDITION = new TestFilter<>("edition", Edition.class, FilterType.exact(),
-			gear -> List.of(gear.edition()));
+	private static final TestFilter<Edition> EDITION = new TestFilter<>("edition", "Edition", Edition.class,
+			FilterType.exact(), gear -> List.of(gear.edition()));
 
-	private static final TestFilter<String> UNUSED = new TestFilter<>("unused", String.class, FilterType.text(),
-			gear -> List.of());
+	private static final TestFilter<String> UNUSED = new TestFilter<>("unused", "Unused", String.class,
+			FilterType.text(), gear -> List.of());
 
 	@Test
 	void buildsRelevantControlsFromFilterMetadataAndAppliesThemImmediately() {
@@ -65,6 +65,7 @@ class FilterBarTest {
 		assertEquals(3, result.get().gear().size());
 
 		final TextField title = (TextField) component(bar, "filter-title");
+		assertEquals("Title search", title.getLabel());
 		title.setValue("card");
 
 		assertEquals(List.of("AGP card", "ISA card"), titles(result.get()));
@@ -75,6 +76,7 @@ class FilterBarTest {
 
 		bar.setSource(stash(List.of(TITLE, BUS, RELEASED, EDITION, UNUSED)), ARCHIVE_ID);
 		final ComboBox<Integer> minimum = comboBox(component(bar, "filter-released-minimum"));
+		assertEquals("Release year from", minimum.getLabel());
 		minimum.setValue(1997);
 
 		assertEquals(List.of("AGP card"), titles(result.get()));
@@ -159,7 +161,7 @@ class FilterBarTest {
 	private record TestGear(String title, Set<Bus> buses, Integer released, Edition edition) {
 	}
 
-	private record TestFilter<T>(String key, Class<T> valueType, FilterType<T> filterType,
+	private record TestFilter<T>(String key, String name, Class<T> valueType, FilterType<T> filterType,
 			Function<TestGear, List<T>> values) implements FilterDefinition<T> {
 
 		@Override

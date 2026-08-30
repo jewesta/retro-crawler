@@ -155,7 +155,7 @@ final class FilterBar<G> extends VerticalLayout {
 	}
 
 	private FilterControl<G> textControl(final FilterDefinition<String> filter) {
-		final TextField input = new TextField(label(filter));
+		final TextField input = new TextField(filter.name());
 		configure(input, filter);
 		input.setPlaceholder("Contains...");
 		input.setClearButtonVisible(true);
@@ -193,8 +193,8 @@ final class FilterBar<G> extends VerticalLayout {
 		values.sort(type.order());
 		final ComboBox<T> minimum = comboBox(filter, "No minimum");
 		final ComboBox<T> maximum = comboBox(filter, "No maximum");
-		minimum.setLabel(label(filter) + " from");
-		maximum.setLabel(label(filter) + " to");
+		minimum.setLabel(filter.name() + " from");
+		maximum.setLabel(filter.name() + " to");
 		minimum.setId(id(filter) + "-minimum");
 		maximum.setId(id(filter) + "-maximum");
 		minimum.setItems(values);
@@ -224,7 +224,7 @@ final class FilterBar<G> extends VerticalLayout {
 	}
 
 	private <T> ComboBox<T> comboBox(final FilterDefinition<T> filter, final String placeholder) {
-		final ComboBox<T> input = new ComboBox<>(label(filter));
+		final ComboBox<T> input = new ComboBox<>(filter.name());
 		configure(input, filter);
 		input.setPlaceholder(placeholder);
 		input.setClearButtonVisible(true);
@@ -238,11 +238,6 @@ final class FilterBar<G> extends VerticalLayout {
 
 	private static String id(final FilterDefinition<?> filter) {
 		return "filter-" + filter.key().replaceAll("[^A-Za-z0-9_-]", "-");
-	}
-
-	private static String label(final FilterDefinition<?> filter) {
-		final String words = filter.key().replace('_', ' ').replace('-', ' ').strip();
-		return words.isEmpty() ? filter.key() : Character.toUpperCase(words.charAt(0)) + words.substring(1);
 	}
 
 	private static String display(final Object value) {

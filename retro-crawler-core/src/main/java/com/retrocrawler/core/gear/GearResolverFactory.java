@@ -79,11 +79,13 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		}
 
 		assertUniqueAnyGearMatcher(specialists);
+		assertUniqueGearTypeKeys(specialists);
 		assertConsistentRetroId(specialists);
 
 		// Collect all known attribute definitions and ensure no contradictions.
 		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
 		final Map<String, Class<?>> declaringTypes = new HashMap<>();
+		final Map<String, List<FactDescriptor>> factDefinitions = new LinkedHashMap<>();
 		final Map<Class<?>, Set<String>> contextualFactKeys = new HashMap<>();
 		final Map<String, Map<Class<?>, Field>> filterBindings = new LinkedHashMap<>();
 
@@ -91,6 +93,9 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final GearDescriptor definition = specialist.gearDefinition();
 			final Class<?> type = definition.type();
 			final Set<String> contextualKeys = new HashSet<>();
+			for (final FactDescriptor declaration : definition.factDeclarations()) {
+				factDefinitions.computeIfAbsent(declaration.key(), ignored -> new ArrayList<>()).add(declaration);
+			}
 
 			for (final Entry<String, FactDescriptor> entry : definition.attributes().entrySet()) {
 				final String key = entry.getKey();
@@ -143,13 +148,46 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			final boolean strict = factDef.isStrict();
 
 			factFinders.put(key, new FactFinder(key, parser, fieldType, strict, factDef.isContextual()));
-			filters.add(ReflectedFilterDefinition.create(key, factDef,
+			filters.add(ReflectedFilterDefinition.create(key, factName(key, factDefinitions.get(key)), factDef,
 					Objects.requireNonNull(parser.filterType(), "filterType for " + parser.getClass().getName()),
 					filterBindings.get(key)));
 		}
 
 		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys),
 				List.copyOf(filters));
+	}
+
+	private static void assertUniqueGearTypeKeys(final Map<Class<?>, GearSpecialist> specialists) {
+		final Map<String, Class<?>> typesByKey = new HashMap<>();
+		for (final GearSpecialist specialist : specialists.values()) {
+			final GearDescriptor descriptor = specialist.gearDefinition();
+			final String key = descriptor.gearType().key();
+			final Class<?> previous = typesByKey.putIfAbsent(key, descriptor.type());
+			if (previous != null) {
+				throw new IllegalArgumentException("Gear type key '" + key + "' is used by " + TypeName.full(previous)
+						+ " and " + TypeName.full(descriptor.type())
+						+ ". Set an explicit @RetroGear key to resolve the collision.");
+			}
+		}
+	}
+
+	private static String factName(final String key, final List<FactDescriptor> definitions) {
+		final List<String> explicit = definitions.stream().filter(FactDescriptor::isExplicitlyNamed)
+				.map(FactDescriptor::name).distinct().sorted().toList();
+		if (explicit.size() > 1) {
+			throw new IllegalArgumentException(
+					"Contradicting explicit @RetroFact names for key '" + key + "': " + explicit);
+		}
+		if (explicit.size() == 1) {
+			return explicit.getFirst();
+		}
+
+		final List<String> derived = definitions.stream().map(FactDescriptor::name).distinct().sorted().toList();
+		if (derived.size() > 1) {
+			throw new IllegalArgumentException("Fact key '" + key + "' derives several names " + derived
+					+ ". Set an explicit @RetroFact name on one declaration.");
+		}
+		return derived.getFirst();
 	}
 
 	private static void assertUniqueAnyGearMatcher(final Map<Class<?>, GearSpecialist> specialists) {

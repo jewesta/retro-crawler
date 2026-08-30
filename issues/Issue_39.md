@@ -45,6 +45,23 @@ the original `start_crawl` tool could select only complete archives.
     model assigning it to more than one Gear type, without generally requiring
     matcher implementations to be unique: ordinary matching strategies remain
     reusable and equal best matches remain a separate runtime concern.
+11. Give every Gear type stable model metadata through optional `key` and `name`
+    attributes on `@RetroGear`. Derive omitted values from the simple Java class
+    name (`GraphicsCard` becomes `graphics-card` and `graphics card`), require
+    keys to be globally unique, and retain the metadata on resolved Stash nodes.
+    Do not manufacture a clue or Fact: the type is model metadata, while the ARI
+    identifies one occurrence of Gear.
+12. Keep a Fact's semantic key as its sole stable identity. Add an optional
+    human name to `@RetroFact`, derived from the Java field name when omitted.
+    One explicit name establishes the shared name for a key; conflicting
+    explicit names fail model construction. If no declaration is explicit,
+    independently derived names must agree rather than silently choosing one.
+13. Centralize Java-name conversion in the static `ModelNames` utility. Use
+    model-provided names in the application filter bar and MCP results instead
+    of having each consumer improvise labels.
+14. Expose protocol terminology consistently: MCP filters have a `key` and a
+    `name`, filter criteria select `filterKey`, Gear search hits expose `type`,
+    and archive browsing reports `gearTypes`.
 
 ## Status
 
@@ -59,6 +76,10 @@ the original `start_crawl` tool could select only complete archives.
   confirmed that it matches no Gear.
 - Enforced the documented single-`AnyGearMatcher` invariant during model
   construction while retaining reusable ordinary matchers.
+- Added stable, named Gear-type metadata and named Fact filters with validated
+  defaults and overrides, then propagated both through Stash, the app, and MCP.
+- Replaced MCP filter-ID and Gear-kind vocabulary with model keys, names, and
+  Gear types.
 
 ## Next Improvements
 
@@ -69,8 +90,9 @@ the original `start_crawl` tool could select only complete archives.
 ## Verification
 
 - The canonical formatter passes for all changed Java sources.
-- The focused `retro-crawler-core` and `retro-crawler-mcp` reactor passes with
-  309 tests.
+- The focused core behavior passes with 295 tests; core and MCP together pass
+  with 321 tests in the complete reactor.
 - The complete nine-module `mvn test` reactor passes.
+- The complete nine-module `mvn clean install` packaged reactor passes.
 - The clean `retro-crawler-mycollection` Java 21 build passes with 52 tests
   after removing the speculative type marker.

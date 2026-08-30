@@ -48,7 +48,7 @@ public final class RetroCrawlerMcpTools {
 
 	@McpTool(name = "browse_archive", title = "Browse a RetroCrawler archive",
 			description = "Browse a bounded page of direct child folders below one canonical folder ARI in the current immutable Stash. "
-					+ "Results include folder ARIs, child and Gear counts, exact-folder Gear kinds, and crawl observation times.",
+					+ "Results include folder ARIs, child and Gear counts, exact-folder Gear types, and crawl observation times.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public ArchiveFolderPage browseArchive(@McpToolParam(
@@ -62,7 +62,7 @@ public final class RetroCrawlerMcpTools {
 	}
 
 	@McpTool(name = "list_filters", title = "List RetroCrawler filters",
-			description = "List the stable filter identities and filtering behavior defined by the collection model.",
+			description = "List the stable Fact-filter keys, human names, and filtering behavior defined by the collection model.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = true,
 					destructiveHint = false, idempotentHint = true, openWorldHint = false))
 	public FilterCatalog listFilters() {
@@ -77,7 +77,7 @@ public final class RetroCrawlerMcpTools {
 	public SearchGearResult searchGear(@McpToolParam(required = false,
 			description = "Logical archive IDs from list_archives. Omit or use an empty list for every archive.") final List<String> archiveIds,
 			@McpToolParam(required = false,
-					description = "Strict filter criteria using IDs, operators, and values from list_filters. All criteria are combined with AND.") final List<FilterCriterion> criteria,
+					description = "Strict filter criteria using keys, operators, and values from list_filters. All criteria are combined with AND.") final List<FilterCriterion> criteria,
 			@McpToolParam(required = false,
 					description = "Zero-based result offset. Defaults to 0.") final Integer offset,
 			@McpToolParam(required = false,

@@ -74,10 +74,10 @@ public final class GearSearch {
 	}
 
 	private Query<Object> apply(final Query<Object> query, final FilterCriterion criterion) {
-		final FilterDefinition<?> filter = filters.definition(criterion.filterId());
+		final FilterDefinition<?> filter = filters.definition(criterion.filterKey());
 		if (criterion.operator() == FilterOperator.CONTAINS && !(filter.filterType() instanceof FilterType.Text)) {
 			throw new IllegalArgumentException(
-					"Filter '" + criterion.filterId() + "' does not support operator CONTAINS.");
+					"Filter '" + criterion.filterKey() + "' does not support operator CONTAINS.");
 		}
 		final Predicate<String> match = switch (criterion.operator()) {
 		case EQUALS -> criterion.value()::equals;
@@ -99,17 +99,18 @@ public final class GearSearch {
 		final int factCount = Math.min(availableFacts.size(), MAXIMUM_FACTS);
 		final List<SearchFact> facts = availableFacts.subList(0, factCount).stream().map(this::summarize).toList();
 		final int issueCount = node.trace().map(trace -> trace.issues().size()).orElse(0);
-		return new SearchGearHit(node.source().toString(), gearKind(node.gear()), facts,
-				availableFacts.size() > MAXIMUM_FACTS, issueCount);
+		return new SearchGearHit(node.source().toString(), node.type(), facts, availableFacts.size() > MAXIMUM_FACTS,
+				issueCount);
 	}
 
 	private SearchFact summarize(final Fact fact) {
-		filters.definition(fact.key());
+		final FilterDefinition<?> definition = filters.definition(fact.key());
 		final List<String> availableValues = fact.value().stream().map(FilterValueText::from).sorted().toList();
 		final int valueCount = Math.min(availableValues.size(), MAXIMUM_VALUES);
 		final List<String> values = availableValues.subList(0, valueCount).stream().map(GearSearch::abbreviate)
 				.toList();
-		return new SearchFact(fact.key(), values, fact.confidence().name(), availableValues.size() > MAXIMUM_VALUES);
+		return new SearchFact(fact.key(), definition.name(), values, fact.confidence().name(),
+				availableValues.size() > MAXIMUM_VALUES);
 	}
 
 	private static List<GearNode<Object>> flatten(final Batch<Object> batch) {
@@ -156,11 +157,6 @@ public final class GearSearch {
 			throw new IllegalArgumentException("limit must be between 1 and " + MAXIMUM_LIMIT + ".");
 		}
 		return requested;
-	}
-
-	private static String gearKind(final Object gear) {
-		final String simpleName = gear.getClass().getSimpleName();
-		return simpleName.isEmpty() ? gear.getClass().getName() : simpleName;
 	}
 
 	private static String abbreviate(final String value) {

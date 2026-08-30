@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.gear.GearType;
 
 class StashQueryTest {
 
@@ -49,6 +50,19 @@ class StashQueryTest {
 		assertEquals(List.of(liftedChild), result.gear());
 		assertEquals(liftedChild, result.archives().getFirst().roots().getFirst().gear());
 		assertEquals(source(FIRST_ID, "parent/lifted"), result.archives().getFirst().roots().getFirst().source());
+	}
+
+	@Test
+	void preservesModelGearTypeMetadataWhenLiftingNodes() {
+		final Child child = new Child("lifted", true);
+		final GearType type = new GearType("child-gear", "child gear");
+		final GearNode<Object> childNode = new GearNode<>(type, child, source(FIRST_ID, "parent/child"), List.of());
+		final GearNode<Object> root = new GearNode<>(new Parent("excluded", false), source(FIRST_ID, "parent"),
+				List.of(childNode));
+
+		final GearNode<Child> result = stash(root).query(Child.class).pull().roots().getFirst();
+
+		assertSame(type, result.type());
 	}
 
 	@Test

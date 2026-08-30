@@ -20,6 +20,7 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.gear.GearType;
 import com.retrocrawler.core.stash.ArchiveCrawlTimes;
 import com.retrocrawler.core.stash.ArchiveGear;
 import com.retrocrawler.core.stash.CrawlObservation;
@@ -69,7 +70,7 @@ class ArchiveBrowserTest {
 
 		assertThat(ibm.limit()).isEqualTo(ArchiveBrowser.DEFAULT_LIMIT);
 		assertThat(ibm.children()).containsExactly(new ArchiveFolderSummary(ari("Systems", "IBM").toString(), "IBM", 1,
-				2, List.of("Computer"), STARTED.toString(), observed(2).toString()));
+				2, List.of(new GearType("computer", "computer")), STARTED.toString(), observed(2).toString()));
 	}
 
 	@Test
