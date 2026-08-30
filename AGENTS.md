@@ -150,7 +150,12 @@ These instructions apply to the entire repository.
 
 - `retro-crawler-core`: public framework API and implementation.
 - `retro-crawler-model`: optional shared facts and canonical parsers.
+- `retro-crawler-mcp`: reusable MCP adapter and Spring Boot auto-configuration.
+- `retro-crawler-server`: generic executable MCP host for one
+  application-provided crawler.
 - `retro-crawler-demo`: sample archive types, clue finders, and demo data.
+- `retro-crawler-mycollection`: collection-specific model and clue
+  interpretation.
 - `retro-crawler-app`: Vaadin demonstration application.
 - `retro-crawler-cli`: command-line demonstration application.
 
