@@ -15,7 +15,7 @@ public record RetroCrawlerServerProperties(CrawlSchedule crawl) {
 		crawl = crawl == null ? new CrawlSchedule(false, null, null) : crawl;
 	}
 
-	/** Configuration for future scheduled crawl execution. */
+	/** Configuration for scheduled full-collection crawls. */
 	public record CrawlSchedule(boolean enabled, String cron, ZoneId zone) {
 
 		public CrawlSchedule {

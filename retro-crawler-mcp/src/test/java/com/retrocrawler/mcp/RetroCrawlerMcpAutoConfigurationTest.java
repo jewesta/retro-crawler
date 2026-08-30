@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.crawl.CrawlOperationService;
 
 class RetroCrawlerMcpAutoConfigurationTest {
 
@@ -27,7 +28,7 @@ class RetroCrawlerMcpAutoConfigurationTest {
 		final RetroCrawler crawler = crawler();
 
 		contextRunner.withBean(RetroCrawler.class, () -> crawler).run(context -> {
-			assertThat(context).hasSingleBean(RetroCrawlerMcpTools.class);
+			assertThat(context).hasSingleBean(CrawlOperationService.class).hasSingleBean(RetroCrawlerMcpTools.class);
 			assertThat(context.getBean(RetroCrawlerMcpTools.class).listArchives()).isEqualTo(
 					new ArchiveCatalog("test_collection", List.of(new ArchiveSummary("main", "Main archive"))));
 		});
@@ -59,6 +60,15 @@ class RetroCrawlerMcpAutoConfigurationTest {
 
 		contextRunner.withBean(RetroCrawler.class, () -> crawler).withBean(RetroCrawlerMcpTools.class, () -> tools)
 				.run(context -> assertThat(context.getBean(RetroCrawlerMcpTools.class)).isSameAs(tools));
+	}
+
+	@Test
+	void preservesAnApplicationProvidedCrawlOperationService() {
+		final RetroCrawler crawler = crawler();
+		final CrawlOperationService service = mock(CrawlOperationService.class);
+
+		contextRunner.withBean(RetroCrawler.class, () -> crawler).withBean(CrawlOperationService.class, () -> service)
+				.run(context -> assertThat(context.getBean(CrawlOperationService.class)).isSameAs(service));
 	}
 
 	private static RetroCrawler crawler() {

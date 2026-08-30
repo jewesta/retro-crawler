@@ -14,6 +14,7 @@ import com.retrocrawler.core.Model;
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.crawl.CrawlOperationService;
 import com.retrocrawler.mcp.RetroCrawlerMcpAutoConfiguration;
 import com.retrocrawler.mcp.RetroCrawlerMcpTools;
 import com.retrocrawler.mycollection.MyCollectionAutoConfiguration;
@@ -34,7 +35,7 @@ class RetroCrawlerServerCompositionTest {
 				.run(context -> {
 					assertThat(context).hasNotFailed().hasSingleBean(Model.class)
 							.hasSingleBean(LocationsProperties.class).hasSingleBean(RetroCrawler.class)
-							.hasSingleBean(RetroCrawlerMcpTools.class)
+							.hasSingleBean(CrawlOperationService.class).hasSingleBean(RetroCrawlerMcpTools.class)
 							.hasSingleBean(RetroCrawlerServerProperties.class);
 
 					assertThat(context.getBean(RetroCrawler.class).archives()).containsExactly(

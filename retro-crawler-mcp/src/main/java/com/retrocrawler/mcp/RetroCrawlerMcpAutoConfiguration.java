@@ -7,11 +7,18 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 
 import com.retrocrawler.core.RetroCrawler;
+import com.retrocrawler.core.crawl.CrawlOperationService;
 
 /** Auto-configures RetroCrawler's MCP tools around an application crawler. */
 @AutoConfiguration
 @ConditionalOnClass(McpTool.class)
 public class RetroCrawlerMcpAutoConfiguration {
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	CrawlOperationService crawlOperationService(final RetroCrawler retroCrawler) {
+		return new CrawlOperationService(retroCrawler);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean

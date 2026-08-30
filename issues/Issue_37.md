@@ -35,23 +35,29 @@ collection module is `retro-crawler-mycollection`.
 
 - Owns crawling, archive access, progress, cancellation, and structured query
   contracts.
+- Owns the transport-neutral asynchronous crawl-operation lifecycle used by
+  protocol adapters and scheduled hosts.
 - Exposes machine-readable results with provenance.
 - Has no Spring, MCP, or AI SDK dependency.
 - Provides the same public API to MCP, CLI, Vaadin, and future consumers.
 
-The current gear tree is useful for browsing, but it does not expose all of the
-facts and evidence needed by an agent-facing query API. This issue must define a
-transport-neutral read model or projection that retains at least:
+Issue #22 already established the transport-neutral read side needed here:
 
-- ARI and archive identity;
-- optional Retro ID;
-- gear type;
-- typed facts;
-- source clues and confidence where available; and
-- parent/child location in the gear tree.
+- `RetroCrawler.access(...)` returns the parked latest successful `Stash` and
+  reconstructs it from stored clues after a restart;
+- `RetroCrawler.crawl(...)` builds a complete candidate and parks it only after
+  successful crawl, resolution, and validation;
+- `Stash`, `Query`, and `Batch` expose the complete collection, typed
+  selections, archive grouping, and hierarchy;
+- every `GearNode` carries its authoritative source ARI and optional
+  `ResolutionTrace`; and
+- the trace retains the artifact, original clues and their provenance,
+  resolved facts and confidence, matcher decisions, and non-fatal resolution
+  issues.
 
-The MCP adapter must use this core contract rather than reflect over arbitrary
-gear objects or serialize their `toString()` representations.
+Issue #37 must adapt those existing contracts to bounded MCP response DTOs. It
+must not introduce another snapshot, duplicate Stash lifecycle, reflect over
+arbitrary gear objects, or serialize their `toString()` representations.
 
 ### `retro-crawler-mcp`
 
@@ -63,6 +69,8 @@ gear objects or serialize their `toString()` representations.
   Spring MCP server starter.
 - Knows nothing about `retro-crawler-mycollection` or any archive paths.
 - Registers MCP tool beans when a suitable `RetroCrawler` bean is present.
+- Auto-configures one replaceable `CrawlOperationService` bean around that
+  crawler so MCP crawl control and server scheduling can share it.
 - Maps core request, result, progress, and failure types to conservative JSON
   schemas.
 - Uses MCP tool annotations and hints to identify read-only and mutating
@@ -161,7 +169,7 @@ The first interface should be deliberately small and use standard MCP
 
 - `list_archives` — list registered archive identities and current published
   crawl metadata.
-- `search_gear` — search the published collection projection with pagination
+- `search_gear` — search the parked Stash with pagination
   and bounded result sizes.
 - `get_gear` — retrieve one piece of gear and its traceable facts and clues.
 - `browse_stash` — browse a bounded part of the archive/gear hierarchy.
@@ -175,20 +183,35 @@ client-specific extensions.
 
 ## Crawl and Publication Semantics
 
+Core already guarantees serialized `access`/`crawl` production, immutable
+Stashes, and atomic replacement of the current Stash after success. While a new
+crawl is running, readers can continue using the previously parked Stash. A
+failed or cancelled crawl never replaces it.
+
+`CrawlOperationService` provides asynchronous command semantics around that
+core contract:
+
 - Crawl initiation is asynchronous; an MCP request must not remain open for a
   complete crawl.
-- Only one crawl operation may be active initially.
+- Only one crawl operation may be active; another start is rejected with the
+  active operation ID.
 - `start_crawl` accepts registered archive identities and validated ARIs, never
   arbitrary filesystem paths.
 - Operation progress is based on `Journal` and `ProgressSnapshot` and is
   addressable by an opaque operation ID.
-- Cancellation is cooperative and reports its terminal state explicitly.
-- Queries read an immutable latest-successful snapshot.
-- A crawl builds a candidate snapshot and publishes it atomically only after
-  complete success.
-- A failed or cancelled crawl retains the previous successful snapshot.
+- Cancellation is cooperative and distinguishes `CANCELLING` from the terminal
+  `CANCELLED` state.
+- Successful, failed, and cancelled operations remain available through a
+  bounded in-memory history with stable failure descriptions.
+- Queries obtain the immutable latest-successful Stash through
+  `RetroCrawler.access(...)`.
 - Process restart should reconstruct the published view from the repository
   without forcing a filesystem re-index when cached clues remain valid.
+
+The optional server scheduler uses the configured cron expression and time
+zone to submit `ReindexScope.all()` to that same service. It is disabled by
+default. If a manual or earlier scheduled crawl still occupies the service,
+the trigger is logged and skipped; no second crawl is queued.
 
 The explicit `start_crawl` / `get_crawl` / `cancel_crawl` lifecycle is preferred
 over relying on newer optional MCP task primitives so the interface remains
@@ -229,8 +252,8 @@ portable across clients.
    image.
 10. Keep query and crawl-control tools separate and expose asynchronous crawl
     progress explicitly.
-11. Publish crawl results atomically and retain the previous successful view on
-    failure or cancellation.
+11. Rely on core's Stash lifecycle for atomic publication and retention of the
+    previous successful view on failure or cancellation.
 12. Do not expose arbitrary filesystem or shell access.
 13. Keep the existing Docker Compose deployment and use
     `application.properties` for Spring application configuration.
@@ -256,8 +279,18 @@ portable across clients.
     well as the server. Creating the tool bean through normal dependency
     injection makes composition independent of auto-configuration order.
 21. Record crawl scheduling under `retro-crawler.server.crawl.*`, default it
-    to disabled, and defer actual execution until the scheduled path and
-    `start_crawl` can share one operation coordinator.
+    to disabled, and make the scheduled path and `start_crawl` share one
+    asynchronous operation service.
+22. Use the non-generic Stash introduced by issue #22 directly. A collection
+    extension does not need to publish a root Gear type for server startup.
+23. Treat core's crawl lock and atomic Stash replacement as the collection
+    consistency mechanism. The core operation service adds admission,
+    progress, cancellation, and status policy; it does not own another Stash.
+24. Put `CrawlOperationService` and its immutable lifecycle values in the
+    focused `com.retrocrawler.core.crawl` package so they remain
+    transport-neutral without crowding core's root API. Let the MCP
+    auto-configuration publish one replaceable Spring bean that the later MCP
+    tools and server scheduler share.
 
 ## Initial Module Scaffold
 
@@ -269,29 +302,37 @@ reactor:
   not alter dependency resolution in `retro-crawler-core`.
 - `retro-crawler-mcp` requires exactly one `RetroCrawler` when creating its
   default tools bean and backs off for an application-provided tools bean.
+- It also auto-configures one `CrawlOperationService`, with graceful shutdown,
+  and backs off for an application-provided service.
 - `list_archives` is the first real MCP tool. It returns collection and archive
   identities without exposing physical archive roots.
 - `retro-crawler-server` selects synchronous Streamable HTTP and is packaged as
   an executable Spring Boot JAR.
+- Its optional scheduler creates a `CronTrigger` from the bound server
+  properties and starts full crawls through the shared operation service.
 - The server's own configuration requires exactly one `RetroCrawler`; missing
   and ambiguous crawler configurations fail during context startup.
 - The packaged server contains `retro-crawler-mcp` but no collection-specific
   module.
 - `retro-crawler-mycollection` auto-configures only its `Model`; the server
   turns that model and the configured `Locations` into the crawler.
+- The resulting crawler already owns its current immutable Stash and exposes
+  it through `access`; neither the server nor MCP module adds a snapshot
+  holder.
 - `application.example.properties` documents the external contract without
   baking one deployment's paths into the server artifact.
 
 ## Open Questions
 
-- What exact core query types and fact representations provide enough detail
-  without leaking model implementation classes into protocol DTOs?
+- What bounded MCP DTO shape best projects `Batch`, `GearNode`, and
+  `ResolutionTrace` without leaking model implementation classes into the
+  protocol schema?
+- Which machine-readable combinations of the existing archive and Fact-filter
+  criteria belong in the first MCP search tool?
 - Should the Spring composition class live directly in
   `retro-crawler-mycollection`, or should Spring integration eventually be an
   optional companion artifact if the collection module needs to stay entirely
   framework-neutral?
-- How should the latest successful query snapshot be retained across process
-  restarts, beyond reconstruction from the clue repository?
 - Which authentication mechanism and reverse-proxy arrangement will be used on
   the QNAP deployment?
 - Which search fields and matching rules constitute the useful first version
@@ -304,7 +345,13 @@ reactor:
   composition boundaries.
 - [x] Established the required `RetroCrawler` bean contract.
 - [x] Defined the initial MCP tool surface and crawl lifecycle.
-- [ ] Define the transport-neutral core query projection.
+- [x] Added the shared asynchronous crawl-operation service with single-crawl
+  admission, progress, cancellation, failure status, and bounded history.
+- [x] Added optional cron-and-zone scheduling of full crawls through that same
+  operation service.
+- [x] Reused the Stash, Query, Batch, crawl metadata, and ResolutionTrace
+  contracts delivered by issue #22.
+- [ ] Define the bounded MCP projections of those core contracts.
 - [x] Add `retro-crawler-mcp` and its auto-configuration tests.
 - [x] Add the generic `retro-crawler-server` host and startup-contract tests.
 - [x] Add collection-specific `Model` publication and server-owned location
@@ -316,7 +363,23 @@ reactor:
 ## Verification
 
 - Applied the canonical formatter to all new Java sources and tests.
-- `mvn clean install` passed for the complete nine-module reactor.
+- Focused core, MCP auto-configuration, and server composition tests cover the
+  shared operation service, successful completion, admission conflicts,
+  cooperative cancellation, failure reporting, and bounded history.
+- Scheduler tests cover disabled-by-default composition, cron and zone
+  registration, full-crawl submission, and skipping an overlapping trigger.
+- Rebased issue #37 onto `origin/main` at `7f0a446`, including the merged issue
+  #22 Stash/query/provenance groundwork, and reconciled the Locations builder
+  test with the current `RetroCrawler.crawl(...)` API.
+- `mvn test` passed for the complete nine-module reactor after the rebase.
+- `mvn clean install` passed for the complete nine-module reactor after adding
+  the crawl-operation service.
+- The packaged server loaded the external MyCollection and model JARs through
+  `PropertiesLauncher`, initialized an MCP Streamable HTTP session, listed and
+  called `list_archives`, and shut down gracefully with the service bean.
+- With a temporary once-per-second cron expression, the packaged server
+  discovered the scheduling configuration, started asynchronous full crawls,
+  and stowed both configured archives through the external collection.
 - Generated Spring configuration metadata for the server's location and
   operational property beans.
 - Confirmed that the server artifact is an executable Spring Boot JAR with
@@ -326,6 +389,6 @@ reactor:
 - Confirmed that the executable uses `PropertiesLauncher` and starts with
   `retro-crawler-mycollection` plus its runtime dependencies supplied
   externally.
-- Completed an MCP Streamable HTTP handshake against the packaged server,
-  listed the registered tool, and called `list_archives`; the structured result
-  contained the configured `hardware` and `software` archives.
+- Repeated the MCP Streamable HTTP handshake against the rebased packaged
+  server, listed the registered tool, and called `list_archives`; the structured
+  result contained the configured `hardware` and `software` archives.
