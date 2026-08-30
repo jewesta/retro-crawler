@@ -428,6 +428,26 @@ Gear remains in the Batch. A Batch retains its archive groups through
 `archives()` and exposes their cumulative forest through `roots()`. Its flat
 `gear()` view is derived lazily and cached.
 
+Every `GearNode` produced by RetroCrawler also carries one focused
+`ResolutionTrace`. The trace retains the source Artifact, detection and final
+attribute snapshots, every Gear matcher decision, the selected match, and
+non-fatal ambiguities:
+
+```java
+GearNode<RetroHardware> node = working.roots().getFirst();
+ResolutionTrace trace = node.trace().orElseThrow();
+
+List<Fact> factsUsedToBuildGear = trace.resolved().facts();
+List<ResolutionTrace.Match> consideredTypes = trace.matches();
+```
+
+Detection and final attributes remain separate because contextual Facts become
+eligible only after a Gear type has been selected. Queries preserve the trace
+while lifting nodes into a typed Batch. Programmatically constructed
+`GearNode`s may have no trace. Traces are resolved Stash state; they are neither
+written to the clue cache nor injected into user Gear objects. Fatal resolution
+failures that produce no GearNode remain in the operation `Journal`.
+
 Every semantic Fact key also contributes exactly one structured
 `FilterDefinition`, even when several Gear types declare that Fact. The
 definition records its value type, cardinality, applicable Gear types, and the

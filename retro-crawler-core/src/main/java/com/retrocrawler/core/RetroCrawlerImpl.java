@@ -308,9 +308,9 @@ class RetroCrawlerImpl implements RetroCrawler {
 			journal.throwIfCancelled();
 			final List<GearNode<Object>> children = toGearNodes(archiveId, node.children(), journal);
 			if (node.resolution().isPresent()) {
-				final Object gear = node.resolution().orElseThrow().gear();
+				final GearResolution resolution = node.resolution().orElseThrow();
 				final ARI source = ARI.of(collectionId, archiveId, node.relativeSourcePath());
-				result.add(new GearNode<>(gear, source, children));
+				result.add(new GearNode<>(resolution.gear(), source, resolution.trace(), children));
 			} else {
 				result.addAll(children);
 			}

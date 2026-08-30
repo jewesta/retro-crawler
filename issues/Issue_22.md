@@ -528,18 +528,33 @@ cache age, not whether the physical source has remained unchanged.
 The native `pull(...)` result deliberately returns the user's Gear objects,
 not wrappers. That does not remove Issue 22's traceability requirement.
 
-During resolution RetroCrawler knows more than the current public result keeps:
+Every crawler-produced `GearNode` now retains a focused, immutable
+`ResolutionTrace` containing:
 
 - the selected Gear type and matching confidence;
 - the source Artifact and its raw clues;
-- the effective typed facts, each with its source clue and confidence;
-- unresolved clues;
-- archive crawl observations;
-- competing equal-confidence Gear matches.
+- detection attributes available to Gear matchers;
+- final typed facts and unresolved clues after contextual resolution;
+- every Gear matcher decision, including `Confidence.NONE`;
+- non-fatal Fact and equal-best Gear ambiguities.
 
-The internal resolved Stash state must retain the information needed for
-structured inspection and tracing, indexed by source ARI. It need not place all
-of that state on `GearNode` or inject it into the user's object.
+The trace model lives in the dedicated `gear.trace` package. Its supporting
+values are nested below the one public `ResolutionTrace` entry point. A
+package-private `ResolutionTraceRecorder` collects snapshots and decisions
+inside `GearResolver`, avoiding trace methods on Artifact, Clue, Fact, Stash,
+Batch, and Query. The only addition to the public result graph is
+`GearNode.trace()`; lifted Query results retain that trace. Nodes constructed
+directly by an application may have no trace.
+
+Detection and final attributes deliberately remain distinct. RetroCrawler
+first resolves non-contextual evidence for Gear matching, then enables the
+selected type's contextual Facts and resolves again. Combining those snapshots
+would falsely suggest that contextual Facts participated in choosing the type.
+
+This first trace does not record every parser invocation. `Fact` already
+retains its source Clue and confidence, unresolved evidence remains explicit,
+and ambiguity issues preserve the decisions that otherwise become invisible.
+Fatal failures that produce no GearNode remain in the operation Journal.
 
 The first provenance boundary remains the Artifact. It identifies one archive
 location and retains raw clues. Finder identity and exact offsets deliberately
@@ -547,9 +562,9 @@ stop at the Artifact/cache boundary today, so the query API must not promise an
 exact finder, file, or character position unless the persisted provenance model
 is separately extended.
 
-An ordinary Java caller can obtain an ARI from `@RetroSource` or the source
-hierarchy and use it to request a trace. A generic machine query result should
-carry its source ARI directly.
+An ordinary Java caller obtains the trace from a GearNode in the Stash or a
+lifted Batch. A generic machine query result should continue to carry its source
+ARI directly.
 
 ## Structured Discovery and Query API
 
@@ -731,9 +746,9 @@ Together:
 
 ### Issue 12 and Issue 24
 
-Equal-confidence Gear matching and explainable resolution remain prerequisites
-for trustworthy trace results. Issue 22 should expose their outcomes without
-silently presenting a first-wins match as certain.
+Equal-confidence Gear matching still selects the first best specialist, but the
+trace now records every candidate and explicitly marks the equal-best result as
+ambiguous instead of silently presenting it as certain.
 
 ## Implementation Outline
 
@@ -752,7 +767,7 @@ silently presenting a first-wins match as certain.
 - [x] Establish `access` versus physical `crawl` and atomic Stash parking.
 - [x] Expose on-demand statistics plus per-archive/subtree crawl starts and
       bottom-up observation timestamps.
-- [ ] Retain resolution evidence and add retrieval/trace access.
+- [x] Retain focused resolution evidence on each crawler-produced GearNode.
 - [ ] Define collection and query-schema discovery.
 - [ ] Define protocol-safe value documents and structured query criteria.
 - [ ] Add focused tests for native access, hierarchy, provenance, lifecycle,
@@ -810,17 +825,22 @@ silently presenting a first-wins match as certain.
   ARI. Complete crawl duration is calculated from the root pair, folders
   without resolved Gear retain their observations, and no generic `StashStatus`
   or inferred source-freshness claim is introduced.
+- Every crawler-produced `GearNode` carries an immutable `ResolutionTrace`.
+  The package-private `ResolutionTraceRecorder` captures detection and final
+  attribute snapshots, every matcher result, the selected match, and non-fatal
+  ambiguities. Query lifting preserves the same trace; trace state is neither
+  injected into Gear nor written to the clue cache.
 - Focused tests cover the four filter shapes, same-key reuse across Gear types,
   global-versus-present choices, lazy caching, and structured Query behavior.
   `FilterBarTest` additionally covers relevant-definition discovery, all four
   generated control shapes, immediate combined filtering, choice counts, and
   rebuilding for another definition set. The complete seven-module reactor
-  passes 400 tests.
+  passes 401 tests.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
 - Canonical formatting passes for all currently changed Java source files. The
-  core suite passes 275 tests, and the complete seven-module reactor passes 400
+  core suite passes 276 tests, and the complete seven-module reactor passes 401
   tests.
 
 ## Remaining Design Questions
@@ -829,10 +849,11 @@ silently presenting a first-wins match as certain.
   matching and the local predicate escape hatch on native `Query<G>`?
 - What hierarchy-building strategy should the future `pull(...)` overload
   accept while keeping the default lifted source hierarchy?
-- How should equal-confidence Gear matches and partially resolved Gear be
-  represented?
-- How much evidence should ordinary inspection return, and how much belongs
-  only in an explicit trace?
+- Should equal-confidence Gear matches remain first-wins, become user-selectable,
+  or support an explicit model priority beyond the ambiguity now retained in
+  `ResolutionTrace`?
+- Which concrete debugging need would justify extending the focused trace with
+  individual parser-attempt detail?
 - Which fact value types receive built-in wire encodings, and how does a model
   register schema and encoding for a custom type?
 - Which explicit metadata is needed for stable Gear type identifiers and

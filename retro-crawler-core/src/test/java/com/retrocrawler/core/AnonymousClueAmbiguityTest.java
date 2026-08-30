@@ -1,5 +1,6 @@
 package com.retrocrawler.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +33,8 @@ import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.core.gear.trace.ResolutionTrace;
+import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class AnonymousClueAmbiguityTest {
@@ -48,14 +51,22 @@ class AnonymousClueAmbiguityTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<AmbiguousGear> gear = crawler.crawl(new Journal(), ReindexScope.all()).query(AmbiguousGear.class)
-				.pull().gear();
+		final Batch<AmbiguousGear> batch = crawler.crawl(new Journal(), ReindexScope.all()).query(AmbiguousGear.class)
+				.pull();
+		final List<AmbiguousGear> gear = batch.gear();
 
 		assertNull(gear.getFirst().firstMeaning);
 		assertNull(gear.getFirst().secondMeaning);
 		assertTrue(
 				gear.getFirst().attributes.values().stream().map(attribute -> assertInstanceOf(Clue.class, attribute))
 						.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("overlap"))));
+
+		final ResolutionTrace trace = batch.roots().getFirst().trace().orElseThrow();
+		assertTrue(trace.resolved().unresolvedClues().stream()
+				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("overlap"))));
+		assertEquals(Set.of(ResolutionTrace.Phase.DETECTION, ResolutionTrace.Phase.RESOLUTION),
+				trace.issues().stream().map(ResolutionTrace.Issue::phase).collect(java.util.stream.Collectors.toSet()));
+		assertTrue(trace.issues().stream().allMatch(issue -> issue.kind() == ResolutionTrace.IssueKind.AMBIGUOUS_FACT));
 	}
 
 	@RetroCollection(id = "anonymous_ambiguity")

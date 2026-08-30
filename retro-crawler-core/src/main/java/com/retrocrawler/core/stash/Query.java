@@ -158,6 +158,6 @@ public final class Query<G> {
 				return selectedChildren;
 			}
 		}
-		return List.of(new GearNode<>(typed, node.source(), selectedChildren));
+		return List.of(new GearNode<>(typed, node.source(), node.trace(), selectedChildren));
 	}
 }

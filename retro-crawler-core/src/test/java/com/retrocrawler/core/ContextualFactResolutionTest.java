@@ -37,6 +37,9 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.core.gear.trace.ResolutionTrace;
+import com.retrocrawler.core.stash.Batch;
+import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class ContextualFactResolutionTest {
@@ -55,8 +58,8 @@ class ContextualFactResolutionTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<BaseGear> gear = crawler.crawl(new Journal(), ReindexScope.all()).query(BaseGear.class).pull()
-				.gear();
+		final Batch<BaseGear> batch = crawler.crawl(new Journal(), ReindexScope.all()).query(BaseGear.class).pull();
+		final List<BaseGear> gear = batch.gear();
 
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());
@@ -64,6 +67,21 @@ class ContextualFactResolutionTest {
 		assertEquals(Set.of("hard-drive-form-factor"), hardDrive.formFactor.value());
 		assertTrue(hardDrive.formFactor.source().isAnonymous());
 		assertEquals(Set.of("2.5\""), hardDrive.formFactor.source().value());
+
+		final GearNode<BaseGear> hardDriveNode = batch.roots().stream().filter(node -> node.gear() instanceof HardDrive)
+				.findFirst().orElseThrow();
+		final ResolutionTrace trace = hardDriveNode.trace().orElseThrow();
+		assertEquals(Set.of("kind", "length"),
+				trace.detection().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
+		assertEquals(Set.of("hardDriveFormFactor", "kind"),
+				trace.resolved().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
+		assertEquals(2, trace.matches().size());
+		assertEquals(HardDrive.class, trace.selectedMatch().gearType());
+		assertEquals(Confidence.EXACT, trace.selectedMatch().confidence());
+		assertTrue(trace.artifact().clues().stream().anyMatch(clue -> clue.value().equals(Set.of("2.5\""))));
+		final ResolutionTrace mysteryTrace = batch.roots().stream().filter(node -> node.gear() instanceof Mystery)
+				.findFirst().orElseThrow().trace().orElseThrow();
+		assertTrue(mysteryTrace.matches().stream().anyMatch(match -> match.confidence() == Confidence.NONE));
 
 		final Mystery mystery = assertInstanceOf(Mystery.class,
 				gear.stream().filter(Mystery.class::isInstance).findFirst().orElseThrow());
