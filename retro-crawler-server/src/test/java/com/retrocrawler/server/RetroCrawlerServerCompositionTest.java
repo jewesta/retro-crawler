@@ -2,6 +2,7 @@ package com.retrocrawler.server;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Path;
 
@@ -67,6 +68,7 @@ class RetroCrawlerServerCompositionTest {
 	@Test
 	void preservesAnApplicationProvidedCrawlerWithoutRequiringLocations() {
 		final RetroCrawler crawler = mock(RetroCrawler.class);
+		when(crawler.collectionId()).thenReturn("application_collection");
 
 		contextRunner.withBean(RetroCrawler.class, () -> crawler).run(context -> {
 			assertThat(context).hasNotFailed().doesNotHaveBean(LocationsProperties.class);

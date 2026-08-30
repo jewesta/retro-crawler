@@ -169,6 +169,8 @@ The first interface should be deliberately small and use standard MCP
 
 - `list_archives` — list registered archive identities and current published
   crawl metadata.
+- `list_filters` — list the stable identities and query behavior of every
+  model-defined filter.
 - `search_gear` — search the parked Stash with pagination
   and bounded result sizes.
 - `get_gear` — retrieve one piece of gear and its traceable facts and clues.
@@ -295,6 +297,11 @@ portable across clients.
     operation. Gear matches only when the Fact applies and at least one value
     satisfies the criterion; unrelated Gear and applicable Gear without a
     resolved value do not match.
+26. Use each `FilterDefinition.key()` as its stable MCP filter identity. Build
+    the registry from every definition at tool construction, reject duplicate
+    identities immediately, and map the sealed `FilterType` hierarchy
+    exhaustively so a newly introduced kind cannot compile without an MCP
+    representation.
 
 ## Initial Module Scaffold
 
@@ -310,6 +317,8 @@ reactor:
   and backs off for an application-provided service.
 - `list_archives` is the first real MCP tool. It returns collection and archive
   identities without exposing physical archive roots.
+- `list_filters` exposes every model filter by its semantic Fact key together
+  with its `CHOICES`, `RANGE`, `TEXT`, or `EXACT` behavior and multiplicity.
 - `retro-crawler-server` selects synchronous Streamable HTTP and is packaged as
   an executable Spring Boot JAR.
 - Its optional scheduler creates a `CronTrigger` from the bound server
@@ -356,7 +365,9 @@ reactor:
 - [x] Reused the Stash, Query, Batch, crawl metadata, and ResolutionTrace
   contracts delivered by issue #22.
 - [x] Corrected Fact-filter query semantics so non-applicable Gear is excluded.
-- [ ] Define the bounded MCP projections of those core contracts.
+- [x] Added stable MCP filter identities, an exhaustive filter-kind mapping,
+  and `list_filters`.
+- [ ] Define the remaining bounded MCP projections of the Stash query results.
 - [x] Add `retro-crawler-mcp` and its auto-configuration tests.
 - [x] Add the generic `retro-crawler-server` host and startup-contract tests.
 - [x] Add collection-specific `Model` publication and server-owned location
@@ -376,12 +387,15 @@ reactor:
 - Fact-filter tests cover strict narrowing for choice, range, and text filters:
   non-applicable Gear and applicable Gear without a resolved value are
   excluded.
+- MCP filter-registry tests cover every sealed core filter kind, bidirectional
+  identity lookup, duplicate identities, foreign definitions, and unknown IDs.
 - Rebased issue #37 onto `origin/main` at `7f0a446`, including the merged issue
   #22 Stash/query/provenance groundwork, and reconciled the Locations builder
   test with the current `RetroCrawler.crawl(...)` API.
 - `mvn test` passed for the complete nine-module reactor after the rebase.
 - `mvn clean install` passed for the complete nine-module reactor after adding
-  the crawl-operation service, scheduling, and strict query semantics.
+  the crawl-operation service, scheduling, strict query semantics, and MCP
+  filter catalog.
 - The packaged server loaded the external MyCollection and model JARs through
   `PropertiesLauncher`, initialized an MCP Streamable HTTP session, listed and
   called `list_archives`, and shut down gracefully with the service bean.
