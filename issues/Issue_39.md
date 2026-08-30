@@ -41,6 +41,10 @@ the original `start_crawl` tool could select only complete archives.
    and no other Gear type uses an explicit type designator. Remove the
    unreachable collection `HardDiskDrive` specialization with them while
    retaining the objective shared hard-drive form-factor vocabulary.
+10. Treat `AnyGearMatcher` as the unique fallback role within a model. Reject a
+    model assigning it to more than one Gear type, without generally requiring
+    matcher implementations to be unique: ordinary matching strategies remain
+    reusable and equal best matches remain a separate runtime concern.
 
 ## Status
 
@@ -53,6 +57,8 @@ the original `start_crawl` tool could select only complete archives.
 - Removed the unused `gearKind` filter source, parser, model field, and
   `HardDiskDrive` specialization after the MCP exposed the one-value filter and
   confirmed that it matches no Gear.
+- Enforced the documented single-`AnyGearMatcher` invariant during model
+  construction while retaining reusable ordinary matchers.
 
 ## Next Improvements
 

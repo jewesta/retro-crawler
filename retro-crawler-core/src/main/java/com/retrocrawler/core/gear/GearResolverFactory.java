@@ -26,6 +26,7 @@ import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
+import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
@@ -77,6 +78,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 					"At least one type must be annotated with " + TypeName.simple(RetroGear.class));
 		}
 
+		assertUniqueAnyGearMatcher(specialists);
 		assertConsistentRetroId(specialists);
 
 		// Collect all known attribute definitions and ensure no contradictions.
@@ -148,6 +150,22 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys),
 				List.copyOf(filters));
+	}
+
+	private static void assertUniqueAnyGearMatcher(final Map<Class<?>, GearSpecialist> specialists) {
+		Class<?> fallbackType = null;
+		for (final GearSpecialist specialist : specialists.values()) {
+			final GearDescriptor descriptor = specialist.gearDefinition();
+			if (!(descriptor.matcher() instanceof AnyGearMatcher)) {
+				continue;
+			}
+			if (fallbackType != null) {
+				throw new IllegalArgumentException(TypeName.simple(AnyGearMatcher.class)
+						+ " may be assigned to only one Gear type, but is assigned to " + TypeName.full(fallbackType)
+						+ " and " + TypeName.full(descriptor.type()) + ".");
+			}
+			fallbackType = descriptor.type();
+		}
 	}
 
 	private static FactParser<?> configuredParser(final String key, final Class<? extends FactParser<?>> parserType,

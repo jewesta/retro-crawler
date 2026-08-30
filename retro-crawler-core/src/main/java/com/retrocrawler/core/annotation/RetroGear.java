@@ -17,7 +17,7 @@ public @interface RetroGear {
 	 * You can use {@link AnyGearMatcher} as a "catch all". Every
 	 * {@link Artifact} that cannot be converted to any other type will end up
 	 * being converted to the type using {@link AnyGearMatcher}. It can only be
-	 * added to one type.
+	 * assigned to one Gear type in a model.
 	 */
 	Class<? extends GearMatcher> value();
 
