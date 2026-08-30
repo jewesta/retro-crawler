@@ -129,7 +129,12 @@ public class GearResolver {
 			return;
 		}
 
-		rejectDuplicateSemanticKey(resolvedKey, existing, clue);
+		/*
+		 * Explicitly keyed evidence is authoritative. Preserve the anonymous
+		 * observation under its generated key, but do not let its lenient
+		 * interpretation compete with the explicit semantic claim.
+		 */
+		putAnonymousClueIfUseful(resolved, clue);
 	}
 
 	private static void reconcileAnonymousClues(final RetroAttributes resolved, final String resolvedKey,

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
@@ -53,6 +54,8 @@ final class ClueClassifier {
 		Objects.requireNonNull(clues, "clues");
 
 		final ClueAccumulator classified = Clues.accumulator();
+		final Set<String> explicitlyClaimedKeys = clues.stream().filter(clue -> !clue.isAnonymous()).map(Clue::key)
+				.collect(Collectors.toUnmodifiableSet());
 		/*
 		 * Classifying strips a reinterpreted anonymous observation down to a
 		 * missing-value clue, so the accumulator can no longer show what the
@@ -62,6 +65,10 @@ final class ClueClassifier {
 		final Map<String, Clue> observedByKey = new HashMap<>();
 		for (final Clue clue : clues) {
 			classify(Objects.requireNonNull(clue, "clues must not contain null")).ifPresent(value -> {
+				if (clue.isAnonymous() && explicitlyClaimedKeys.contains(value.key())) {
+					classified.add(clue);
+					return;
+				}
 				add(classified, observedByKey.get(value.key()), clue, value);
 				observedByKey.put(value.key(), clue);
 			});

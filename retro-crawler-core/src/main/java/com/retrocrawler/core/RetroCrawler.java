@@ -43,6 +43,15 @@ public interface RetroCrawler {
 		Builder model(Model model);
 
 		/**
+		 * Configures the conventional JSON clue repository and filesystem
+		 * archives from their local locations.
+		 * <p>
+		 * This convenience cannot be combined with explicit repository or
+		 * archive configuration.
+		 */
+		Builder locations(Locations locations);
+
+		/**
 		 * Configures where extracted clue archives are stowed away and
 		 * retrieved.
 		 */

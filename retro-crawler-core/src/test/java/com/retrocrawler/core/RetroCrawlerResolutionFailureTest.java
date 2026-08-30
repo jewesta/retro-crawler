@@ -28,7 +28,6 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.core.gear.RatedFact;
@@ -77,7 +76,7 @@ class RetroCrawlerResolutionFailureTest {
 				List.of(ARI.of("resolution_failure_test", ARCHIVE_ID, Path.of("duplicate")),
 						ARI.of("resolution_failure_test", ARCHIVE_ID, Path.of("duplicate", "explosion"))),
 				failures.stream().map(GearResolutionException::source).toList());
-		assertInstanceOf(DuplicateClueException.class, failures.getFirst().getCause());
+		assertInstanceOf(IllegalStateException.class, failures.getFirst().getCause());
 		assertInstanceOf(IllegalStateException.class, failures.getLast().getCause());
 		assertEquals(report.failures(), journal.failures());
 		final List<ProgressSnapshot> resolving = events.stream()
@@ -130,7 +129,7 @@ class RetroCrawlerResolutionFailureTest {
 			final String folderName = folder.name();
 			return switch (folderName) {
 			case "clue_failure" -> throw new IllegalArgumentException("Clue finder broke.");
-			case "duplicate" -> Clues.of(Clue.of("SN"), Clue.of("sn", "12345"));
+			case "duplicate" -> Clues.of(Clue.of("explode", folderName));
 			case "explosion" -> Clues.of(Clue.of("explode", folderName));
 			default -> Clues.none();
 			};

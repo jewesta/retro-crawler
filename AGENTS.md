@@ -150,7 +150,12 @@ These instructions apply to the entire repository.
 
 - `retro-crawler-core`: public framework API and implementation.
 - `retro-crawler-model`: optional shared facts and canonical parsers.
+- `retro-crawler-mcp`: reusable MCP adapter and Spring Boot auto-configuration.
+- `retro-crawler-server`: generic executable MCP host for one
+  application-provided crawler.
 - `retro-crawler-demo`: sample archive types, clue finders, and demo data.
+- `retro-crawler-mycollection`: collection-specific model and clue
+  interpretation.
 - `retro-crawler-app`: Vaadin demonstration application.
 - `retro-crawler-cli`: command-line demonstration application.
 
@@ -172,6 +177,13 @@ adapters should likewise remain outside `retro-crawler-core`.
 
 - Implement each issue in a dedicated sibling Git worktree unless the user
   explicitly requests a different workflow.
+- Immediately before creating an issue branch or worktree, update the primary
+  `main` checkout with `git pull --ff-only` and verify that `main` matches
+  `origin/main`. Never create issue work from a previously fetched or otherwise
+  stale local `main`.
+- If `main` cannot be updated cleanly with a fast-forward-only pull, stop and
+  resolve the condition with the user rather than branching from the stale
+  revision.
 - Name the worktree directory `<repository-name>-issue-<issue_number>`, for
   example `retro-crawler-issue-28`.
 - Create the worktree branch as `issues/Issue_<issue_number>` from `main`.

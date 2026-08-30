@@ -13,10 +13,12 @@
 	<modules>
 		<module>retro-crawler-core</module>
 		<module>retro-crawler-model</module>
+		<module>retro-crawler-mcp</module>
 		<module>retro-crawler-demo</module>
 		<module>retro-crawler-mycollection</module>
 		<module>retro-crawler-app</module>
 		<module>retro-crawler-cli</module>
+		<module>retro-crawler-server</module>
 	</modules>
 
 	<properties>
@@ -28,6 +30,8 @@
 		<jackson.version>2.21.4</jackson.version>
 		<junit.version>6.0.3</junit.version>
 		<slf4j.version>2.0.18</slf4j.version>
+		<spring-ai.version>2.0.1</spring-ai.version>
+		<spring-boot.version>4.1.0</spring-boot.version>
 	</properties>
 
 	<!-- This does NOT add dependencies. It just unifies dependency versions
