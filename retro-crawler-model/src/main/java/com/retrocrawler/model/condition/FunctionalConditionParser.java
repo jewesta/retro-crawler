@@ -3,13 +3,18 @@ package com.retrocrawler.model.condition;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
 /**
  * Parses canonical English functional-condition observations.
  */
-public final class FunctionalConditionParser implements FactParser<FunctionalCondition> {
+public final class FunctionalConditionParser implements EnumFactParser<FunctionalCondition> {
+
+	@Override
+	public Class<FunctionalCondition> enumType() {
+		return FunctionalCondition.class;
+	}
 
 	@Override
 	public RatedFact<FunctionalCondition> parse(final String rawValue, final ParseContext context) {

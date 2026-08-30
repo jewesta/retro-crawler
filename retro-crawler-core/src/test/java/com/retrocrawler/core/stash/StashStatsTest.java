@@ -17,7 +17,7 @@ class StashStatsTest {
 
 	@Test
 	void describesAnEmptyStash() {
-		final StashStats stats = StashStats.from(new Stash<>(List.of()));
+		final StashStats stats = new Stash(List.of()).stats();
 
 		assertEquals(0, stats.archiveCount());
 		assertEquals(0, stats.rootCount());
@@ -33,11 +33,10 @@ class StashStatsTest {
 		final GearNode<Object> child = new GearNode<>(new Right.Gear(), source("child"), List.of(deepest));
 		final GearNode<Object> firstRoot = new GearNode<>(new Left.Gear(), source("first"), List.of(child));
 		final GearNode<Object> secondRoot = new GearNode<>("loose", source("second"), List.of());
-		final Stash<Object> stash = new Stash<>(
-				List.of(new ArchiveGear<>(archive("first"), List.of(firstRoot, secondRoot)),
-						new ArchiveGear<>(archive("second"), List.of())));
+		final Stash stash = new Stash(List.of(new ArchiveGear<>(archive("first"), List.of(firstRoot, secondRoot)),
+				new ArchiveGear<>(archive("second"), List.of())));
 
-		final StashStats stats = StashStats.from(stash);
+		final StashStats stats = stash.stats();
 
 		assertEquals(2, stats.archiveCount());
 		assertEquals(2, stats.rootCount());

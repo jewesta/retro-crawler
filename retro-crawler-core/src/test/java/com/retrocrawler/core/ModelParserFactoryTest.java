@@ -22,13 +22,16 @@ import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.EnumParser;
@@ -37,14 +40,12 @@ import com.retrocrawler.core.gear.parser.InstantParser;
 import com.retrocrawler.core.gear.parser.IntParser;
 import com.retrocrawler.core.gear.parser.LocalDateParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
-import com.retrocrawler.core.gear.parser.PathParser;
 import com.retrocrawler.core.gear.parser.StringParser;
 
 class ModelParserFactoryTest {
 
-	private static final Path ARCHIVE_ROOT = Path.of("/archive");
-	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
+	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(), SOURCE);
 
 	@BeforeEach
 	void resetParserObservations() {
@@ -52,7 +53,7 @@ class ModelParserFactoryTest {
 		AnnotationIntegerParser.instances = 0;
 		AnnotationInstantParser.instances = 0;
 		AnnotationLocalDateParser.instances = 0;
-		AnnotationPathParser.instances = 0;
+		AnnotationARIParser.instances = 0;
 		AnnotationEnumParser.enumTypes.clear();
 		FactorySelectedEnumParser.instances = 0;
 	}
@@ -65,7 +66,7 @@ class ModelParserFactoryTest {
 		assertEquals(2, AnnotationIntegerParser.instances);
 		assertEquals(2, AnnotationInstantParser.instances);
 		assertEquals(2, AnnotationLocalDateParser.instances);
-		assertEquals(2, AnnotationPathParser.instances);
+		assertEquals(2, AnnotationARIParser.instances);
 	}
 
 	@Test
@@ -85,7 +86,7 @@ class ModelParserFactoryTest {
 		final Map<String, FactParser<Integer>> integers = new HashMap<>();
 		final Map<String, FactParser<Instant>> instants = new HashMap<>();
 		final Map<String, FactParser<LocalDate>> localDates = new HashMap<>();
-		final Map<String, FactParser<Path>> paths = new HashMap<>();
+		final Map<String, FactParser<ARI>> aris = new HashMap<>();
 		final List<String> explicitKeys = new ArrayList<>();
 
 		Model.builder().typesFrom(Set.of(BuiltInDefaultsCollection.class, FactoryFactGear.class))
@@ -93,7 +94,7 @@ class ModelParserFactoryTest {
 				.parserFactory(IntParser.class, key -> integers.computeIfAbsent(key, KeyedIntegerParser::new))
 				.parserFactory(InstantParser.class, key -> instants.computeIfAbsent(key, KeyedInstantParser::new))
 				.parserFactory(LocalDateParser.class, key -> localDates.computeIfAbsent(key, KeyedLocalDateParser::new))
-				.parserFactory(PathParser.class, key -> paths.computeIfAbsent(key, KeyedPathParser::new))
+				.parserFactory(ARIParser.class, key -> aris.computeIfAbsent(key, KeyedARIParser::new))
 				.parserFactory(ExplicitStringParser.class, key -> {
 					explicitKeys.add(key);
 					return new ExplicitStringParser(key);
@@ -107,8 +108,8 @@ class ModelParserFactoryTest {
 		assertNotSame(instants.get("createdAt"), instants.get("observedAt"));
 		assertEquals(Set.of("releaseDate", "importantDates"), localDates.keySet());
 		assertNotSame(localDates.get("releaseDate"), localDates.get("importantDates"));
-		assertEquals(Set.of("photo", "attachments"), paths.keySet());
-		assertNotSame(paths.get("photo"), paths.get("attachments"));
+		assertEquals(Set.of("photo", "attachments"), aris.keySet());
+		assertNotSame(aris.get("photo"), aris.get("attachments"));
 		assertEquals(List.of("explicit"), explicitKeys);
 	}
 
@@ -173,26 +174,26 @@ class ModelParserFactoryTest {
 	}
 
 	@RetroCollection(id = "annotation_default_parsers")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(string = AnnotationStringParser.class, integer = AnnotationIntegerParser.class,
 			instant = AnnotationInstantParser.class, localDate = AnnotationLocalDateParser.class,
-			path = AnnotationPathParser.class)
+			ari = AnnotationARIParser.class)
 	public static final class AnnotatedDefaultsCollection {
 	}
 
 	@RetroCollection(id = "built_in_default_parsers")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class BuiltInDefaultsCollection {
 	}
 
 	@RetroCollection(id = "annotation_default_enum_parser")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = AnnotationEnumParser.class)
 	public static final class AnnotatedEnumDefaultsCollection {
 	}
 
 	@RetroCollection(id = "factory_default_enum_parser")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	@RetroFactDefaultParser(enumeration = FactorySelectedEnumParser.class)
 	public static final class FactoryEnumDefaultsCollection {
 	}
@@ -225,10 +226,10 @@ class ModelParserFactoryTest {
 		private Set<LocalDate> importantDates;
 
 		@RetroFact
-		private Path photo;
+		private ARI photo;
 
 		@RetroFact
-		private Set<Path> attachments;
+		private Set<ARI> attachments;
 
 		public DefaultFactGear() {
 		}
@@ -262,10 +263,10 @@ class ModelParserFactoryTest {
 		private Set<LocalDate> importantDates;
 
 		@RetroFact
-		private Path photo;
+		private ARI photo;
 
 		@RetroFact
-		private Set<Path> attachments;
+		private Set<ARI> attachments;
 
 		@RetroFact(key = "explicitBuiltIn", parser = StringParser.class)
 		private String explicitBuiltIn;
@@ -334,17 +335,17 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	public static final class AnnotationPathParser implements FactParser<Path> {
+	public static final class AnnotationARIParser implements FactParser<ARI> {
 
 		private static int instances;
 
-		public AnnotationPathParser() {
+		public AnnotationARIParser() {
 			instances++;
 		}
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue, final ParseContext context) {
-			return RatedFact.exact(Path.of(rawValue));
+		public RatedFact<ARI> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(context.source().resolve(Path.of(rawValue)));
 		}
 	}
 
@@ -389,9 +390,16 @@ class ModelParserFactoryTest {
 	public static final class FactorySelectedEnumParser implements EnumFactParser<EnumState> {
 
 		private static int instances;
+		private final Class<EnumState> enumType;
 
 		public FactorySelectedEnumParser(final Class<EnumState> enumType) {
+			this.enumType = enumType;
 			instances++;
+		}
+
+		@Override
+		public Class<EnumState> enumType() {
+			return enumType;
 		}
 
 		@Override
@@ -424,11 +432,11 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	private record KeyedPathParser(String key) implements FactParser<Path> {
+	private record KeyedARIParser(String key) implements FactParser<ARI> {
 
 		@Override
-		public RatedFact<Path> parse(final String rawValue, final ParseContext context) {
-			return RatedFact.exact(Path.of(rawValue));
+		public RatedFact<ARI> parse(final String rawValue, final ParseContext context) {
+			return RatedFact.exact(context.source().resolve(Path.of(rawValue)));
 		}
 	}
 
@@ -462,10 +470,10 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	public static final class EmptyClueFinder implements FolderNameClueFinder {
+	public static final class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}

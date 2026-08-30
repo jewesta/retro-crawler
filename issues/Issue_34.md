@@ -123,13 +123,13 @@ plus crawler-level aggregation. `crawlAll` is what pays for it.
     File resource values may still carry artifact-relative paths because those
     paths are needed to use the resource; they are not generic clue-origin
     metadata.
-15. Every `ArchiveNode` records `crawledAt`, the time of the crawl operation
-    that most recently rebuilt that complete subtree. One operation timestamp
-    is shared by all nodes rebuilt in a full or multi-subtree reindex. Partial
+15. Every `ArchiveNode` originally recorded one shared `crawledAt` for the crawl
+    operation that most recently rebuilt that complete subtree. Partial
     replacement preserves timestamps on ancestors and untouched branches, so
-    the root timestamp remains the last complete archive crawl. Adding the
-    persisted timestamp changes the node shape and advances the cache to format
-    5.
+    the root identifies the last complete archive crawl. Adding that persisted
+    timestamp changed the node shape and advanced the cache to format 5. Issue
+    22 later makes the semantics explicit as shared `crawlStartedAt` plus a
+    bottom-up, per-folder `observedAt` and advances the cache again.
 16. Progress tracking again follows the PEPPER 2 architecture rather than the
     initial RetroCrawler reimplementation. `ProgressSupplier` is the read-only
     monitor contract, `ProgressController` drives and splits progress, and
@@ -209,9 +209,9 @@ to close, so they were closed rather than deferred.
   parameter of two `ArchiveFolderClueFinder.find` overloads that nothing called,
   superseded by the `ArchiveFolder`/`ArchiveSession` overload the digger uses,
   and it carried a compatibility constructor for a compatibility no longer
-  exercised. Meanwhile `Node` models the same rooted-path-with-below-check idea
-  and is used. Two types for one concept; `ArchivePath` and both dead overloads
-  are gone.
+  exercised. Meanwhile the type then named `Node` (now `ArtifactLocation`)
+  models the same rooted-path-with-below-check idea and is used. Two types for
+  one concept; `ArchivePath` and both dead overloads are gone.
 - `Confidence` lived in `archive.clues` but is meaningless to a `Clue`. Only
   `Fact`, `RatedFact`, and matchers use it, so it moved to `gear`. This also
   makes the package boundary state the clue/fact rule instead of blurring it.
@@ -235,18 +235,20 @@ without violating the clue/fact rule, but the current value would mainly be
 diagnostic. Until a concrete query or auditing requirement needs that finer
 trace, omitting it is a conscious simplification rather than missing provenance.
 
-### Resolved here: every subtree records its crawl time
+### Resolved here: every subtree records its crawl observations
 
 The original review correctly found that nothing could answer when cached
 material was crawled. One timestamp on `Archive` would become misleading after
 a partial reindex, because the resulting tree contains material from more than
 one crawl operation. The gapless `ArchiveNode` tree is the natural granularity.
 
-`ArchiveNode.crawledAt` records when its complete subtree was last crawled. A
-full crawl gives every node the same timestamp. A partial crawl gives every
-replacement node one new operation timestamp while structurally rebuilt
-ancestors keep their old one. Consequently the root records the last full crawl
-and any selected node records the last complete crawl of that subtree.
+`ArchiveNode.crawlStartedAt` identifies the operation that most recently crawled
+the subtree, so every replacement node from one operation shares it.
+`ArchiveNode.observedAt`, added during Issue 22, records when each folder had
+been processed after its children. A partial crawl gives replacement nodes new
+observations while structurally rebuilt ancestors keep their old ones.
+Consequently the root describes the last full crawl and any selected node
+describes the last complete crawl of that subtree.
 
 This records cache age, not freshness. `ReindexScope.none()` continues to mean
 unconditional cache reuse. Source fingerprints, modification metadata, and
@@ -476,7 +478,7 @@ The diff argument was built on a project value the code contradicts.
 its own directory: the stored archive is disposable, not version-controlled.
 Byte-stability is also unreachable by construction. Anonymous clue keys are
 freshly generated per crawl, so most field names in an artifact change every
-time, and decision 15 gives every rebuilt node a new `crawledAt` — while a
+time, and decision 15 gives every rebuilt node new crawl observations — while a
 recrawl is the only thing that rewrites the file. The useful diff granularity,
 which subtrees were recrawled, already works: partial reindexing retains
 untouched branches verbatim.

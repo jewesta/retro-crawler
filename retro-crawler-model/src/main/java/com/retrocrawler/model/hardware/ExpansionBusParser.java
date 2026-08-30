@@ -3,10 +3,15 @@ package com.retrocrawler.model.hardware;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class ExpansionBusParser implements FactParser<ExpansionBus> {
+public final class ExpansionBusParser implements EnumFactParser<ExpansionBus> {
+
+	@Override
+	public Class<ExpansionBus> enumType() {
+		return ExpansionBus.class;
+	}
 
 	@Override
 	public RatedFact<ExpansionBus> parse(final String rawValue, final ParseContext context) {

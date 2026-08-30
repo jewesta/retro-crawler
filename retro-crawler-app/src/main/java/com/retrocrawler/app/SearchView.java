@@ -21,8 +21,11 @@ import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.progress.ProgressStage;
+import com.retrocrawler.core.progress.ProgressSupplier;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.demo.DemoModels;
+import com.retrocrawler.demo.gear.MyKnownGear;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -81,7 +84,9 @@ public class SearchView extends HorizontalLayout {
 
 	private final Paragraph messageBar = new Paragraph();
 
-	private Progressor progressor;
+	private final FilterBar<MyKnownGear> filterBar = new FilterBar<>(MyKnownGear.class, this::setGear);
+
+	private Journal journal;
 
 	private final List<DemoArchive> demoArchives;
 
@@ -150,12 +155,16 @@ public class SearchView extends HorizontalLayout {
 		crawl.addClickListener(event -> {
 			final UI eventUI = event.getSource().getUI().orElseThrow();
 			activeArchive = Objects.requireNonNull(archives.getValue(), "selected archive");
-			refreshAsync(eventUI, ReindexScope.all());
+			final ARI archiveRoot = ARI.of(activeArchive.crawler().collectionId(), activeArchive.archive().id(),
+					Path.of(""));
+			refreshAsync(eventUI, ReindexScope.subtree(archiveRoot));
 		});
 
 		final Button cancel = retroButton("Cancel Indexing");
 		cancel.addClickListener(event -> {
-			progressor.cancel("Cancel requested...");
+			if (journal != null) {
+				journal.cancel("Cancel requested...");
+			}
 			logger.info("Repository indexing cancelled.");
 		});
 
@@ -178,7 +187,7 @@ public class SearchView extends HorizontalLayout {
 		messageArea.setWidthFull();
 		messageArea.setAlignItems(FlexComponent.Alignment.CENTER);
 
-		final VerticalLayout tableArea = new VerticalLayout(messageArea, treeGrid);
+		final VerticalLayout tableArea = new VerticalLayout(messageArea, filterBar, treeGrid);
 		tableArea.setHeightFull();
 		tableArea.getStyle().set("padding-top", "0px");
 
@@ -259,23 +268,24 @@ public class SearchView extends HorizontalLayout {
 
 	private void refreshAsync(final UI ui, final ReindexScope reindexScope) {
 		final DemoArchive archive = activeArchive;
-		final Progressor activeProgressor = createProgressor(ui);
-		final Journal journal = new Journal(activeProgressor);
+		final Journal activeJournal = new Journal(createProgressor(ui));
 		final RetroCrawler crawler = archive.crawler();
-		this.progressor = activeProgressor;
-		activeProgressor.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
+		this.journal = activeJournal;
+		activeJournal.indeterminate(ProgressStage.of("LOADING"), "Loading index...");
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return crawler.crawl(archive.archive().id(), journal, reindexScope, new VaadinTreeDataFactory());
+				return reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(activeJournal)
+						: crawler.crawl(activeJournal, reindexScope);
 			} catch (final IOException e) {
 				throw new UncheckedIOException(e);
 			}
 		}).thenAccept(successResult -> ui.access(() -> {
-			activeProgressor.complete(INDEX_READY);
-			setParts(successResult);
+			messageBar.setText(INDEX_READY);
+			filterBar.setSource(successResult, archive.archive().id());
 		})).exceptionally(failureException -> {
 			ui.access(() -> {
-				activeProgressor.fail(INDEX_FAILED + " " + failureException.getMessage());
+				messageBar.setText(INDEX_FAILED + " " + failureException.getMessage());
+				filterBar.clear();
 				setParts(new TreeData<>());
 				failureException.printStackTrace();
 			});
@@ -283,16 +293,19 @@ public class SearchView extends HorizontalLayout {
 		});
 	}
 
+	private void setGear(final Batch<MyKnownGear> gear) {
+		setParts(VaadinTreeDataFactory.from(gear));
+	}
+
 	private Optional<Component> archiveImage(final VaadinGearNode node) {
 		final DemoArchive archive = activeArchive;
 		final RetroCrawler crawler = archive.crawler();
-		return node.gear().getPicFront().map(path -> {
-			final String fileName = path.getFileName().toString();
+		return node.gear().getPicFront().map(imageSource -> {
+			final String fileName = imageSource.resourcePath().getFileName().toString();
 			final DownloadHandler download = DownloadHandler.fromInputStream(event -> {
-				final Optional<byte[]> content = crawler.inspect(crawler.identify(archive.archive().id(), path),
-						InputStream::readAllBytes);
+				final Optional<byte[]> content = crawler.inspect(imageSource, InputStream::readAllBytes);
 				if (content.isEmpty()) {
-					return DownloadResponse.error(404, "Archive source did not expose content for: " + path);
+					return DownloadResponse.error(404, "Archive source did not expose content for: " + imageSource);
 				}
 				final byte[] bytes = content.get();
 				return new DownloadResponse(new ByteArrayInputStream(bytes), fileName, "image/jpeg", bytes.length);
@@ -317,7 +330,6 @@ public class SearchView extends HorizontalLayout {
 			final int frame = counter.getAndUpdate(i -> (i + 1) % 4);
 			drums.setSrc(drums(frame).getSrc());
 			messageBar.setText(message);
-			ui.push();
 		}));
 	}
 
@@ -331,8 +343,8 @@ public class SearchView extends HorizontalLayout {
 		return parts;
 	}
 
-	protected Optional<Progressor> getProgressor() {
-		return Optional.ofNullable(progressor);
+	protected Optional<ProgressSupplier> getProgress() {
+		return Optional.ofNullable(journal).map(Journal::progress);
 	}
 
 	private static final Image drums(final int i) {

@@ -16,9 +16,9 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
@@ -126,29 +126,29 @@ class ModelTest {
 	}
 
 	@RetroCollection(id = "model_test")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class TestArchive {
 	}
 
 	@RetroCollection(id = "second_model_test")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class SecondTestArchive {
 	}
 
 	@RetroCollection(id = "runtime_model_test")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class RuntimeConfiguredArchive {
 	}
 
 	@RetroCollection(id = "filtered_archive", pathFilters = {
 			IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class
 	})
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class FilteredArchive {
 	}
 
 	@RetroCollection(id = "working_directory", workingDirectory = "annotation-work")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static class WorkingDirectoryCollection {
 	}
 
@@ -166,10 +166,10 @@ class ModelTest {
 		}
 	}
 
-	public static class EmptyClueFinder implements FolderNameClueFinder {
+	public static class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}

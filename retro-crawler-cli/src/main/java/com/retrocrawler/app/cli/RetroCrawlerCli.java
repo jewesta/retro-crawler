@@ -10,8 +10,8 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.JsonFileRepository;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.core.stash.Stash;
-import com.retrocrawler.core.stash.StashStats;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
 import com.retrocrawler.demo.gear.MyRetroGear;
@@ -54,7 +54,9 @@ public final class RetroCrawlerCli {
 		System.out.println("Reindex scope: " + parsed.reindexScope);
 
 		System.out.println();
-		final Stash<MyRetroGear> stash = crawler.crawlAllStash(journal, parsed.reindexScope, MyRetroGear.class);
+		final Stash stash = parsed.reindexScope.kind() == ReindexScope.Kind.NONE ? crawler.access(journal)
+				: crawler.crawl(journal, parsed.reindexScope);
+		final Batch<MyRetroGear> gear = stash.query(MyRetroGear.class).pull();
 
 		final Duration dur = Duration.between(start, Instant.now());
 
@@ -62,12 +64,11 @@ public final class RetroCrawlerCli {
 		System.out.println("Crawling took: " + dur.toMillis() + " ms");
 		System.out.println();
 
-		AsciiTreePrinter.printStash(stash);
+		AsciiTreePrinter.print(gear);
 
 		System.out.println();
 		System.out.println("Statistics");
-		final StashStats stats = StashStats.from(stash);
-		StashStatsPrinter.printToStdout(stats);
+		StashStatsPrinter.printToStdout(stash.stats());
 	}
 
 	static final class Args {

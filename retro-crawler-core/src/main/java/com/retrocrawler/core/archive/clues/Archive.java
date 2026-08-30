@@ -11,7 +11,8 @@ import com.retrocrawler.core.archive.ArchiveId;
 /**
  * One extracted, model-independent clue archive.
  * <p>
- * The tree below {@link #root()} is purely relative structure. The
+ * The {@link #collectionId()} and {@link #id()} anchor stable resource
+ * identities. The tree below {@link #root()} is purely relative structure. The
  * {@link #basePath()} anchors it to the deployment location it was dug from and
  * is rebound when that location changes.
  * <p>
@@ -26,6 +27,9 @@ public final class Archive {
 	@JsonProperty("version")
 	private final ArchiveVersion version;
 
+	@JsonProperty("collectionId")
+	private final String collectionId;
+
 	@JsonProperty("id")
 	private final ArchiveId id;
 
@@ -36,9 +40,14 @@ public final class Archive {
 	private final ArchiveNode root;
 
 	@JsonCreator
-	protected Archive(@JsonProperty("version") final ArchiveVersion version, @JsonProperty("id") final ArchiveId id,
+	protected Archive(@JsonProperty("version") final ArchiveVersion version,
+			@JsonProperty("collectionId") final String collectionId, @JsonProperty("id") final ArchiveId id,
 			@JsonProperty("basePath") final String basePath, @JsonProperty("root") final ArchiveNode root) {
 		this.version = Objects.requireNonNull(version, "version");
+		this.collectionId = Objects.requireNonNull(collectionId, "collectionId");
+		if (collectionId.isBlank()) {
+			throw new IllegalArgumentException("collectionId must not be blank.");
+		}
 		this.id = Objects.requireNonNull(id, "id");
 		this.basePath = Objects.requireNonNull(basePath, "basePath");
 		this.root = Objects.requireNonNull(root, "root");
@@ -46,6 +55,10 @@ public final class Archive {
 
 	public ArchiveId id() {
 		return id;
+	}
+
+	public String collectionId() {
+		return collectionId;
 	}
 
 	public ArchiveVersion version() {
@@ -60,14 +73,16 @@ public final class Archive {
 		return root;
 	}
 
-	public static final Archive of(final ArchiveId id, final Path basePath, final ArchiveNode root) {
+	public static final Archive of(final String collectionId, final ArchiveId id, final Path basePath,
+			final ArchiveNode root) {
 		Objects.requireNonNull(basePath, "basePath");
-		return new Archive(ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION, id, basePath.toString(), root);
+		return new Archive(ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION, collectionId, id, basePath.toString(), root);
 	}
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[id=" + id() + ", basePath=" + basePath() + "]";
+		return getClass().getSimpleName() + "[collectionId=" + collectionId() + ", id=" + id() + ", basePath="
+				+ basePath() + "]";
 	}
 
 }

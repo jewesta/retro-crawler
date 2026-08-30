@@ -3,6 +3,7 @@ package com.retrocrawler.core.archive;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -23,14 +25,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
 import com.retrocrawler.core.archive.clues.ClueFileIOException;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
@@ -43,17 +47,18 @@ import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
 import com.retrocrawler.core.archive.source.FileSystemArchiveSource;
-import com.retrocrawler.core.progress.ProgressStage;
-import com.retrocrawler.core.progress.Progressor;
+import com.retrocrawler.core.progress.ProgressCancelledException;
 import com.retrocrawler.core.util.Hashes;
 
 public class ArchiveDigger {
 
 	private static final Logger logger = LoggerFactory.getLogger(ArchiveDigger.class);
 
-	private final ArchiveDescriptor descriptor;
+	private final ArchiveDefinition archive;
 
-	private final ArchiveFolderClueFinder clueFinder;
+	private final ArchiveId archiveId;
+
+	private final List<ClueFinder> clueFinders;
 
 	private final CrawlPlanning planning;
 
@@ -74,24 +79,55 @@ public class ArchiveDigger {
 	}
 
 	public ArchiveDigger(final ArchiveDefinition archive, final ArchiveSource source, final CrawlPlanning planning) {
-		Objects.requireNonNull(archive, "archive");
-		this.descriptor = Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()");
-		this.clueFinder = Objects.requireNonNull(archive.archiveFolderClueFinder(),
-				"archive.archiveFolderClueFinder()");
+		this.archive = Objects.requireNonNull(archive, "archive");
+		this.archiveId = Objects.requireNonNull(
+				Objects.requireNonNull(archive.archiveDescriptor(), "archive.archiveDescriptor()").id(),
+				"archive.archiveDescriptor().id()");
+		archive.ariFrom(Path.of(""));
+		this.clueFinders = validatedFinders(archive.clueFinders());
+		if (clueFinders.isEmpty()) {
+			throw new IllegalArgumentException("Require at least one clue finder.");
+		}
 		this.source = Objects.requireNonNull(source, "source");
 		this.planning = Objects.requireNonNull(planning, "planning");
 		this.pathFilters = List.copyOf(Objects.requireNonNull(archive.pathFilters(), "archive.pathFilters()"));
 	}
 
+	private static List<ClueFinder> validatedFinders(final List<ClueFinder> configured) {
+		final List<ClueFinder> finders = List.copyOf(Objects.requireNonNull(configured, "archive.clueFinders()"));
+		final Map<String, Class<?>> typesByName = new LinkedHashMap<>();
+		for (final ClueFinder finder : finders) {
+			Objects.requireNonNull(finder, "archive.clueFinders() must not contain null");
+			final Class<?> type = finder.getClass();
+			final String name = type.getSimpleName();
+			if (name.isBlank() || type.isAnonymousClass() || type.isLocalClass() || type.isSynthetic()) {
+				throw new IllegalArgumentException(
+						"A configured clue finder must be a named class because its simple name "
+								+ "is retained as clue provenance: " + type.getName());
+			}
+			final Class<?> previous = typesByName.putIfAbsent(name, type);
+			if (previous != null) {
+				throw new IllegalArgumentException("Ambiguous clue finder name '" + name
+						+ "'. Configured finder names must be unique, but it identifies both " + previous.getName()
+						+ " and " + type.getName() + ".");
+			}
+		}
+		return finders;
+	}
+
+	String collectionId() {
+		return archive.collectionId();
+	}
+
 	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
 		Objects.requireNonNull(journal, "journal");
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
-		final Instant crawledAt = Instant.now();
+		final Clock clock = Clock.systemUTC();
+		final Instant crawlStartedAt = clock.instant();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
-			final ArchiveDigPlan plan = plan(List.of(target), progressor);
-			final ArchiveNode result = dig(target, plan, crawledAt, journal);
+			final ArchiveDigPlan plan = plan(List.of(target), journal);
+			final ArchiveNode result = dig(target, plan, crawlStartedAt, clock, journal);
 			final List<Exception> failures = journal.failures();
 			if (failures.size() > failuresBeforeCrawling) {
 				throw new CrawlException(failures.subList(failuresBeforeCrawling, failures.size()));
@@ -110,11 +146,11 @@ public class ArchiveDigger {
 		return new ArchiveDigTarget(session, root, root);
 	}
 
-	Optional<ArchiveDigTarget> target(final ArchiveSession session, final Path path, final Progressor progressor)
+	Optional<ArchiveDigTarget> target(final ArchiveSession session, final Path path, final Journal journal)
 			throws IOException {
 		Objects.requireNonNull(session, "session");
 		Objects.requireNonNull(path, "path");
-		Objects.requireNonNull(progressor, "progressor");
+		Objects.requireNonNull(journal, "journal");
 		final ArchiveFolder root = Objects.requireNonNull(session.root(), "session.root()");
 		final Path normalizedRoot = root.path().normalize();
 		final Path normalizedPath = path.normalize();
@@ -128,7 +164,7 @@ public class ArchiveDigger {
 
 		ArchiveFolder current = root;
 		for (final Path folderName : normalizedRoot.relativize(normalizedPath)) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			final Path expected = current.path().resolve(folderName).normalize();
 			final Optional<ArchiveFolder> child = sourceListing(session, current).folders().stream()
 					.filter(candidate -> candidate.path().normalize().equals(expected)).findFirst();
@@ -140,10 +176,10 @@ public class ArchiveDigger {
 		return Optional.of(new ArchiveDigTarget(session, root, current));
 	}
 
-	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Progressor progressor) throws IOException {
+	ArchiveDigPlan plan(final Collection<ArchiveDigTarget> targets, final Journal journal) throws IOException {
 		Objects.requireNonNull(targets, "targets");
-		Objects.requireNonNull(progressor, "progressor");
-		progressor.throwIfCancelled();
+		Objects.requireNonNull(journal, "journal");
+		journal.throwIfCancelled();
 
 		final List<ArchiveDigPlan.Region> initialRegions = new ArrayList<>();
 		for (final ArchiveDigTarget target : targets) {
@@ -157,10 +193,10 @@ public class ArchiveDigger {
 		final Map<ArchiveDigPlan.FolderKey, FolderListing> analyzedListings = new LinkedHashMap<>();
 		List<ArchiveDigPlan.Region> frontier = initialRegions;
 		int depth = 0;
-		reportPlanning(progressor, depth, frontier.size(), false);
+		reportPlanning(journal, depth, frontier.size(), false);
 
 		while (frontier.size() < planning.targetRegions() && depth < planning.maximumDepth()) {
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 
 			final Set<ArchiveDigPlan.FolderKey> unanalyzed = frontier.stream().map(ArchiveDigPlan.Region::key)
 					.filter(key -> !analyzedListings.containsKey(key))
@@ -173,7 +209,7 @@ public class ArchiveDigger {
 			final List<ArchiveDigPlan.Region> next = new ArrayList<>();
 			boolean expanded = false;
 			for (final ArchiveDigPlan.Region region : frontier) {
-				progressor.throwIfCancelled();
+				journal.throwIfCancelled();
 				FolderListing listing = analyzedListings.get(region.key());
 				if (listing == null) {
 					listing = list(region.session(), region.folder());
@@ -192,13 +228,13 @@ public class ArchiveDigger {
 
 			depth++;
 			frontier = next;
-			reportPlanning(progressor, depth, frontier.size(), false);
+			reportPlanning(journal, depth, frontier.size(), false);
 			if (!expanded) {
 				break;
 			}
 		}
 
-		reportPlanning(progressor, depth, frontier.size(), true);
+		reportPlanning(journal, depth, frontier.size(), true);
 		return new ArchiveDigPlan(analyzedListings, frontier, depth);
 	}
 
@@ -207,12 +243,12 @@ public class ArchiveDigger {
 		return elapsed.compareTo(planning.maximumDuration()) >= 0;
 	}
 
-	private static void reportPlanning(final Progressor progressor, final int depth, final int regions,
+	private static void reportPlanning(final Journal journal, final int depth, final int regions,
 			final boolean complete) {
 		final String message = complete
 				? "Crawl planning complete at depth " + depth + ": " + regions + " approximate archive regions."
 				: "Planning crawl depth " + depth + ": " + regions + " candidate archive regions.";
-		progressor.indeterminate(ProgressStage.PLANNING, message);
+		journal.indeterminate(CrawlProgressStages.PLANNING, message);
 	}
 
 	private FolderListing list(final ArchiveSession session, final ArchiveFolder folder) throws IOException {
@@ -249,40 +285,92 @@ public class ArchiveDigger {
 
 	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Journal journal)
 			throws IOException {
-		return dig(target, plan, Instant.now(), journal);
+		final Clock clock = Clock.systemUTC();
+		return dig(target, plan, clock.instant(), clock, journal);
 	}
 
-	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawledAt,
-			final Journal journal) throws IOException {
+	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawlStartedAt,
+			final Clock clock, final Journal journal) throws IOException {
 		Objects.requireNonNull(target, "target");
-		Objects.requireNonNull(crawledAt, "crawledAt");
+		Objects.requireNonNull(crawlStartedAt, "crawlStartedAt");
+		Objects.requireNonNull(clock, "clock");
 		Objects.requireNonNull(journal, "journal");
 		if (!target.folder().path().normalize().startsWith(target.root().path().normalize())) {
 			throw new IllegalArgumentException("Expected archive path '" + target.folder().path()
 					+ "' to be below root '" + target.root().path() + "'.");
 		}
-		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, journal, false).node();
+		return digFolder(target.session(), target.root(), target.folder(), plan, crawlStartedAt, clock, journal, false)
+				.node();
 	}
 
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
-		final String archiveId = descriptor.id().value();
 		final String relative = root.path().relativize(folder.path()).toString().replace('\\', '/');
-		final String basis = archiveId + "::" + relative;
+		final String basis = archiveId.value() + "::" + relative;
 		final byte[] hash = Hashes.sha256(basis);
 		final String id = Hashes.toHex(hash, 16);
 
 		return Clues.of(Clue.internal(InternalClueKeys.ID, id), Clue.internal(InternalClueKeys.FOLDER, folder.name()));
 	}
 
+	private Clues findClues(final ArchiveFolderView folder, final Journal journal,
+			final Consumer<ClueFindingException> failures) {
+		final ClueAccumulator clues = Clues.accumulator();
+		for (final ClueFinder finder : clueFinders) {
+			journal.throwIfCancelled();
+			final String finderName = finder.getClass().getSimpleName();
+			try {
+				final Clues found = Objects.requireNonNull(finder.find(folder), "finder.find(folder)");
+				requireReadableSources(found, folder);
+				clues.foundBy(finderName).addAll(found);
+			} catch (final ProgressCancelledException cancelled) {
+				throw cancelled;
+			} catch (final RuntimeException failure) {
+				failures.accept(ClueFindingException.from(finderName, folder.ari(), failure));
+			}
+		}
+		return clues.clues();
+	}
+
+	private static Set<ARI> readableSources(final ArchiveFolderView folder) {
+		final Set<ARI> sources = new HashSet<>();
+		collectReadableSources(folder, sources);
+		return Set.copyOf(sources);
+	}
+
+	private static void collectReadableSources(final ArchiveFolderView folder, final Set<ARI> sources) {
+		sources.add(folder.ari());
+		folder.files().forEach(file -> sources.add(file.ari()));
+		folder.folders().forEach(child -> collectReadableSources(child, sources));
+	}
+
+	private static void requireReadableSources(final Clues clues, final ArchiveFolderView folder) {
+		final ARI candidateFolder = folder.ari();
+		Set<ARI> readable = null;
+		for (final Clue clue : clues) {
+			for (final ARI source : clue.sources()) {
+				if (candidateFolder.equals(source)) {
+					continue;
+				}
+				if (readable == null) {
+					readable = readableSources(folder);
+				}
+				if (!readable.contains(source)) {
+					throw new IllegalArgumentException("Clue '" + clue.key() + "' declares source '" + source
+							+ "', which is not present in the pruned archive view rooted at '" + candidateFolder
+							+ "'.");
+				}
+			}
+		}
+	}
+
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
-			final ArchiveDigPlan plan, final Instant crawledAt, final Journal journal, final boolean parentInsideRegion)
-			throws IOException {
-		final Progressor progressor = journal.progressor();
+			final ArchiveDigPlan plan, final Instant crawlStartedAt, final Clock clock, final Journal journal,
+			final boolean parentInsideRegion) throws IOException {
 		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
-		progressor.throwIfCancelled();
+		journal.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(session, folder);
 		final boolean insideRegion = parentInsideRegion || startsRegion;
-		plan.reportCurrent(folder, insideRegion, progressor);
+		plan.reportCurrent(folder, insideRegion, journal);
 
 		FolderListing found = plan.listing(session, folder).orElse(null);
 		if (found == null) {
@@ -290,27 +378,18 @@ public class ArchiveDigger {
 		}
 		final FolderListing listing = found;
 
-		final Path relativeFolder = root.path().relativize(folder.path());
-		final int failuresBeforeFinding = journal.failureCount();
-		final Clues localClues = clueFinder.find(folder, listing.files(), session, progressor,
-				failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
-		boolean failed = journal.failureCount() > failuresBeforeFinding;
-		progressor.throwIfCancelled();
-
 		final List<DigResult> children = new ArrayList<>();
 		for (final ArchiveFolder child : listing.folders()) {
-			children.add(digFolder(session, root, child, plan, crawledAt, journal, insideRegion));
+			children.add(digFolder(session, root, child, plan, crawlStartedAt, clock, journal, insideRegion));
 		}
 
-		final ArchiveFolderView folderView = folderView(session, folder, listing.files(), children, progressor);
-		Clues clues = localClues;
-		if (!failed) {
-			final int failuresBeforeEnriching = journal.failureCount();
-			clues = clueFinder.enrich(localClues, folderView, progressor,
-					failure -> journal.record(failure.in(descriptor.id(), relativeFolder)));
-			failed = journal.failureCount() > failuresBeforeEnriching;
-		}
-		progressor.throwIfCancelled();
+		final Path relativeFolder = root.path().relativize(folder.path());
+		final ArchiveFolderView folderView = folderView(session, folder, relativeFolder, listing.files(), children,
+				journal);
+		final int failuresBeforeFinding = journal.failureCount();
+		final Clues clues = findClues(folderView, journal, journal::record);
+		final boolean failed = journal.failureCount() > failuresBeforeFinding;
+		journal.throwIfCancelled();
 
 		Artifact artifact = null;
 		FolderOutcome outcome;
@@ -330,28 +409,29 @@ public class ArchiveDigger {
 				logger.info("Found artifact at: " + relativeFolder);
 			} catch (final DuplicateClueException duplicate) {
 				// A synthetic clue collided; no finder was reading anything.
-				journal.record(new ClueFindingException(duplicate.getMessage(), null, duplicate).in(descriptor.id(),
-						relativeFolder));
+				journal.record(ClueFindingException.from(null, folderView.ari(), duplicate));
 				outcome = new FolderOutcome.Failed();
 			}
 		}
 
+		if (startsRegion) {
+			plan.completeRegion(folder, journal);
+		}
 		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
 		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
-		final ArchiveNode result = new ArchiveNode(pathName, crawledAt, artifact, effectiveChildren);
-		if (startsRegion) {
-			plan.completeRegion(folder, progressor);
-		}
+		final ArchiveNode result = new ArchiveNode(pathName, crawlStartedAt, clock.instant(), artifact,
+				effectiveChildren);
 		return new DigResult(result, outcome);
 	}
 
-	private static ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
-			final List<ArchiveFile> files, final List<DigResult> children, final Progressor progressor) {
+	private ArchiveFolderView folderView(final ArchiveSession session, final ArchiveFolder folder,
+			final Path relativeFolder, final List<ArchiveFile> files, final List<DigResult> children,
+			final Journal journal) {
 		/*
 		 * Children are pruned deliberately, not as an optimization. The archive
-		 * tree expresses gear containment, never gear type, so a tree finder
-		 * may descend through non-gear subfolders belonging to one item but
-		 * must never reach into another piece of gear and absorb its identity.
+		 * tree expresses gear containment, never gear type, so a finder may
+		 * descend through non-gear subfolders belonging to one item but must
+		 * never reach into another piece of gear and absorb its identity.
 		 * Removing this filter would let a parent be classified by what its
 		 * children are.
 		 *
@@ -367,14 +447,15 @@ public class ArchiveDigger {
 				case FolderOutcome.Failed ignored -> Stream.<ArchiveFolderView> empty();
 				}).toList();
 		final List<ArchiveFileView> fileViews = files.stream()
-				.map(file -> new DefaultArchiveFileView(session, file, progressor)).map(ArchiveFileView.class::cast)
-				.toList();
-		return new DefaultArchiveFolderView(folder.name(), metadataFolders, fileViews);
+				.map(file -> new DefaultArchiveFileView(archive.ariFrom(relativeFolder.resolve(file.name())), session,
+						file, journal))
+				.map(ArchiveFileView.class::cast).toList();
+		return new DefaultArchiveFolderView(archive.ariFrom(relativeFolder), folder.name(), metadataFolders, fileViews);
 	}
 
 	/**
 	 * What the crawl established about one folder, and with it whatever an
-	 * ancestor's tree finder is allowed to read from that folder.
+	 * ancestor's finder is allowed to read from that folder.
 	 * <p>
 	 * Metadata status is established, never inferred, and the readable view
 	 * travels with the finding rather than beside it. A folder that established
@@ -391,7 +472,7 @@ public class ArchiveDigger {
 
 		/**
 		 * Positively read, no clue found: the folder holds no item of its own,
-		 * so an ancestor's tree finder may read through it.
+		 * so an ancestor's finder may read through it.
 		 */
 		record MetadataFolder(ArchiveFolderView view) implements FolderOutcome {
 		}
@@ -414,23 +495,25 @@ public class ArchiveDigger {
 	private record DigResult(ArchiveNode node, FolderOutcome outcome) {
 	}
 
-	private record DefaultArchiveFolderView(String name, List<ArchiveFolderView> folders, List<ArchiveFileView> files)
-			implements ArchiveFolderView {
+	private record DefaultArchiveFolderView(ARI ari, String name, List<ArchiveFolderView> folders,
+			List<ArchiveFileView> files) implements ArchiveFolderView {
 
 		private DefaultArchiveFolderView {
+			Objects.requireNonNull(ari, "ari");
 			Objects.requireNonNull(name, "name");
 			folders = List.copyOf(Objects.requireNonNull(folders, "folders"));
 			files = List.copyOf(Objects.requireNonNull(files, "files"));
 		}
 	}
 
-	private record DefaultArchiveFileView(ArchiveSession session, ArchiveFile file, Progressor progressor)
+	private record DefaultArchiveFileView(ARI ari, ArchiveSession session, ArchiveFile file, Journal journal)
 			implements ArchiveFileView {
 
 		private DefaultArchiveFileView {
+			Objects.requireNonNull(ari, "ari");
 			Objects.requireNonNull(session, "session");
 			Objects.requireNonNull(file, "file");
-			Objects.requireNonNull(progressor, "progressor");
+			Objects.requireNonNull(journal, "journal");
 		}
 
 		@Override
@@ -441,13 +524,18 @@ public class ArchiveDigger {
 		@Override
 		public <T> Optional<T> peek(final Function<? super InputStream, ? extends T> inspector) {
 			Objects.requireNonNull(inspector, "inspector");
-			progressor.throwIfCancelled();
+			journal.throwIfCancelled();
 			try {
 				final Optional<T> result = session.access(file, inspector::apply);
-				progressor.throwIfCancelled();
+				journal.throwIfCancelled();
 				return result;
+			} catch (final ProgressCancelledException cancelled) {
+				throw cancelled;
 			} catch (final IOException e) {
-				throw new ClueFileIOException("Could not inspect clue file at: " + file.path(), e);
+				throw ClueFindingException.at(ari,
+						new ClueFileIOException("Could not inspect clue file at: " + ari, e));
+			} catch (final RuntimeException failure) {
+				throw ClueFindingException.at(ari, failure);
 			}
 		}
 	}

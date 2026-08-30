@@ -25,11 +25,12 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFactCatalog;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.gear.GearResolver;
 import com.retrocrawler.core.gear.GearResolverFactory;
 import com.retrocrawler.core.gear.TypeSource;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
 import com.retrocrawler.core.gear.parser.FactCatalogConfiguration;
@@ -50,18 +51,18 @@ public final class Model {
 
 	private final String collectionId;
 	private final String collectionName;
-	private final ArchiveFolderClueFinder archiveFolderClueFinder;
+	private final List<ClueFinder> clueFinders;
 	private final Configuration configuration;
 	private final GearResolver gearResolver;
 	private final Path workingDirectory;
 	private final List<ArchivePathFilter> pathFilters;
 
-	private Model(final String collectionId, final String collectionName,
-			final ArchiveFolderClueFinder archiveFolderClueFinder, final Configuration configuration,
-			final GearResolver gearResolver, final Path workingDirectory, final List<ArchivePathFilter> pathFilters) {
+	private Model(final String collectionId, final String collectionName, final List<ClueFinder> clueFinders,
+			final Configuration configuration, final GearResolver gearResolver, final Path workingDirectory,
+			final List<ArchivePathFilter> pathFilters) {
 		this.collectionId = Objects.requireNonNull(collectionId, "collectionId");
 		this.collectionName = Objects.requireNonNull(collectionName, "collectionName");
-		this.archiveFolderClueFinder = Objects.requireNonNull(archiveFolderClueFinder, "archiveFolderClueFinder");
+		this.clueFinders = List.copyOf(Objects.requireNonNull(clueFinders, "clueFinders"));
 		this.configuration = Objects.requireNonNull(configuration, "configuration");
 		this.gearResolver = Objects.requireNonNull(gearResolver, "gearResolver");
 		this.workingDirectory = workingDirectory;
@@ -113,12 +114,20 @@ public final class Model {
 		return Optional.ofNullable(workingDirectory);
 	}
 
-	public ArchiveFolderClueFinder archiveFolderClueFinder() {
-		return archiveFolderClueFinder;
+	/**
+	 * The clue finders applied to every candidate folder, in declaration order.
+	 */
+	public List<ClueFinder> clueFinders() {
+		return clueFinders;
 	}
 
 	public Configuration configuration() {
 		return configuration;
+	}
+
+	/** Every structured filter derived from the model's semantic Fact keys. */
+	public List<FilterDefinition<?>> filters() {
+		return gearResolver.filters();
 	}
 
 	GearResolver gearResolver() {
@@ -157,7 +166,12 @@ public final class Model {
 				declaration.type(), runtimeCatalogConfigurations);
 		final Configuration configuration = effectiveConfiguration(collection, runtimeConfiguration);
 		final RetroFactDefaultParser defaultParsers = declaration.type().getAnnotation(RetroFactDefaultParser.class);
-		final ArchiveFolderClueFinder clueFinder = ArchiveFolderClueFinder.of(clues);
+		final List<ClueFinder> clueFinders = Arrays.stream(clues.value()).map(Reflection::newInstance)
+				.map(ClueFinder.class::cast).toList();
+		if (clueFinders.isEmpty()) {
+			throw new IllegalArgumentException(TypeName.simple(RetroClues.class) + " on " + declaration.type().getName()
+					+ " requires at least one clue finder.");
+		}
 		final GearResolver gearResolver = GEAR_RESOLVER_FACTORY.reflectOn(immutableTypes, workingDirectory,
 				catalogConfigurations, defaultParsers, runtimeParserFactories);
 
@@ -166,7 +180,7 @@ public final class Model {
 			throw new IllegalArgumentException(TypeName.simple(RetroCollection.class) + " requires a collection id.");
 		}
 		final String collectionName = collection.name().isBlank() ? collectionId : collection.name().trim();
-		return new Model(collectionId, collectionName, clueFinder, configuration, gearResolver, workingDirectory,
+		return new Model(collectionId, collectionName, clueFinders, configuration, gearResolver, workingDirectory,
 				pathFilters);
 	}
 

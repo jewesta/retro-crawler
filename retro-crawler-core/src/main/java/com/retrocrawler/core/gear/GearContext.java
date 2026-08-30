@@ -5,13 +5,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.util.RetroAttribute;
 
-public record GearContext(Class<?> gearType, Artifact artifact, RetroAttributes attributes) {
+public record GearContext(Class<?> gearType, ARI source, Artifact artifact, RetroAttributes attributes) {
 
 	public GearContext {
 		Objects.requireNonNull(gearType, "gearType");
+		Objects.requireNonNull(source, "source");
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(attributes, "attributes");
 	}

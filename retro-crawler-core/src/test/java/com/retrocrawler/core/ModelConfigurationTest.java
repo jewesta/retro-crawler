@@ -24,13 +24,15 @@ import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
@@ -127,7 +129,7 @@ class ModelConfigurationTest {
 	}
 
 	@Test
-	void passesEffectiveConfigurationAndCurrentNodeToParsers() throws IOException {
+	void passesEffectiveConfigurationAndArtifactAriToParsers() throws IOException {
 		Files.createDirectory(archiveRoot.resolve("gear"));
 		final Clock fixedClock = Clock.fixed(FIXED_INSTANT, ZoneId.of("Europe/Berlin"));
 		final Model model = Model.builder().typesFrom(Set.of(RuntimeContextCollection.class, RuntimeContextGear.class))
@@ -135,33 +137,32 @@ class ModelConfigurationTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<RuntimeContextGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(),
-				RuntimeContextGear.class);
+		final List<RuntimeContextGear> gear = crawler.crawl(new Journal(), ReindexScope.all())
+				.query(RuntimeContextGear.class).pull().gear();
 
 		assertEquals(1, gear.size());
 		final ParseContext context = RecordingParser.observedContext;
 		assertSame(model.configuration(), context.config());
-		assertEquals(archiveRoot, context.currentNode().archiveRoot());
-		assertEquals(archiveRoot.resolve("gear"), context.currentNode().path());
+		assertEquals(ARI.of("runtime_context", ARCHIVE_ID, Path.of("gear")), context.source());
 	}
 
 	@RetroCollection(id = "default_configuration")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class DefaultConfigurationCollection {
 	}
 
 	@RetroCollection(id = "annotated_configuration", locale = "de-DE", timeZone = "Europe/Berlin")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class AnnotatedConfigurationCollection {
 	}
 
 	@RetroCollection(id = "invalid_locale", locale = "de_DE")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class InvalidLocaleCollection {
 	}
 
 	@RetroCollection(id = "invalid_time_zone", timeZone = "Mars/Olympus")
-	@RetroClues(fromFolderName = EmptyClueFinder.class)
+	@RetroClues(EmptyClueFinder.class)
 	public static final class InvalidTimeZoneCollection {
 	}
 
@@ -173,7 +174,7 @@ class ModelConfigurationTest {
 	}
 
 	@RetroCollection(id = "runtime_context")
-	@RetroClues(fromFolderName = RuntimeContextClueFinder.class)
+	@RetroClues(RuntimeContextClueFinder.class)
 	public static final class RuntimeContextCollection {
 	}
 
@@ -184,18 +185,19 @@ class ModelConfigurationTest {
 		private String observed;
 	}
 
-	public static final class EmptyClueFinder implements FolderNameClueFinder {
+	public static final class EmptyClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}
 
-	public static final class RuntimeContextClueFinder implements FolderNameClueFinder {
+	public static final class RuntimeContextClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			return "gear".equals(folderName) ? Clues.of(Clue.of("observed", "value")) : Clues.none();
 		}
 	}

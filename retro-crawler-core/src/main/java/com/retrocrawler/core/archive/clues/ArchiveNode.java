@@ -10,18 +10,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * One folder in the persisted archive tree.
  * <p>
- * {@link #crawledAt()} records the operation that most recently crawled this
- * complete subtree. Partial reindexing replaces the selected subtree with newly
- * timestamped nodes while retaining the timestamps of its ancestors and
- * untouched siblings.
+ * {@link #crawlStartedAt()} identifies the operation that most recently crawled
+ * this complete subtree. {@link #observedAt()} records when this particular
+ * folder had been fully inspected, including its children. Partial reindexing
+ * replaces the selected subtree with newly timestamped nodes while retaining
+ * the timestamps of its ancestors and untouched siblings.
  */
 public class ArchiveNode {
 
 	@JsonProperty("folder")
 	private final String folder;
 
-	@JsonProperty("crawledAt")
-	private final Instant crawledAt;
+	@JsonProperty("crawlStartedAt")
+	private final Instant crawlStartedAt;
+
+	@JsonProperty("observedAt")
+	private final Instant observedAt;
 
 	@JsonProperty("artifact")
 	private final Artifact artifact;
@@ -30,13 +34,21 @@ public class ArchiveNode {
 	private final List<ArchiveNode> children;
 
 	@JsonCreator
-	public ArchiveNode(@JsonProperty("folder") final String folder, @JsonProperty("crawledAt") final Instant crawledAt,
-			@JsonProperty("artifact") final Artifact artifact,
+	public ArchiveNode(@JsonProperty("folder") final String folder,
+			@JsonProperty("crawlStartedAt") final Instant crawlStartedAt,
+			@JsonProperty("observedAt") final Instant observedAt, @JsonProperty("artifact") final Artifact artifact,
 			@JsonProperty("children") final List<ArchiveNode> children) {
 		this.folder = Objects.requireNonNull(folder, "folder");
-		this.crawledAt = Objects.requireNonNull(crawledAt, "crawledAt");
+		this.crawlStartedAt = Objects.requireNonNull(crawlStartedAt, "crawlStartedAt");
+		this.observedAt = Objects.requireNonNull(observedAt, "observedAt");
 		this.artifact = artifact;
 		this.children = children;
+	}
+
+	/** Creates a node whose observation time equals its crawl start. */
+	public ArchiveNode(final String folder, final Instant crawlStartedAt, final Artifact artifact,
+			final List<ArchiveNode> children) {
+		this(folder, crawlStartedAt, crawlStartedAt, artifact, children);
 	}
 
 	/** Creates a standalone node timestamped at construction time. */
@@ -52,8 +64,12 @@ public class ArchiveNode {
 		return folder;
 	}
 
-	public Instant crawledAt() {
-		return crawledAt;
+	public Instant crawlStartedAt() {
+		return crawlStartedAt;
+	}
+
+	public Instant observedAt() {
+		return observedAt;
 	}
 
 	public List<ArchiveNode> children() {

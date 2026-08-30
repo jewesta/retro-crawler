@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -22,9 +24,9 @@ import com.retrocrawler.core.CrawlException;
 import com.retrocrawler.core.FailureMode;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.progress.ProgressCancelledException;
@@ -55,7 +57,8 @@ class ArchiveManagerTest {
 		final Path configuredRoot = temporaryDirectory.resolve("desktop-mount");
 		final ArchiveDescriptor descriptor = descriptor(configuredRoot);
 		final ArchiveNode storedRoot = new ArchiveNode(".", null, null);
-		final Archive stored = Archive.of(descriptor.id(), Path.of("/nas-container/archive"), storedRoot);
+		final Archive stored = Archive.of("test_collection", descriptor.id(), Path.of("/nas-container/archive"),
+				storedRoot);
 		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
 
 		final Archive rebound = manager(descriptor, repository).archive(journal, ReindexScope.none());
@@ -78,6 +81,24 @@ class ArchiveManagerTest {
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 		assertSame(result, repository.stowedAway);
+		assertEquals("test_collection", result.collectionId());
+	}
+
+	@Test
+	void sharesOneCrawlStartAndObservesFoldersBottomUp() throws IOException {
+		final Instant crawlStartedAt = Instant.parse("2026-08-30T08:00:00Z");
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		Files.createDirectory(archiveDirectory.resolve("child"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final Clock clock = new AdvancingClock(crawlStartedAt, Duration.ofSeconds(1), ZoneOffset.UTC);
+
+		final Archive archive = manager(descriptor, new RecordingRepository(Optional.empty()), clock)
+				.archive(new Journal(), ReindexScope.all());
+
+		assertEquals(crawlStartedAt, archive.root().crawlStartedAt());
+		assertEquals(crawlStartedAt, node(archive, "child").crawlStartedAt());
+		assertEquals(crawlStartedAt.plusSeconds(1), node(archive, "child").observedAt());
+		assertEquals(crawlStartedAt.plusSeconds(2), archive.root().observedAt());
 	}
 
 	@Test
@@ -105,6 +126,23 @@ class ArchiveManagerTest {
 
 		final Archive result = manager.archive(journal, ReindexScope.none());
 
+		assertEquals(1, repository.retrieveCount);
+		assertEquals(1, repository.stowawayCount);
+		assertSame(result, repository.stowedAway);
+	}
+
+	@Test
+	void archiveFromAnotherCollectionIsCrawledAgain() throws IOException {
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final Archive stored = Archive.of("another_collection", descriptor.id(), archiveDirectory,
+				new ArchiveNode(".", null, null));
+		final RecordingRepository repository = new RecordingRepository(Optional.of(stored));
+		final ArchiveManager manager = manager(descriptor, repository);
+
+		final Archive result = manager.archive(journal, ReindexScope.none());
+
+		assertEquals("test_collection", result.collectionId());
 		assertEquals(1, repository.retrieveCount);
 		assertEquals(1, repository.stowawayCount);
 		assertSame(result, repository.stowedAway);
@@ -141,10 +179,10 @@ class ArchiveManagerTest {
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
 		final Journal cancellingJournal = new Journal();
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
-			cancellingJournal.progressor().cancel("Stop.");
-			return Clues.of(Clue.of("folder", folder));
-		}, List.of(), List.of());
+		final ClueFinder clueFinder = new TestClueFinder(folder -> {
+			cancellingJournal.cancel("Stop.");
+			return Clues.of(Clue.of("folder", folder.name()));
+		});
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder),
 				new CrawlPlanning(1, 0, 1, java.time.Duration.ofSeconds(1)));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
@@ -159,9 +197,9 @@ class ArchiveManagerTest {
 		Files.createDirectory(archiveDirectory.resolve("broken"));
 		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
 		final RecordingRepository repository = new RecordingRepository(Optional.empty());
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(folder -> {
+		final ClueFinder clueFinder = new TestClueFinder(folder -> {
 			throw new IllegalStateException("Finder broke at " + folder);
-		}, List.of(), List.of());
+		});
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		final ArchiveManager manager = new ArchiveManager(descriptor, digger, repository);
 		final Journal failLate = new Journal(FailureMode.FAIL_LATE);
@@ -224,10 +262,12 @@ class ArchiveManagerTest {
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(originalSelectedId, technicalId(node(refreshed, "selected")));
-		assertEquals(fullCrawl, refreshed.root().crawledAt());
-		assertEquals(fullCrawl, node(refreshed, "untouched").crawledAt());
-		assertEquals(partialCrawl, node(refreshed, "selected").crawledAt());
-		assertEquals(partialCrawl, node(refreshed, "selected", "renamed").crawledAt());
+		assertEquals(fullCrawl, refreshed.root().crawlStartedAt());
+		assertEquals(fullCrawl, refreshed.root().observedAt());
+		assertEquals(fullCrawl, node(refreshed, "untouched").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected", "renamed").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected").observedAt());
 	}
 
 	@Test
@@ -249,7 +289,7 @@ class ArchiveManagerTest {
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "second")));
-		assertEquals(node(refreshed, "first").crawledAt(), node(refreshed, "second").crawledAt());
+		assertEquals(node(refreshed, "first").crawlStartedAt(), node(refreshed, "second").crawlStartedAt());
 		assertEquals(2, repository.stowawayCount);
 	}
 
@@ -333,7 +373,7 @@ class ArchiveManagerTest {
 	}
 
 	private static Archive emptyStoredArchive(final ArchiveDescriptor descriptor) {
-		return Archive.of(descriptor.id(), descriptor.root(), new ArchiveNode(".", null, null));
+		return Archive.of("test_collection", descriptor.id(), descriptor.root(), new ArchiveNode(".", null, null));
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository) {
@@ -341,10 +381,41 @@ class ArchiveManagerTest {
 	}
 
 	private ArchiveManager manager(final ArchiveDescriptor descriptor, final Repository repository, final Clock clock) {
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(
-				folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of());
+		final ClueFinder clueFinder = new TestClueFinder(folder -> Clues.of(Clue.of("folder", folder.name())));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);
+	}
+
+	private static final class AdvancingClock extends Clock {
+
+		private Instant next;
+
+		private final Duration step;
+
+		private final ZoneId zone;
+
+		private AdvancingClock(final Instant first, final Duration step, final ZoneId zone) {
+			next = first;
+			this.step = step;
+			this.zone = zone;
+		}
+
+		@Override
+		public ZoneId getZone() {
+			return zone;
+		}
+
+		@Override
+		public Clock withZone(final ZoneId requestedZone) {
+			return new AdvancingClock(next, step, requestedZone);
+		}
+
+		@Override
+		public Instant instant() {
+			final Instant result = next;
+			next = next.plus(step);
+			return result;
+		}
 	}
 
 	private static final class RecordingRepository implements Repository {

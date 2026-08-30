@@ -13,6 +13,11 @@ import org.junit.jupiter.api.Test;
 
 class ProgressorTest {
 
+	private static final ProgressStage PREPARING = ProgressStage.of("PREPARING");
+	private static final ProgressStage WORKING = ProgressStage.of("WORKING");
+	private static final ProgressStage FINALIZING = ProgressStage.of("FINALIZING");
+	private static final ProgressStage VERIFYING = ProgressStage.of("VERIFYING");
+
 	@Test
 	void publishesStructuredSnapshotsAndMessageOnlyObservations() {
 		final List<String> messages = new ArrayList<>();
@@ -20,12 +25,12 @@ class ProgressorTest {
 		final Progressor progressor = Progressor.reportingMessages(messages::add)
 				.withMonitor(progress -> snapshots.add(progress.snapshot()));
 
-		progressor.begin(ProgressStage.CRAWLING, "Starting.", 10, ProgressAccuracy.APPROXIMATE);
+		progressor.begin(WORKING, "Starting.", 10, ProgressAccuracy.APPROXIMATE);
 		progressor.advanceTo(1, "Region 2 of 10.");
 
 		final ProgressSnapshot progress = snapshots.getLast();
 		assertEquals(List.of("Starting.", "Region 2 of 10."), messages);
-		assertEquals(ProgressStage.CRAWLING, progress.stage());
+		assertEquals(WORKING, progress.stage());
 		assertEquals(ProgressAccuracy.APPROXIMATE, progress.accuracy());
 		assertEquals(1, progress.completed());
 		assertEquals(10, progress.total());
@@ -91,7 +96,7 @@ class ProgressorTest {
 
 	@Test
 	void dummyProgressorDoesNothingAndReturnsDummyChildren() {
-		Progressor.DUMMY.begin(ProgressStage.CRAWLING, "Ignored.", 10, ProgressAccuracy.EXACT).advanceToEnd();
+		Progressor.DUMMY.begin(WORKING, "Ignored.", 10, ProgressAccuracy.EXACT).advanceToEnd();
 
 		assertEquals(0, Progressor.DUMMY.progress());
 		assertTrue(java.util.Arrays.stream(Progressor.DUMMY.splitIntoEqualParts(3))
@@ -103,7 +108,7 @@ class ProgressorTest {
 		final List<ProgressSnapshot> snapshots = new ArrayList<>();
 		final Progressor progressor = Progressor.observing(progress -> snapshots.add(progress.snapshot()));
 
-		progressor.indeterminate(ProgressStage.PLANNING, "Planning.");
+		progressor.indeterminate(PREPARING, "Preparing.");
 		progressor.cancel("Stopping.");
 		progressor.cancel("Ignored.");
 
@@ -112,15 +117,14 @@ class ProgressorTest {
 		assertEquals(ProgressState.CANCELLED, snapshots.getLast().state());
 		assertEquals("Stopping.", snapshots.getLast().message());
 		assertThrows(ProgressCancelledException.class, progressor::throwIfCancelled);
-		assertThrows(ProgressCancelledException.class,
-				() -> progressor.indeterminate(ProgressStage.CRAWLING, "Ignored."));
+		assertThrows(ProgressCancelledException.class, () -> progressor.indeterminate(WORKING, "Ignored."));
 	}
 
 	@Test
 	void representsIndeterminateProgressWithoutInventingAStageFractionOrEta() {
 		final Progressor progressor = Progressor.create();
 
-		progressor.indeterminate(ProgressStage.PLANNING, "Planning.");
+		progressor.indeterminate(PREPARING, "Preparing.");
 
 		final ProgressSnapshot progress = progressor.snapshot();
 		assertFalse(progress.isDeterminate());
@@ -176,20 +180,21 @@ class ProgressorTest {
 		};
 		final Progressor progressor = Progressor.observing(monitor);
 
-		progressor.begin(ProgressStage.CRAWLING, "Starting.", 100, ProgressAccuracy.APPROXIMATE);
+		progressor.begin(WORKING, "Starting.", 100, ProgressAccuracy.APPROXIMATE);
 		progressor.advanceTo(10, "Same quarter.");
 		progressor.advanceTo(25, "Second quarter.");
-		progressor.indeterminate(ProgressStage.STOWING, "Stowing.");
+		progressor.indeterminate(FINALIZING, "Finalizing.");
 		progressor.complete("Done.");
 
-		assertEquals(List.of("CRAWLING:0:RUNNING", "CRAWLING:1:RUNNING", "STOWING:-1:RUNNING", "STOWING:-1:COMPLETE"),
+		assertEquals(
+				List.of("WORKING:0:RUNNING", "WORKING:1:RUNNING", "FINALIZING:-1:RUNNING", "FINALIZING:-1:COMPLETE"),
 				observations);
 	}
 
 	@Test
 	void reportsCompleteAndFailedTerminalStates() {
 		final Progressor complete = Progressor.create();
-		complete.begin(ProgressStage.RESOLVING, "Resolving.", 2, ProgressAccuracy.EXACT).advanceTo(1, "One resolved.");
+		complete.begin(VERIFYING, "Verifying.", 2, ProgressAccuracy.EXACT).advanceTo(1, "One verified.");
 		complete.complete("Done.");
 
 		assertEquals(ProgressState.COMPLETE, complete.snapshot().state());
@@ -197,7 +202,7 @@ class ProgressorTest {
 		assertEquals(1, complete.snapshot().overallFraction());
 
 		final Progressor failed = Progressor.create();
-		failed.indeterminate(ProgressStage.STOWING, "Stowing.");
+		failed.indeterminate(FINALIZING, "Finalizing.");
 		failed.fail("Repository unavailable.");
 
 		assertEquals(ProgressState.FAILED, failed.snapshot().state());

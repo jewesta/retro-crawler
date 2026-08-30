@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -23,17 +24,16 @@ import org.junit.jupiter.api.io.TempDir;
 import com.retrocrawler.core.FailureMode;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.ArchiveFileView;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.TreeClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 
-class ArchiveDiggerTreeClueFinderTest {
+class ArchiveDiggerFolderViewTest {
 
 	@TempDir
 	private Path root;
@@ -48,17 +48,17 @@ class ArchiveDiggerTreeClueFinderTest {
 
 		final List<String> inspectionOrder = new ArrayList<>();
 		final List<String> rootFolders = new ArrayList<>();
-		final TreeClueFinder treeFinder = folder -> {
+		final ClueFinder metadataFinder = new SecondTestClueFinder(folder -> {
 			inspectionOrder.add(folder.name());
 			if (folder.name().equals(root.getFileName().toString())) {
 				folder.folders().stream().map(ArchiveFolderView::name).forEach(rootFolders::add);
 			}
 			return originClues(folder);
-		};
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(
-				name -> "Child artifact".equals(name) ? Clues.of(Clue.of("kind", "part")) : Clues.none(), List.of(),
-				List.of(), List.of(treeFinder));
-		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
+		});
+		final ClueFinder nameFinder = new FirstTestClueFinder(
+				folder -> "Child artifact".equals(folder.name()) ? Clues.of(Clue.of("kind", "part")) : Clues.none());
+		final ArchiveDigger digger = new ArchiveDigger(
+				new TestArchiveDefinition(descriptor(), List.of(nameFinder, metadataFinder)));
 
 		final ArchiveNode archive = digger.dig(root, new Journal());
 
@@ -75,15 +75,14 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	@Test
-	void treeFinderAloneCanEstablishAnArtifact() throws IOException {
+	void aFinderCanEstablishAnArtifactFromTheMetadataSubtree() throws IOException {
 		Files.createDirectory(root.resolve("Kleinanzeigen"));
-		final TreeClueFinder treeFinder = folder -> folder.folders().stream()
-				.anyMatch(child -> "Kleinanzeigen".equals(child.name())) ? Clues.of(Clue.of("origin", "Kleinanzeigen"))
-						: Clues.none();
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(null, List.of(), List.of(),
-				List.of(treeFinder));
+		final ClueFinder metadataFinder = new TestClueFinder(
+				folder -> folder.folders().stream().anyMatch(child -> "Kleinanzeigen".equals(child.name()))
+						? Clues.of(Clue.of("origin", "Kleinanzeigen"))
+						: Clues.none());
 
-		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder)).dig(root,
+		final ArchiveNode archive = new ArchiveDigger(new TestArchiveDefinition(descriptor(), metadataFinder)).dig(root,
 				new Journal());
 
 		assertNotNull(archive.artifact());
@@ -92,29 +91,54 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	@Test
+	void rejectsASourceInsideAPrunedChildArtifact() throws IOException {
+		Files.createDirectory(root.resolve("Child artifact"));
+		final ARI childSource = ARI.of("test_collection", descriptor().id(), Path.of("Child artifact"));
+		final ClueFinder childFinder = new FirstTestClueFinder(
+				folder -> "Child artifact".equals(folder.name()) ? Clues.of(folder.clue("kind", "part"))
+						: Clues.none());
+		final ClueFinder parentFinder = new SecondTestClueFinder(
+				folder -> folder.name().equals(root.getFileName().toString())
+						? Clues.of(Clue.of("borrowed", "child evidence").from(childSource))
+						: Clues.none());
+		final ArchiveDigger digger = new ArchiveDigger(
+				new TestArchiveDefinition(descriptor(), List.of(childFinder, parentFinder)));
+
+		final ClueFindingException failure = assertThrows(ClueFindingException.class,
+				() -> digger.dig(root, new Journal()));
+
+		assertEquals("SecondTestClueFinder", failure.finder().orElseThrow());
+		assertEquals(ARI.of("test_collection", descriptor().id(), Path.of("")), failure.source().orElseThrow());
+		assertTrue(failure.getCause().getMessage().contains("Clue 'borrowed' declares source '" + childSource));
+		assertTrue(failure.getCause().getMessage().contains("not present in the pruned archive view"));
+	}
+
+	@Test
 	void failLateCrawlsChildrenButKeepsAFailedFolderOpaqueToItsParent() throws IOException {
 		final Path broken = Files.createDirectory(root.resolve("Broken artifact"));
 		Files.createDirectory(broken.resolve("Nested artifact"));
 		final IllegalStateException randomFailure = new IllegalStateException("Broken folder clue.");
 		final List<String> rootFolders = new ArrayList<>();
-		final ArchiveFolderClueFinder clueFinder = new ArchiveFolderClueFinder(name -> {
-			if ("Broken artifact".equals(name)) {
+		final ClueFinder artifactFinder = new FirstTestClueFinder(folder -> {
+			if ("Broken artifact".equals(folder.name())) {
 				throw randomFailure;
 			}
-			return "Nested artifact".equals(name) ? Clues.of(Clue.of("kind", "part")) : Clues.none();
-		}, List.of(), List.of(), List.of(folder -> {
+			return "Nested artifact".equals(folder.name()) ? Clues.of(Clue.of("kind", "part")) : Clues.none();
+		});
+		final ClueFinder boundaryObserver = new SecondTestClueFinder(folder -> {
 			if (folder.name().equals(root.getFileName().toString())) {
 				folder.folders().stream().map(ArchiveFolderView::name).forEach(rootFolders::add);
 			}
 			return Clues.none();
-		}));
+		});
 		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
-		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor(), clueFinder));
+		final ArchiveDigger digger = new ArchiveDigger(
+				new TestArchiveDefinition(descriptor(), List.of(artifactFinder, boundaryObserver)));
 		final ArchiveNode archive;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			archive = digger.dig(target, digger.plan(List.of(target), journal.progressor()), journal);
+			archive = digger.dig(target, digger.plan(List.of(target), journal), journal);
 		}
 
 		assertTrue(rootFolders.isEmpty());
@@ -124,7 +148,8 @@ class ArchiveDiggerTreeClueFinderTest {
 		assertEquals(1, journal.failureCount());
 		final ClueFindingException recorded = (ClueFindingException) journal.failures().getFirst();
 		assertEquals(descriptor().id(), recorded.archiveId().orElseThrow());
-		assertEquals(Path.of("Broken artifact"), recorded.folder().orElseThrow());
+		assertEquals(ARI.of("test_collection", descriptor().id(), Path.of("Broken artifact")),
+				recorded.source().orElseThrow());
 		assertSame(randomFailure, recorded.getCause());
 	}
 
@@ -136,7 +161,7 @@ class ArchiveDiggerTreeClueFinderTest {
 			}
 			for (final ArchiveFileView file : child.files()) {
 				if ("Konversation.txt".equals(file.name())) {
-					file.peek(this::read).ifPresent(value -> clues.add(Clue.of("origin-detail", value)));
+					file.peek(this::read).ifPresent(value -> clues.add(file.clue("origin-detail", value)));
 				}
 			}
 		}
@@ -152,7 +177,7 @@ class ArchiveDiggerTreeClueFinderTest {
 	}
 
 	private ArchiveDescriptor descriptor() {
-		return new ArchiveDescriptor(ArchiveId.of("tree_clue_finder_test"), "Tree clue finder test", root);
+		return new ArchiveDescriptor(ArchiveId.of("folder_view_test"), "Folder view test", root);
 	}
 
 	private static ArchiveNode child(final ArchiveNode parent, final String folder) {

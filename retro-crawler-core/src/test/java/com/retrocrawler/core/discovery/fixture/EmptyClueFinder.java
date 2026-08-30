@@ -1,15 +1,13 @@
 package com.retrocrawler.core.discovery.fixture;
 
-import java.util.Set;
-
-import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 
-public class EmptyClueFinder implements FolderNameClueFinder {
+public class EmptyClueFinder implements ClueFinder {
 
 	@Override
-	public Clues find(final String folderName) {
+	public Clues find(final ArchiveFolderView folder) {
 		return Clues.none();
 	}
 }

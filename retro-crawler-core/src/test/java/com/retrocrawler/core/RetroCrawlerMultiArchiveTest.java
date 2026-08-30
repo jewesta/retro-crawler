@@ -25,9 +25,10 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.archive.source.ArchiveFile;
 import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
 import com.retrocrawler.core.archive.source.ArchiveFolder;
@@ -53,13 +54,9 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
 
-		crawler.crawlGear(FIRST.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
-		assertTrue(secondSource.openedRoots.isEmpty());
-
-		crawler.crawlGear(SECOND.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
-
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
 		assertEquals(List.of(FIRST.id(), SECOND.id()), crawler.archives().stream().map(ArchiveDescriptor::id).toList());
 		assertEquals(SECOND, crawler.archive(SECOND.id()));
@@ -71,10 +68,9 @@ class RetroCrawlerMultiArchiveTest {
 				.archive(FIRST, contentSource(FIRST_ROOT, "first evidence"))
 				.archive(SECOND, contentSource(SECOND_ROOT, "second evidence")).build();
 
-		final Optional<String> first = crawler.inspect(crawler.identify(FIRST.id(), FIRST_ROOT.resolve("evidence.txt")),
+		final Optional<String> first = crawler.inspect(ari(FIRST, Path.of("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
-		final Optional<String> second = crawler.inspect(
-				crawler.identify(SECOND.id(), SECOND_ROOT.resolve("evidence.txt")),
+		final Optional<String> second = crawler.inspect(ari(SECOND, Path.of("evidence.txt")),
 				RetroCrawlerMultiArchiveTest::readString);
 
 		assertEquals(Optional.of("first evidence"), first);
@@ -87,8 +83,7 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
 
-		final Stash<RetroCrawlerBuilderTest.TestGear> stash = crawler.crawlAllStash(new Journal(), ReindexScope.all(),
-				RetroCrawlerBuilderTest.TestGear.class);
+		final Stash stash = crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -107,7 +102,7 @@ class RetroCrawlerMultiArchiveTest {
 		final Journal journal = new Journal(FailureMode.FAIL_LATE);
 
 		final CrawlException report = assertThrows(CrawlException.class,
-				() -> crawler.crawlAllGear(journal, ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class));
+				() -> crawler.crawl(journal, ReindexScope.all()));
 
 		assertEquals(List.of(FIRST_ROOT), firstSource.openedRoots);
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -123,12 +118,11 @@ class RetroCrawlerMultiArchiveTest {
 		final RecordingSource firstSource = new RecordingSource();
 		final RecordingSource secondSource = new RecordingSource();
 		final RetroCrawler crawler = crawler(firstSource, secondSource);
-		crawler.crawlAllGear(new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 		firstSource.openedRoots.clear();
 		secondSource.openedRoots.clear();
 
-		crawler.crawlAllGear(new Journal(), ReindexScope.subtree(crawler.identify(SECOND.id(), SECOND_ROOT)),
-				RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.subtree(ari(SECOND, Path.of(""))));
 
 		assertTrue(firstSource.openedRoots.isEmpty());
 		assertEquals(List.of(SECOND_ROOT), secondSource.openedRoots);
@@ -139,22 +133,10 @@ class RetroCrawlerMultiArchiveTest {
 		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
 		final ARI unknown = ARI.of(crawler.collectionId(), ArchiveId.of("third"), Path.of("subtree"));
 
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () -> crawler
-				.crawlAllGear(new Journal(), ReindexScope.subtree(unknown), RetroCrawlerBuilderTest.TestGear.class));
+		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
+				() -> crawler.crawl(new Journal(), ReindexScope.subtree(unknown)));
 
 		assertEquals("Unknown archive: third", failure.getMessage());
-	}
-
-	@Test
-	void rejectsASubtreeFromAnArchiveOutsideTheSelectedCrawl() {
-		final RetroCrawler crawler = crawler(new RecordingSource(), new RecordingSource());
-		final ARI secondRoot = crawler.identify(SECOND.id(), SECOND_ROOT);
-
-		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
-				() -> crawler.crawlGear(FIRST.id(), new Journal(), ReindexScope.subtree(secondRoot),
-						RetroCrawlerBuilderTest.TestGear.class));
-
-		assertEquals("ARI does not belong to an archive selected for this crawl: " + secondRoot, failure.getMessage());
 	}
 
 	@Test
@@ -173,7 +155,7 @@ class RetroCrawlerMultiArchiveTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model()).repository(new InMemoryRepository())
 				.archive(archive).build();
 
-		crawler.crawlGear(archive.id(), new Journal(), ReindexScope.all(), RetroCrawlerBuilderTest.TestGear.class);
+		crawler.crawl(new Journal(), ReindexScope.all());
 
 		assertEquals(List.of(archive), crawler.archives());
 	}
@@ -200,6 +182,10 @@ class RetroCrawlerMultiArchiveTest {
 
 	private static ArchiveDescriptor descriptor(final String id, final Path root) {
 		return new ArchiveDescriptor(ArchiveId.of(id), id, root);
+	}
+
+	private static ARI ari(final ArchiveDescriptor archive, final Path resourcePath) {
+		return ARI.of("factory_test", archive.id(), resourcePath);
 	}
 
 	private static ArchiveSource contentSource(final Path root, final String value) {
@@ -239,14 +225,15 @@ class RetroCrawlerMultiArchiveTest {
 	}
 
 	@RetroCollection(id = "failing_multi_archive_test")
-	@RetroClues(fromFolderName = ThrowingClueFinder.class)
+	@RetroClues(ThrowingClueFinder.class)
 	public static class FailingArchiveConfiguration {
 	}
 
-	public static class ThrowingClueFinder implements FolderNameClueFinder {
+	public static class ThrowingClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			throw new IllegalStateException("Unexpected clue-finder failure at " + folderName);
 		}
 	}

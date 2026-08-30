@@ -5,13 +5,13 @@ import java.util.Objects;
 /**
  * A position within one clue source, in the style of a parser diagnostic.
  * <p>
- * Only a {@link ClueFinder} can know this. The framework always knows which
- * folder was crawled, which finder ran, and which file it read, but it cannot
- * know where inside a folder name or a document an observation came from: a
- * finder normalizes what it reads, so the raw text is no longer searchable for
- * the resulting clue. A finder that tracks offsets anyway can hand them over
- * when it accumulates a clue, and a finder that does not simply reports
- * nothing — the surrounding context is reported either way.
+ * Only a {@link ClueFinder} can know this. The framework knows which folder was
+ * crawled and which finder ran, while the finder may explicitly retain the
+ * exact source ARI on its clue. It still cannot know where inside a folder name
+ * or document an observation came from: a finder normalizes what it reads, so
+ * the raw text is no longer searchable for the resulting clue. A finder that
+ * tracks offsets anyway can hand them over when it accumulates a clue, and a
+ * finder that does not simply reports nothing.
  * <p>
  * Lines and columns are one-based so that they read like an editor's.
  *

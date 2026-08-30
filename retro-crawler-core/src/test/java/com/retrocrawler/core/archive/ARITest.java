@@ -39,6 +39,23 @@ class ARITest {
 	}
 
 	@Test
+	void resolvesAResourceBelowItsCurrentAddress() {
+		final ARI artifact = ARI.of("collection", ArchiveId.of("archive"), Path.of("shelf/gear"));
+
+		assertEquals(ARI.of("collection", ArchiveId.of("archive"), Path.of("shelf/gear/Box/front.jpeg")),
+				artifact.resolve(Path.of("Box/front.jpeg")));
+	}
+
+	@Test
+	void rejectsPhysicalAndTraversalPathsWhenResolving() {
+		final ARI artifact = ARI.of("collection", ArchiveId.of("archive"), Path.of("gear"));
+
+		assertThrows(IllegalArgumentException.class, () -> artifact.resolve(Path.of("/physical/path")));
+		assertThrows(IllegalArgumentException.class, () -> artifact.resolve(Path.of("../outside")));
+		assertThrows(IllegalArgumentException.class, () -> artifact.resolve(Path.of("inside/../outside")));
+	}
+
+	@Test
 	void rejectsPhysicalAndEscapingResourcePaths() {
 		assertThrows(IllegalArgumentException.class,
 				() -> ARI.of("collection", ArchiveId.of("archive"), Path.of("/physical/path")));

@@ -17,17 +17,16 @@ import java.util.Objects;
  * An accumulator also remembers where each accepted clue was spotted, so a
  * rejected duplicate can be reported against both observations instead of only
  * the second one. A finder that tracks offsets passes a {@link ClueLocation}
- * when it adds a clue; the framework names the {@link ClueSource} through
- * {@link #observing(ClueSource)} before it invokes a finder. Both are optional
- * and both die with the accumulator.
+ * when it adds a clue. Positions die with the accumulator; finder and resource
+ * provenance live on the clue itself.
  */
 public final class ClueAccumulator {
 
 	private final Map<String, Clue> cluesByKey = new LinkedHashMap<>();
 
-	private final Map<String, ClueSighting> sightingsByKey = new HashMap<>();
+	private final Map<String, ClueLocation> locationsByKey = new HashMap<>();
 
-	private ClueSighting observing = ClueSighting.UNKNOWN;
+	private String finder;
 
 	ClueAccumulator() {
 	}
@@ -40,24 +39,23 @@ public final class ClueAccumulator {
 		 */
 		observed.forEach(clue -> {
 			cluesByKey.put(clue.key(), clue);
-			observed.locationOf(clue.key())
-					.ifPresent(location -> sightingsByKey.put(clue.key(), new ClueSighting(null, location)));
+			observed.locationOf(clue.key()).ifPresent(location -> locationsByKey.put(clue.key(), location));
 		});
 	}
 
 	/**
-	 * Names what is about to be read, so that clues accumulated from here on
-	 * can be reported against their source. Applies until the next call.
+	 * Names the finder whose returned clues are about to be accumulated. The
+	 * name is attached to every incoming clue and applies until the next call.
 	 */
-	public ClueAccumulator observing(final ClueSource source) {
-		this.observing = new ClueSighting(source, null);
+	public ClueAccumulator foundBy(final String finderName) {
+		this.finder = Objects.requireNonNull(finderName, "finderName");
 		return this;
 	}
 
 	public ClueAccumulator addAll(final Iterable<Clue> clues) {
 		Objects.requireNonNull(clues, "clues");
 		final Map<String, Clue> cluesBefore = new LinkedHashMap<>(cluesByKey);
-		final Map<String, ClueSighting> sightingsBefore = new HashMap<>(sightingsByKey);
+		final Map<String, ClueLocation> locationsBefore = new HashMap<>(locationsByKey);
 		/*
 		 * A finder accumulates privately and hands back Clues, so the positions
 		 * it tracked would otherwise die here. Take them over, or a conflict
@@ -76,8 +74,8 @@ public final class ClueAccumulator {
 		} catch (final RuntimeException failure) {
 			cluesByKey.clear();
 			cluesByKey.putAll(cluesBefore);
-			sightingsByKey.clear();
-			sightingsByKey.putAll(sightingsBefore);
+			locationsByKey.clear();
+			locationsByKey.putAll(locationsBefore);
 			throw failure;
 		}
 		return this;
@@ -93,6 +91,9 @@ public final class ClueAccumulator {
 	 */
 	public ClueAccumulator add(final Clue incoming, final ClueLocation location) {
 		Clue candidate = Objects.requireNonNull(incoming, "clue");
+		if (finder != null) {
+			candidate = candidate.foundBy(finder);
+		}
 		Clue previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
 
 		/*
@@ -101,24 +102,18 @@ public final class ClueAccumulator {
 		 * a fresh key.
 		 */
 		while (previous != null && candidate.isAnonymous()) {
-			candidate = Clue.of(candidate.value());
+			candidate = candidate.rekeyAnonymous();
 			previous = cluesByKey.putIfAbsent(candidate.key(), candidate);
 		}
 
 		if (previous != null) {
-			throw new DuplicateClueException(previous, sighting(previous.key()), candidate,
-					new ClueSighting(observing.source(), location));
+			throw new DuplicateClueException(previous, locationsByKey.get(previous.key()), candidate, location);
 		}
 
-		final ClueSighting sighting = new ClueSighting(observing.source(), location);
-		if (sighting.isKnown()) {
-			sightingsByKey.put(candidate.key(), sighting);
+		if (location != null) {
+			locationsByKey.put(candidate.key(), location);
 		}
 		return this;
-	}
-
-	private ClueSighting sighting(final String key) {
-		return sightingsByKey.getOrDefault(key, ClueSighting.UNKNOWN);
 	}
 
 	/**
@@ -134,14 +129,8 @@ public final class ClueAccumulator {
 	 * returned clues are unaffected.
 	 */
 	public Clues clues() {
-		final Map<String, ClueLocation> locations = new HashMap<>();
-		sightingsByKey.forEach((key, sighting) -> {
-			if (sighting.location() != null) {
-				locations.put(key, sighting.location());
-			}
-		});
 		return new Clues(Collections.unmodifiableMap(new LinkedHashMap<>(cluesByKey)),
-				Collections.unmodifiableMap(locations));
+				Collections.unmodifiableMap(new HashMap<>(locationsByKey)));
 	}
 
 }

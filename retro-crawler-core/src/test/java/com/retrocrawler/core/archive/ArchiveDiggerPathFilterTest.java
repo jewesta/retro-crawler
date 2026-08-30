@@ -13,17 +13,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.Journal;
-import com.retrocrawler.core.archive.clues.ArchiveFolderClueFinder;
+import com.retrocrawler.core.archive.clues.ArchiveFileView;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueAccumulator;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FileNameClueFinder;
 import com.retrocrawler.core.archive.filter.ArchivePathFilter;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.Progressor;
 
 class ArchiveDiggerPathFilterTest {
 
@@ -42,13 +42,12 @@ class ArchiveDiggerPathFilterTest {
 		final ArchiveDefinition archive = definition(new IgnoreDotPaths(), new IgnoreWindowsSystemPaths(),
 				new IgnoreQNAPSystemPaths());
 		final ArchiveDigger digger = new ArchiveDigger(archive, new CrawlPlanning(2, 2, 100, Duration.ofMinutes(1)));
-		final Progressor progressor = Progressor.create();
-		final Journal journal = new Journal(progressor);
+		final Journal journal = new Journal();
 		final ArchiveNode result;
 		final ArchiveDigPlan plan;
 		try (ArchiveSession session = digger.open(root)) {
 			final ArchiveDigTarget target = digger.rootTarget(session);
-			plan = digger.plan(List.of(target), progressor);
+			plan = digger.plan(List.of(target), journal);
 			result = digger.dig(target, plan, journal);
 		}
 
@@ -86,10 +85,14 @@ class ArchiveDiggerPathFilterTest {
 		return new ArchiveDescriptor(ArchiveId.of("path_filter_test"), "Path filter test", root);
 	}
 
-	private static ArchiveFolderClueFinder clueFinder() {
-		final FileNameClueFinder files = paths -> Clues
-				.of(Clue.of("files", Set.copyOf(paths.stream().map(Path::getFileName).map(Path::toString).toList())));
-		return new ArchiveFolderClueFinder(folder -> Clues.of(Clue.of("folder", folder)), List.of(), List.of(files));
+	private static ClueFinder clueFinder() {
+		return new TestClueFinder(folder -> {
+			final ClueAccumulator clues = Clues.accumulator().add(Clue.of("folder", folder.name()));
+			if (!folder.files().isEmpty()) {
+				clues.add(Clue.of("files", Set.copyOf(folder.files().stream().map(ArchiveFileView::name).toList())));
+			}
+			return clues.clues();
+		});
 	}
 
 	private static Clue clue(final ArchiveNode node, final String key) {

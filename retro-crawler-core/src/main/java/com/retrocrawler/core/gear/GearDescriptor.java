@@ -12,6 +12,8 @@ import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.annotation.RetroSource;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.util.Descriptor;
@@ -32,14 +34,17 @@ public class GearDescriptor implements Descriptor {
 
 	private final Field idField;
 
+	private final Field sourceField;
+
 	private GearDescriptor(final Class<?> type, final GearMatcher matcher, final Map<String, FactDescriptor> attributes,
-			final Field anyAttributeField, final Field idField) {
+			final Field anyAttributeField, final Field idField, final Field sourceField) {
 		this.type = Objects.requireNonNull(type, "type");
 		this.matcher = Objects.requireNonNull(matcher, "matcher");
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
 		this.anyAttributeField = anyAttributeField;
 		this.anyAttributeMode = AnyAttributeMode.UNASSIGNED_ONLY;
 		this.idField = idField;
+		this.sourceField = sourceField;
 	}
 
 	public Class<?> type() {
@@ -64,6 +69,10 @@ public class GearDescriptor implements Descriptor {
 
 	public Optional<Field> idField() {
 		return Optional.ofNullable(idField);
+	}
+
+	public Optional<Field> sourceField() {
+		return Optional.ofNullable(sourceField);
 	}
 
 	public Optional<String> idAttributeKey() {
@@ -94,15 +103,36 @@ public class GearDescriptor implements Descriptor {
 		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
 		Field anyAttributeField = null;
 		Field idField = null;
+		Field sourceField = null;
 
 		for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
 			for (final Field field : c.getDeclaredFields()) {
-				if (field.isSynthetic() || Modifier.isStatic(field.getModifiers())) {
+				if (field.isSynthetic()) {
 					continue;
+				}
+
+				final RetroSource retroSource = field.getAnnotation(RetroSource.class);
+				if (Modifier.isStatic(field.getModifiers())) {
+					if (retroSource != null) {
+						throw new IllegalArgumentException(TypeName.simple(RetroSource.class)
+								+ " must not be used on a static field: " + field + " in " + TypeName.full(type));
+					}
+					continue;
+				}
+				if (retroSource != null) {
+					if (sourceField != null) {
+						throw new IllegalArgumentException("Duplicate " + TypeName.simple(RetroSource.class)
+								+ ". Remove all but one: " + TypeName.full(type));
+					}
+					assertIsSourceAri(field, type);
+					sourceField = field;
 				}
 
 				final RetroId retroId = field.getAnnotation(RetroId.class);
 				if (retroId != null) {
+					if (retroSource != null) {
+						throw conflictingAnnotations(RetroSource.class, RetroId.class, field, type);
+					}
 					if (idField != null && !idField.equals(field)) {
 						throw new IllegalArgumentException("Duplicate " + TypeName.simple(RetroId.class)
 								+ ". Remove all but one: " + TypeName.full(type));
@@ -112,6 +142,9 @@ public class GearDescriptor implements Descriptor {
 
 				final RetroAnyAttribute anyAttr = field.getAnnotation(RetroAnyAttribute.class);
 				if (anyAttr != null) {
+					if (retroSource != null) {
+						throw conflictingAnnotations(RetroSource.class, RetroAnyAttribute.class, field, type);
+					}
 					if (retroId != null) {
 						throw new IllegalArgumentException(TypeName.simple(RetroId.class) + " must not be used on "
 								+ TypeName.simple(RetroAnyAttribute.class) + " field: " + field + " in "
@@ -126,6 +159,9 @@ public class GearDescriptor implements Descriptor {
 				}
 
 				final RetroFact fact = field.getAnnotation(RetroFact.class);
+				if (fact != null && retroSource != null) {
+					throw conflictingAnnotations(RetroSource.class, RetroFact.class, field, type);
+				}
 
 				if (fact == null) {
 					/*
@@ -152,7 +188,21 @@ public class GearDescriptor implements Descriptor {
 					+ " or " + TypeName.simple(RetroFact.class) + ": " + TypeName.full(type));
 		}
 
-		return Optional.of(new GearDescriptor(type, matcher, Map.copyOf(attributes), anyAttributeField, idField));
+		return Optional
+				.of(new GearDescriptor(type, matcher, Map.copyOf(attributes), anyAttributeField, idField, sourceField));
+	}
+
+	private static void assertIsSourceAri(final Field field, final Class<?> type) {
+		if (!ARI.class.equals(field.getType())) {
+			throw new IllegalArgumentException(TypeName.simple(RetroSource.class) + " must be used on an "
+					+ TypeName.simple(ARI.class) + " field but is used on " + field + ": " + TypeName.full(type));
+		}
+	}
+
+	private static IllegalArgumentException conflictingAnnotations(final Class<?> first, final Class<?> second,
+			final Field field, final Class<?> type) {
+		return new IllegalArgumentException(TypeName.simple(first) + " must not be used together with "
+				+ TypeName.simple(second) + " on field " + field + ": " + TypeName.full(type));
 	}
 
 	private static void assertHasNoArgConstructor(final Class<?> type) {

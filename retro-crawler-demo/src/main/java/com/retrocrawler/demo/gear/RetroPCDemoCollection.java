@@ -12,7 +12,9 @@ import com.retrocrawler.demo.clues.SquareBracketsClueFinder;
 @RetroCollection(id = "retro_pc_demo", name = "Retro PC (Demo)", pathFilters = {
 		IgnoreDotPaths.class, IgnoreWindowsSystemPaths.class, IgnoreMacSystemPaths.class, IgnoreLinuxSystemPaths.class
 })
-@RetroClues(fromFolderName = SquareBracketsClueFinder.class, fromFileNames = ImageClueFinder.class)
+@RetroClues({
+		SquareBracketsClueFinder.class, ImageClueFinder.class
+})
 public final class RetroPCDemoCollection {
 
 	private RetroPCDemoCollection() {

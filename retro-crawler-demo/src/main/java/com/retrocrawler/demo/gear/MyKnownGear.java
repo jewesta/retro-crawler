@@ -1,11 +1,11 @@
 package com.retrocrawler.demo.gear;
 
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.demo.AttributeNames;
 import com.retrocrawler.demo.MyKnownGearMatcher;
 import com.retrocrawler.demo.catalog.DemoId;
@@ -48,7 +48,7 @@ public class MyKnownGear extends MyRetroGear {
 	private MacAddress macAddress;
 
 	@RetroFact(key = AttributeNames.PIC_FRONT, optional = true)
-	public Path picFront;
+	public ARI picFront;
 
 	public DemoId getId() {
 		return id;
@@ -58,7 +58,7 @@ public class MyKnownGear extends MyRetroGear {
 		return title;
 	}
 
-	public Optional<Path> getPicFront() {
+	public Optional<ARI> getPicFront() {
 		return Optional.ofNullable(picFront);
 	}
 

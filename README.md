@@ -21,8 +21,8 @@ One `RetroCrawler` applies a shared model to every archive registered with it.
 Each archive keeps its own identity, root, source provider, repository entry,
 and crawl lifecycle, so a collection spread across several disks, mounts, or
 media is composed as several archives rather than as several roots of one.
-Aggregation is a crawler operation: `crawlAll` resolves every archive in one
-pass and validates Retro ID uniqueness across all of them.
+Every access or crawl resolves a complete Stash across those archives and
+validates Retro ID uniqueness across all of them.
 
 ### Artifact
 An optional representation of a single folder in the archive.
@@ -35,6 +35,13 @@ A raw key–value observation derived from:
 - file contents
 
 Clues are always **string-based** and may contain multiple values. This is a raw representation of a **potential** property of a piece in your collection.
+
+Every crawled clue retains the unique simple class name of the finder that
+produced it. A finder may also declare the exact archive resources that
+contributed to an individual clue. Those sources are stable `ARI`s, never
+physical paths. The list is optional: no declared source means that the finder
+makes no resource-level provenance claim, and merely accessing a resource never
+causes RetroCrawler to infer one.
 
 Within one artifact, every clue key has exactly one authority. One clue may
 contain several values, but separate clues from different finders must not
@@ -57,10 +64,17 @@ one observation at a time:
 
 ```java
 final ClueAccumulator clues = Clues.accumulator();
-clues.add(Clue.of("bus", "AGP"));
-clues.add(Clue.of("Example Graphics Board"));
+clues.add(folder.clue("bus", "AGP"));
+clues.add(folder.clue("Example Graphics Board"));
 return clues.clues();
 ```
+
+`ArchiveFolderView` and `ArchiveFileView` carry their authoritative ARIs. Their
+`clue(...)` factories attach that resource to the new clue. A finder that does
+not want to make an exact source claim uses `Clue.of(...)` instead. Sources for
+an aggregate clue are added deliberately while the finder loops over its
+contributors; there is no bulk operation that assigns every accessed resource
+to every returned clue.
 
 A second clue claiming a key already taken is rejected with a
 `DuplicateClueException` right where it is observed.
@@ -68,14 +82,16 @@ A second clue claiming a key already taken is rejected with a
 ### Clue diagnostics
 Because RetroCrawler rejects a conflict instead of merging it, a failed crawl
 has to say where. Every clue failure leaves a crawl as a `ClueFindingException`
-with a compiler-style header naming the archive-relative folder, the finder, and
-the source it was reading — the original condition stays available as the cause.
+with a compiler-style header naming an authoritative resource ARI and the
+finder. A failure inside `ArchiveFileView.peek(...)` names that exact file;
+otherwise the candidate folder is the accurate default. The original condition
+stays available as the cause.
 
 A finder that tracks offsets can hand them over, and the rejection then points at
 the tag you actually wrote:
 
 ```
-Graphics Cards/Example Board [bus ISA] [200001] [bus PCI]: BracketClueFinder read the folder name.
+ari:/my_collection/hardware/Graphics%20Cards/Example%20Board: BracketClueFinder failed while finding clues.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [ISA], duplicate values: [PCI].
   Example Board [bus ISA] [200001] [bus PCI]
                 ^^^^^^^^^ first
@@ -88,23 +104,38 @@ Pass a `ClueLocation` when you accumulate:
 clues.add(Clue.of(key, values), ClueLocation.in(folderName, openingBracket, length));
 ```
 
-A finder that reports nothing still produces the header. When the two conflicting
-clues come from *different* finders, both are drawn — the positions travel with
-the `Clues` a finder hands back:
+A finder that reports no exact source still produces the header. When the two
+conflicting clues come from *different* finders, their durable finder and source
+provenance are both reported — text positions travel with the `Clues` a finder
+hands back:
 
 ```
-Graphics Cards/Example Board [bus AGP]/retro.md: RetroMarkdownClueFinder read the file content.
+ari:/my_collection/hardware/Graphics%20Cards/Example%20Board: RetroMarkdownClueFinder failed while finding clues.
 Duplicate clue key 'bus'. One artifact may contain only one clue for a key. First values: [AGP], duplicate values: [PCI].
-  The first clue was observed where BracketClueFinder read the folder name of 'Example Board [bus AGP]', line 1, column 15.
+  The first clue was observed by BracketClueFinder from ari:/my_collection/hardware/Graphics%20Cards/Example%20Board, line 1, column 15.
     Example Board [bus AGP]
                   ^^^^^^^^^
-  The duplicate clue was observed where RetroMarkdownClueFinder read the file content of 'retro.md', line 3, column 1.
+  The duplicate clue was observed by RetroMarkdownClueFinder, line 3, column 1.
     bus: PCI
     ^^^
 ```
 
-Positions stop at the artifact: a retrieved archive has no folder name or
-document left to point into, so they would otherwise describe text nobody read.
+Positions stop at the artifact. A retrieved clue retains source ARIs but no
+snapshot of the source text, so a cached offset could point into content that
+has since changed.
+
+The JSON cache uses the archive tree as context rather than repeating complete
+ARIs on every clue. The collection namespace is stored once per archive; a
+source equal to its artifact is stored as `.` and a source below it as an
+artifact-relative `./...` path. Retrieval always expands the stored form back
+into full ARIs before constructing the clue.
+
+A finder may cite only the candidate folder or a resource present in its exact
+pruned `ArchiveFolderView`. A path merely being below the artifact is not
+enough: a pruned child artifact is outside the readable evidence boundary. If
+any returned clue declares another source, that finder's complete result is
+rejected before accumulation. Consequently the cache has no full-ARI fallback
+for clue sources; every stored source is contextual.
 
 ### Gear
 A user-defined domain object created from a set of facts. This is an **identified**, real piece in your collection.
@@ -126,14 +157,20 @@ For each folder, registered `ClueFinder`s extract clues and produce an `Artifact
 
 The extracted clue archive is stowed away through an application-selected `Repository` so that expensive rescans can be avoided. The bundled `JsonFileRepository` uses JSON files on local storage. Once a scan is done, queries on the archive are blazingly fast. If you restart your app, the archive is quickly retrieved from the repository.
 
-Most clue finders inspect only the current folder name or its direct files.
-Collections with meaningful metadata subtrees may additionally configure
-`TreeClueFinder`s. These run depth-first in post-order through a transient
-`ArchiveFolderView`, may inspect file content lazily through
-`ArchiveFileView.peek(...)` when the configured source exposes it, and return
-clues for the current folder. Child
-folders that already established an artifact are pruned from the view, so a
+Every finder implements the same small contract and runs once per candidate
+folder, after its children have been classified. It receives an
+`ArchiveFolderView` containing the candidate's name, its direct files, and only
+those child folders that were positively established as clue-free metadata
+folders. Child artifacts and failed folders are structurally absent, so a
 finder cannot cross into another potential collection part.
+
+A finder decides which parts of that view matter. It may use the folder name,
+enumerate files and metadata subfolders, and inspect file content lazily through
+`ArchiveFileView.peek(...)` when the source exposes it. Finders are independent:
+several may inspect the same file, while the one-authority-per-clue-key rule
+governs what they are allowed to return. Every folder and file view has an ARI;
+using its `clue(...)` factory records that exact source, while `Clue.of(...)`
+deliberately records none.
 
 ### 2. Gear / Fact Phase
 All known clues are converted into facts using registered parsers.
@@ -154,8 +191,11 @@ RetroCrawler's collection and gear model can be configured via annotations:
   roots and providers are runtime crawler configuration.
 
 - `@RetroClues`
-  Declares which folder names, file names, file contents, and folder trees
-  produce crawl-time clues.
+  Declares the ordered `ClueFinder`s that inspect each candidate's pruned
+  archive view and produce crawl-time clues. Each finder must be a named class
+  with a simple name unique within the configured list, because that compact
+  name is retained as durable clue provenance. Registering the same finder
+  twice and using two classes with the same simple name are both rejected.
 
 - `@RetroGear`
   Declares a gear type and its matcher.
@@ -279,7 +319,8 @@ RetroCrawler retains control of planning and depth-first traversal. File
 content is optional. When available, the session invokes a generic
 `ArchiveFileAccessor` synchronously and closes the supplied `InputStream`
 before returning its result. An empty result means that content was not
-available and content-based clue finders contribute no clue for that file.
+available. A finder sees that as an empty `Optional` and can continue without a
+content-derived clue.
 
 Public resources are addressed by an Archive Resource Identifier (`ARI`). An
 ARI contains the collection id, archive id, and archive-relative resource path,
@@ -289,13 +330,11 @@ but no physical root or provider details:
 ari:/retro_pc_demo/incoming_material/Graphics%20Cards/Voodoo%203/front.jpg
 ```
 
-The crawler can identify a provider path during migration from path-based
-application data. Gear trees and `Stash` nodes already carry their source ARI:
+Gear trees, `Stash` nodes, and resource-valued Gear facts carry ARIs directly:
 
 ```java
-ARI source = crawler.identify(incomingMaterial.id(), sourcePath);
-Optional<byte[]> image = crawler.inspect(
-        source, InputStream::readAllBytes);
+ARI imageSource = gear.getFrontImage().orElseThrow();
+Optional<byte[]> image = crawler.inspect(imageSource, InputStream::readAllBytes);
 ```
 
 The crawler rejects an ARI from a different collection or an unknown archive.
@@ -305,15 +344,21 @@ short-lived session as well as the content stream. `Optional.empty()` means the
 provider recognizes the file but does not expose its content; a missing or
 folder address raises `NoSuchFileException`.
 
-Provider paths remain crawl-time coordinates used to derive artifact-relative
-clues and to rebind caches; providers must not require them to be locally
-accessible. ARIs are the stable application-facing resource identity.
+Provider paths remain internal crawl-time coordinates; providers must not
+require them to be locally accessible. ARIs are the application-facing resource
+identity.
+
+Clue finders receive that identity directly through `ArchiveFolderView.ari()`
+and `ArchiveFileView.ari()`. The archive definition derives each one from its
+collection identity, archive descriptor, and archive-relative resource path.
+Finders never need the physical archive root to record provenance.
 
 When a file-name clue refers to a resource belonging to an artifact, its cached
 path is relative to that artifact rather than to the archive root. A direct
 `front.jpeg` is therefore stored as `front.jpeg`; a resource below the artifact
-may be stored as `Box/front.jpeg`. Path facts are rebound against the artifact's
-current provider path during resolution.
+may be stored as `Box/front.jpeg`. `ARIParser` resolves that raw observation
+against the artifact ARI during Gear resolution. The resulting fact therefore
+remains independent of the current provider and physical archive root.
 
 Every persisted archive node records when its complete subtree was last
 crawled. All nodes rebuilt by one full or multi-subtree operation receive the
@@ -322,23 +367,128 @@ untouched branches, so the root timestamp remains the time of the last complete
 archive crawl. These timestamps record cache age; RetroCrawler does not
 currently attempt automatic source-change detection.
 
-Crawling either selects one archive by identity or spans all of them:
+Crawling always produces a complete immutable `Stash` spanning every configured
+archive. `access` returns the parked Stash, or resolves stored clue archives on
+first access and physically crawls only archives whose stored clues are missing.
+An explicit `crawl` physically rereads the requested scope and parks its result
+only after the complete candidate succeeds:
 
 ```java
 Journal journal = new Journal();
 
-Stash<RetroHardware> museum = crawler.crawlStash(
-        museumCollection.id(), journal, reindexScope, RetroHardware.class);
+Stash stash = crawler.access(journal);
 
-Stash<RetroHardware> everything = crawler.crawlAllStash(
-        journal, reindexScope, RetroHardware.class);
+Stash recrawled = crawler.crawl(
+        new Journal(), ReindexScope.subtree(changedShelf));
 ```
 
-A `Stash` keeps its gear grouped per archive, and every `GearNode` retains the
-ARI of the artifact that produced it. `crawlAll` validates Retro ID uniqueness
-across all registered archives and routes a subtree reindex scope by each ARI's
-archive identity; archives without a requested subtree reuse their stored clue
-archive.
+Structural statistics are calculated from an immutable Stash when requested;
+they are not stored as another representation of the collection. Crawl times
+are different: they are observations recorded during the physical crawl and
+carried from the persisted clue archive into the Stash:
+
+```java
+StashStats stats = stash.stats();
+
+Optional<Instant> completeCrawlStarted = stash.crawlStartedAt(archiveId);
+Optional<Instant> completeCrawlObserved = stash.observedAt(archiveId);
+Optional<Duration> completeCrawlDuration = stash.crawlDuration(archiveId);
+
+Optional<Instant> shelfCrawlStarted = stash.crawlStartedAt(changedShelf);
+Optional<Instant> shelfObserved = stash.observedAt(changedShelf);
+
+List<ArchiveCrawlTimes> timesByArchive = stash.crawlTimes();
+```
+
+`ArchiveCrawlTimes.observations()` exposes every indexed folder ARI in archive
+tree order. All nodes produced by one operation share its `crawlStartedAt`;
+each node receives its own `observedAt` after that folder and its children have
+been inspected. The root is therefore the final observation of a complete
+archive crawl, allowing its duration to be calculated without storing another
+value. A newer subtree observation records a later partial crawl while
+untouched nodes retain their earlier observations. These are crawl times, not
+a claim that the physical source is currently unchanged.
+
+A `Stash` contains every recognized Gear in its natural archive hierarchy. A
+typed immutable query is materialized as a lifted `Batch<G>`:
+
+```java
+Batch<RetroHardware> working = stash.query(RetroHardware.class)
+        .where(museumCollection.id())
+        .where(RetroHardware::isWorking)
+        .pull();
+
+Batch<RetroHardware> agpCardsAmongEverythingElse = stash.query(RetroHardware.class)
+        .whereIf(GraphicsCard.class, card -> card.bus() == Bus.AGP)
+        .pull();
+```
+
+`whereIf` applies its predicate only to the named Gear type. Other selected
+Gear remains in the Batch. A Batch retains its archive groups through
+`archives()` and exposes their cumulative forest through `roots()`. Its flat
+`gear()` view is derived lazily and cached.
+
+Every `GearNode` produced by RetroCrawler also carries one focused
+`ResolutionTrace`. The trace retains the source Artifact, detection and final
+attribute snapshots, every Gear matcher decision, the selected match, and
+non-fatal ambiguities:
+
+```java
+GearNode<RetroHardware> node = working.roots().getFirst();
+ResolutionTrace trace = node.trace().orElseThrow();
+
+List<Fact> factsUsedToBuildGear = trace.resolved().facts();
+List<ResolutionTrace.Match> consideredTypes = trace.matches();
+```
+
+Detection and final attributes remain separate because contextual Facts become
+eligible only after a Gear type has been selected. Queries preserve the trace
+while lifting nodes into a typed Batch. Programmatically constructed
+`GearNode`s may have no trace. Traces are resolved Stash state; they are neither
+written to the clue cache nor injected into user Gear objects. Fatal resolution
+failures that produce no GearNode remain in the operation `Journal`.
+
+Every semantic Fact key also contributes exactly one structured
+`FilterDefinition`, even when several Gear types declare that Fact. The
+definition records its value type, cardinality, applicable Gear types, and the
+non-optional `FilterType` supplied by the effective `FactParser`. Built-in
+string parsers describe text filters, enum parsers describe ordered choices,
+integer and temporal parsers describe ranges, and an ordinary custom parser
+defaults to exact equality.
+
+`crawler.filters()` exposes the complete model vocabulary. For a choice
+filter, that includes every conceivable declared option. A Stash or Batch
+exposes the same definitions and lazily computes and caches their observed
+availability. For example, after selecting the typed `busFilter` definition
+from that list:
+
+```java
+FilterAvailability.Choices<?> available =
+        (FilterAvailability.Choices<?>) stash.availability(busFilter);
+
+List<? extends FilterAvailability.Option<?>> options = available.options();
+Batch<RetroHardware> agp = stash.query(RetroHardware.class)
+        .where(busFilter, ExpansionBus.AGP)
+        .pull();
+```
+
+On a Stash or Batch, `filters(FilterSelection.ALL)` returns that complete model
+vocabulary, while `filters(FilterSelection.RELEVANT)` retains only definitions
+with at least one populated Gear occurrence in that particular data set.
+Zero-argument `filters()` remains the shorthand for all definitions.
+
+Each choice option remains in `options()` when absent; its
+`matchingOccurrences()` is then zero and `present()` is false. Counts describe
+Gear occurrences rather than raw repeated values. A Fact criterion applies to
+all Gear types that declare its key, rejects applicable Gear with no matching
+value, and retains Gear types to which the Fact does not apply. Batch
+availability is recomputed over the materialized result, so a UI can update its
+facets after a pull without losing globally conceivable options.
+
+Every `GearNode` retains the ARI of the artifact that produced it. Complete
+Stash construction validates Retro ID uniqueness across all registered
+archives. A subtree crawl is routed by its ARI; other archives reuse their
+stored clue archives.
 
 ---
 
@@ -388,31 +538,34 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
-JSON cache format version 5 is inspected before the stored payload is
+JSON cache format version 7 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
-`Archive` shape.
+`Archive` shape. Artifact-relative clue sources are also checked for traversal;
+they cannot escape the artifact that supplies their context.
 
 ---
 
 ## Journal, Progress, and Failure Handling
 
-Crawler operations accept an operation-scoped `Journal`. Its `Progressor`
-publishes immutable, structured snapshots with an extensible stage,
-human-readable message, exact or approximate work units, timing, and operation
-state. A lightweight message view is available for simple command-line or GUI
-integrations:
+Crawler operations accept an operation-scoped `Journal`. The journal owns the
+progress lifecycle together with the failure record. Its underlying
+`Progressor` remains a neutral progress mechanism, while immutable structured
+progress is exposed read-only through `journal.progress()`. A lightweight
+message view is available for simple command-line or GUI integrations:
 
 ```java
 Progressor progressor = Progressor.reportingMessages(System.out::println);
 Journal journal = new Journal(progressor);
-List<MyGear> gear = crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
+Batch<MyGear> gear = crawler.crawl(journal, ReindexScope.all())
+        .query(MyGear.class)
+        .pull();
 ```
 
-Calling `progressor.cancel("Stopping.")` is thread-visible and aborts the crawl
-at its next checkpoint. For larger workflows, progressors can be divided into
-nested equal or weighted windows with `splitIntoEqualParts(...)` and
-`splitInRelationTo(...)`.
+Once supplied, progress control belongs to the journal. Calling
+`journal.cancel("Stopping.")` is thread-visible and aborts the crawl at its next
+checkpoint. Successful operations complete their journal automatically;
+failures and cancellation retain distinct terminal states.
 
 Journals fail early by default. A catalogue-validation crawl can instead record
 every independently recoverable clue-finding or gear-resolution exception and
@@ -421,7 +574,7 @@ fail after all recoverable work has been examined:
 ```java
 Journal journal = new Journal(FailureMode.FAIL_LATE);
 try {
-    crawler.crawlAllGear(journal, ReindexScope.all(), MyGear.class);
+    crawler.crawl(journal, ReindexScope.all());
 } catch (CrawlException report) {
     List<Exception> allFailures = report.failures();
 }
@@ -432,8 +585,8 @@ message shows only the first 50. An archive with a clue-finding failure is not
 stored or resolved, but clean archives continue into resolution. A resolution
 failure is recorded against its artifact ARI; that artifact contributes no
 gear, while its descendants and the remaining archives are still examined.
-RetroCrawler throws the final report before invoking the result factory, so a
-failed operation never exposes a partial result.
+RetroCrawler throws the final report before constructing or parking the Stash,
+so a failed operation never exposes a partial result.
 
 ---
 

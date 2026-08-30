@@ -6,10 +6,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class FloppyDiskFormFactorParser implements FactParser<FloppyDiskFormFactor> {
+public final class FloppyDiskFormFactorParser implements EnumFactParser<FloppyDiskFormFactor> {
+
+	@Override
+	public Class<FloppyDiskFormFactor> enumType() {
+		return FloppyDiskFormFactor.class;
+	}
 
 	private static final Pattern DECIMAL_INCHES = Pattern.compile("^(\\d+(?:[,.]\\d+)?)\\s*(?:\"|″|in(?:ch(?:es)?)?)$",
 			Pattern.CASE_INSENSITIVE);

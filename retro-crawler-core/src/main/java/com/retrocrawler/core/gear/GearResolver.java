@@ -1,19 +1,23 @@
 package com.retrocrawler.core.gear;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
+import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.core.gear.trace.ResolutionTrace.Phase;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.core.util.Sonar;
 
@@ -31,13 +35,21 @@ public class GearResolver {
 
 	private final Map<Class<?>, Set<String>> contextualFactKeys;
 
+	private final List<FilterDefinition<?>> filters;
+
 	// package-private: only factories construct this
 	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders,
-			final Map<Class<?>, Set<String>> contextualFactKeys) {
+			final Map<Class<?>, Set<String>> contextualFactKeys, final List<FilterDefinition<?>> filters) {
 		this.gearSpecialists = Objects.requireNonNull(specialists, "specialists");
 		this.factFinders = Objects.requireNonNull(factFinders, "factFinders");
 		this.contextualFactKeys = Objects.requireNonNull(contextualFactKeys, "contextualFactKeys");
+		this.filters = List.copyOf(Objects.requireNonNull(filters, "filters"));
 		this.clueClassifier = new ClueClassifier(factFinders.keySet());
+	}
+
+	/** Every structured filter derived from this resolver's Fact model. */
+	public List<FilterDefinition<?>> filters() {
+		return filters;
 	}
 
 	private record BestAnonymousMatch(String key, Confidence confidence, boolean contextual, boolean ambiguous) {
@@ -65,17 +77,25 @@ public class GearResolver {
 			Sonar.JAVA_REDUCE_NUMBER_OF_BREAK_AND_CONTINUE
 	})
 	private void handleAnonymousClue(final RetroAttributes resolved, final Clue clue, final ParseContext parseContext,
-			final Set<String> allowedContextualKeys) {
+			final Set<String> allowedContextualKeys, final ResolutionTraceRecorder trace, final Phase phase) {
 		final Set<String> raws = clue.value();
 		String resolvedKey = null;
 		for (final String raw : raws) {
 			final BestAnonymousMatch best = findBestAnonymousMatch(raw, parseContext, allowedContextualKeys);
-			if (best == null || best.confidence() == Confidence.NONE || best.ambiguous()) {
+			if (best == null || best.confidence() == Confidence.NONE) {
+				putAnonymousClueIfUseful(resolved, clue);
+				return;
+			}
+			if (best.ambiguous()) {
+				trace.ambiguousFact(phase,
+						"Anonymous value '" + raw + "' matched more than one Fact key at " + best.confidence() + ".");
 				putAnonymousClueIfUseful(resolved, clue);
 				return;
 			}
 			final String candidateKey = best.key();
 			if (resolvedKey != null && !resolvedKey.equals(candidateKey)) {
+				trace.ambiguousFact(phase, "Values of one anonymous clue resolved to different Fact keys: '"
+						+ resolvedKey + "' and '" + candidateKey + "'.");
 				putAnonymousClueIfUseful(resolved, clue);
 				return;
 			}
@@ -105,7 +125,7 @@ public class GearResolver {
 		}
 
 		if (existing instanceof final Fact fact && fact.source().isAnonymous()) {
-			reconcileAnonymousClues(resolved, resolvedKey, fact, clue, finder, parseContext);
+			reconcileAnonymousClues(resolved, resolvedKey, fact, clue, finder, parseContext, trace, phase);
 			return;
 		}
 
@@ -113,7 +133,8 @@ public class GearResolver {
 	}
 
 	private static void reconcileAnonymousClues(final RetroAttributes resolved, final String resolvedKey,
-			final Fact existing, final Clue incoming, final FactFinder finder, final ParseContext parseContext) {
+			final Fact existing, final Clue incoming, final FactFinder finder, final ParseContext parseContext,
+			final ResolutionTraceRecorder trace, final Phase phase) {
 		final Set<String> combinedValues = new HashSet<>(existing.source().value());
 		combinedValues.addAll(incoming.value());
 
@@ -122,6 +143,8 @@ public class GearResolver {
 		if (combinedFact.isPresent() && existing.value().equals(combinedFact.get().value())) {
 			return;
 		}
+		trace.ambiguousFact(phase,
+				"Anonymous clues competing for Fact key '" + resolvedKey + "' could not be reconciled.");
 
 		final RetroAttribute combined = combinedFact.<RetroAttribute> map(Function.identity())
 				.orElseGet(() -> Clue.of(resolvedKey, Set.copyOf(combinedValues)));
@@ -198,6 +221,8 @@ public class GearResolver {
 	public Optional<GearResolution> resolveWithIdentity(final Artifact artifact, final ParseContext parseContext) {
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(parseContext, "parseContext");
+		final ARI source = parseContext.source();
+		final ResolutionTraceRecorder trace = new ResolutionTraceRecorder(artifact);
 
 		/*
 		 * We are now looking at the given artifact and we want to turn it into
@@ -206,7 +231,9 @@ public class GearResolver {
 		 * into facts remain as clues.
 		 */
 		final Clues clues = clueClassifier.classify(artifact.clues());
-		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of());
+		final RetroAttributes detectionAttributes = resolveAttributes(clues, parseContext, Set.of(), trace,
+				Phase.DETECTION);
+		trace.attributes(Phase.DETECTION, detectionAttributes);
 
 		/*
 		 * Now that we have identified as many facts as possible, we try to find
@@ -219,26 +246,22 @@ public class GearResolver {
 		Confidence bestConfidence = Confidence.NONE;
 		for (final GearSpecialist specialist : gearSpecialists.values()) {
 			final Class<?> gearType = specialist.gearDefinition().type();
-			final GearContext context = new GearContext(gearType, artifact, detectionAttributes);
+			final GearContext context = new GearContext(gearType, source, artifact, detectionAttributes);
 			final Confidence confidence = specialist.matches(context);
 
 			// The user might try to be clever and return null instead of a confidence
 			Objects.requireNonNull(confidence, "The " + GearMatcher.class.getSimpleName() + " of type "
 					+ specialist.gearDefinition().type() + " must not return null.");
+			trace.match(specialist, confidence);
 
 			if (confidence == Confidence.NONE) {
 				continue;
 			}
 
 			/*
-			 * Note: Should there be more than one experts with the same (best)
-			 * confidence we currently let the first expert win. This is because
-			 * throwing would be overly harsh: It would mean that a single
-			 * ambiguous artifact could stop the whole pipeline.
-			 * 
-			 * TODO: Find a way to inject the confidence level into gear and/or
-			 * give the user more control in draw situations
-			 * https://github.com/jewesta/retro-crawler/issues/12
+			 * Should more than one specialist have the same best confidence,
+			 * the first still wins rather than stopping the pipeline. The trace
+			 * retains every match and explicitly records that ambiguity.
 			 */
 			if (best == null || confidence.isHigherThan(bestConfidence)) {
 				best = specialist;
@@ -252,9 +275,12 @@ public class GearResolver {
 		}
 
 		final Class<?> bestType = best.gearDefinition().type();
+		trace.selected(bestType);
 		final Set<String> selectedContextualKeys = contextualFactKeys.getOrDefault(bestType, Set.of());
-		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys);
-		final GearContext context = new GearContext(bestType, artifact, attributes);
+		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys, trace,
+				Phase.RESOLUTION);
+		trace.attributes(Phase.RESOLUTION, attributes);
+		final GearContext context = new GearContext(bestType, source, artifact, attributes);
 		/*
 		 * The gear specialist is asked to build a gear. Since it was confident
 		 * it could do that we expect it to return a non-null value. Building
@@ -265,11 +291,11 @@ public class GearResolver {
 		 */
 		final Object newGear = best.create(context);
 		final Optional<Object> retroId = retroId(best.gearDefinition(), attributes);
-		return Optional.of(new GearResolution(newGear, retroId));
+		return Optional.of(new GearResolution(newGear, retroId, trace.trace()));
 	}
 
 	private RetroAttributes resolveAttributes(final Clues clues, final ParseContext parseContext,
-			final Set<String> allowedContextualKeys) {
+			final Set<String> allowedContextualKeys, final ResolutionTraceRecorder trace, final Phase phase) {
 		final RetroAttributes attributes = new RetroAttributes();
 		for (final Clue clue : clues) {
 			if (!clue.isAnonymous()) {
@@ -278,7 +304,7 @@ public class GearResolver {
 		}
 		for (final Clue clue : clues) {
 			if (clue.isAnonymous()) {
-				handleAnonymousClue(attributes, clue, parseContext, allowedContextualKeys);
+				handleAnonymousClue(attributes, clue, parseContext, allowedContextualKeys, trace, phase);
 			}
 		}
 		return attributes;

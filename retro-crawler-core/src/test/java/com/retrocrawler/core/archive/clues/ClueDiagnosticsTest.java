@@ -8,18 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.retrocrawler.core.Journal;
-import com.retrocrawler.core.archive.source.ArchiveFile;
-import com.retrocrawler.core.archive.source.ArchiveFileAccessor;
-import com.retrocrawler.core.archive.source.ArchiveFolder;
-import com.retrocrawler.core.archive.source.ArchiveListing;
-import com.retrocrawler.core.archive.source.ArchiveSession;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 
 class ClueDiagnosticsTest {
+
+	private static final ArchiveId ARCHIVE_ID = ArchiveId.of("test_archive");
 
 	@Test
 	void locatesAnOffsetWithinASingleLineSource() {
@@ -79,25 +76,23 @@ class ClueDiagnosticsTest {
 		final String folderName = "Example Board [bus AGP]";
 		final String document = "---\nbus: PCI\n---\n";
 		final ClueAccumulator clues = Clues.accumulator();
+		final ARI folderSource = ari(Path.of("Example Board"));
+		final ARI fileSource = ari(Path.of("Example Board", "retro.md"));
 
-		clues.observing(ClueSource.folderName(folderName, new BracketishFinder()));
-		clues.addAll(Clues.accumulator().add(Clue.of("bus", "AGP"), ClueLocation.in(folderName, 14, 9)).clues());
-		clues.observing(ClueSource.fileContent("retro.md", new MarkdownishFinder()));
+		clues.foundBy("BracketishFinder");
+		clues.addAll(Clues.accumulator()
+				.add(Clue.of("bus", "AGP").from(folderSource), ClueLocation.in(folderName, 14, 9)).clues());
+		clues.foundBy("MarkdownishFinder");
 
-		final DuplicateClueException failure = assertThrows(DuplicateClueException.class, () -> clues
-				.addAll(Clues.accumulator().add(Clue.of("bus", "PCI"), ClueLocation.in(document, 4, 3)).clues()));
+		final DuplicateClueException failure = assertThrows(DuplicateClueException.class, () -> clues.addAll(Clues
+				.accumulator().add(Clue.of("bus", "PCI").from(fileSource), ClueLocation.in(document, 4, 3)).clues()));
 
-		assertEquals("""
-			Duplicate clue key 'bus'. One artifact may contain only one clue for a key. \
-			First values: [AGP], duplicate values: [PCI].
-			  The first clue was observed where BracketishFinder read the folder name of \
-			'Example Board [bus AGP]', line 1, column 15.
-			    Example Board [bus AGP]
-			                  ^^^^^^^^^
-			  The duplicate clue was observed where MarkdownishFinder read the file content of \
-			'retro.md', line 2, column 1.
-			    bus: PCI
-			    ^^^""", failure.getMessage());
+		assertEquals("Duplicate clue key 'bus'. One artifact may contain only one clue for a key. "
+				+ "First values: [AGP], duplicate values: [PCI].\n"
+				+ "  The first clue was observed by BracketishFinder from " + folderSource
+				+ ", line 1, column 15.\n    Example Board [bus AGP]\n                  ^^^^^^^^^\n"
+				+ "  The duplicate clue was observed by MarkdownishFinder from " + fileSource
+				+ ", line 2, column 1.\n    bus: PCI\n    ^^^", failure.getMessage());
 	}
 
 	/**
@@ -116,97 +111,92 @@ class ClueDiagnosticsTest {
 
 	@Test
 	void reportsTheFinderAndSourceForAFailureTheFinderDidNotLocate() {
-		final ArchiveFolder root = () -> Path.of("/archive");
-		final ArchiveFolder folder = () -> root.path().resolve("Example Board");
-		final ArchiveFolderClueFinder finder = new ArchiveFolderClueFinder(new BracketishFinder(), List.of(),
-				List.of());
+		final BracketishFinder finder = new BracketishFinder();
+		final DuplicateClueException duplicate = assertThrows(DuplicateClueException.class,
+				() -> finder.find(folder("Example Board")));
+		final ARI source = ari(Path.of("Example Board"));
 
-		final ClueFindingException failure = assertThrows(ClueFindingException.class,
-				() -> finder.find(folder, List.of(), session(root), new Journal()));
+		final ClueFindingException failure = ClueFindingException.from(finder.getClass().getSimpleName(), source,
+				duplicate);
 
-		assertEquals(ClueSourceKind.FOLDER_NAME, failure.source().orElseThrow().kind());
-		assertEquals(BracketishFinder.class, failure.source().orElseThrow().finder());
+		assertEquals(source, failure.source().orElseThrow());
+		assertEquals("BracketishFinder", failure.finder().orElseThrow());
 		assertInstanceOf(DuplicateClueException.class, failure.getCause());
-		assertTrue(failure.getMessage().startsWith("Example Board: BracketishFinder read the folder name."),
+		assertTrue(failure.getMessage().startsWith(source + ": BracketishFinder failed while finding clues."),
 				failure.getMessage());
 	}
 
 	@Test
-	void completesTheReportWithTheArchiveRelativeFolder() {
-		final ClueSource source = ClueSource.folderName("Example Board", new BracketishFinder());
-		final ClueFindingException reported = ClueFindingException.from(source,
+	void reportsTheAuthoritativeArchiveResource() {
+		final ARI source = ari(Path.of("Graphics Cards", "Example Board"));
+		final ClueFindingException located = ClueFindingException.from("BracketishFinder", source,
 				new DuplicateClueException("Duplicate clue key 'bus'."));
 
-		final ClueFindingException located = reported.in(Path.of("Graphics Cards", "Example Board"));
-
-		assertEquals(Path.of("Graphics Cards", "Example Board"), located.folder().orElseThrow());
-		assertEquals("""
-			Graphics Cards/Example Board: BracketishFinder read the folder name.
-			Duplicate clue key 'bus'.""", located.getMessage());
+		assertEquals(source, located.source().orElseThrow());
+		assertEquals(ARCHIVE_ID, located.archiveId().orElseThrow());
+		assertEquals(source + ": BracketishFinder failed while finding clues.\nDuplicate clue key 'bus'.",
+				located.getMessage());
 	}
 
 	@Test
 	void keepsAPositionAFinderReportedItself() {
 		final ClueLocation location = ClueLocation.in("Board [!]", 6, 3);
-		final ClueSource source = ClueSource.folderName("Board [!]", new BracketishFinder());
+		final ARI source = ari(Path.of("Board"));
 
-		final ClueFindingException reported = ClueFindingException
-				.from(source, new ClueFindingException("Reserved key.", location)).in(Path.of("Board"));
+		final ClueFindingException reported = ClueFindingException.from("BracketishFinder", source,
+				new ClueFindingException("Reserved key.", location));
 
 		assertEquals(location, reported.location().orElseThrow());
-		assertEquals("""
-			Board:1:7: BracketishFinder read the folder name.
-			Reserved key.
-			  Board [!]
-			        ^^^""", reported.getMessage());
+		assertEquals(source + ":1:7: BracketishFinder failed while finding clues.\nReserved key.\n  Board [!]\n"
+				+ "        ^^^", reported.getMessage());
 	}
 
 	/**
 	 * Emits two clues claiming one key so the framework has something to
 	 * report.
 	 */
-	private static final class BracketishFinder implements FolderNameClueFinder {
+	private static final class BracketishFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.of(Clue.of("bus", "ISA"), Clue.of("bus", "PCI"));
 		}
 	}
 
-	private static final class MarkdownishFinder implements FileContentClueFinder {
+	private static final class MarkdownishFinder implements ClueFinder {
 
 		@Override
-		public boolean matches(final String fileName) {
-			return true;
-		}
-
-		@Override
-		public Clues find(final java.io.InputStream is) {
+		public Clues find(final ArchiveFolderView folder) {
 			return Clues.none();
 		}
 	}
 
-	private static ArchiveSession session(final ArchiveFolder root) {
-		return new ArchiveSession() {
+	private static ArchiveFolderView folder(final String name) {
+		return new ArchiveFolderView() {
 
 			@Override
-			public ArchiveFolder root() {
-				return root;
+			public ARI ari() {
+				return ClueDiagnosticsTest.ari(Path.of(name));
 			}
 
 			@Override
-			public ArchiveListing list(final ArchiveFolder folder) {
-				return new ArchiveListing(List.of(), List.of());
+			public String name() {
+				return name;
 			}
 
 			@Override
-			public <T> Optional<T> access(final ArchiveFile file, final ArchiveFileAccessor<T> accessor) {
-				return Optional.empty();
+			public List<ArchiveFolderView> folders() {
+				return List.of();
 			}
 
 			@Override
-			public void close() {
+			public List<ArchiveFileView> files() {
+				return List.of();
 			}
 		};
+	}
+
+	private static ARI ari(final Path path) {
+		return ARI.of("test_collection", ARCHIVE_ID, path);
 	}
 }

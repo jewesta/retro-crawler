@@ -3,7 +3,7 @@ package com.retrocrawler.mycollection.facts;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.DamageKindParser;
@@ -12,7 +12,12 @@ import com.retrocrawler.model.condition.DamageKindParser;
  * Maps specific German damage markers from the collection to portable damage
  * kinds without also claiming a second, broader condition fact.
  */
-public final class CollectionDamageKindParser implements FactParser<DamageKind> {
+public final class CollectionDamageKindParser implements EnumFactParser<DamageKind> {
+
+	@Override
+	public Class<DamageKind> enumType() {
+		return DamageKind.class;
+	}
 
 	private final DamageKindParser delegate = new DamageKindParser();
 

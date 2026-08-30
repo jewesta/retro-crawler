@@ -25,9 +25,10 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.GearContext;
@@ -36,6 +37,9 @@ import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
+import com.retrocrawler.core.gear.trace.ResolutionTrace;
+import com.retrocrawler.core.stash.Batch;
+import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class ContextualFactResolutionTest {
@@ -54,7 +58,8 @@ class ContextualFactResolutionTest {
 		final RetroCrawler crawler = RetroCrawler.builder().model(model).repository(new InMemoryRepository())
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
 
-		final List<BaseGear> gear = crawler.crawlAllGear(new Journal(), ReindexScope.all(), BaseGear.class);
+		final Batch<BaseGear> batch = crawler.crawl(new Journal(), ReindexScope.all()).query(BaseGear.class).pull();
+		final List<BaseGear> gear = batch.gear();
 
 		final HardDrive hardDrive = assertInstanceOf(HardDrive.class,
 				gear.stream().filter(HardDrive.class::isInstance).findFirst().orElseThrow());
@@ -63,13 +68,28 @@ class ContextualFactResolutionTest {
 		assertTrue(hardDrive.formFactor.source().isAnonymous());
 		assertEquals(Set.of("2.5\""), hardDrive.formFactor.source().value());
 
+		final GearNode<BaseGear> hardDriveNode = batch.roots().stream().filter(node -> node.gear() instanceof HardDrive)
+				.findFirst().orElseThrow();
+		final ResolutionTrace trace = hardDriveNode.trace().orElseThrow();
+		assertEquals(Set.of("kind", "length"),
+				trace.detection().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
+		assertEquals(Set.of("hardDriveFormFactor", "kind"),
+				trace.resolved().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
+		assertEquals(2, trace.matches().size());
+		assertEquals(HardDrive.class, trace.selectedMatch().gearType());
+		assertEquals(Confidence.EXACT, trace.selectedMatch().confidence());
+		assertTrue(trace.artifact().clues().stream().anyMatch(clue -> clue.value().equals(Set.of("2.5\""))));
+		final ResolutionTrace mysteryTrace = batch.roots().stream().filter(node -> node.gear() instanceof Mystery)
+				.findFirst().orElseThrow().trace().orElseThrow();
+		assertTrue(mysteryTrace.matches().stream().anyMatch(match -> match.confidence() == Confidence.NONE));
+
 		final Mystery mystery = assertInstanceOf(Mystery.class,
 				gear.stream().filter(Mystery.class::isInstance).findFirst().orElseThrow());
 		assertEquals("generic-length", mystery.genericMeasurement());
 	}
 
 	@RetroCollection(id = "contextual_fact_resolution")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 	}
 
@@ -116,10 +136,11 @@ class ContextualFactResolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			if ("typed".equals(folderName)) {
 				return Clues.of(Clue.of("HDD"), Clue.of("2.5\""));
 			}

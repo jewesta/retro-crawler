@@ -12,7 +12,8 @@ import java.util.Currency;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
-import com.retrocrawler.core.archive.Node;
+import com.retrocrawler.core.archive.ARI;
+import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.model.appearance.Color;
@@ -37,9 +38,8 @@ import com.retrocrawler.mycollection.catalog.Tested;
 
 class CollectionFactParsersTest {
 
-	private static final Path ARCHIVE_ROOT = Path.of("/archive");
 	private static final ParseContext CONTEXT = new ParseContext(Configuration.builder().build(),
-			new Node(ARCHIVE_ROOT, ARCHIVE_ROOT.resolve("gear")));
+			ARI.of("test", ArchiveId.of("archive"), Path.of("gear")));
 
 	@Test
 	void adaptsGermanCalendarWeeksWithoutMakingMonthsAmbiguous() {

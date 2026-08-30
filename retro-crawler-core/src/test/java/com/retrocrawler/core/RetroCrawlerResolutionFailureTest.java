@@ -23,20 +23,19 @@ import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.ReindexScope;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.ClueFindingException;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.archive.clues.DuplicateClueException;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.GearResolutionException;
-import com.retrocrawler.core.gear.GearTreeFactory;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressSnapshot;
-import com.retrocrawler.core.progress.ProgressStage;
 import com.retrocrawler.core.progress.Progressor;
 
 class RetroCrawlerResolutionFailureTest {
@@ -49,17 +48,15 @@ class RetroCrawlerResolutionFailureTest {
 	@Test
 	void failEarlyReportsTheArtifactAndOriginalResolutionFailure() throws IOException {
 		Files.createDirectory(archiveRoot.resolve("explosion"));
-		final RecordingFactory factory = new RecordingFactory();
 		final Journal journal = new Journal();
 
 		final GearResolutionException failure = assertThrows(GearResolutionException.class,
-				() -> crawler().crawlAll(journal, ReindexScope.all(), factory));
+				() -> crawler().crawl(journal, ReindexScope.all()));
 
 		assertEquals(ARI.of("resolution_failure_test", ARCHIVE_ID, Path.of("explosion")), failure.source());
 		assertInstanceOf(IllegalStateException.class, failure.getCause());
 		assertEquals("Parser broke for explosion.", failure.getCause().getMessage());
 		assertEquals(List.of(failure), journal.failures());
-		assertEquals(0, factory.calls);
 	}
 
 	@Test
@@ -69,10 +66,9 @@ class RetroCrawlerResolutionFailureTest {
 		final List<ProgressSnapshot> events = new ArrayList<>();
 		final Journal journal = new Journal(Progressor.observing(progress -> events.add(progress.snapshot())),
 				FailureMode.FAIL_LATE);
-		final RecordingFactory factory = new RecordingFactory();
 
 		final CrawlException report = assertThrows(CrawlException.class,
-				() -> crawler().crawlAll(journal, ReindexScope.all(), factory));
+				() -> crawler().crawl(journal, ReindexScope.all()));
 
 		assertEquals(2, report.failures().size());
 		final List<GearResolutionException> failures = report.failures().stream()
@@ -85,10 +81,9 @@ class RetroCrawlerResolutionFailureTest {
 		assertInstanceOf(IllegalStateException.class, failures.getLast().getCause());
 		assertEquals(report.failures(), journal.failures());
 		final List<ProgressSnapshot> resolving = events.stream()
-				.filter(event -> event.stage().equals(ProgressStage.RESOLVING)).toList();
+				.filter(event -> event.stage().equals(CrawlProgressStages.RESOLVING)).toList();
 		assertEquals(2, resolving.getLast().completed());
 		assertEquals(2, resolving.getLast().total());
-		assertEquals(0, factory.calls);
 	}
 
 	@Test
@@ -102,10 +97,9 @@ class RetroCrawlerResolutionFailureTest {
 				.archive(ArchiveDescriptor.of(ArchiveId.of("failed"), failedArchive))
 				.archive(ArchiveDescriptor.of(ArchiveId.of("resolvable"), resolvableArchive)).build();
 		final Journal journal = new Journal(FailureMode.FAIL_LATE);
-		final RecordingFactory factory = new RecordingFactory();
 
 		final CrawlException report = assertThrows(CrawlException.class,
-				() -> crawler.crawlAll(journal, ReindexScope.all(), factory));
+				() -> crawler.crawl(journal, ReindexScope.all()));
 
 		assertEquals(2, report.failures().size());
 		assertInstanceOf(ClueFindingException.class, report.failures().getFirst());
@@ -113,7 +107,6 @@ class RetroCrawlerResolutionFailureTest {
 				report.failures().getLast());
 		assertEquals(ARI.of("resolution_failure_test", ArchiveId.of("resolvable"), Path.of("explosion")),
 				resolutionFailure.source());
-		assertEquals(0, factory.calls);
 	}
 
 	private RetroCrawler crawler() {
@@ -123,17 +116,18 @@ class RetroCrawlerResolutionFailureTest {
 	}
 
 	@RetroCollection(id = "resolution_failure_test")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			return switch (folderName) {
 			case "clue_failure" -> throw new IllegalArgumentException("Clue finder broke.");
 			case "duplicate" -> Clues.of(Clue.of("SN"), Clue.of("sn", "12345"));
@@ -169,38 +163,6 @@ class RetroCrawlerResolutionFailureTest {
 		@Override
 		public RatedFact<String> parse(final String rawValue, final ParseContext context) {
 			throw new IllegalStateException("Parser broke for " + rawValue + ".");
-		}
-	}
-
-	private static final class RecordingFactory implements GearTreeFactory<Object, Object, TestGear> {
-
-		private int calls;
-
-		@Override
-		public Class<TestGear> gearType() {
-			return TestGear.class;
-		}
-
-		@Override
-		public void beginArchive(final ArchiveDescriptor archive) {
-			calls++;
-		}
-
-		@Override
-		public void endArchive(final ArchiveDescriptor archive) {
-			calls++;
-		}
-
-		@Override
-		public Object addNode(final Object parent, final TestGear gear) {
-			calls++;
-			return new Object();
-		}
-
-		@Override
-		public Object build() {
-			calls++;
-			return new Object();
 		}
 	}
 

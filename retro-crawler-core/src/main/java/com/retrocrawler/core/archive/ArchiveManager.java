@@ -17,13 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.retrocrawler.core.CrawlException;
+import com.retrocrawler.core.CrawlProgressStages;
 import com.retrocrawler.core.Journal;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.ArchiveNode;
 import com.retrocrawler.core.archive.clues.ArchiveVersion;
 import com.retrocrawler.core.archive.source.ArchiveSession;
-import com.retrocrawler.core.progress.ProgressStage;
-import com.retrocrawler.core.progress.Progressor;
 
 public class ArchiveManager {
 
@@ -43,7 +42,7 @@ public class ArchiveManager {
 		this(descriptor, digger, repository, Clock.systemUTC());
 	}
 
-	ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository,
+	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository,
 			final Clock clock) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.digger = Objects.requireNonNull(digger, "digger");
@@ -52,54 +51,52 @@ public class ArchiveManager {
 	}
 
 	private Archive fromSource(final Journal journal) throws IOException {
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Path root = descriptor.root();
-		final Instant crawledAt = clock.instant();
+		final Instant crawlStartedAt = clock.instant();
 		final ArchiveNode rootNode;
 		try (OpenedRoot opened = new OpenedRoot(root)) {
-			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), progressor);
-			progressor.throwIfCancelled();
-			rootNode = digger.dig(opened.target(), plan, crawledAt, journal);
+			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), journal);
+			journal.throwIfCancelled();
+			rootNode = digger.dig(opened.target(), plan, crawlStartedAt, clock, journal);
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
-		final Archive archive = Archive.of(descriptor.id(), root, rootNode);
-		progressor.throwIfCancelled();
-		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the extracted clue archive.");
+		final Archive archive = Archive.of(digger.collectionId(), descriptor.id(), root, rootNode);
+		journal.throwIfCancelled();
+		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the extracted clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
 
 	private Archive fromSubtrees(final Journal journal, final Collection<ARI> requestedSubtrees) throws IOException {
-		final Progressor progressor = journal.progressor();
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
-		final Instant crawledAt = clock.instant();
+		final Instant crawlStartedAt = clock.instant();
 		ArchiveNode root = stored.root();
 		try (OpenedRoot opened = new OpenedRoot(descriptor.root())) {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
 			for (final LocatedSubtree subtree : located) {
 				final ArchiveDigTarget target = digger
-						.target(opened.target().session(), subtree.requestedPath(), progressor)
+						.target(opened.target().session(), subtree.requestedPath(), journal)
 						.orElseThrow(() -> new IllegalArgumentException(
 								"Archive subtree is not an existing folder; re-index its existing parent instead: "
 										+ subtree.requestedPath()));
 				targets.add(target);
 			}
-			final ArchiveDigPlan plan = digger.plan(targets, progressor);
+			final ArchiveDigPlan plan = digger.plan(targets, journal);
 
 			for (int index = 0; index < located.size(); index++) {
-				progressor.throwIfCancelled();
-				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, journal);
+				journal.throwIfCancelled();
+				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawlStartedAt, clock, journal);
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 
-		final Archive archive = Archive.of(stored.id(), Path.of(stored.basePath()), root);
-		progressor.throwIfCancelled();
-		progressor.indeterminate(ProgressStage.STOWING, "Stowing away the partially rebuilt clue archive.");
+		final Archive archive = Archive.of(stored.collectionId(), stored.id(), Path.of(stored.basePath()), root);
+		journal.throwIfCancelled();
+		journal.indeterminate(CrawlProgressStages.STOWING, "Stowing away the partially rebuilt clue archive.");
 		repository.stowaway(archive);
 		return archive;
 	}
@@ -158,11 +155,15 @@ public class ArchiveManager {
 			throw new RepositoryException("Stored archive '" + stored.id() + "' uses cache version " + stored.version()
 					+ " but this crawler requires " + ArchiveVersion.CURRENT_IMPLEMENTATION_VERSION + ".");
 		}
+		if (!digger.collectionId().equals(stored.collectionId())) {
+			throw new RepositoryException("Stored archive '" + stored.id() + "' belongs to collection '"
+					+ stored.collectionId() + "' instead of configured collection '" + digger.collectionId() + "'.");
+		}
 		final Path configuredRoot = descriptor.root();
 		if (normalize(Path.of(stored.basePath())).equals(normalize(configuredRoot))) {
 			return stored;
 		}
-		return Archive.of(stored.id(), configuredRoot, stored.root());
+		return Archive.of(stored.collectionId(), stored.id(), configuredRoot, stored.root());
 	}
 
 	private List<LocatedSubtree> locateSubtrees(final Archive stored, final Collection<ARI> requestedSubtrees) {
@@ -257,7 +258,8 @@ public class ArchiveManager {
 				final ArchiveNode replaced = replace(candidate, relativeFolders.subList(1, relativeFolders.size()),
 						replacement);
 				replacements.set(index, replaced);
-				return new ArchiveNode(current.folder(), current.crawledAt(), current.artifact(), replacements);
+				return new ArchiveNode(current.folder(), current.crawlStartedAt(), current.observedAt(),
+						current.artifact(), replacements);
 			}
 		}
 		throw new IllegalStateException("Stored archive tree no longer contains expected folder: " + folder);

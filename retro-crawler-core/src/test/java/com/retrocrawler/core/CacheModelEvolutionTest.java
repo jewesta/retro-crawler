@@ -28,10 +28,11 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
+import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
+import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.FolderNameClueFinder;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -50,7 +51,7 @@ class CacheModelEvolutionTest {
 		final Model initialModel = Model.from(Set.of(TestArchive.class, InitialGear.class));
 		final RetroCrawler initialCrawler = RetroCrawler.builder().model(initialModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		initialCrawler.crawlAllGear(new Journal(), ReindexScope.all(), InitialGear.class);
+		initialCrawler.crawl(new Journal(), ReindexScope.all());
 
 		final Archive cachedArchive = repository.archive;
 		assertEquals(1, repository.stowawayCount);
@@ -59,8 +60,7 @@ class CacheModelEvolutionTest {
 		final Model evolvedModel = Model.from(Set.of(TestArchive.class, EvolvedGear.class));
 		final RetroCrawler evolvedCrawler = RetroCrawler.builder().model(evolvedModel).repository(repository)
 				.archive(ArchiveDescriptor.of(ARCHIVE_ID, archiveRoot)).build();
-		final List<EvolvedGear> gear = evolvedCrawler.crawlAllGear(new Journal(), ReindexScope.none(),
-				EvolvedGear.class);
+		final List<EvolvedGear> gear = evolvedCrawler.access(new Journal()).query(EvolvedGear.class).pull().gear();
 
 		assertEquals(1, gear.size());
 		assertNull(gear.getFirst().serialNumber);
@@ -78,7 +78,7 @@ class CacheModelEvolutionTest {
 	}
 
 	@RetroCollection(id = "cache_model_evolution")
-	@RetroClues(fromFolderName = TestClueFinder.class)
+	@RetroClues(TestClueFinder.class)
 	public static final class TestArchive {
 
 		private TestArchive() {
@@ -108,10 +108,11 @@ class CacheModelEvolutionTest {
 		}
 	}
 
-	public static final class TestClueFinder implements FolderNameClueFinder {
+	public static final class TestClueFinder implements ClueFinder {
 
 		@Override
-		public Clues find(final String folderName) {
+		public Clues find(final ArchiveFolderView folder) {
+			final String folderName = folder.name();
 			return "serial-pending".equals(folderName) ? Clues.of(Clue.of("SN")) : Clues.none();
 		}
 	}

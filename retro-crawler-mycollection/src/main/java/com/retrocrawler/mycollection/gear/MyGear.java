@@ -1,6 +1,5 @@
 package com.retrocrawler.mycollection.gear;
 
-import java.nio.file.Path;
 import java.time.Year;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +9,7 @@ import java.util.Set;
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroId;
+import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.gear.parser.StringParser;
 import com.retrocrawler.core.util.RetroAttribute;
@@ -193,13 +193,13 @@ public abstract class MyGear {
 	private Tested tested;
 
 	@RetroFact(key = AttributeNames.IMAGE_ANGLED, optional = true)
-	private Path angledImage;
+	private ARI angledImage;
 
 	@RetroFact(key = AttributeNames.IMAGE_FRONT, optional = true)
-	private Path frontImage;
+	private ARI frontImage;
 
 	@RetroFact(key = AttributeNames.IMAGE_BACK, optional = true)
-	private Path backImage;
+	private ARI backImage;
 
 	@RetroFact(key = AttributeNames.ISBN, parser = ISBNParser.class, optional = true)
 	private ISBN isbn;
@@ -233,7 +233,7 @@ public abstract class MyGear {
 	private Set<FloppyImageId> floppyImageIds = Set.of();
 
 	@RetroFact(key = AttributeNames.FLOPPY_IMAGES, optional = true)
-	private Set<Path> floppyImages = Set.of();
+	private Set<ARI> floppyImages = Set.of();
 
 	@RetroFact(key = AttributeNames.CAPACITY_SET, parser = CapacitySetParser.class, optional = true)
 	private CapacitySet capacitySet;
@@ -394,15 +394,15 @@ public abstract class MyGear {
 		return Optional.ofNullable(tested);
 	}
 
-	public Optional<Path> getAngledImage() {
+	public Optional<ARI> getAngledImage() {
 		return Optional.ofNullable(angledImage);
 	}
 
-	public Optional<Path> getFrontImage() {
+	public Optional<ARI> getFrontImage() {
 		return Optional.ofNullable(frontImage);
 	}
 
-	public Optional<Path> getBackImage() {
+	public Optional<ARI> getBackImage() {
 		return Optional.ofNullable(backImage);
 	}
 
@@ -442,7 +442,7 @@ public abstract class MyGear {
 		return Set.copyOf(floppyImageIds);
 	}
 
-	public Set<Path> getFloppyImages() {
+	public Set<ARI> getFloppyImages() {
 		return Set.copyOf(floppyImages);
 	}
 

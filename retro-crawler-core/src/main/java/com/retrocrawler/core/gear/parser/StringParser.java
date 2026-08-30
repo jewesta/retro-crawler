@@ -2,7 +2,7 @@ package com.retrocrawler.core.gear.parser;
 
 import com.retrocrawler.core.gear.RatedFact;
 
-public class StringParser implements FactParser<String> {
+public class StringParser implements TextFactParser {
 
 	@Override
 	public RatedFact<String> parse(final String rawValue, final ParseContext context) {

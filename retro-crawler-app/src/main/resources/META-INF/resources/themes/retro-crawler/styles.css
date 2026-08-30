@@ -7,6 +7,45 @@ vaadin-button.retro-button {
 	color: #bd0054;
 }
 
+.retro-filter-bar {
+	background-color: #fffaf0;
+	border: 1px solid var(--lumo-contrast-20pct);
+	border-radius: 6px;
+	padding: var(--lumo-space-s);
+}
+
+.retro-filter-heading-row {
+	align-items: baseline;
+	gap: var(--lumo-space-m);
+}
+
+.retro-filter-heading {
+	font-weight: 600;
+}
+
+.retro-filter-result-count {
+	color: var(--lumo-secondary-text-color);
+	font-size: var(--lumo-font-size-s);
+}
+
+.retro-filter-controls {
+	align-items: flex-end;
+	gap: var(--lumo-space-s);
+}
+
+.retro-filter-control {
+	flex: 1 1 12rem;
+	min-width: 10rem;
+}
+
+.retro-filter-range {
+	flex: 2 1 24rem;
+}
+
+.retro-filter-range > vaadin-combo-box {
+	flex: 1 1 10rem;
+}
+
 vaadin-grid.retro-treegrid {
 	--lumo-contrast-10pct: #bd0054;
 	--lumo-contrast-20pct: #bd0054;

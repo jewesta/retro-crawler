@@ -3,10 +3,15 @@ package com.retrocrawler.model.hardware;
 import java.util.Locale;
 
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.parser.FactParser;
+import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
-public final class MemoryFeatureParser implements FactParser<MemoryFeature> {
+public final class MemoryFeatureParser implements EnumFactParser<MemoryFeature> {
+
+	@Override
+	public Class<MemoryFeature> enumType() {
+		return MemoryFeature.class;
+	}
 
 	@Override
 	public RatedFact<MemoryFeature> parse(final String rawValue, final ParseContext context) {
