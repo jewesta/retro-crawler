@@ -34,8 +34,6 @@ public final class AttributeNames {
 
 	public static final String FLOPPY_DISK_FORM_FACTOR = "floppyDiskFormFactor";
 
-	public static final String GEAR_KIND = "gearKind";
-
 	public static final String IMAGE_ANGLED = "imageAngled";
 
 	public static final String IMAGE_BACK = "imageBack";
@@ -59,8 +57,6 @@ public final class AttributeNames {
 	public static final String PACKAGING_ORIGIN = "packagingOrigin";
 
 	public static final String HEALTH = "health";
-
-	public static final String HARD_DISK_DRIVE_FORM_FACTOR = "hardDiskDriveFormFactor";
 
 	public static final String MEMORY_ACCESS_TIME = "memoryAccessTime";
 

@@ -3223,8 +3223,8 @@ decimal point or comma without deciding whether the quantity is a cable
 length, connector pitch, screen diagonal, or storage form factor. The personal
 adapter only translates the archive's legacy private-use inch glyph.
 
-Short tags still need to become more specific after Gear detection. Core
-resolution therefore has two explicit interpretation phases:
+Anonymous observations may still become more specific after Gear detection.
+Core resolution therefore has two explicit interpretation phases:
 
 1. Globally reusable and explicitly keyed facts are resolved from the original
    clues and supplied to every Gear matcher. Contextual anonymous parsers are
@@ -3235,23 +3235,28 @@ resolution therefore has two explicit interpretation phases:
    supersedes the generic fact, producing one final fact with the original clue
    as provenance.
 
-Thus `[HDD] [2,5″]` first yields the collection-specific
-`GearKind.HARD_DISK_DRIVE` plus a generic `Length`. The independent type hint
-selects `HardDiskDrive`; its contextual parser then produces
-`HardDiskDriveFormFactor.INCH_2_5`, and the final Gear does not also retain a
-generic length for the same clue. Without `[HDD]`, `[2,5″]` stays a `Length`
-on `MysteryGear`. Diskettes follow the same rule: their existing independent
-track-density and disk-format evidence selects `Diskette`, after which an inch
-observation may become `FloppyDiskFormFactor`. Screen size remains strict and
-must be explicitly keyed until a display Gear type supplies an equivalent
-context.
+An early implementation introduced a speculative `[HDD]` marker and a
+collection-specific `GearKind` solely to select `HardDiskDrive` before
+interpreting `[2,5″]` as its form factor. The archive contained no such marker,
+and no other Gear used an explicit type designator. That one-off vocabulary and
+the unreachable collection Gear specialization were therefore removed. An
+anonymous `[2,5″]` remains a `Length` on `MysteryGear` until established archive
+evidence can select a more specific Gear type. Diskettes still demonstrate the
+general contextual rule: their independent track-density and disk-format
+evidence selects `Diskette`, after which an inch observation may become
+`FloppyDiskFormFactor`. Screen size remains strict and must be explicitly keyed
+until a display Gear type supplies an equivalent context.
 
 The cache-only integration check reused the 11:52 fresh cache while it was less
 than one hour old. All 3,778 artifacts resolved, no duplicate Retro ID was
 reported, specialist counts were unchanged, and 129 Gear expose a generic
-`Length`. The current archive contains no explicit `HDD` type marker, so it
-correctly produces no `HardDiskDrive` Gear yet. This phase changed neither the
-cached `Artifact` clues nor any source folder.
+`Length`. This phase changed neither the cached `Artifact` clues nor any source
+folder.
+
+The speculative type-marker cleanup on 2026-08-30 passed the canonical
+formatter and all 52 `retro-crawler-mycollection` tests on Java 21. Its model
+test now confirms that an anonymous `[2,5″]` remains a generic `Length` on
+`MysteryGear`.
 
 ### Uniform capacity sets
 

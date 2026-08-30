@@ -35,6 +35,12 @@ the original `start_crawl` tool could select only complete archives.
 8. Add each archive's canonical `rootAri` to `list_archives`, allowing clients
    to begin browsing without constructing an identifier or seeing a provider
    path.
+9. Remove the collection-specific `gearKind` fact and `[HDD]` marker exposed by
+   the new filter catalog. They were speculative test scaffolding rather than
+   established archive vocabulary: the real collection contains no such tag,
+   and no other Gear type uses an explicit type designator. Remove the
+   unreachable collection `HardDiskDrive` specialization with them while
+   retaining the objective shared hard-drive form-factor vocabulary.
 
 ## Status
 
@@ -44,6 +50,9 @@ the original `start_crawl` tool could select only complete archives.
   tests.
 - Implemented bounded, paginated direct-child browsing through
   `browse_archive` and exposed archive root ARIs.
+- Removed the unused `gearKind` filter source, parser, model field, and
+  `HardDiskDrive` specialization after the MCP exposed the one-value filter and
+  confirmed that it matches no Gear.
 
 ## Next Improvements
 
@@ -57,3 +66,5 @@ the original `start_crawl` tool could select only complete archives.
 - The focused `retro-crawler-core` and `retro-crawler-mcp` reactor passes with
   309 tests.
 - The complete nine-module `mvn test` reactor passes.
+- The clean `retro-crawler-mycollection` Java 21 build passes with 52 tests
+  after removing the speculative type marker.

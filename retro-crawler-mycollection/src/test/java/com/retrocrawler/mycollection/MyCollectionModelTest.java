@@ -76,7 +76,6 @@ import com.retrocrawler.model.storage.FloppyDiskFormFactor;
 import com.retrocrawler.model.storage.FloppyDiskFormat;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Density;
 import com.retrocrawler.model.storage.FloppyDiskFormat.Sides;
-import com.retrocrawler.model.storage.HardDiskDriveFormFactor;
 import com.retrocrawler.model.temporal.DateMarking;
 import com.retrocrawler.model.temporal.YearWeek;
 import com.retrocrawler.mycollection.catalog.Destiny;
@@ -86,7 +85,6 @@ import com.retrocrawler.mycollection.catalog.MyRetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
-import com.retrocrawler.mycollection.gear.HardDiskDrive;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
@@ -234,10 +232,10 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void resolvesMeasurementsGenericallyUntilTheGearTypeSuppliesTheirMeaning() throws IOException {
+	void resolvesMeasurementsGenericallyWithoutInventingGearTypeEvidence() throws IOException {
 		Files.createDirectories(
 				archiveRoot.resolve("Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]"));
-		Files.createDirectories(archiveRoot.resolve("Hard drive [HDD] [2,5″]"));
+		Files.createDirectories(archiveRoot.resolve("Small measured object [2,5″]"));
 		Files.createDirectories(archiveRoot.resolve("Measured object [19″]"));
 		Files.createDirectories(archiveRoot.resolve("Colored object [schwarz] [weiß, pink]"));
 
@@ -251,9 +249,9 @@ class MyCollectionModelTest {
 		assertEquals(Set.of(new SegaGameGearCartridgeCode("2449")), floppy.getSegaGameGearCartridgeCodes());
 		assertEquals(Set.of(new DocumentId(101534)), floppy.getDocumentIds());
 
-		final HardDiskDrive hardDrive = assertInstanceOf(HardDiskDrive.class, gear(gear, "Hard drive [HDD] [2,5″]"));
-		assertEquals(Optional.of(HardDiskDriveFormFactor.INCH_2_5), hardDrive.getFormFactor());
-		assertEquals(Optional.empty(), hardDrive.getLength());
+		final MyGear smallMeasured = gear(gear, "Small measured object [2,5″]");
+		assertInstanceOf(MysteryGear.class, smallMeasured);
+		assertEquals(Optional.of(new Length(new BigDecimal("2.5"), Unit.INCH)), smallMeasured.getLength());
 
 		final MyGear measured = gear(gear, "Measured object [19″]");
 		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), Unit.INCH)), measured.getLength());

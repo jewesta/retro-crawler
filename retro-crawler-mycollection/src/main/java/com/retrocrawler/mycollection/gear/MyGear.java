@@ -80,7 +80,6 @@ import com.retrocrawler.mycollection.facts.CollectionSealStateParser;
 import com.retrocrawler.mycollection.facts.DestinyParser;
 import com.retrocrawler.mycollection.facts.DocumentIdParser;
 import com.retrocrawler.mycollection.facts.FloppyImageIdParser;
-import com.retrocrawler.mycollection.facts.GearKindParser;
 import com.retrocrawler.mycollection.facts.MoneyParser;
 import com.retrocrawler.mycollection.facts.MyRetroIdParser;
 import com.retrocrawler.mycollection.facts.TestedParser;
@@ -118,9 +117,6 @@ public abstract class MyGear {
 	@RetroFact(key = AttributeNames.DATE_MARKING, parser = CollectionDateMarkingParser.class, strict = false,
 			optional = true)
 	private DateMarking dateMarking;
-
-	@RetroFact(key = AttributeNames.GEAR_KIND, parser = GearKindParser.class, strict = false, optional = true)
-	private GearKind gearKind;
 
 	@RetroFact(key = AttributeNames.LENGTH, parser = CollectionLengthParser.class, strict = false, optional = true)
 	private Length length;
@@ -285,10 +281,6 @@ public abstract class MyGear {
 
 	public Optional<DateMarking> getDateMarking() {
 		return Optional.ofNullable(dateMarking);
-	}
-
-	public Optional<GearKind> getGearKind() {
-		return Optional.ofNullable(gearKind);
 	}
 
 	public Optional<Length> getLength() {
