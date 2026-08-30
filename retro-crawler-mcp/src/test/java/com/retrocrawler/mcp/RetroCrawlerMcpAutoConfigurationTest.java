@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -32,15 +34,22 @@ class RetroCrawlerMcpAutoConfigurationTest {
 	}
 
 	@Test
-	void remainsInactiveWithoutACrawler() {
-		contextRunner.run(context -> assertThat(context).doesNotHaveBean(RetroCrawlerMcpTools.class));
+	void failsWithoutACrawler() {
+		contextRunner.run(context -> {
+			assertThat(context).hasFailed();
+			assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+		});
 	}
 
 	@Test
-	void remainsInactiveForAnAmbiguousCrawler() {
+	void failsForAnAmbiguousCrawler() {
 		contextRunner.withBean("firstCrawler", RetroCrawler.class, RetroCrawlerMcpAutoConfigurationTest::crawler)
 				.withBean("secondCrawler", RetroCrawler.class, RetroCrawlerMcpAutoConfigurationTest::crawler)
-				.run(context -> assertThat(context).doesNotHaveBean(RetroCrawlerMcpTools.class));
+				.run(context -> {
+					assertThat(context).hasFailed();
+					assertThat(context.getStartupFailure())
+							.hasRootCauseInstanceOf(NoUniqueBeanDefinitionException.class);
+				});
 	}
 
 	@Test

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
 import com.retrocrawler.core.annotation.RetroClues;
@@ -68,6 +70,22 @@ class RetroCrawlerBuilderTest {
 		assertSame(result, accessedAgain);
 		assertEquals(1, result.archives().size());
 		assertEquals(ARCHIVE, result.archives().getFirst().archive());
+	}
+
+	@Test
+	void configuresConventionalRepositoryAndArchivesFromLocations(@TempDir final Path temporaryDirectory)
+			throws IOException {
+		final Path repositoryRoot = temporaryDirectory.resolve("repository");
+		final Path archiveRoot = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		final ArchiveDescriptor archive = ArchiveDescriptor.of(ArchiveId.of("located"), archiveRoot);
+		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
+		final RetroCrawler crawler = RetroCrawler.builder().model(model)
+				.locations(new Locations(repositoryRoot, List.of(archive))).build();
+
+		crawler.crawl(new Journal(), ReindexScope.all());
+
+		assertEquals(List.of(archive), crawler.archives());
+		assertTrue(Files.exists(repositoryRoot.resolve("archive_located.json")));
 	}
 
 	@Test
@@ -147,6 +165,21 @@ class RetroCrawlerBuilderTest {
 				() -> builder.repository(repository));
 
 		assertEquals("Repository is already configured.", failure.getMessage());
+	}
+
+	@Test
+	void doesNotMixLocationsWithExplicitStorageConfiguration() {
+		final Locations locations = new Locations(Path.of("repository"), List.of(ARCHIVE));
+
+		final IllegalStateException repositoryFailure = assertThrows(IllegalStateException.class,
+				() -> RetroCrawler.builder().locations(locations).repository(new RecordingRepository()));
+		final IllegalStateException archiveFailure = assertThrows(IllegalStateException.class,
+				() -> RetroCrawler.builder().locations(locations).archive(ARCHIVE));
+
+		assertEquals("Explicit repository configuration cannot be combined with configured locations.",
+				repositoryFailure.getMessage());
+		assertEquals("Explicit archive configuration cannot be combined with configured locations.",
+				archiveFailure.getMessage());
 	}
 
 	@Test

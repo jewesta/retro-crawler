@@ -36,6 +36,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.retrocrawler</groupId>
+			<artifactId>retro-crawler-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.retrocrawler</groupId>
 			<artifactId>retro-crawler-mcp</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -48,6 +53,12 @@
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.retrocrawler</groupId>
+			<artifactId>retro-crawler-mycollection</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
@@ -57,9 +68,25 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
+							<version>${spring-boot.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>${spring-boot.version}</version>
+				<configuration>
+					<layout>ZIP</layout>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>

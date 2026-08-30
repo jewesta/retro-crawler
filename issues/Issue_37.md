@@ -80,6 +80,8 @@ extension point is useful.
   particular collection.
 - Selects Spring's WebMVC MCP server starter as its HTTP transport.
 - Does not discover or construct collection models itself.
+- Owns external location binding and the conventional composition of a model,
+  JSON clue repository, and filesystem archives into a crawler.
 - Requires exactly one `RetroCrawler` bean in its application context and fails
   clearly at startup when none or several are present.
 - Supplies the HTTP runtime, operational configuration, security, health, and
@@ -89,38 +91,68 @@ extension point is useful.
 This is a permanent host boundary rather than a temporary collection-specific
 server.
 
-### Collection-Specific Composition
+### Collection Model and Server Composition
 
-The collection integration is responsible for constructing the
-`RetroCrawler` bean from its model and deployment properties. For the initial
-deployment, `retro-crawler-mycollection` may provide Spring Boot
-auto-configuration along these lines:
+The collection integration supplies what the collection means; the generic
+server supplies where it is. For the initial deployment,
+`retro-crawler-mycollection` provides only its `Model`:
 
 ```java
 @AutoConfiguration
-@EnableConfigurationProperties(MyCollectionProperties.class)
+@ConditionalOnMissingBean(Model.class)
 public class MyCollectionAutoConfiguration {
 
 	@Bean
-	RetroCrawler retroCrawler(final MyCollectionProperties properties) {
-		return RetroCrawler.builder()
-				.model(Model.from("com.retrocrawler.mycollection"))
-				.repository(/* configured repository */)
-				.archive(/* configured archives */)
-				.build();
+	Model model() {
+		return Model.from("com.retrocrawler.mycollection");
 	}
 }
 ```
+
+The server binds the external values into `LocationsProperties`, converts them
+to core's framework-neutral `Locations`, and performs the conventional
+composition:
+
+```java
+@Bean
+RetroCrawler retroCrawler(final Model model, final LocationsProperties properties) {
+	return RetroCrawler.builder()
+			.model(model)
+			.locations(properties.toLocations())
+			.build();
+}
+```
+
+`Locations` deliberately pairs with `Model`: the model says what the
+collection means, while locations say where its archives and rebuildable clue
+repository are. `Builder.locations(...)` selects `JsonFileRepository` and
+filesystem archive sources. The existing explicit `repository(...)` and
+`archive(..., source)` methods remain the path for non-standard storage.
 
 This module may depend on Spring Boot auto-configuration support, but it does
 not depend on `retro-crawler-mcp` or `retro-crawler-server`. A non-Spring
 consumer can continue to use its model classes directly.
 
+The external configuration is generic and supports several archives:
+
+```properties
+retro-crawler.repository.root=/repository
+
+retro-crawler.archives[0].id=hardware
+retro-crawler.archives[0].name=Hardware
+retro-crawler.archives[0].root=/archives/hardware
+
+retro-crawler.archives[1].id=software
+retro-crawler.archives[1].name=Software
+retro-crawler.archives[1].root=/archives/software
+```
+
 The Docker image combines the generic server artifact with the selected
-collection JAR on the runtime classpath. A different collection can therefore
-replace `retro-crawler-mycollection` without rebuilding or changing the generic
-server. The concrete external-JAR/loading arrangement remains a packaging
-decision; it must preserve this dependency direction.
+collection JAR and its runtime dependencies on the extension classpath. A
+different collection can therefore replace `retro-crawler-mycollection`
+without rebuilding or changing the generic server. The server uses Spring
+Boot's `PropertiesLauncher`; its `LOADER_PATH` points to the directory holding
+those extension libraries.
 
 ## MCP Tool Surface
 
@@ -187,9 +219,10 @@ portable across clients.
    auto-configuration module.
 5. Introduce `retro-crawler-server` as the generic executable host, not as a
    collection-specific application.
-6. Make the server require exactly one application-provided `RetroCrawler`
-   bean.
-7. Let the selected collection integration own construction of that bean.
+6. Make the server require exactly one `RetroCrawler` bean. By default the
+   server constructs it; an application-provided crawler remains an override.
+7. Let the selected collection integration supply exactly one `Model` for the
+   server's default crawler composition.
 8. Do not make the server or MCP module depend on
    `retro-crawler-mycollection`.
 9. Compose the generic server and selected collection at runtime in the Docker
@@ -199,6 +232,32 @@ portable across clients.
 11. Publish crawl results atomically and retain the previous successful view on
     failure or cancellation.
 12. Do not expose arbitrary filesystem or shell access.
+13. Keep the existing Docker Compose deployment and use
+    `application.properties` for Spring application configuration.
+14. Collection-specific configuration represents multiple archives as an
+    indexed `archives` list. Each archive has its own `id`, `name`, and `root`.
+15. Keep collection deployment properties under the generic `retro-crawler`
+    namespace rather than embedding a module name such as `mycollection` in the
+    external contract. The selected collection JAR supplies the model; the
+    configured values describe its deployment.
+16. Configure the shared repository location symmetrically as
+    `retro-crawler.repository.root`; it is the writable root for the
+    rebuildable clue repository, not an archive source root.
+17. Put the framework-neutral `Locations` value in `retro-crawler-core` and add
+    `RetroCrawler.Builder.locations(...)` as the conventional JSON-repository
+    and filesystem-archive composition path.
+18. Bind external archive and repository paths in the server-owned
+    `LocationsProperties` bean. Keep operational settings in the independent
+    `RetroCrawlerServerProperties` bean.
+19. Package the server with Spring Boot's `ZIP` layout so
+    `PropertiesLauncher` can add an external collection and its runtime
+    dependencies through `LOADER_PATH`.
+20. Treat exactly one `RetroCrawler` as a requirement of the MCP adapter as
+    well as the server. Creating the tool bean through normal dependency
+    injection makes composition independent of auto-configuration order.
+21. Record crawl scheduling under `retro-crawler.server.crawl.*`, default it
+    to disabled, and defer actual execution until the scheduled path and
+    `start_crawl` can share one operation coordinator.
 
 ## Initial Module Scaffold
 
@@ -208,9 +267,8 @@ reactor:
 - Spring Boot 4.1.0 and Spring AI 2.0.1 version properties live in the reactor
   parent, while their BOMs remain scoped to the Spring-based modules so they do
   not alter dependency resolution in `retro-crawler-core`.
-- `retro-crawler-mcp` registers `RetroCrawlerMcpTools` only when exactly one
-  `RetroCrawler` bean is available and backs off for an application-provided
-  tools bean.
+- `retro-crawler-mcp` requires exactly one `RetroCrawler` when creating its
+  default tools bean and backs off for an application-provided tools bean.
 - `list_archives` is the first real MCP tool. It returns collection and archive
   identities without exposing physical archive roots.
 - `retro-crawler-server` selects synchronous Streamable HTTP and is packaged as
@@ -218,7 +276,11 @@ reactor:
 - The server's own configuration requires exactly one `RetroCrawler`; missing
   and ambiguous crawler configurations fail during context startup.
 - The packaged server contains `retro-crawler-mcp` but no collection-specific
-  module. Collection composition remains the next independent step.
+  module.
+- `retro-crawler-mycollection` auto-configures only its `Model`; the server
+  turns that model and the configured `Locations` into the crawler.
+- `application.example.properties` documents the external contract without
+  baking one deployment's paths into the server artifact.
 
 ## Open Questions
 
@@ -232,8 +294,6 @@ reactor:
   restarts, beyond reconstruction from the clue repository?
 - Which authentication mechanism and reverse-proxy arrangement will be used on
   the QNAP deployment?
-- Which Spring Boot executable-JAR layout should load the collection extension
-  JAR while remaining easy to build and update in Docker?
 - Which search fields and matching rules constitute the useful first version
   of `search_gear`?
 
@@ -247,7 +307,8 @@ reactor:
 - [ ] Define the transport-neutral core query projection.
 - [x] Add `retro-crawler-mcp` and its auto-configuration tests.
 - [x] Add the generic `retro-crawler-server` host and startup-contract tests.
-- [ ] Add collection-specific `RetroCrawler` composition.
+- [x] Add collection-specific `Model` publication and server-owned location
+  binding and crawler composition.
 - [ ] Add authentication and authorization.
 - [ ] Add Docker runtime composition and NAS deployment configuration.
 - [ ] Verify MCP interoperability with Codex and at least one other client.
@@ -256,7 +317,15 @@ reactor:
 
 - Applied the canonical formatter to all new Java sources and tests.
 - `mvn clean install` passed for the complete nine-module reactor.
+- Generated Spring configuration metadata for the server's location and
+  operational property beans.
 - Confirmed that the server artifact is an executable Spring Boot JAR with
   `RetroCrawlerServerApplication` as its start class.
 - Confirmed that the packaged server contains `retro-crawler-mcp` and does not
   contain `retro-crawler-mycollection`.
+- Confirmed that the executable uses `PropertiesLauncher` and starts with
+  `retro-crawler-mycollection` plus its runtime dependencies supplied
+  externally.
+- Completed an MCP Streamable HTTP handshake against the packaged server,
+  listed the registered tool, and called `list_archives`; the structured result
+  contained the configured `hardware` and `software` archives.
