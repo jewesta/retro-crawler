@@ -42,7 +42,7 @@ public class ArchiveManager {
 		this(descriptor, digger, repository, Clock.systemUTC());
 	}
 
-	ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository,
+	public ArchiveManager(final ArchiveDescriptor descriptor, final ArchiveDigger digger, final Repository repository,
 			final Clock clock) {
 		this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
 		this.digger = Objects.requireNonNull(digger, "digger");
@@ -53,12 +53,12 @@ public class ArchiveManager {
 	private Archive fromSource(final Journal journal) throws IOException {
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Path root = descriptor.root();
-		final Instant crawledAt = clock.instant();
+		final Instant crawlStartedAt = clock.instant();
 		final ArchiveNode rootNode;
 		try (OpenedRoot opened = new OpenedRoot(root)) {
 			final ArchiveDigPlan plan = digger.plan(List.of(opened.target()), journal);
 			journal.throwIfCancelled();
-			rootNode = digger.dig(opened.target(), plan, crawledAt, journal);
+			rootNode = digger.dig(opened.target(), plan, crawlStartedAt, clock, journal);
 		}
 		requireNoNewFailures(journal, failuresBeforeCrawling);
 		final Archive archive = Archive.of(digger.collectionId(), descriptor.id(), root, rootNode);
@@ -72,7 +72,7 @@ public class ArchiveManager {
 		final int failuresBeforeCrawling = journal.failureCount();
 		final Archive stored = retrieveRequiredArchive();
 		final List<LocatedSubtree> located = locateSubtrees(stored, requestedSubtrees);
-		final Instant crawledAt = clock.instant();
+		final Instant crawlStartedAt = clock.instant();
 		ArchiveNode root = stored.root();
 		try (OpenedRoot opened = new OpenedRoot(descriptor.root())) {
 			final List<ArchiveDigTarget> targets = new ArrayList<>();
@@ -88,7 +88,7 @@ public class ArchiveManager {
 
 			for (int index = 0; index < located.size(); index++) {
 				journal.throwIfCancelled();
-				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawledAt, journal);
+				final ArchiveNode freshNode = digger.dig(targets.get(index), plan, crawlStartedAt, clock, journal);
 				root = replace(root, located.get(index).relativeFolders(), freshNode);
 			}
 		}
@@ -258,7 +258,8 @@ public class ArchiveManager {
 				final ArchiveNode replaced = replace(candidate, relativeFolders.subList(1, relativeFolders.size()),
 						replacement);
 				replacements.set(index, replaced);
-				return new ArchiveNode(current.folder(), current.crawledAt(), current.artifact(), replacements);
+				return new ArchiveNode(current.folder(), current.crawlStartedAt(), current.observedAt(),
+						current.artifact(), replacements);
 			}
 		}
 		throw new IllegalStateException("Stored archive tree no longer contains expected folder: " + folder);

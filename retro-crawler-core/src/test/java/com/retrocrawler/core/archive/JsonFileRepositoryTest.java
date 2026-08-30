@@ -173,20 +173,23 @@ class JsonFileRepositoryTest {
 	}
 
 	@Test
-	void preservesTheArchiveNodeCrawlTimestampAsReadableJson() throws IOException {
-		final Instant crawledAt = Instant.parse("2026-08-05T09:42:17.123456Z");
+	void preservesTheArchiveNodeCrawlTimesAsReadableJson() throws IOException {
+		final Instant crawlStartedAt = Instant.parse("2026-08-05T09:42:17.123456Z");
+		final Instant observedAt = Instant.parse("2026-08-05T09:45:23.654321Z");
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
 		final ArchiveId id = ArchiveId.of("crawl_timestamp");
-		final ArchiveNode root = new ArchiveNode("root", crawledAt, null, null);
+		final ArchiveNode root = new ArchiveNode("root", crawlStartedAt, observedAt, null, null);
 		repository.stowaway(Archive.of("test_collection", id, temporaryDirectory.resolve("root"), root));
 
 		final JsonNode json = new ObjectMapper()
 				.readTree(repositoryDirectory.resolve("archive_crawl_timestamp.json").toFile());
 		final Archive retrieved = repository.retrieve(id).orElseThrow();
 
-		assertEquals(crawledAt.toString(), json.at("/root/crawledAt").asText());
-		assertEquals(crawledAt, retrieved.root().crawledAt());
+		assertEquals(crawlStartedAt.toString(), json.at("/root/crawlStartedAt").asText());
+		assertEquals(observedAt.toString(), json.at("/root/observedAt").asText());
+		assertEquals(crawlStartedAt, retrieved.root().crawlStartedAt());
+		assertEquals(observedAt, retrieved.root().observedAt());
 	}
 
 	@Test
@@ -256,17 +259,17 @@ class JsonFileRepositoryTest {
 	void rejectsThePreviousCacheVersionEvenWhenItsShapeCanStillBeDecoded() throws IOException {
 		final Path repositoryDirectory = temporaryDirectory.resolve("repository");
 		final Repository repository = new JsonFileRepository(repositoryDirectory);
-		final ArchiveId id = ArchiveId.of("old_node_timestamps");
+		final ArchiveId id = ArchiveId.of("old_single_timestamp");
 		repository.stowaway(archive(id, "root"));
-		final Path jsonPath = repositoryDirectory.resolve("archive_old_node_timestamps.json");
+		final Path jsonPath = repositoryDirectory.resolve("archive_old_single_timestamp.json");
 		final ObjectMapper mapper = new ObjectMapper();
 		final ObjectNode json = (ObjectNode) mapper.readTree(jsonPath.toFile());
-		json.put("version", 4);
+		json.put("version", 6);
 		mapper.writeValue(jsonPath.toFile(), json);
 
 		final RepositoryException failure = assertThrows(RepositoryException.class, () -> repository.retrieve(id));
 
-		assertTrue(failure.getMessage().contains("uses cache version 4"));
+		assertTrue(failure.getMessage().contains("uses cache version 6"));
 	}
 
 	@Test

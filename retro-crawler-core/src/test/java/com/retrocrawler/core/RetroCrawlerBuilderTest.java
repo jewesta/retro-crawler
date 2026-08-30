@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,9 +72,14 @@ class RetroCrawlerBuilderTest {
 
 	@Test
 	void stashRetainsTheSourceAriOfEveryGearNode() throws IOException {
+		final Instant fullCrawl = Instant.parse("2026-08-29T08:00:00Z");
+		final Instant fullObservation = Instant.parse("2026-08-29T08:04:00Z");
+		final Instant shelfCrawl = Instant.parse("2026-08-30T09:00:00Z");
+		final Instant shelfObservation = Instant.parse("2026-08-30T09:00:20Z");
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("name", "test gear")));
-		final ArchiveNode archiveRoot = new ArchiveNode(".", null,
-				List.of(new ArchiveNode("shelf", artifact, List.of())));
+		final ArchiveNode archiveRoot = new ArchiveNode(".", fullCrawl, fullObservation, null,
+				List.of(new ArchiveNode("shelf", shelfCrawl, shelfObservation, artifact, List.of()),
+						new ArchiveNode("metadata", shelfCrawl, shelfObservation, null, List.of())));
 		final Repository repository = new FixedArchiveRepository(
 				Archive.of("factory_test", ARCHIVE.id(), ROOT, archiveRoot));
 		final Model model = Model.from(Set.of(TestArchiveConfiguration.class, TestGear.class));
@@ -85,6 +91,13 @@ class RetroCrawlerBuilderTest {
 		final var node = stash.archives().getFirst().roots().getFirst();
 		assertEquals(ARI.of("factory_test", ARCHIVE.id(), Path.of("shelf")), node.source());
 		assertEquals(node.source(), ((TestGear) node.gear()).source);
+		assertEquals(fullCrawl, stash.crawlStartedAt(ARCHIVE.id()).orElseThrow());
+		assertEquals(fullObservation, stash.observedAt(ARCHIVE.id()).orElseThrow());
+		assertEquals(Duration.ofMinutes(4), stash.crawlDuration(ARCHIVE.id()).orElseThrow());
+		assertEquals(shelfCrawl, stash.crawlStartedAt(node.source()).orElseThrow());
+		assertEquals(shelfObservation, stash.observedAt(node.source()).orElseThrow());
+		assertEquals(shelfCrawl,
+				stash.crawlStartedAt(ARI.of("factory_test", ARCHIVE.id(), Path.of("metadata"))).orElseThrow());
 	}
 
 	@Test

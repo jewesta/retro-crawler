@@ -3,6 +3,7 @@ package com.retrocrawler.core.archive;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -121,11 +122,12 @@ public class ArchiveDigger {
 	public ArchiveNode dig(final Path path, final Journal journal) throws IOException {
 		Objects.requireNonNull(journal, "journal");
 		final int failuresBeforeCrawling = journal.failureCount();
-		final Instant crawledAt = Instant.now();
+		final Clock clock = Clock.systemUTC();
+		final Instant crawlStartedAt = clock.instant();
 		try (ArchiveSession session = open(path)) {
 			final ArchiveDigTarget target = rootTarget(session);
 			final ArchiveDigPlan plan = plan(List.of(target), journal);
-			final ArchiveNode result = dig(target, plan, crawledAt, journal);
+			final ArchiveNode result = dig(target, plan, crawlStartedAt, clock, journal);
 			final List<Exception> failures = journal.failures();
 			if (failures.size() > failuresBeforeCrawling) {
 				throw new CrawlException(failures.subList(failuresBeforeCrawling, failures.size()));
@@ -283,19 +285,22 @@ public class ArchiveDigger {
 
 	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Journal journal)
 			throws IOException {
-		return dig(target, plan, Instant.now(), journal);
+		final Clock clock = Clock.systemUTC();
+		return dig(target, plan, clock.instant(), clock, journal);
 	}
 
-	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawledAt,
-			final Journal journal) throws IOException {
+	ArchiveNode dig(final ArchiveDigTarget target, final ArchiveDigPlan plan, final Instant crawlStartedAt,
+			final Clock clock, final Journal journal) throws IOException {
 		Objects.requireNonNull(target, "target");
-		Objects.requireNonNull(crawledAt, "crawledAt");
+		Objects.requireNonNull(crawlStartedAt, "crawlStartedAt");
+		Objects.requireNonNull(clock, "clock");
 		Objects.requireNonNull(journal, "journal");
 		if (!target.folder().path().normalize().startsWith(target.root().path().normalize())) {
 			throw new IllegalArgumentException("Expected archive path '" + target.folder().path()
 					+ "' to be below root '" + target.root().path() + "'.");
 		}
-		return digFolder(target.session(), target.root(), target.folder(), plan, crawledAt, journal, false).node();
+		return digFolder(target.session(), target.root(), target.folder(), plan, crawlStartedAt, clock, journal, false)
+				.node();
 	}
 
 	private Clues createSyntheticClues(final ArchiveFolder root, final ArchiveFolder folder) {
@@ -359,8 +364,8 @@ public class ArchiveDigger {
 	}
 
 	private DigResult digFolder(final ArchiveSession session, final ArchiveFolder root, final ArchiveFolder folder,
-			final ArchiveDigPlan plan, final Instant crawledAt, final Journal journal, final boolean parentInsideRegion)
-			throws IOException {
+			final ArchiveDigPlan plan, final Instant crawlStartedAt, final Clock clock, final Journal journal,
+			final boolean parentInsideRegion) throws IOException {
 		final String pathName = folder.path().equals(root.path()) ? "." : folder.name();
 		journal.throwIfCancelled();
 		final boolean startsRegion = plan.isRegionRoot(session, folder);
@@ -375,7 +380,7 @@ public class ArchiveDigger {
 
 		final List<DigResult> children = new ArrayList<>();
 		for (final ArchiveFolder child : listing.folders()) {
-			children.add(digFolder(session, root, child, plan, crawledAt, journal, insideRegion));
+			children.add(digFolder(session, root, child, plan, crawlStartedAt, clock, journal, insideRegion));
 		}
 
 		final Path relativeFolder = root.path().relativize(folder.path());
@@ -409,12 +414,13 @@ public class ArchiveDigger {
 			}
 		}
 
-		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
-		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
-		final ArchiveNode result = new ArchiveNode(pathName, crawledAt, artifact, effectiveChildren);
 		if (startsRegion) {
 			plan.completeRegion(folder, journal);
 		}
+		final List<ArchiveNode> archiveChildren = children.stream().map(DigResult::node).toList();
+		final List<ArchiveNode> effectiveChildren = archiveChildren.isEmpty() ? null : archiveChildren;
+		final ArchiveNode result = new ArchiveNode(pathName, crawlStartedAt, clock.instant(), artifact,
+				effectiveChildren);
 		return new DigResult(result, outcome);
 	}
 

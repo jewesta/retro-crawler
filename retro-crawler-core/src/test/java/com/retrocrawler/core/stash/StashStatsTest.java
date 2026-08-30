@@ -17,7 +17,7 @@ class StashStatsTest {
 
 	@Test
 	void describesAnEmptyStash() {
-		final StashStats stats = StashStats.from(new Stash(List.of()));
+		final StashStats stats = new Stash(List.of()).stats();
 
 		assertEquals(0, stats.archiveCount());
 		assertEquals(0, stats.rootCount());
@@ -36,7 +36,7 @@ class StashStatsTest {
 		final Stash stash = new Stash(List.of(new ArchiveGear<>(archive("first"), List.of(firstRoot, secondRoot)),
 				new ArchiveGear<>(archive("second"), List.of())));
 
-		final StashStats stats = StashStats.from(stash);
+		final StashStats stats = stash.stats();
 
 		assertEquals(2, stats.archiveCount());
 		assertEquals(2, stats.rootCount());

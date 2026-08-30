@@ -5,7 +5,7 @@ import com.retrocrawler.core.util.AbstractId;
 
 public final class ArchiveVersion extends AbstractId<Integer> {
 
-	public static final ArchiveVersion CURRENT_IMPLEMENTATION_VERSION = new ArchiveVersion(6);
+	public static final ArchiveVersion CURRENT_IMPLEMENTATION_VERSION = new ArchiveVersion(7);
 
 	@JsonCreator
 	protected ArchiveVersion(final int version) {

@@ -149,15 +149,17 @@ ARIs are durable and are preserved by facts through their source clue.
 Artifact JSON now stores each clue as a value/provenance object. `sources` is
 omitted when empty, and the incompatible cache shape advances the archive cache
 format to version 6. Compatibility with earlier issue-branch cache files is not
-required.
+required. Adding distinct crawl-operation and folder-observation times later in
+this issue advances the current format to version 7.
 
-The in-memory and public clue representation always retains complete ARIs. The
-version 6 JSON cache avoids repeating their common prefixes by storing the
-collection namespace once on the archive and using its existing tree position
-as the artifact context. A source equal to the artifact is stored as `.`, and a
-source below it as `./...`. Retrieval validates contextual paths and
-reconstructs complete ARIs before constructing any clue. Relative paths
-containing traversal are rejected at the repository boundary.
+The in-memory and public clue representation always retains complete ARIs.
+Version 6 introduced a JSON representation that avoids repeating their common
+prefixes by storing the collection namespace once on the archive and using its
+existing tree position as the artifact context; version 7 retains that
+representation. A source equal to the artifact is stored as `.`, and a source
+below it as `./...`. Retrieval validates contextual paths and reconstructs
+complete ARIs before constructing any clue. Relative paths containing traversal
+are rejected at the repository boundary.
 
 Source validity is stricter than path containment. Before accumulating a
 finder's returned `Clues`, the digger checks every declared ARI against the
@@ -497,7 +499,7 @@ No general relation engine or alternate hierarchy types are introduced. The
 source hierarchy is the archive-location relation already established by the
 core model.
 
-## Statistics and Operational Status
+## Statistics and Crawl Times
 
 Because the Stash contains every recognized Gear, structural statistics can
 describe the whole collection:
@@ -507,14 +509,19 @@ describe the whole collection:
 - archive, root, node, and leaf counts;
 - maximum source-hierarchy depth.
 
-Source freshness is operational status rather than a single truthful
-Stash-wide timestamp. Each archive has its own full-crawl time, and partial
-reindexing gives selected subtrees newer timestamps than their ancestors or
-siblings.
+`stash.stats()` calculates a fresh `StashStats` on demand. Statistics are never
+stored as parallel Stash state.
 
-The API should therefore retain per-archive freshness. It may keep structural
-`StashStats` and operational `StashStatus` separate rather than mixing one
-misleading “last crawl” value into the statistics.
+Crawl times are observed state and therefore follow a different lifecycle.
+Every persisted archive node records both the shared start of the physical
+crawl operation that produced it and the instant at which that folder had been
+fully inspected. Observation is bottom-up: children are stamped before their
+parent, making the root observation the end of the archive traversal. The Stash
+retains these pairs in one immutable `ArchiveCrawlTimes` per archive and derives
+the last complete crawl duration from the root pair rather than storing it.
+Exact lookup by subtree ARI reveals later partial crawls without changing the
+observations of ancestors or untouched siblings. These timestamps describe
+cache age, not whether the physical source has remained unchanged.
 
 ## Traceability Beyond Native Gear Objects
 
@@ -527,7 +534,7 @@ During resolution RetroCrawler knows more than the current public result keeps:
 - the source Artifact and its raw clues;
 - the effective typed facts, each with its source clue and confidence;
 - unresolved clues;
-- archive crawl timestamps;
+- archive crawl observations;
 - competing equal-confidence Gear matches.
 
 The internal resolved Stash state must retain the information needed for
@@ -567,7 +574,7 @@ The structured read API should answer bounded questions such as:
 - Retrieve Gear by a present Retro ID.
 - Trace Gear back to its Artifact, clues, facts, and resolution decisions.
 - Locate files belonging to matching Gear.
-- Report statistics and archive freshness.
+- Report statistics and archive/subtree crawl times.
 
 The exact names remain open, but the semantic split is firm:
 
@@ -743,7 +750,8 @@ silently presenting a first-wins match as certain.
       resolution.
 - [x] Expose the source hierarchy forest by archive and adapt Vaadin and CLI.
 - [x] Establish `access` versus physical `crawl` and atomic Stash parking.
-- [ ] Expand statistics and per-archive freshness/status.
+- [x] Expose on-demand statistics plus per-archive/subtree crawl starts and
+      bottom-up observation timestamps.
 - [ ] Retain resolution evidence and add retrieval/trace access.
 - [ ] Define collection and query-schema discovery.
 - [ ] Define protocol-safe value documents and structured query criteria.
@@ -795,17 +803,24 @@ silently presenting a first-wins match as certain.
   and Stash. Collection-wide Retro ID uniqueness remains intact instead of
   suppressing legitimate duplicate detection. A crawl-level regression test
   verifies that both alternatives independently resolve the same Retro IDs.
+- `stash.stats()` computes structural statistics directly from its immutable
+  Gear forest. Persisted archive nodes retain both their shared operation start
+  and bottom-up folder observation time; these are projected into
+  `ArchiveCrawlTimes`, with direct Stash lookup by archive ID or exact subtree
+  ARI. Complete crawl duration is calculated from the root pair, folders
+  without resolved Gear retain their observations, and no generic `StashStatus`
+  or inferred source-freshness claim is introduced.
 - Focused tests cover the four filter shapes, same-key reuse across Gear types,
   global-versus-present choices, lazy caching, and structured Query behavior.
   `FilterBarTest` additionally covers relevant-definition discovery, all four
   generated control shapes, immediate combined filtering, choice counts, and
   rebuilding for another definition set. The complete seven-module reactor
-  passes 395 tests.
+  passes 400 tests.
 - The crawl-time `GearTreeFactory`, `StashFactory`, and `FlatListFactory`
   projection path was removed. Vaadin, CLI, demo, core, and collection callers
   now project from Stash through Query and Batch.
-- Canonical formatting passes for all 24 changed Java source files. The focused
-  core suite passes 265 tests, and the complete seven-module reactor passes 386
+- Canonical formatting passes for all currently changed Java source files. The
+  core suite passes 275 tests, and the complete seven-module reactor passes 400
   tests.
 
 ## Remaining Design Questions

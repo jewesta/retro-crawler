@@ -382,6 +382,33 @@ Stash recrawled = crawler.crawl(
         new Journal(), ReindexScope.subtree(changedShelf));
 ```
 
+Structural statistics are calculated from an immutable Stash when requested;
+they are not stored as another representation of the collection. Crawl times
+are different: they are observations recorded during the physical crawl and
+carried from the persisted clue archive into the Stash:
+
+```java
+StashStats stats = stash.stats();
+
+Optional<Instant> completeCrawlStarted = stash.crawlStartedAt(archiveId);
+Optional<Instant> completeCrawlObserved = stash.observedAt(archiveId);
+Optional<Duration> completeCrawlDuration = stash.crawlDuration(archiveId);
+
+Optional<Instant> shelfCrawlStarted = stash.crawlStartedAt(changedShelf);
+Optional<Instant> shelfObserved = stash.observedAt(changedShelf);
+
+List<ArchiveCrawlTimes> timesByArchive = stash.crawlTimes();
+```
+
+`ArchiveCrawlTimes.observations()` exposes every indexed folder ARI in archive
+tree order. All nodes produced by one operation share its `crawlStartedAt`;
+each node receives its own `observedAt` after that folder and its children have
+been inspected. The root is therefore the final observation of a complete
+archive crawl, allowing its duration to be calculated without storing another
+value. A newer subtree observation records a later partial crawl while
+untouched nodes retain their earlier observations. These are crawl times, not
+a claim that the physical source is currently unchanged.
+
 A `Stash` contains every recognized Gear in its natural archive hierarchy. A
 typed immutable query is materialized as a lifted `Batch<G>`:
 
@@ -491,7 +518,7 @@ A missing stored archive causes the configured source to be crawled. If a
 stored archive cannot be retrieved, RetroCrawler reports the repository failure
 and rebuilds it from that source.
 
-JSON cache format version 6 is inspected before the stored payload is
+JSON cache format version 7 is inspected before the stored payload is
 deserialized. Unsupported, missing, or malformed versions are rejected at the
 repository boundary so an incompatible payload is never parsed as the current
 `Archive` shape. Artifact-relative clue sources are also checked for traversal;

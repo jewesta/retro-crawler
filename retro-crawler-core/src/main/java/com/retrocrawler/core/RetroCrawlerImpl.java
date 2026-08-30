@@ -38,7 +38,9 @@ import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.progress.ProgressAccuracy;
 import com.retrocrawler.core.progress.ProgressCancelledException;
+import com.retrocrawler.core.stash.ArchiveCrawlTimes;
 import com.retrocrawler.core.stash.ArchiveGear;
+import com.retrocrawler.core.stash.CrawlObservation;
 import com.retrocrawler.core.stash.GearNode;
 import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.util.PathNames;
@@ -76,7 +78,7 @@ class RetroCrawlerImpl implements RetroCrawler {
 			final ArchiveDigger digger = new ArchiveDigger(new ModelArchiveDefinition(descriptor, model),
 					binding.source(), planning);
 			final RegisteredArchive archive = new RegisteredArchive(descriptor,
-					new ArchiveManager(descriptor, digger, repository), binding.source());
+					new ArchiveManager(descriptor, digger, repository, configuration.clock()), binding.source());
 			if (configured.putIfAbsent(descriptor.id(), archive) != null) {
 				throw new IllegalArgumentException("Archive is already configured: " + descriptor.id());
 			}
@@ -226,7 +228,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 			final Path archiveRoot = Path.of(archive.clues().basePath());
 			final ResolvedArchiveNode resolvedRoot = resolve(archive.descriptor().id(), archive.clues().root(),
 					archiveRoot, archiveRoot, retroIds, journal);
-			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot));
+			resolvedArchives.add(new ResolvedArchive(archive.descriptor(), resolvedRoot,
+					crawlTimes(archive.descriptor(), archive.clues().root())));
 		}
 
 		try {
@@ -244,7 +247,26 @@ class RetroCrawlerImpl implements RetroCrawler {
 					toGearNodes(resolvedArchive.descriptor().id(), List.of(resolvedArchive.root()), journal)));
 		}
 
-		return new Stash(resultArchives, resolver.filters());
+		return new Stash(resultArchives, resolver.filters(),
+				resolvedArchives.stream().map(ResolvedArchive::crawlTimes).toList());
+	}
+
+	private ArchiveCrawlTimes crawlTimes(final ArchiveDescriptor descriptor, final ArchiveNode root) {
+		final Map<ARI, CrawlObservation> observations = new LinkedHashMap<>();
+		collectCrawlTimes(descriptor.id(), root, Path.of(""), observations);
+		return new ArchiveCrawlTimes(descriptor, observations);
+	}
+
+	private void collectCrawlTimes(final ArchiveId archiveId, final ArchiveNode node, final Path relativePath,
+			final Map<ARI, CrawlObservation> observations) {
+		observations.put(ARI.of(collectionId, archiveId, relativePath),
+				new CrawlObservation(node.crawlStartedAt(), node.observedAt()));
+		final List<ArchiveNode> children = node.children();
+		if (children != null) {
+			for (final ArchiveNode child : children) {
+				collectCrawlTimes(archiveId, child, relativePath.resolve(child.folder()), observations);
+			}
+		}
 	}
 
 	private void requireRoutableSubtrees(final ReindexScope reindexScope) {
@@ -338,7 +360,8 @@ class RetroCrawlerImpl implements RetroCrawler {
 	private record CrawledArchive(ArchiveDescriptor descriptor, Archive clues) {
 	}
 
-	private record ResolvedArchive(ArchiveDescriptor descriptor, ResolvedArchiveNode root) {
+	private record ResolvedArchive(ArchiveDescriptor descriptor, ResolvedArchiveNode root,
+			ArchiveCrawlTimes crawlTimes) {
 	}
 
 	private record ResolvedArchiveNode(Optional<GearResolution> resolution,

@@ -12,7 +12,6 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.progress.Progressor;
 import com.retrocrawler.core.stash.Batch;
 import com.retrocrawler.core.stash.Stash;
-import com.retrocrawler.core.stash.StashStats;
 import com.retrocrawler.demo.DemoFiles;
 import com.retrocrawler.demo.DemoModels;
 import com.retrocrawler.demo.gear.MyRetroGear;
@@ -69,8 +68,7 @@ public final class RetroCrawlerCli {
 
 		System.out.println();
 		System.out.println("Statistics");
-		final StashStats stats = StashStats.from(stash);
-		StashStatsPrinter.printToStdout(stats);
+		StashStatsPrinter.printToStdout(stash.stats());
 	}
 
 	static final class Args {

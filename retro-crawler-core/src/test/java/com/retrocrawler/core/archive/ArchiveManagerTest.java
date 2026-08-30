@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -80,6 +82,23 @@ class ArchiveManagerTest {
 		assertEquals(1, repository.stowawayCount);
 		assertSame(result, repository.stowedAway);
 		assertEquals("test_collection", result.collectionId());
+	}
+
+	@Test
+	void sharesOneCrawlStartAndObservesFoldersBottomUp() throws IOException {
+		final Instant crawlStartedAt = Instant.parse("2026-08-30T08:00:00Z");
+		final Path archiveDirectory = Files.createDirectory(temporaryDirectory.resolve("archive"));
+		Files.createDirectory(archiveDirectory.resolve("child"));
+		final ArchiveDescriptor descriptor = descriptor(archiveDirectory);
+		final Clock clock = new AdvancingClock(crawlStartedAt, Duration.ofSeconds(1), ZoneOffset.UTC);
+
+		final Archive archive = manager(descriptor, new RecordingRepository(Optional.empty()), clock)
+				.archive(new Journal(), ReindexScope.all());
+
+		assertEquals(crawlStartedAt, archive.root().crawlStartedAt());
+		assertEquals(crawlStartedAt, node(archive, "child").crawlStartedAt());
+		assertEquals(crawlStartedAt.plusSeconds(1), node(archive, "child").observedAt());
+		assertEquals(crawlStartedAt.plusSeconds(2), archive.root().observedAt());
 	}
 
 	@Test
@@ -243,10 +262,12 @@ class ArchiveManagerTest {
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "selected")));
 		assertEquals(originalSelectedId, technicalId(node(refreshed, "selected")));
-		assertEquals(fullCrawl, refreshed.root().crawledAt());
-		assertEquals(fullCrawl, node(refreshed, "untouched").crawledAt());
-		assertEquals(partialCrawl, node(refreshed, "selected").crawledAt());
-		assertEquals(partialCrawl, node(refreshed, "selected", "renamed").crawledAt());
+		assertEquals(fullCrawl, refreshed.root().crawlStartedAt());
+		assertEquals(fullCrawl, refreshed.root().observedAt());
+		assertEquals(fullCrawl, node(refreshed, "untouched").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected", "renamed").crawlStartedAt());
+		assertEquals(partialCrawl, node(refreshed, "selected").observedAt());
 	}
 
 	@Test
@@ -268,7 +289,7 @@ class ArchiveManagerTest {
 
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "first")));
 		assertEquals(List.of("renamed"), childFolders(node(refreshed, "second")));
-		assertEquals(node(refreshed, "first").crawledAt(), node(refreshed, "second").crawledAt());
+		assertEquals(node(refreshed, "first").crawlStartedAt(), node(refreshed, "second").crawlStartedAt());
 		assertEquals(2, repository.stowawayCount);
 	}
 
@@ -363,6 +384,38 @@ class ArchiveManagerTest {
 		final ClueFinder clueFinder = new TestClueFinder(folder -> Clues.of(Clue.of("folder", folder.name())));
 		final ArchiveDigger digger = new ArchiveDigger(new TestArchiveDefinition(descriptor, clueFinder));
 		return new ArchiveManager(descriptor, digger, repository, clock);
+	}
+
+	private static final class AdvancingClock extends Clock {
+
+		private Instant next;
+
+		private final Duration step;
+
+		private final ZoneId zone;
+
+		private AdvancingClock(final Instant first, final Duration step, final ZoneId zone) {
+			next = first;
+			this.step = step;
+			this.zone = zone;
+		}
+
+		@Override
+		public ZoneId getZone() {
+			return zone;
+		}
+
+		@Override
+		public Clock withZone(final ZoneId requestedZone) {
+			return new AdvancingClock(next, step, requestedZone);
+		}
+
+		@Override
+		public Instant instant() {
+			final Instant result = next;
+			next = next.plus(step);
+			return result;
+		}
 	}
 
 	private static final class RecordingRepository implements Repository {
