@@ -22,6 +22,15 @@ class RetroCrawlerMcpToolsSchemaTest {
 	}
 
 	@Test
+	void retainsThePublicBrowseParameterNamesForTheMcpInputSchema() throws NoSuchMethodException {
+		final Method browseArchive = RetroCrawlerMcpTools.class.getMethod("browseArchive", String.class, Integer.class,
+				Integer.class);
+
+		assertThat(browseArchive.getParameters()).allMatch(java.lang.reflect.Parameter::isNamePresent)
+				.extracting(java.lang.reflect.Parameter::getName).containsExactly("ari", "offset", "limit");
+	}
+
+	@Test
 	void retainsThePublicCrawlParameterNamesForTheMcpInputSchema() throws NoSuchMethodException {
 		final Method startCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("startCrawl", List.class, List.class);
 		final Method getCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("getCrawl", String.class);

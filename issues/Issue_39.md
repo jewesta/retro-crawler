@@ -25,6 +25,16 @@ the original `start_crawl` tool could select only complete archives.
    operation failure rather than causing MCP to inspect physical paths.
 5. Retain the original one-argument Java overload for source compatibility;
    the annotated MCP method publishes the new two-property input schema.
+6. Add `browse_archive` over the published Stash's indexed folder observations.
+   Its required `ari` identifies the folder being browsed; results contain a
+   bounded page of direct children rather than recursively serializing the
+   complete archive.
+7. Browse every indexed folder, including folders that do not resolve into
+   Gear. Overlay each folder with its direct-child count, total Gear occurrences
+   at or below it, Gear kinds at the exact folder, and crawl timestamps.
+8. Add each archive's canonical `rootAri` to `list_archives`, allowing clients
+   to begin browsing without constructing an identifier or seeing a provider
+   path.
 
 ## Status
 
@@ -32,10 +42,18 @@ the original `start_crawl` tool could select only complete archives.
 - Implemented canonical folder-ARI selection for `start_crawl`.
 - Added focused mapping, validation, status-projection, and MCP parameter-name
   tests.
+- Implemented bounded, paginated direct-child browsing through
+  `browse_archive` and exposed archive root ARIs.
 
 ## Next Improvements
 
-- Add bounded archive and Stash browsing.
 - Add detailed Gear retrieval by ARI.
 - Expose Stash statistics and crawl freshness.
 - Improve typed filters, availability, pagination, and crawl diagnostics.
+
+## Verification
+
+- The canonical formatter passes for all changed Java sources.
+- The focused `retro-crawler-core` and `retro-crawler-mcp` reactor passes with
+  309 tests.
+- The complete nine-module `mvn test` reactor passes.
