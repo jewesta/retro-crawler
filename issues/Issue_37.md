@@ -291,6 +291,10 @@ portable across clients.
     transport-neutral without crowding core's root API. Let the MCP
     auto-configuration publish one replaceable Spring bean that the later MCP
     tools and server scheduler share.
+25. Treat every `Query.where(...)` filter criterion as a strict narrowing
+    operation. Gear matches only when the Fact applies and at least one value
+    satisfies the criterion; unrelated Gear and applicable Gear without a
+    resolved value do not match.
 
 ## Initial Module Scaffold
 
@@ -351,6 +355,7 @@ reactor:
   operation service.
 - [x] Reused the Stash, Query, Batch, crawl metadata, and ResolutionTrace
   contracts delivered by issue #22.
+- [x] Corrected Fact-filter query semantics so non-applicable Gear is excluded.
 - [ ] Define the bounded MCP projections of those core contracts.
 - [x] Add `retro-crawler-mcp` and its auto-configuration tests.
 - [x] Add the generic `retro-crawler-server` host and startup-contract tests.
@@ -368,12 +373,15 @@ reactor:
   cooperative cancellation, failure reporting, and bounded history.
 - Scheduler tests cover disabled-by-default composition, cron and zone
   registration, full-crawl submission, and skipping an overlapping trigger.
+- Fact-filter tests cover strict narrowing for choice, range, and text filters:
+  non-applicable Gear and applicable Gear without a resolved value are
+  excluded.
 - Rebased issue #37 onto `origin/main` at `7f0a446`, including the merged issue
   #22 Stash/query/provenance groundwork, and reconciled the Locations builder
   test with the current `RetroCrawler.crawl(...)` API.
 - `mvn test` passed for the complete nine-module reactor after the rebase.
 - `mvn clean install` passed for the complete nine-module reactor after adding
-  the crawl-operation service.
+  the crawl-operation service, scheduling, and strict query semantics.
 - The packaged server loaded the external MyCollection and model JARs through
   `PropertiesLauncher`, initialized an MCP Streamable HTTP session, listed and
   called `list_archives`, and shut down gracefully with the service bean.

@@ -88,19 +88,17 @@ public final class Query<G> {
 	}
 
 	/**
-	 * Requires at least one value of the supplied Fact to satisfy the predicate
-	 * wherever that Fact applies. Gear types to which the Fact does not apply
-	 * remain selected.
+	 * Requires the supplied Fact to apply and at least one of its values to
+	 * satisfy the predicate.
 	 */
 	public <T> Query<G> whereMatching(final FilterDefinition<T> filter, final Predicate<? super T> predicate) {
 		final FilterDefinition<T> ownedFilter = requireOwnedFilter(filter);
 		final Predicate<? super T> required = Objects.requireNonNull(predicate, "predicate");
-		return where(gear -> !ownedFilter.appliesTo(gear) || ownedFilter.values(gear).stream().anyMatch(required));
+		return where(gear -> ownedFilter.appliesTo(gear) && ownedFilter.values(gear).stream().anyMatch(required));
 	}
 
 	/**
-	 * Requires the supplied Fact value wherever that Fact applies. Gear types
-	 * to which the Fact does not apply remain selected.
+	 * Requires the supplied Fact to apply and contain the supplied value.
 	 */
 	public <T> Query<G> where(final FilterDefinition<T> filter, final T value) {
 		final FilterDefinition<T> ownedFilter = requireOwnedFilter(filter);

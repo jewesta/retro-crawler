@@ -106,7 +106,7 @@ class FactFilterTest {
 	}
 
 	@Test
-	void filtersEveryApplicableGearTypeWhileRetainingNonApplicableGear() {
+	void retainsOnlyGearToWhichTheFilterAppliesAndWhoseValueMatches() {
 		final Model model = model();
 		final FilterDefinition<Bus> bus = filter(model.filters(), "bus", Bus.class);
 		final GraphicsCard agpCard = new GraphicsCard(Set.of(Bus.AGP), 1997);
@@ -117,9 +117,9 @@ class FactFilterTest {
 		final Batch<Object> result = stash.query(Object.class).where(bus, Bus.AGP).pull();
 		final FilterAvailability.Choices<Bus> availability = choices(result.availability(bus));
 
-		assertEquals(List.of(agpCard, magazine), result.gear());
+		assertEquals(List.of(agpCard), result.gear());
 		assertEquals(model.filters(), filters(result));
-		assertEquals(List.of("bus", "edition", "released", "title"), filterKeys(result.filters(RELEVANT)));
+		assertEquals(List.of("bus", "released"), filterKeys(result.filters(RELEVANT)));
 		assertEquals(1, availability.populatedOccurrences());
 		assertEquals(List.of(1L, 0L, 0L, 0L),
 				availability.options().stream().map(FilterAvailability.Option::matchingOccurrences).toList());
@@ -140,8 +140,8 @@ class FactFilterTest {
 		final Batch<Object> titledGear = stash.query(Object.class)
 				.whereMatching(title, value -> value.toLowerCase(java.util.Locale.ROOT).contains("hardware")).pull();
 
-		assertEquals(List.of(newerCard, magazine), recentGear.gear());
-		assertEquals(List.of(oldCard, newerCard, magazine), titledGear.gear());
+		assertEquals(List.of(newerCard), recentGear.gear());
+		assertEquals(List.of(magazine), titledGear.gear());
 	}
 
 	@Test
