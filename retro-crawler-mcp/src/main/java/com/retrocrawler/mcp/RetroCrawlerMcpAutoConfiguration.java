@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 
 import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.crawl.CrawlOperationService;
+import com.retrocrawler.mcp.crawl.RetroCrawlerCrawlMcpTools;
 
 /** Auto-configures RetroCrawler's MCP tools around an application crawler. */
 @AutoConfiguration
@@ -24,5 +25,12 @@ public class RetroCrawlerMcpAutoConfiguration {
 	@ConditionalOnMissingBean
 	RetroCrawlerMcpTools retroCrawlerMcpTools(final RetroCrawler retroCrawler) {
 		return new RetroCrawlerMcpTools(retroCrawler);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	RetroCrawlerCrawlMcpTools retroCrawlerCrawlMcpTools(final RetroCrawler retroCrawler,
+			final CrawlOperationService operations) {
+		return new RetroCrawlerCrawlMcpTools(retroCrawler, operations);
 	}
 }

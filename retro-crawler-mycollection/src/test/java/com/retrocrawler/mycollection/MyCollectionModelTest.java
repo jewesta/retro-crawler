@@ -33,14 +33,12 @@ import com.retrocrawler.core.archive.ReindexScope;
 import com.retrocrawler.core.archive.Repository;
 import com.retrocrawler.core.archive.clues.Archive;
 import com.retrocrawler.core.archive.clues.Clue;
-import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.archive.filter.IgnoreDotPaths;
 import com.retrocrawler.core.archive.filter.IgnoreLinuxSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreMacSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreQNAPSystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreSynologySystemPaths;
 import com.retrocrawler.core.archive.filter.IgnoreWindowsSystemPaths;
-import com.retrocrawler.core.gear.GearResolutionException;
 import com.retrocrawler.model.appearance.Color;
 import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
@@ -569,23 +567,25 @@ class MyCollectionModelTest {
 	}
 
 	@Test
-	void rejectsConflictingExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
+	void usesAnExplicitExpansionBusWhenAnAnonymousFolderObservationDiffers() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Conflicting object [AGP] [200006]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: PCI\n---\n");
 
-		final GearResolutionException failure = assertThrows(GearResolutionException.class,
-				() -> crawler().crawl(new Journal(), ReindexScope.all()));
-		assertInstanceOf(DuplicateClueException.class, failure.getCause());
+		final MyGear gear = gear(crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear(),
+				"Conflicting object [AGP] [200006]");
+
+		assertEquals(Set.of(ExpansionBus.PCI), gear.getExpansionBuses());
 	}
 
 	@Test
-	void rejectsCorroboratingExpansionBusesAcrossFolderAndMarkdownClues() throws IOException {
+	void usesAnExplicitExpansionBusWhenAnAnonymousFolderObservationCorroborates() throws IOException {
 		final Path folder = Files.createDirectories(archiveRoot.resolve("Corroborated card [AGP] [VGA] [200007]"));
 		Files.writeString(folder.resolve("retro.md"), "---\nbus: AGP\n---\n");
 
-		final GearResolutionException failure = assertThrows(GearResolutionException.class,
-				() -> crawler().crawl(new Journal(), ReindexScope.all()));
-		assertInstanceOf(DuplicateClueException.class, failure.getCause());
+		final MyGear gear = gear(crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear(),
+				"Corroborated card [AGP] [VGA] [200007]");
+
+		assertEquals(Set.of(ExpansionBus.AGP), gear.getExpansionBuses());
 	}
 
 	@Test

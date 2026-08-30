@@ -171,8 +171,8 @@ The first interface should be deliberately small and use standard MCP
   crawl metadata.
 - `list_filters` — list the stable identities and query behavior of every
   model-defined filter.
-- `search_gear` — search the parked Stash with pagination
-  and bounded result sizes.
+- `search_gear` — search the parked Stash by logical archive and strict filter
+  criteria, with pagination and bounded result sizes.
 - `get_gear` — retrieve one piece of gear and its traceable facts and clues.
 - `browse_stash` — browse a bounded part of the archive/gear hierarchy.
 - `start_crawl` — start an asynchronous crawl and return an operation ID.
@@ -302,6 +302,38 @@ portable across clients.
     identities immediately, and map the sealed `FilterType` hierarchy
     exhaustively so a newly introduced kind cannot compile without an MCP
     representation.
+27. Make the first `search_gear` contract model-neutral: accept logical archive
+    IDs plus stable filter IDs, combine all criteria with AND, support `EQUALS`
+    for every filter and case-insensitive `CONTAINS` for text filters, and page
+    the deterministic Stash order. Return canonical ARIs, Gear kind labels,
+    resolved Fact summaries, and resolution-issue counts; never expose physical
+    archive roots or reflect arbitrary Gear fields. Cap criteria, page size,
+    Fact counts, values, and value lengths at the MCP boundary.
+28. Compile the MCP adapter with Java parameter metadata and test the public
+    tool method names. Spring derives MCP JSON input properties from those
+    reflection names; an accidental `arg0`/`arg1` schema is a protocol-contract
+    regression even when direct Java calls still work.
+29. Expose crawl control through a dedicated MCP tool bean backed by the same
+    `CrawlOperationService` as scheduling. `start_crawl` accepts only logical
+    archive IDs, maps them to archive-root ARIs, and treats an omitted or empty
+    selection as a complete crawl. `get_crawl` and `cancel_crawl` address the
+    operation by its opaque ID and return bounded status and failure DTOs.
+30. Preserve core's subtree-reindex contract on a fresh repository. Selecting
+    archive IDs without a stored clue archive fails loudly; clients bootstrap
+    a new installation with an all-archive crawl rather than having the MCP
+    adapter silently widen the requested scope.
+31. Keep an anonymous observation as unresolved evidence when an explicitly
+    keyed clue already claims the semantic key. The explicit clue remains
+    authoritative whether the anonymous interpretation agrees or differs.
+32. Fail closed when the MCP HTTP endpoint has no configured bearer token.
+    Protect every `/mcp` exchange with a constant-time token comparison, keep
+    the token outside the application artifact, and publish the endpoint to the
+    LAN only after unauthenticated requests have been verified to fail.
+33. Run RetroCrawler as its own unprivileged service in the existing NAS
+    Compose application rather than as an unsupervised child of the confined
+    SSH service. Share only the persistent configuration volume, mount archive
+    sources read-only, bind the MCP port to the NAS LAN address, and let Compose
+    own restart policy and lifecycle.
 
 ## Initial Module Scaffold
 
@@ -318,7 +350,12 @@ reactor:
 - `list_archives` is the first real MCP tool. It returns collection and archive
   identities without exposing physical archive roots.
 - `list_filters` exposes every model filter by its semantic Fact key together
-  with its `CHOICES`, `RANGE`, `TEXT`, or `EXACT` behavior and multiplicity.
+  with its `CHOICES`, `RANGE`, `TEXT`, or `EXACT` behavior, supported operators,
+  multiplicity, and declared choice values.
+- `search_gear` resolves those logical inputs back to the exact model-owned
+  definitions and delegates selection to `Stash.query(...)`.
+- The MCP module retains and verifies Java parameter names so generated input
+  schemas expose `archiveIds`, `criteria`, `offset`, and `limit`.
 - `retro-crawler-server` selects synchronous Streamable HTTP and is packaged as
   an executable Spring Boot JAR.
 - Its optional scheduler creates a `CronTrigger` from the bound server
@@ -340,16 +377,20 @@ reactor:
 - What bounded MCP DTO shape best projects `Batch`, `GearNode`, and
   `ResolutionTrace` without leaking model implementation classes into the
   protocol schema?
-- Which machine-readable combinations of the existing archive and Fact-filter
-  criteria belong in the first MCP search tool?
+- Which typed codecs and comparison operators should extend `RANGE` and
+  non-choice `EXACT` filters beyond their initial textual equality operation?
 - Should the Spring composition class live directly in
   `retro-crawler-mycollection`, or should Spring integration eventually be an
   optional companion artifact if the collection module needs to stay entirely
   framework-neutral?
-- Which authentication mechanism and reverse-proxy arrangement will be used on
-  the QNAP deployment?
-- Which search fields and matching rules constitute the useful first version
-  of `search_gear`?
+- Should the initial shared bearer token later become separate read and
+  crawl-control credentials, or should that distinction be delegated to an
+  identity-aware reverse proxy?
+- Which detailed clue and resolution projections belong in `get_gear` rather
+  than the compact `search_gear` result?
+- Should MCP expose a bounded archive-location or subtree query for relational
+  questions such as which Gear is installed below a complete system, without
+  forcing the client to page an entire archive and interpret every source ARI?
 
 ## Progress
 
@@ -367,13 +408,24 @@ reactor:
 - [x] Corrected Fact-filter query semantics so non-applicable Gear is excluded.
 - [x] Added stable MCP filter identities, an exhaustive filter-kind mapping,
   and `list_filters`.
+- [x] Added bounded `search_gear` archive selection, strict Fact criteria,
+  pagination, and traceable ARI/Fact summaries.
+- [x] Added asynchronous `start_crawl`, `get_crawl`, and `cancel_crawl` tools
+  with logical archive selection and bounded operation status.
+- [x] Corrected resolution so anonymous observations do not compete with an
+  explicit semantic-key authority and remain available in the trace.
 - [ ] Define the remaining bounded MCP projections of the Stash query results.
 - [x] Add `retro-crawler-mcp` and its auto-configuration tests.
 - [x] Add the generic `retro-crawler-server` host and startup-contract tests.
 - [x] Add collection-specific `Model` publication and server-owned location
   binding and crawler composition.
-- [ ] Add authentication and authorization.
-- [ ] Add Docker runtime composition and NAS deployment configuration.
+- [x] Add bearer-token authentication at the MCP HTTP boundary.
+- [ ] Add separate read and crawl-control authorization scopes.
+- [x] Add Docker runtime composition and NAS deployment configuration.
+- [x] Field-test the packaged server, crawl control, Stash publication, and
+  strict Gear search against the real three-archive NAS deployment.
+- [x] Expose an authenticated MCP route outside container loopback.
+- [x] Register the endpoint as a native Codex MCP server.
 - [ ] Verify MCP interoperability with Codex and at least one other client.
 
 ## Verification
@@ -388,14 +440,18 @@ reactor:
   non-applicable Gear and applicable Gear without a resolved value are
   excluded.
 - MCP filter-registry tests cover every sealed core filter kind, bidirectional
-  identity lookup, duplicate identities, foreign definitions, and unknown IDs.
+  identity lookup, choice values, duplicate and ambiguous identities, foreign
+  definitions, and unknown IDs.
+- MCP Gear-search tests cover strict filtering, archive selection, text
+  containment, deterministic pagination, resolved Fact summaries, unsupported
+  operators, unknown filters, and server-side limits.
 - Rebased issue #37 onto `origin/main` at `7f0a446`, including the merged issue
   #22 Stash/query/provenance groundwork, and reconciled the Locations builder
   test with the current `RetroCrawler.crawl(...)` API.
 - `mvn test` passed for the complete nine-module reactor after the rebase.
 - `mvn clean install` passed for the complete nine-module reactor after adding
-  the crawl-operation service, scheduling, strict query semantics, and MCP
-  filter catalog.
+  the crawl-operation service, scheduling, strict query semantics, MCP filter
+  catalog, and bounded Gear search.
 - The packaged server loaded the external MyCollection and model JARs through
   `PropertiesLauncher`, initialized an MCP Streamable HTTP session, listed and
   called `list_archives`, and shut down gracefully with the service bean.
@@ -414,3 +470,74 @@ reactor:
 - Repeated the MCP Streamable HTTP handshake against the rebased packaged
   server, listed the registered tool, and called `list_archives`; the structured
   result contained the configured `hardware` and `software` archives.
+- Repeated the packaged-server handshake after adding `search_gear`; `tools/list`
+  exposed its named arguments and nested criterion/output schemas, and a real
+  `tools/call` returned successful text and structured content over `/mcp`.
+- Focused core and MCP reactors passed with 283 core tests and 20 MCP tests
+  after adding the crawl tools and correcting explicit-versus-anonymous clue
+  authority. The complete nine-module `mvn clean install` then passed.
+- Deployed a checksum-verified immutable issue-worktree release into the
+  existing NAS container. The candidate registered six tools, completed an MCP
+  initialize handshake on a staging port, and shut down gracefully before the
+  current-release pointer was changed.
+- The first selected-archive crawl correctly reported that a fresh repository
+  needs an all-archive bootstrap. That bootstrap wrote the clue archive and
+  then exposed the explicit-versus-anonymous resolution contradiction; the
+  resolver correction above was driven by this real field failure.
+- After redeployment, `start_crawl` accepted all three configured archive IDs,
+  `get_crawl` reached `SUCCEEDED`, all 3,787 artifacts resolved, and no failures
+  were reported. `search_gear` then queried the published Stash successfully;
+  a strict `bus = AGP` request returned only Gear carrying the resolved AGP
+  Fact.
+- The initial field test used MCP Streamable HTTP on the container's loopback
+  interface through the confined authenticated SSH gateway. The managed
+  deployment now publishes the authenticated route on the NAS LAN address.
+- Added a server-owned bearer-token filter for `/mcp` and `/mcp/*`. Servlet
+  startup now fails when the token is missing or shorter than 32 characters;
+  error responses do not disclose whether credentials were absent or invalid,
+  and the configured token is redacted from the property bean's textual form.
+- Filter and web-context tests cover valid credentials, invalid and missing
+  credentials, case-insensitive bearer schemes, route registration, missing
+  configuration, and weak-token rejection. The complete nine-module
+  `mvn clean install` passed afterward.
+- Installed the checksum-verified authenticated release in the NAS container.
+  Before making it current, a loopback staging run rejected an anonymous MCP
+  request with HTTP 401 and completed an authenticated MCP initialize request
+  with HTTP 200. The current release repeated the anonymous 401 check while
+  listening on the container interface before that interface was published.
+- Recreated the existing NAS Compose application with a dedicated
+  `retro-crawler` service. It runs as the unprivileged collection user, uses the
+  persistent configuration volume, mounts all archive sources read-only,
+  publishes only the MCP port on the NAS LAN address, enables
+  `no-new-privileges`, and uses `unless-stopped` restart policy. The confined
+  SSH service remains a separate container.
+- From the Codex host, the published endpoint rejected anonymous requests with
+  HTTP 401 and completed an authenticated MCP initialize exchange with HTTP
+  200. After explicitly restarting only the managed RetroCrawler container,
+  both checks passed again and Container Station reported the service running.
+- Registered the published route as a native Codex Streamable HTTP MCP server
+  using the bearer-token environment-variable integration. After restarting
+  Codex, the client discovered all six RetroCrawler tools directly.
+- Moved executable releases out of the persistent configuration volume into a
+  versioned deployment bind mounted read-only at `/deployments`. Because a
+  symlink created through the macOS SMB client is not traversable by Docker on
+  the NAS, the stable `run-current.sh` launcher reads and validates the
+  selected directory name from `current.release`; `/config` remains
+  read-write only for runtime state such as the JRE, bearer token, and
+  repository cache.
+- Recreated the Compose application with that launcher and confirmed the
+  RetroCrawler container is running from `/deployments`. The published route
+  again returned HTTP 401 anonymously and HTTP 200 for authenticated MCP
+  initialization, and the native Codex client listed all three configured
+  archives.
+- Through that native MCP registration, `list_archives` returned the three
+  configured logical archives and `start_crawl` initiated operation
+  `4a7f861d-b124-4469-9e36-204a8811f029`. The operation reached `SUCCEEDED` with
+  all 3,787 artifacts resolved and no failures. A discovered `bus = AGP` query
+  then returned 25 matches, and every sampled result carried the resolved AGP
+  Fact.
+- A second native MCP operation re-crawled the complete `ibm` archive and
+  republished the 3,787-artifact Stash without failures. Repeating a strict
+  title-and-bus query reflected intervening archive changes immediately: the
+  corrected `Matrox Millennium` spelling and a fourth PCI card, a Millennium
+  II, appeared in the result.

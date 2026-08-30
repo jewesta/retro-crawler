@@ -1,16 +1,16 @@
 package com.retrocrawler.core.gear;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.DuplicateClueException;
 
 class ClueClassifierTest {
 
@@ -26,19 +26,16 @@ class ClueClassifierTest {
 	}
 
 	@Test
-	void rejectsARealValueAndMissingValueFromSeparateClues() {
+	void preservesAnAnonymousMarkerWithoutCompetingWithAnExplicitValue() {
 		final ClueClassifier classifier = new ClueClassifier(Set.of("sn"));
-		final Clues observed = Clues.of(Clue.of("SN"), Clue.of("sn", "12345"));
 
-		final DuplicateClueException failure = assertThrows(DuplicateClueException.class,
-				() -> classifier.classify(observed));
+		for (final Clues observed : List.of(Clues.of(Clue.of("SN"), Clue.of("sn", "12345")),
+				Clues.of(Clue.of("sn", "12345"), Clue.of("SN")))) {
+			final Clues classified = classifier.classify(observed);
 
-		/*
-		 * The rejected observation is named in its raw form. Classifying strips
-		 * the anonymous clue down to a missing-value clue, so the message would
-		 * otherwise not show what the archive actually said.
-		 */
-		assertTrue(failure.getMessage().contains("sn"));
-		assertTrue(failure.getMessage().contains("SN"));
+			assertEquals(Set.of("12345"), classified.get("sn").orElseThrow().value());
+			assertTrue(
+					classified.stream().anyMatch(value -> value.isAnonymous() && value.value().equals(Set.of("SN"))));
+		}
 	}
 }

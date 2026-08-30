@@ -3,11 +3,13 @@ package com.retrocrawler.mcp.filter;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import com.retrocrawler.core.gear.filter.FilterDefinition;
+import com.retrocrawler.core.gear.filter.FilterType;
 
 /**
  * Assigns stable protocol identities to one model's filter definitions.
@@ -72,6 +74,32 @@ public final class FilterRegistry {
 			throw new IllegalStateException("Several filter definitions map to MCP filter id '" + id + "'.");
 		}
 		idsByDefinition.put(required, id);
-		return new FilterSummary(id, FilterKind.from(required.filterType()), required.multiple());
+		final FilterKind kind = FilterKind.from(required.filterType());
+		return new FilterSummary(id, kind, required.multiple(), operators(kind), choices(required));
+	}
+
+	private static List<FilterOperator> operators(final FilterKind kind) {
+		return switch (kind) {
+		case TEXT -> List.of(FilterOperator.EQUALS, FilterOperator.CONTAINS);
+		case CHOICES, RANGE, EXACT -> List.of(FilterOperator.EQUALS);
+		};
+	}
+
+	private static List<String> choices(final FilterDefinition<?> definition) {
+		if (!(definition.filterType() instanceof final FilterType.Choices<?> choices)) {
+			return List.of();
+		}
+		final LinkedHashSet<String> mapped = new LinkedHashSet<>();
+		for (final Object choice : choices.options()) {
+			final String value = FilterValueText.from(choice);
+			if (value.isEmpty()) {
+				throw new IllegalStateException("Filter '" + definition.key() + "' has a choice with no MCP value.");
+			}
+			if (!mapped.add(value)) {
+				throw new IllegalStateException("Filter '" + definition.key()
+						+ "' has several choices represented by MCP value '" + value + "'.");
+			}
+		}
+		return List.copyOf(mapped);
 	}
 }

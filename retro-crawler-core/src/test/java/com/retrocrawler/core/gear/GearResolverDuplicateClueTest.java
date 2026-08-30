@@ -1,7 +1,7 @@
 package com.retrocrawler.core.gear;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.Set;
@@ -16,7 +16,6 @@ import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.archive.clues.DuplicateClueException;
 import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
@@ -26,12 +25,16 @@ class GearResolverDuplicateClueTest {
 	private static final ARI SOURCE = ARI.of("test", ArchiveId.of("archive"), Path.of("gear"));
 
 	@Test
-	void rejectsSeparateCluesThatResolveToTheSameSemanticKey() {
+	void keepsAnAnonymousObservationFromCompetingWithAnExplicitSemanticKey() {
 		final GearResolver resolver = new GearResolverFactory().reflectOn(Set.of(BusGear.class));
 		final Artifact artifact = new Artifact(Clues.of(Clue.of("bus", "PCI"), Clue.of("AGP")));
 		final ParseContext context = new ParseContext(Configuration.builder().build(), SOURCE);
 
-		assertThrows(DuplicateClueException.class, () -> resolver.resolve(artifact, context));
+		final GearResolution resolution = resolver.resolveWithIdentity(artifact, context).orElseThrow();
+
+		assertEquals(Set.of(Bus.PCI), ((BusGear) resolution.gear()).bus);
+		assertTrue(resolution.trace().resolved().unresolvedClues().stream()
+				.anyMatch(clue -> clue.isAnonymous() && clue.value().equals(Set.of("AGP"))));
 	}
 
 	@Test

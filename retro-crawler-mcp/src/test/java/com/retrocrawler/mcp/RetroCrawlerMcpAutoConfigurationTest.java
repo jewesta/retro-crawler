@@ -17,6 +17,7 @@ import com.retrocrawler.core.RetroCrawler;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.crawl.CrawlOperationService;
+import com.retrocrawler.mcp.crawl.RetroCrawlerCrawlMcpTools;
 import com.retrocrawler.mcp.filter.FilterCatalog;
 
 class RetroCrawlerMcpAutoConfigurationTest {
@@ -29,7 +30,8 @@ class RetroCrawlerMcpAutoConfigurationTest {
 		final RetroCrawler crawler = crawler();
 
 		contextRunner.withBean(RetroCrawler.class, () -> crawler).run(context -> {
-			assertThat(context).hasSingleBean(CrawlOperationService.class).hasSingleBean(RetroCrawlerMcpTools.class);
+			assertThat(context).hasSingleBean(CrawlOperationService.class).hasSingleBean(RetroCrawlerMcpTools.class)
+					.hasSingleBean(RetroCrawlerCrawlMcpTools.class);
 			assertThat(context.getBean(RetroCrawlerMcpTools.class).listArchives()).isEqualTo(
 					new ArchiveCatalog("test_collection", List.of(new ArchiveSummary("main", "Main archive"))));
 			assertThat(context.getBean(RetroCrawlerMcpTools.class).listFilters())

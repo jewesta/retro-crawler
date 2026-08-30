@@ -27,12 +27,24 @@ class FilterRegistryTest {
 		final FilterRegistry registry = new FilterRegistry("test_collection", List.of(choices, range, text, exact));
 
 		assertThat(registry.catalog().collectionId()).isEqualTo("test_collection");
-		assertThat(registry.catalog().filters()).containsExactly(new FilterSummary("bus", FilterKind.CHOICES, true),
-				new FilterSummary("released", FilterKind.RANGE, false),
-				new FilterSummary("title", FilterKind.TEXT, false),
-				new FilterSummary("edition", FilterKind.EXACT, false));
+		assertThat(registry.catalog().filters()).containsExactly(
+				new FilterSummary("bus", FilterKind.CHOICES, true, List.of(FilterOperator.EQUALS), List.of("AGP")),
+				new FilterSummary("released", FilterKind.RANGE, false, List.of(FilterOperator.EQUALS), List.of()),
+				new FilterSummary("title", FilterKind.TEXT, false,
+						List.of(FilterOperator.EQUALS, FilterOperator.CONTAINS), List.of()),
+				new FilterSummary("edition", FilterKind.EXACT, false, List.of(FilterOperator.EQUALS), List.of()));
 		assertThat(registry.id(choices)).isEqualTo("bus");
 		assertThat(registry.definition("bus")).isSameAs(choices);
+	}
+
+	@Test
+	void rejectsAmbiguousChoiceRepresentations() {
+		final Object first = new DisplayValue("same");
+		final Object second = new DisplayValue("same");
+		final FilterDefinition<?> ambiguous = filter("choice", new FilterType.Choices<>(List.of(first, second)), false);
+
+		assertThatIllegalStateException().isThrownBy(() -> new FilterRegistry("test_collection", List.of(ambiguous)))
+				.withMessage("Filter 'choice' has several choices represented by MCP value 'same'.");
 	}
 
 	@Test
@@ -66,5 +78,19 @@ class FilterRegistryTest {
 		when(definition.filterType()).thenReturn(type);
 		when(definition.multiple()).thenReturn(multiple);
 		return definition;
+	}
+
+	private static final class DisplayValue {
+
+		private final String text;
+
+		private DisplayValue(final String text) {
+			this.text = text;
+		}
+
+		@Override
+		public String toString() {
+			return text;
+		}
 	}
 }
