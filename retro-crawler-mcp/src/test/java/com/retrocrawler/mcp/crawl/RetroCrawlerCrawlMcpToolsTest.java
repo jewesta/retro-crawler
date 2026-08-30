@@ -57,7 +57,7 @@ class RetroCrawlerCrawlMcpToolsTest {
 	void startsAFullAsynchronousCrawlWhenNoArchivesAreSelected() {
 		when(operations.start(any())).thenAnswer(invocation -> operation(invocation.getArgument(0)));
 
-		final CrawlStatus status = tools.startCrawl(null);
+		final CrawlStatus status = tools.startCrawl(null, null);
 
 		final ArgumentCaptor<ReindexScope> scope = ArgumentCaptor.forClass(ReindexScope.class);
 		verify(operations).start(scope.capture());
@@ -74,7 +74,7 @@ class RetroCrawlerCrawlMcpToolsTest {
 	void mapsSelectedLogicalArchivesToCanonicalRootAris() {
 		when(operations.start(any())).thenAnswer(invocation -> operation(invocation.getArgument(0)));
 
-		tools.startCrawl(List.of("other", "ibm"));
+		tools.startCrawl(List.of("other", "ibm"), null);
 
 		final ArgumentCaptor<ReindexScope> scope = ArgumentCaptor.forClass(ReindexScope.class);
 		verify(operations).start(scope.capture());
@@ -84,11 +84,50 @@ class RetroCrawlerCrawlMcpToolsTest {
 	}
 
 	@Test
+	void mapsSelectedCanonicalSubtreeArisWithoutExposingProviderPaths() {
+		when(operations.start(any())).thenAnswer(invocation -> operation(invocation.getArgument(0)));
+		final ARI systems = ARI.of(COLLECTION_ID, IBM.id(), Path.of("Systems", "IBM PC"));
+		final ARI software = ARI.of(COLLECTION_ID, OTHER.id(), Path.of("Software"));
+
+		final CrawlStatus status = tools.startCrawl(null, List.of(systems.toString(), software.toString()));
+
+		final ArgumentCaptor<ReindexScope> scope = ArgumentCaptor.forClass(ReindexScope.class);
+		verify(operations).start(scope.capture());
+		assertThat(scope.getValue().kind()).isEqualTo(ReindexScope.Kind.SUBTREES);
+		assertThat(scope.getValue().subtrees()).containsExactly(systems, software);
+		assertThat(status.scope())
+				.isEqualTo(new CrawlScope("SUBTREES", List.of(systems.toString(), software.toString())));
+	}
+
+	@Test
 	void rejectsUnknownAndDuplicateArchiveIdsBeforeStarting() {
-		assertThatIllegalArgumentException().isThrownBy(() -> tools.startCrawl(List.of("missing")))
+		assertThatIllegalArgumentException().isThrownBy(() -> tools.startCrawl(List.of("missing"), null))
 				.withMessage("Unknown archive id: missing");
-		assertThatIllegalArgumentException().isThrownBy(() -> tools.startCrawl(List.of("ibm", "ibm")))
+		assertThatIllegalArgumentException().isThrownBy(() -> tools.startCrawl(List.of("ibm", "ibm"), null))
 				.withMessage("archiveIds must not contain duplicate ID: ibm");
+	}
+
+	@Test
+	void rejectsInvalidSubtreeSelectionsBeforeStarting() {
+		final ARI subtree = ARI.of(COLLECTION_ID, IBM.id(), Path.of("Systems"));
+		final ARI foreignCollection = ARI.of("another_collection", IBM.id(), Path.of("Systems"));
+		final ARI unknownArchive = ARI.of(COLLECTION_ID, ArchiveId.of("missing"), Path.of("Systems"));
+
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> tools.startCrawl(List.of("ibm"), List.of(subtree.toString())))
+				.withMessage("archiveIds and subtreeAris are mutually exclusive.");
+		assertThatIllegalArgumentException().isThrownBy(() -> tools.startCrawl(null, List.of("not-an-ari")))
+				.withMessage("Invalid subtree ARI: not-an-ari");
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> tools.startCrawl(null, List.of(foreignCollection.toString())))
+				.withMessage("Subtree ARI belongs to collection 'another_collection' instead of 'test_collection': "
+						+ foreignCollection);
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> tools.startCrawl(null, List.of(unknownArchive.toString())))
+				.withMessage("Unknown archive id in subtree ARI: missing");
+		assertThatIllegalArgumentException()
+				.isThrownBy(() -> tools.startCrawl(null, List.of(subtree.toString(), subtree.toString())))
+				.withMessage("subtreeAris must not contain duplicate ARI: " + subtree);
 	}
 
 	@Test

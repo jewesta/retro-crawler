@@ -23,12 +23,12 @@ class RetroCrawlerMcpToolsSchemaTest {
 
 	@Test
 	void retainsThePublicCrawlParameterNamesForTheMcpInputSchema() throws NoSuchMethodException {
-		final Method startCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("startCrawl", List.class);
+		final Method startCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("startCrawl", List.class, List.class);
 		final Method getCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("getCrawl", String.class);
 		final Method cancelCrawl = RetroCrawlerCrawlMcpTools.class.getMethod("cancelCrawl", String.class);
 
 		assertThat(startCrawl.getParameters()).extracting(java.lang.reflect.Parameter::getName)
-				.containsExactly("archiveIds");
+				.containsExactly("archiveIds", "subtreeAris");
 		assertThat(getCrawl.getParameters()).extracting(java.lang.reflect.Parameter::getName)
 				.containsExactly("operationId");
 		assertThat(cancelCrawl.getParameters()).extracting(java.lang.reflect.Parameter::getName)
