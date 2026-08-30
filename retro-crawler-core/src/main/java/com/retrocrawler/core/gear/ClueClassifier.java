@@ -78,8 +78,8 @@ final class ClueClassifier {
 		try {
 			classified.add(value);
 		} catch (final DuplicateClueException e) {
-			throw new DuplicateClueException("More than one clue claims semantic key '" + value.key() + "'. "
-					+ previous + " competes with " + observed + ".", e);
+			throw new DuplicateClueException("More than one clue claims semantic key '" + value.key() + "'. " + previous
+					+ " competes with " + observed + ".", e);
 		}
 	}
 
