@@ -44,9 +44,11 @@ import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.ItemCondition;
+import com.retrocrawler.model.hardware.AmdProcessorMarking;
 import com.retrocrawler.model.hardware.ChipDesignation;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
+import com.retrocrawler.model.hardware.IntelProcessorMarking;
 import com.retrocrawler.model.hardware.MemoryAccessTime;
 import com.retrocrawler.model.hardware.MemoryFeature;
 import com.retrocrawler.model.hardware.MemoryFormFactor;
@@ -84,8 +86,10 @@ import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.MyRetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
+import com.retrocrawler.mycollection.gear.AmdProcessor;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
+import com.retrocrawler.mycollection.gear.IntelProcessor;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
@@ -232,6 +236,24 @@ class MyCollectionModelTest {
 		final Printer printer = assertInstanceOf(Printer.class, gear(gear, "First printer [9-Nadel] [200027]"));
 		assertEquals(PrinterType.DOT_MATRIX_9_PIN, printer.printerType());
 		assertInstanceOf(MysteryGear.class, gear(gear, "Printer ribbons [200028]"));
+	}
+
+	@Test
+	void recognizesAmdAndIntelProcessorsFromProductionMarkingsRegardlessOfLocation() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Loose AMD processor [A-985211PM] [200041]"));
+		final Path board = archiveRoot.resolve("Example board [ATX] [ISA, PCI] [TRW 10510] [200042]");
+		Files.createDirectories(board.resolve("Installed Intel processor [L5170697-0141] [200043]"));
+
+		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
+
+		final AmdProcessor amd = assertInstanceOf(AmdProcessor.class,
+				gear(gear, "Loose AMD processor [A-985211PM] [200041]"));
+		assertEquals(new AmdProcessorMarking("A", "9852", "11PM"), amd.processorMarking());
+
+		final IntelProcessor intel = assertInstanceOf(IntelProcessor.class,
+				gear(gear, "Installed Intel processor [L5170697-0141] [200043]"));
+		assertEquals(new IntelProcessorMarking("L5170697", Optional.of("0141")), intel.processorMarking());
+		assertInstanceOf(Motherboard.class, gear(gear, "Example board [ATX] [ISA, PCI] [TRW 10510] [200042]"));
 	}
 
 	@Test
