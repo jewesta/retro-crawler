@@ -14,10 +14,23 @@ import com.retrocrawler.core.gear.matcher.GearMatcher;
 public @interface RetroGear {
 
 	/**
+	 * Stable model key for this Gear type. The lower-case, hyphen-separated
+	 * simple class name is used when omitted. The resulting key must be unique
+	 * among all Gear types in the model.
+	 */
+	String key() default "";
+
+	/**
+	 * Human-facing name for this Gear type. A lower-case name derived from the
+	 * simple class name is used when omitted.
+	 */
+	String name() default "";
+
+	/**
 	 * You can use {@link AnyGearMatcher} as a "catch all". Every
 	 * {@link Artifact} that cannot be converted to any other type will end up
 	 * being converted to the type using {@link AnyGearMatcher}. It can only be
-	 * added to one type.
+	 * assigned to one Gear type in a model.
 	 */
 	Class<? extends GearMatcher> value();
 

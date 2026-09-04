@@ -3,7 +3,9 @@ package com.retrocrawler.core.gear;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,9 +26,13 @@ public class GearDescriptor implements Descriptor {
 
 	private final Class<?> type;
 
+	private final GearType gearType;
+
 	private final GearMatcher matcher;
 
 	private final Map<String, FactDescriptor> attributes;
+
+	private final List<FactDescriptor> factDeclarations;
 
 	private final Field anyAttributeField;
 
@@ -36,11 +42,14 @@ public class GearDescriptor implements Descriptor {
 
 	private final Field sourceField;
 
-	private GearDescriptor(final Class<?> type, final GearMatcher matcher, final Map<String, FactDescriptor> attributes,
+	private GearDescriptor(final Class<?> type, final GearType gearType, final GearMatcher matcher,
+			final Map<String, FactDescriptor> attributes, final List<FactDescriptor> factDeclarations,
 			final Field anyAttributeField, final Field idField, final Field sourceField) {
 		this.type = Objects.requireNonNull(type, "type");
+		this.gearType = Objects.requireNonNull(gearType, "gearType");
 		this.matcher = Objects.requireNonNull(matcher, "matcher");
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
+		this.factDeclarations = List.copyOf(Objects.requireNonNull(factDeclarations, "factDeclarations"));
 		this.anyAttributeField = anyAttributeField;
 		this.anyAttributeMode = AnyAttributeMode.UNASSIGNED_ONLY;
 		this.idField = idField;
@@ -51,12 +60,20 @@ public class GearDescriptor implements Descriptor {
 		return type;
 	}
 
+	public GearType gearType() {
+		return gearType;
+	}
+
 	public GearMatcher matcher() {
 		return matcher;
 	}
 
 	public Map<String, FactDescriptor> attributes() {
 		return attributes;
+	}
+
+	List<FactDescriptor> factDeclarations() {
+		return factDeclarations;
 	}
 
 	public Optional<Field> anyAttributeField() {
@@ -101,6 +118,7 @@ public class GearDescriptor implements Descriptor {
 		final GearMatcher matcher = Reflection.newInstance(retroGear.value());
 
 		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
+		final List<FactDescriptor> factDeclarations = new ArrayList<>();
 		Field anyAttributeField = null;
 		Field idField = null;
 		Field sourceField = null;
@@ -172,6 +190,7 @@ public class GearDescriptor implements Descriptor {
 				}
 
 				final FactDescriptor incoming = new FactDescriptor(fact, field);
+				factDeclarations.add(incoming);
 
 				final String key = incoming.key();
 				final FactDescriptor existing = attributes.putIfAbsent(key, incoming);
@@ -188,8 +207,8 @@ public class GearDescriptor implements Descriptor {
 					+ " or " + TypeName.simple(RetroFact.class) + ": " + TypeName.full(type));
 		}
 
-		return Optional
-				.of(new GearDescriptor(type, matcher, Map.copyOf(attributes), anyAttributeField, idField, sourceField));
+		return Optional.of(new GearDescriptor(type, GearType.from(type), matcher, Map.copyOf(attributes),
+				factDeclarations, anyAttributeField, idField, sourceField));
 	}
 
 	private static void assertIsSourceAri(final Field field, final Class<?> type) {

@@ -26,7 +26,8 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.Confidence;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.gear.GearContext;
+import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.trace.ResolutionTrace;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -58,14 +59,14 @@ class GearMatchTraceTest {
 	public static final class TestArchive {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(WeakMatcher.class)
 	public static final class FirstGear extends BaseGear {
 
 		public FirstGear() {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(WeakMatcher.class)
 	public static final class SecondGear extends BaseGear {
 
 		public SecondGear() {
@@ -76,6 +77,14 @@ class GearMatchTraceTest {
 
 		@RetroAnyAttribute
 		private final Map<String, RetroAttribute> attributes = new HashMap<>();
+	}
+
+	public static final class WeakMatcher implements GearMatcher {
+
+		@Override
+		public Confidence matches(final GearContext context) {
+			return Confidence.WEAK;
+		}
 	}
 
 	public static final class TestClueFinder implements ClueFinder {

@@ -28,13 +28,15 @@ import com.retrocrawler.core.archive.InMemoryRepository;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
+import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.Fact;
+import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.RatedFact;
 import com.retrocrawler.core.gear.filter.FilterAvailability;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.filter.FilterDefinitions;
 import com.retrocrawler.core.gear.filter.FilterType;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
@@ -59,6 +61,8 @@ class FactFilterTest {
 		assertEquals(List.of("bus", "edition", "raw", "released", "title"),
 				model.filters().stream().map(FilterDefinition::key).toList());
 		assertTrue(bus.multiple());
+		assertEquals("expansion bus", bus.name());
+		assertEquals("title", title.name());
 		assertEquals(List.of(GraphicsCard.class, Motherboard.class), bus.gearTypes());
 		assertEquals(List.of(Bus.values()), choices(bus.filterType()).options());
 		assertFalse(released.multiple());
@@ -227,10 +231,10 @@ class FactFilterTest {
 	public static final class FilterCollection {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(TestMatcher.class)
 	public static final class GraphicsCard {
 
-		@RetroFact(key = "bus", parser = BusParser.class)
+		@RetroFact(key = "bus", name = "expansion bus", parser = BusParser.class)
 		private Set<Bus> buses = Set.of();
 
 		@RetroFact
@@ -245,7 +249,7 @@ class FactFilterTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(TestMatcher.class)
 	public static final class Motherboard {
 
 		@RetroFact(key = "bus", parser = BusParser.class)
@@ -259,7 +263,7 @@ class FactFilterTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(TestMatcher.class)
 	public static final class Magazine {
 
 		@RetroFact(parser = EditionParser.class)
@@ -277,13 +281,21 @@ class FactFilterTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroGear(TestMatcher.class)
 	public static final class RawFactGear {
 
 		@RetroFact(parser = StringParser.class)
 		private Fact raw;
 
 		public RawFactGear() {
+		}
+	}
+
+	public static final class TestMatcher implements GearMatcher {
+
+		@Override
+		public Confidence matches(final GearContext context) {
+			return Confidence.NONE;
 		}
 	}
 

@@ -28,12 +28,15 @@ class FilterRegistryTest {
 
 		assertThat(registry.catalog().collectionId()).isEqualTo("test_collection");
 		assertThat(registry.catalog().filters()).containsExactly(
-				new FilterSummary("bus", FilterKind.CHOICES, true, List.of(FilterOperator.EQUALS), List.of("AGP")),
-				new FilterSummary("released", FilterKind.RANGE, false, List.of(FilterOperator.EQUALS), List.of()),
-				new FilterSummary("title", FilterKind.TEXT, false,
+				new FilterSummary("bus", "bus", FilterKind.CHOICES, true, List.of(FilterOperator.EQUALS),
+						List.of("AGP")),
+				new FilterSummary("released", "released", FilterKind.RANGE, false, List.of(FilterOperator.EQUALS),
+						List.of()),
+				new FilterSummary("title", "title", FilterKind.TEXT, false,
 						List.of(FilterOperator.EQUALS, FilterOperator.CONTAINS), List.of()),
-				new FilterSummary("edition", FilterKind.EXACT, false, List.of(FilterOperator.EQUALS), List.of()));
-		assertThat(registry.id(choices)).isEqualTo("bus");
+				new FilterSummary("edition", "edition", FilterKind.EXACT, false, List.of(FilterOperator.EQUALS),
+						List.of()));
+		assertThat(registry.key(choices)).isEqualTo("bus");
 		assertThat(registry.definition("bus")).isSameAs(choices);
 	}
 
@@ -54,7 +57,7 @@ class FilterRegistryTest {
 
 		assertThatIllegalStateException()
 				.isThrownBy(() -> new FilterRegistry("test_collection", List.of(first, second)))
-				.withMessage("Several filter definitions map to MCP filter id 'bus'.");
+				.withMessage("Several filter definitions map to MCP filter key 'bus'.");
 	}
 
 	@Test
@@ -64,8 +67,8 @@ class FilterRegistryTest {
 		final FilterRegistry registry = new FilterRegistry("test_collection", List.of(registered));
 
 		assertThatIllegalArgumentException().isThrownBy(() -> registry.definition("title"))
-				.withMessage("Unknown filter id: title");
-		assertThatIllegalArgumentException().isThrownBy(() -> registry.id(foreign))
+				.withMessage("Unknown filter key: title");
+		assertThatIllegalArgumentException().isThrownBy(() -> registry.key(foreign))
 				.withMessage("Filter definition is not registered with this MCP server: title");
 	}
 
@@ -75,6 +78,7 @@ class FilterRegistryTest {
 	private static FilterDefinition<?> filter(final String key, final FilterType<?> type, final boolean multiple) {
 		final FilterDefinition definition = mock(FilterDefinition.class);
 		when(definition.key()).thenReturn(key);
+		when(definition.name()).thenReturn(key);
 		when(definition.filterType()).thenReturn(type);
 		when(definition.multiple()).thenReturn(multiple);
 		return definition;

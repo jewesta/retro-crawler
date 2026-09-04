@@ -30,6 +30,14 @@ public @interface RetroFact {
 	String key() default "";
 
 	/**
+	 * Human-facing name for this Fact. A lower-case name derived from the field
+	 * name is used when omitted. Declarations sharing a Fact key also share
+	 * this name; one explicit name establishes it for that key, while
+	 * conflicting explicit names are rejected.
+	 */
+	String name() default "";
+
+	/**
 	 * Set this to true to prevent null values. In this case retro crawler will
 	 * throw if there is no value for the field (or if it is null).
 	 */

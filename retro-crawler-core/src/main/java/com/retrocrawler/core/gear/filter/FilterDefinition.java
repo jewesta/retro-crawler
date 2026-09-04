@@ -2,6 +2,8 @@ package com.retrocrawler.core.gear.filter;
 
 import java.util.List;
 
+import com.retrocrawler.core.util.ModelNames;
+
 /**
  * Immutable query metadata derived from every {@code @RetroFact} binding that
  * shares one semantic Fact key.
@@ -10,6 +12,11 @@ public interface FilterDefinition<T> {
 
 	/** The semantic Fact key represented by this filter. */
 	String key();
+
+	/** The human-facing name of the represented Fact. */
+	default String name() {
+		return ModelNames.displayName(key());
+	}
 
 	/** The common value type produced for this Fact key. */
 	Class<T> valueType();

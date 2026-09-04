@@ -26,7 +26,11 @@ public final class RetroCrawlerCrawlMcpTools {
 
 	public static final int MAXIMUM_ARCHIVE_SELECTIONS = 100;
 
+	public static final int MAXIMUM_SUBTREE_SELECTIONS = 100;
+
 	private static final int MAXIMUM_OPERATION_ID_LENGTH = 200;
+
+	private static final int MAXIMUM_SUBTREE_ARI_LENGTH = 4_000;
 
 	private final RetroCrawler retroCrawler;
 
@@ -42,12 +46,23 @@ public final class RetroCrawlerCrawlMcpTools {
 
 	@McpTool(name = "start_crawl", title = "Start a RetroCrawler crawl",
 			description = "Start an asynchronous physical crawl and return immediately with its operation status. "
-					+ "Use logical archive IDs from list_archives; omit them to crawl every archive.",
+					+ "Select either logical archive IDs from list_archives or canonical folder ARIs. "
+					+ "Omit both selections to crawl every archive.",
 			generateOutputSchema = true, annotations = @McpTool.McpAnnotations(readOnlyHint = false,
 					destructiveHint = false, idempotentHint = false, openWorldHint = false))
 	public CrawlStatus startCrawl(@McpToolParam(required = false,
-			description = "Logical archive IDs from list_archives. Omit or use an empty list for every archive.") final List<String> archiveIds) {
-		return CrawlStatusMapper.from(operations.start(scope(archiveIds)));
+			description = "Logical archive IDs from list_archives. Mutually exclusive with subtreeAris.") final List<String> archiveIds,
+			@McpToolParam(required = false,
+					description = "Canonical folder ARIs to re-crawl, including everything below each folder. Mutually exclusive with archiveIds.") final List<String> subtreeAris) {
+		return CrawlStatusMapper.from(operations.start(scope(archiveIds, subtreeAris)));
+	}
+
+	/**
+	 * Retains the original Java entry point while the MCP schema gains subtree
+	 * selection.
+	 */
+	public CrawlStatus startCrawl(final List<String> archiveIds) {
+		return startCrawl(archiveIds, null);
 	}
 
 	@McpTool(name = "get_crawl", title = "Get RetroCrawler crawl status",
@@ -72,9 +87,17 @@ public final class RetroCrawlerCrawlMcpTools {
 		return CrawlStatusMapper.from(operations.cancel(operationId(operationId)));
 	}
 
-	private ReindexScope scope(final List<String> selectedArchiveIds) {
-		if (selectedArchiveIds == null || selectedArchiveIds.isEmpty()) {
+	private ReindexScope scope(final List<String> selectedArchiveIds, final List<String> selectedSubtreeAris) {
+		final boolean archivesSelected = selectedArchiveIds != null && !selectedArchiveIds.isEmpty();
+		final boolean subtreesSelected = selectedSubtreeAris != null && !selectedSubtreeAris.isEmpty();
+		if (archivesSelected && subtreesSelected) {
+			throw new IllegalArgumentException("archiveIds and subtreeAris are mutually exclusive.");
+		}
+		if (!archivesSelected && !subtreesSelected) {
 			return ReindexScope.all();
+		}
+		if (subtreesSelected) {
+			return ReindexScope.subtrees(subtrees(selectedSubtreeAris));
 		}
 		if (selectedArchiveIds.size() > MAXIMUM_ARCHIVE_SELECTIONS) {
 			throw new IllegalArgumentException(
@@ -83,6 +106,43 @@ public final class RetroCrawlerCrawlMcpTools {
 		final LinkedHashSet<String> unique = new LinkedHashSet<>();
 		final List<ARI> roots = selectedArchiveIds.stream().map(value -> archiveRoot(value, unique)).toList();
 		return ReindexScope.subtrees(roots);
+	}
+
+	private List<ARI> subtrees(final List<String> selectedSubtreeAris) {
+		if (selectedSubtreeAris.size() > MAXIMUM_SUBTREE_SELECTIONS) {
+			throw new IllegalArgumentException(
+					"subtreeAris must not contain more than " + MAXIMUM_SUBTREE_SELECTIONS + " entries.");
+		}
+		final LinkedHashSet<ARI> unique = new LinkedHashSet<>();
+		return selectedSubtreeAris.stream().map(value -> subtree(value, unique)).toList();
+	}
+
+	private ARI subtree(final String value, final LinkedHashSet<ARI> unique) {
+		final String text = Objects.requireNonNull(value, "subtreeAris must not contain null");
+		if (text.isBlank()) {
+			throw new IllegalArgumentException("subtreeAris must not contain a blank ARI.");
+		}
+		if (text.length() > MAXIMUM_SUBTREE_ARI_LENGTH) {
+			throw new IllegalArgumentException(
+					"A subtree ARI must not exceed " + MAXIMUM_SUBTREE_ARI_LENGTH + " characters.");
+		}
+		final ARI subtree;
+		try {
+			subtree = ARI.parse(text);
+		} catch (final IllegalArgumentException failure) {
+			throw new IllegalArgumentException("Invalid subtree ARI: " + text, failure);
+		}
+		if (!retroCrawler.collectionId().equals(subtree.collectionId())) {
+			throw new IllegalArgumentException("Subtree ARI belongs to collection '" + subtree.collectionId()
+					+ "' instead of '" + retroCrawler.collectionId() + "': " + subtree);
+		}
+		if (!archiveIds.containsKey(subtree.archiveId().value())) {
+			throw new IllegalArgumentException("Unknown archive id in subtree ARI: " + subtree.archiveId());
+		}
+		if (!unique.add(subtree)) {
+			throw new IllegalArgumentException("subtreeAris must not contain duplicate ARI: " + subtree);
+		}
+		return subtree;
 	}
 
 	private ARI archiveRoot(final String value, final LinkedHashSet<String> unique) {

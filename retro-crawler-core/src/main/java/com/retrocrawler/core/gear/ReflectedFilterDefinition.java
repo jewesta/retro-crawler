@@ -19,15 +19,17 @@ import com.retrocrawler.core.util.TypeName;
 final class ReflectedFilterDefinition<T> implements FilterDefinition<T> {
 
 	private final String key;
+	private final String name;
 	private final Class<T> valueType;
 	private final boolean multiple;
 	private final FilterType<T> filterType;
 	private final Map<Class<?>, Field> bindings;
 	private final List<Class<?>> gearTypes;
 
-	private ReflectedFilterDefinition(final String key, final Class<T> valueType, final boolean multiple,
-			final FilterType<T> filterType, final Map<Class<?>, Field> bindings) {
+	private ReflectedFilterDefinition(final String key, final String name, final Class<T> valueType,
+			final boolean multiple, final FilterType<T> filterType, final Map<Class<?>, Field> bindings) {
 		this.key = requireKey(key);
+		this.name = requireName(name);
 		this.valueType = Objects.requireNonNull(valueType, "valueType");
 		this.multiple = multiple;
 		this.filterType = Objects.requireNonNull(filterType, "filterType");
@@ -39,25 +41,30 @@ final class ReflectedFilterDefinition<T> implements FilterDefinition<T> {
 		validateFilterType();
 	}
 
-	static FilterDefinition<?> create(final String key, final FactDescriptor descriptor, final FilterType<?> filterType,
-			final Map<Class<?>, Field> bindings) {
+	static FilterDefinition<?> create(final String key, final String name, final FactDescriptor descriptor,
+			final FilterType<?> filterType, final Map<Class<?>, Field> bindings) {
 		final Class<?> valueType = valueType(descriptor);
 		final boolean multiple = Collection.class.isAssignableFrom(descriptor.field().getType())
 				|| RetroAttribute.class.isAssignableFrom(descriptor.field().getType());
-		return createTyped(key, valueType, multiple, filterType, bindings);
+		return createTyped(key, name, valueType, multiple, filterType, bindings);
 	}
 
 	@SuppressWarnings({
 			"unchecked", "rawtypes"
 	})
-	private static FilterDefinition<?> createTyped(final String key, final Class<?> valueType, final boolean multiple,
-			final FilterType<?> filterType, final Map<Class<?>, Field> bindings) {
-		return new ReflectedFilterDefinition(key, valueType, multiple, filterType, bindings);
+	private static FilterDefinition<?> createTyped(final String key, final String name, final Class<?> valueType,
+			final boolean multiple, final FilterType<?> filterType, final Map<Class<?>, Field> bindings) {
+		return new ReflectedFilterDefinition(key, name, valueType, multiple, filterType, bindings);
 	}
 
 	@Override
 	public String key() {
 		return key;
+	}
+
+	@Override
+	public String name() {
+		return name;
 	}
 
 	@Override
@@ -159,6 +166,14 @@ final class ReflectedFilterDefinition<T> implements FilterDefinition<T> {
 				}
 			}
 		}
+	}
+
+	private static String requireName(final String name) {
+		final String required = Objects.requireNonNull(name, "name").strip();
+		if (required.isEmpty()) {
+			throw new IllegalArgumentException("A filter name must not be blank.");
+		}
+		return required;
 	}
 
 	private static Class<?> valueType(final FactDescriptor descriptor) {

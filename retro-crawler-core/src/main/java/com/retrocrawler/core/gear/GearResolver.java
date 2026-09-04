@@ -296,7 +296,7 @@ public class GearResolver {
 		 */
 		final Object newGear = best.create(context);
 		final Optional<Object> retroId = retroId(best.gearDefinition(), attributes);
-		return Optional.of(new GearResolution(newGear, retroId, trace.trace()));
+		return Optional.of(new GearResolution(best.gearDefinition().gearType(), newGear, retroId, trace.trace()));
 	}
 
 	private RetroAttributes resolveAttributes(final Clues clues, final ParseContext parseContext,
