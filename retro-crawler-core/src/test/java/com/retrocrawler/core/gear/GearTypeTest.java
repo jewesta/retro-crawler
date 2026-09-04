@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 
@@ -21,6 +22,16 @@ class GearTypeTest {
 	}
 
 	@Test
+	void derivesAndOverridesRetroAnyGearMetadataTheSameWay() {
+		assertEquals(new GearType("mystery-card", "Unidentified card"), GearType.from(MysteryCard.class));
+	}
+
+	@Test
+	void rejectsATypeDeclaredAsBothMatchedAndRetroAnyGear() {
+		assertThrows(IllegalArgumentException.class, () -> GearType.from(ContradictingCard.class));
+	}
+
+	@Test
 	void rejectsKeysOutsideTheGearTypeKeyVocabulary() {
 		assertThrows(IllegalArgumentException.class, () -> new GearType("GraphicsCard", "graphics card"));
 	}
@@ -31,6 +42,15 @@ class GearTypeTest {
 
 	@RetroGear(value = TestMatcher.class, key = "video-card", name = "Graphics adapter")
 	private static final class CustomizedCard {
+	}
+
+	@RetroAnyGear(name = "Unidentified card")
+	private static final class MysteryCard {
+	}
+
+	@RetroAnyGear
+	@RetroGear(TestMatcher.class)
+	private static final class ContradictingCard {
 	}
 
 	private static final class TestMatcher implements GearMatcher {

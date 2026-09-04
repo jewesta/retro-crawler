@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
@@ -33,7 +34,6 @@ import com.retrocrawler.core.gear.Confidence;
 import com.retrocrawler.core.gear.Fact;
 import com.retrocrawler.core.gear.GearContext;
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
@@ -75,9 +75,9 @@ class ContextualFactResolutionTest {
 				trace.detection().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
 		assertEquals(Set.of("hardDriveFormFactor", "kind"),
 				trace.resolved().facts().stream().map(Fact::key).collect(java.util.stream.Collectors.toSet()));
-		assertEquals(2, trace.matches().size());
-		assertEquals(HardDrive.class, trace.selectedMatch().gearType());
-		assertEquals(Confidence.EXACT, trace.selectedMatch().confidence());
+		assertEquals(1, trace.matches().size());
+		assertEquals(HardDrive.class, trace.selectedMatch().orElseThrow().gearType());
+		assertEquals(Confidence.EXACT, trace.selectedMatch().orElseThrow().confidence());
 		assertTrue(trace.artifact().clues().stream().anyMatch(clue -> clue.value().equals(Set.of("2.5\""))));
 		final ResolutionTrace mysteryTrace = batch.roots().stream().filter(node -> node.gear() instanceof Mystery)
 				.findFirst().orElseThrow().trace().orElseThrow();
@@ -120,7 +120,7 @@ class ContextualFactResolutionTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class Mystery extends BaseGear {
 
 		public Mystery() {

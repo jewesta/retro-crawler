@@ -2,6 +2,7 @@ package com.retrocrawler.core.gear.trace;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clues;
@@ -15,19 +16,29 @@ import com.retrocrawler.core.gear.Fact;
  * attributes are produced after selecting a Gear type and enabling its
  * contextual facts.
  */
-public record ResolutionTrace(Artifact artifact, Attributes detection, List<Match> matches, Match selectedMatch,
+public record ResolutionTrace(Artifact artifact, Attributes detection, List<Match> matches, Selection selection,
 		Attributes resolved, List<Issue> issues) {
 
 	public ResolutionTrace {
 		Objects.requireNonNull(artifact, "artifact");
 		Objects.requireNonNull(detection, "detection");
 		matches = List.copyOf(Objects.requireNonNull(matches, "matches"));
-		Objects.requireNonNull(selectedMatch, "selectedMatch");
+		Objects.requireNonNull(selection, "selection");
 		Objects.requireNonNull(resolved, "resolved");
 		issues = List.copyOf(Objects.requireNonNull(issues, "issues"));
-		if (!matches.contains(selectedMatch)) {
-			throw new IllegalArgumentException("The selected Gear match must be one of the recorded matches.");
+		final boolean selectedByMatcher = matches.stream().anyMatch(
+				match -> selection.gearType().equals(match.gearType()) && match.confidence() != Confidence.NONE);
+		if (selection.kind().isMatch() != selectedByMatcher) {
+			throw new IllegalArgumentException(
+					"The selection kind must agree with whether the selected Gear has a successful recorded match.");
 		}
+	}
+
+	/**
+	 * The selected Gear matcher, absent when the fallback Gear was selected.
+	 */
+	public Optional<Match> selectedMatch() {
+		return matches.stream().filter(match -> selection.gearType().equals(match.gearType())).findFirst();
 	}
 
 	/**
@@ -55,6 +66,15 @@ public record ResolutionTrace(Artifact artifact, Attributes detection, List<Matc
 		}
 	}
 
+	/** The Gear type ultimately selected and why it was selected. */
+	public record Selection(Class<?> gearType, SelectionKind kind) {
+
+		public Selection {
+			Objects.requireNonNull(gearType, "gearType");
+			Objects.requireNonNull(kind, "kind");
+		}
+	}
+
 	/** A non-fatal ambiguity encountered while producing this Gear. */
 	public record Issue(Phase phase, IssueKind kind, String explanation) {
 
@@ -76,5 +96,23 @@ public record ResolutionTrace(Artifact artifact, Attributes detection, List<Matc
 	public enum IssueKind {
 		AMBIGUOUS_FACT,
 		AMBIGUOUS_GEAR_MATCH
+	}
+
+	/** Why a Gear type was selected. */
+	public enum SelectionKind {
+		MATCH(true),
+		MOST_SPECIFIC_MATCH(true),
+		FALLBACK_NO_MATCH(false),
+		FALLBACK_AMBIGUOUS_MATCH(false);
+
+		private final boolean match;
+
+		SelectionKind(final boolean match) {
+			this.match = match;
+		}
+
+		private boolean isMatch() {
+			return match;
+		}
 	}
 }

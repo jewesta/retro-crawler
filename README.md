@@ -200,6 +200,11 @@ RetroCrawler's collection and gear model can be configured via annotations:
 - `@RetroGear`
   Declares a gear type and its matcher.
 
+- `@RetroAnyGear`
+  Declares the optional fallback gear type produced when no matcher recognizes
+  an artifact or equally confident matches cannot be resolved through their
+  type hierarchy. At most one fallback may be present in a model.
+
 - `@RetroFact`
   Declares how a field is populated from a clue.
 
@@ -208,7 +213,8 @@ RetroCrawler's collection and gear model can be configured via annotations:
   does not select or instantiate that parser.
 
 - `@RetroAnyAttribute`
-  Captures all remaining unassigned facts. Especially useful on "catch all" default gear types that are produced if none others match.
+  Captures all remaining unassigned facts. Especially useful on `@RetroAnyGear`
+  fallback types.
 
 This allows the framework to remain strongly typed while requiring minimal boilerplate.
 

@@ -65,8 +65,7 @@ class ModelPackagedDiscoveryTest {
 		Files.writeString(gearSource, """
 			package com.retrocrawler.packagedfixture;
 
-			@com.retrocrawler.core.annotation.RetroGear(
-					com.retrocrawler.core.gear.matcher.AnyGearMatcher.class)
+			@com.retrocrawler.core.annotation.RetroAnyGear
 			public class PackagedGear {
 
 				@com.retrocrawler.core.annotation.RetroAnyAttribute

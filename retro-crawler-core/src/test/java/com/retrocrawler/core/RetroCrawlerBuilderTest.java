@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroSource;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
@@ -46,7 +46,6 @@ import com.retrocrawler.core.archive.source.ArchiveFolder;
 import com.retrocrawler.core.archive.source.ArchiveListing;
 import com.retrocrawler.core.archive.source.ArchiveSession;
 import com.retrocrawler.core.archive.source.ArchiveSource;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.stash.Stash;
 import com.retrocrawler.core.util.RetroAttribute;
 
@@ -295,7 +294,7 @@ class RetroCrawlerBuilderTest {
 	public static class TestArchiveConfiguration {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static class TestGear {
 
 		@RetroSource

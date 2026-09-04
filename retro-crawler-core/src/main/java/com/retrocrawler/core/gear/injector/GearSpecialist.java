@@ -35,7 +35,9 @@ public class GearSpecialist implements GearMatcher, GearFactory {
 
 	@Override
 	public Confidence matches(final GearContext context) {
-		return descriptor.matcher().matches(context);
+		return descriptor.matcher().orElseThrow(
+				() -> new IllegalStateException("The fallback Gear type does not have a matcher: " + descriptor.type()))
+				.matches(context);
 	}
 
 	@Override
