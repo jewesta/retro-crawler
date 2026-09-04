@@ -51,6 +51,7 @@ import com.retrocrawler.model.hardware.MemoryAccessTime;
 import com.retrocrawler.model.hardware.MemoryFeature;
 import com.retrocrawler.model.hardware.MemoryFormFactor;
 import com.retrocrawler.model.hardware.MemoryStandard;
+import com.retrocrawler.model.hardware.PrinterType;
 import com.retrocrawler.model.hardware.VideoConnector;
 import com.retrocrawler.model.identifier.MacAddress;
 import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
@@ -90,6 +91,7 @@ import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.gear.PowerSupply;
+import com.retrocrawler.mycollection.gear.Printer;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
 import de.creativecouple.validation.isbn.ISBN;
@@ -218,6 +220,18 @@ class MyCollectionModelTest {
 		assertEquals(Set.of(FloppyDiskFormat.of(Sides.DOUBLE, Density.HIGH)), second.getFloppyDiskFormats());
 
 		assertInstanceOf(MysteryGear.class, gear(gear, "Drive with track density only [96TPI] [200026]"));
+	}
+
+	@Test
+	void recognizesPrintersFromTheirOwnTypeEvidence() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("First printer [9-Nadel] [200027]"));
+		Files.createDirectories(archiveRoot.resolve("Printer ribbons [200028]"));
+
+		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
+
+		final Printer printer = assertInstanceOf(Printer.class, gear(gear, "First printer [9-Nadel] [200027]"));
+		assertEquals(PrinterType.DOT_MATRIX_9_PIN, printer.printerType());
+		assertInstanceOf(MysteryGear.class, gear(gear, "Printer ribbons [200028]"));
 	}
 
 	@Test

@@ -74,6 +74,8 @@ public final class AttributeNames {
 
 	public static final String PRICE = "price";
 
+	public static final String PRINTER_TYPE = "printerType";
+
 	public static final String RETRO_ID = "id";
 
 	public static final String REGION = "region";

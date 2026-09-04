@@ -21,6 +21,7 @@ import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.ItemCondition;
+import com.retrocrawler.model.hardware.PrinterType;
 import com.retrocrawler.model.identifier.TheRetroWebId;
 import com.retrocrawler.model.identifier.TheRetroWebIdParser;
 import com.retrocrawler.model.locale.LanguageCode;
@@ -95,6 +96,13 @@ class CollectionFactParsersTest {
 		assertEquals(Tested.BOOT, new TestedParser().parse("boot", CONTEXT).value().orElseThrow());
 		assertEquals(Tested.FULL, new TestedParser().parse("full", CONTEXT).value().orElseThrow());
 		assertEquals(Confidence.NONE, new TestedParser().parse("bios", CONTEXT).confidence());
+	}
+
+	@Test
+	void mapsExistingCollectionPrinterVocabularyToPortablePrinterTypes() {
+		final PrinterTypeParser parser = new PrinterTypeParser();
+
+		assertEquals(PrinterType.DOT_MATRIX_9_PIN, parser.parse("9-Nadel", CONTEXT).value().orElseThrow());
 	}
 
 	@Test
