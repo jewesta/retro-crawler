@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
@@ -26,7 +27,6 @@ import com.retrocrawler.core.archive.clues.InternalClueKeys;
 import com.retrocrawler.core.catalog.CatalogLoader;
 import com.retrocrawler.core.gear.filter.FilterDefinition;
 import com.retrocrawler.core.gear.injector.GearSpecialist;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.CatalogFactParser;
@@ -66,19 +66,19 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 
 		/*
 		 * Look for retro gear. Not all types are required to be annotated with
-		 * RetroGear. Some might end up in the Set because of package scanning;
-		 * One might only serve as the archive descriptor.
+		 * RetroGear or RetroAnyGear. Some might end up in the Set because of
+		 * package scanning; one might only serve as the archive descriptor.
 		 */
 		final Map<Class<?>, GearSpecialist> specialists = new LinkedHashMap<>();
 		for (final Class<?> type : types) {
 			GearDescriptor.of(type).ifPresent(gd -> specialists.put(type, new GearSpecialist(gd)));
 		}
 		if (specialists.isEmpty()) {
-			throw new IllegalArgumentException(
-					"At least one type must be annotated with " + TypeName.simple(RetroGear.class));
+			throw new IllegalArgumentException("At least one type must be annotated with "
+					+ TypeName.simple(RetroGear.class) + " or " + TypeName.simple(RetroAnyGear.class));
 		}
 
-		assertUniqueAnyGearMatcher(specialists);
+		final GearSpecialist anyGear = anyGear(specialists).orElse(null);
 		assertUniqueGearTypeKeys(specialists);
 		assertConsistentRetroId(specialists);
 
@@ -153,7 +153,11 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 					filterBindings.get(key)));
 		}
 
-		return new GearResolver(Map.copyOf(specialists), Map.copyOf(factFinders), Map.copyOf(contextualFactKeys),
+		final List<GearSpecialist> matchingSpecialists = specialists.values().stream()
+				.filter(specialist -> !specialist.gearDefinition().isAnyGear())
+				.sorted((a, b) -> a.gearDefinition().type().getName().compareTo(b.gearDefinition().type().getName()))
+				.toList();
+		return new GearResolver(matchingSpecialists, anyGear, Map.copyOf(factFinders), Map.copyOf(contextualFactKeys),
 				List.copyOf(filters));
 	}
 
@@ -166,7 +170,7 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 			if (previous != null) {
 				throw new IllegalArgumentException("Gear type key '" + key + "' is used by " + TypeName.full(previous)
 						+ " and " + TypeName.full(descriptor.type())
-						+ ". Set an explicit @RetroGear key to resolve the collision.");
+						+ ". Set an explicit key on one of the Gear declarations to resolve the collision.");
 			}
 		}
 	}
@@ -190,20 +194,22 @@ public class GearResolverFactory implements ReflectiveFactory<GearResolver> {
 		return derived.getFirst();
 	}
 
-	private static void assertUniqueAnyGearMatcher(final Map<Class<?>, GearSpecialist> specialists) {
-		Class<?> fallbackType = null;
+	private static Optional<GearSpecialist> anyGear(final Map<Class<?>, GearSpecialist> specialists) {
+		GearSpecialist fallback = null;
 		for (final GearSpecialist specialist : specialists.values()) {
 			final GearDescriptor descriptor = specialist.gearDefinition();
-			if (!(descriptor.matcher() instanceof AnyGearMatcher)) {
+			if (!descriptor.isAnyGear()) {
 				continue;
 			}
-			if (fallbackType != null) {
-				throw new IllegalArgumentException(TypeName.simple(AnyGearMatcher.class)
-						+ " may be assigned to only one Gear type, but is assigned to " + TypeName.full(fallbackType)
-						+ " and " + TypeName.full(descriptor.type()) + ".");
+			if (fallback != null) {
+				throw new IllegalArgumentException(
+						TypeName.simple(RetroAnyGear.class) + " may annotate only one Gear type, but annotates "
+								+ TypeName.full(fallback.gearDefinition().type()) + " and "
+								+ TypeName.full(descriptor.type()) + ".");
 			}
-			fallbackType = descriptor.type();
+			fallback = specialist;
 		}
+		return Optional.ofNullable(fallback);
 	}
 
 	private static FactParser<?> configuredParser(final String key, final Class<? extends FactParser<?>> parserType,

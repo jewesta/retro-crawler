@@ -17,11 +17,11 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroFactDefaultParser;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.ArchiveFolderView;
@@ -30,7 +30,6 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ARIParser;
 import com.retrocrawler.core.gear.parser.AutoDetectParser;
 import com.retrocrawler.core.gear.parser.EnumFactParser;
@@ -198,7 +197,7 @@ class ModelParserFactoryTest {
 	public static final class FactoryEnumDefaultsCollection {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class DefaultFactGear {
 
 		@RetroFact
@@ -235,7 +234,7 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class FactoryFactGear {
 
 		@RetroFact
@@ -278,7 +277,7 @@ class ModelParserFactoryTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class StringFactGear {
 
 		@RetroFact
@@ -293,7 +292,7 @@ class ModelParserFactoryTest {
 		OFF
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class EnumFactGear {
 
 		@RetroFact
