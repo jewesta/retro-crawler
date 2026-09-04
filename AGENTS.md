@@ -218,5 +218,9 @@ adapters should likewise remain outside `retro-crawler-core`.
   zero-argument JavaBeans-style getters to `retro-crawler-core` or immutable
   shared-model values; map-like keyed `get(key)` operations remain ordinary
   lookups.
+- Use `Optional` only as a method return type. Do not declare `Optional` fields,
+  record components, method parameters, or constructor parameters, and do not
+  pass `Optional` values between objects. Represent optional internal state
+  directly and wrap it only at a method return boundary.
 - Prefer small, reviewable changes and avoid unrelated refactoring in issue
   branches.
