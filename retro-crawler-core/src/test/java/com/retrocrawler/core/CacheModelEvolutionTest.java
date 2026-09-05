@@ -19,10 +19,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.ReindexScope;
@@ -33,7 +33,6 @@ import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class CacheModelEvolutionTest {
@@ -85,7 +84,7 @@ class CacheModelEvolutionTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class InitialGear {
 
 		@RetroAnyAttribute
@@ -95,7 +94,7 @@ class CacheModelEvolutionTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class EvolvedGear {
 
 		@RetroFact(key = "sn")

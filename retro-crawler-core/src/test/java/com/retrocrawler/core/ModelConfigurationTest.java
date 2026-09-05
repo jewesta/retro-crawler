@@ -20,10 +20,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
@@ -34,7 +34,6 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
@@ -166,7 +165,7 @@ class ModelConfigurationTest {
 	public static final class InvalidTimeZoneCollection {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class ConfiguredGear {
 
 		@RetroFact
@@ -178,7 +177,7 @@ class ModelConfigurationTest {
 	public static final class RuntimeContextCollection {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class RuntimeContextGear {
 
 		@RetroFact(key = "observed", parser = RecordingParser.class)

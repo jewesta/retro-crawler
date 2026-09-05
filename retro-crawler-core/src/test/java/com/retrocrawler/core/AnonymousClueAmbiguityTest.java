@@ -17,10 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroClues;
 import com.retrocrawler.core.annotation.RetroCollection;
 import com.retrocrawler.core.annotation.RetroFact;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.archive.ArchiveDescriptor;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.InMemoryRepository;
@@ -30,7 +30,6 @@ import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.ClueFinder;
 import com.retrocrawler.core.archive.clues.Clues;
 import com.retrocrawler.core.gear.RatedFact;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.FactParser;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.gear.trace.ResolutionTrace;
@@ -77,7 +76,7 @@ class AnonymousClueAmbiguityTest {
 		}
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class AmbiguousGear {
 
 		@RetroFact(key = "first", parser = FirstParser.class, strict = false, optional = true)

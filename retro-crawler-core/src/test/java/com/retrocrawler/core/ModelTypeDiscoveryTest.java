@@ -44,7 +44,7 @@ class ModelTypeDiscoveryTest {
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
 				() -> Model.from("com.retrocrawler.core.discovery.missing"));
 
-		assertEquals("No types annotated with @RetroCollection or @RetroGear found in base package "
+		assertEquals("No types annotated with @RetroCollection, @RetroGear, or @RetroAnyGear found in base package "
 				+ "'com.retrocrawler.core.discovery.missing'.", failure.getMessage());
 	}
 }

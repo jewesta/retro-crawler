@@ -141,7 +141,8 @@ class GearSearchTest {
 		final ResolutionTrace.Match match = new ResolutionTrace.Match(gear.getClass(), GearSearchTest.class,
 				Confidence.EXACT);
 		final ResolutionTrace trace = new ResolutionTrace(new Artifact(Clues.of(firstClue, secondClue)), attributes,
-				List.of(match), match, attributes, List.of());
+				List.of(match), new ResolutionTrace.Selection(gear.getClass(), ResolutionTrace.SelectionKind.MATCH),
+				attributes, List.of());
 		return new GearNode<>(gear, source, trace, List.of());
 	}
 

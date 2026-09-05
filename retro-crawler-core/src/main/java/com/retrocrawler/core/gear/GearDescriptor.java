@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroFact;
 import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroId;
@@ -47,7 +48,7 @@ public class GearDescriptor implements Descriptor {
 			final Field anyAttributeField, final Field idField, final Field sourceField) {
 		this.type = Objects.requireNonNull(type, "type");
 		this.gearType = Objects.requireNonNull(gearType, "gearType");
-		this.matcher = Objects.requireNonNull(matcher, "matcher");
+		this.matcher = matcher;
 		this.attributes = Objects.requireNonNull(attributes, "attributes");
 		this.factDeclarations = List.copyOf(Objects.requireNonNull(factDeclarations, "factDeclarations"));
 		this.anyAttributeField = anyAttributeField;
@@ -64,8 +65,12 @@ public class GearDescriptor implements Descriptor {
 		return gearType;
 	}
 
-	public GearMatcher matcher() {
-		return matcher;
+	public Optional<GearMatcher> matcher() {
+		return Optional.ofNullable(matcher);
+	}
+
+	public boolean isAnyGear() {
+		return matcher == null;
 	}
 
 	public Map<String, FactDescriptor> attributes() {
@@ -108,14 +113,20 @@ public class GearDescriptor implements Descriptor {
 		Objects.requireNonNull(type, "type");
 
 		final RetroGear retroGear = type.getAnnotation(RetroGear.class);
-		if (retroGear == null) {
-			// No a retro gear
+		final RetroAnyGear anyGear = type.getAnnotation(RetroAnyGear.class);
+		if (retroGear == null && anyGear == null) {
+			// Not a Gear declaration
 			return Optional.empty();
+		}
+		if (retroGear != null && anyGear != null) {
+			throw new IllegalArgumentException(
+					TypeName.simple(RetroGear.class) + " and " + TypeName.simple(RetroAnyGear.class)
+							+ " must not both annotate Gear type " + TypeName.full(type) + ".");
 		}
 
 		assertHasNoArgConstructor(type);
 
-		final GearMatcher matcher = Reflection.newInstance(retroGear.value());
+		final GearMatcher matcher = retroGear == null ? null : Reflection.newInstance(retroGear.value());
 
 		final Map<String, FactDescriptor> attributes = new LinkedHashMap<>();
 		final List<FactDescriptor> factDeclarations = new ArrayList<>();
@@ -202,9 +213,9 @@ public class GearDescriptor implements Descriptor {
 		}
 
 		if (anyAttributeField == null && attributes.isEmpty()) {
-			throw new IllegalArgumentException(TypeName.simple(RetroGear.class)
-					+ " must have at least one field annotated with " + TypeName.simple(RetroAnyAttribute.class)
-					+ " or " + TypeName.simple(RetroFact.class) + ": " + TypeName.full(type));
+			throw new IllegalArgumentException("A Gear type must have at least one field annotated with "
+					+ TypeName.simple(RetroAnyAttribute.class) + " or " + TypeName.simple(RetroFact.class) + ": "
+					+ TypeName.full(type));
 		}
 
 		return Optional.of(new GearDescriptor(type, GearType.from(type), matcher, Map.copyOf(attributes),
@@ -228,12 +239,11 @@ public class GearDescriptor implements Descriptor {
 		try {
 			final Constructor<?> ctor = type.getDeclaredConstructor();
 			if (!ctor.canAccess(null)) {
-				throw new IllegalArgumentException(TypeName.simple(RetroGear.class)
-						+ " must have a public no-arg constructor: " + TypeName.full(type));
+				throw new IllegalArgumentException(
+						"A Gear type must have a public no-arg constructor: " + TypeName.full(type));
 			}
 		} catch (final NoSuchMethodException e) {
-			throw new IllegalArgumentException(
-					TypeName.simple(RetroGear.class) + " must have a no-arg constructor: " + TypeName.full(type), e);
+			throw new IllegalArgumentException("A Gear type must have a no-arg constructor: " + TypeName.full(type), e);
 		}
 	}
 

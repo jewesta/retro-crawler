@@ -13,6 +13,8 @@ import com.retrocrawler.core.gear.trace.ResolutionTrace.Issue;
 import com.retrocrawler.core.gear.trace.ResolutionTrace.IssueKind;
 import com.retrocrawler.core.gear.trace.ResolutionTrace.Match;
 import com.retrocrawler.core.gear.trace.ResolutionTrace.Phase;
+import com.retrocrawler.core.gear.trace.ResolutionTrace.Selection;
+import com.retrocrawler.core.gear.trace.ResolutionTrace.SelectionKind;
 
 /** Collects one trace while {@link GearResolver} resolves one artifact. */
 final class ResolutionTraceRecorder {
@@ -23,7 +25,7 @@ final class ResolutionTraceRecorder {
 
 	private final List<Match> matches = new ArrayList<>();
 
-	private Match selectedMatch;
+	private Selection selection;
 
 	private Attributes resolved;
 
@@ -48,20 +50,18 @@ final class ResolutionTraceRecorder {
 	void match(final GearSpecialist specialist, final Confidence confidence) {
 		Objects.requireNonNull(specialist, "specialist");
 		final GearDescriptor descriptor = specialist.gearDefinition();
-		matches.add(new Match(descriptor.type(), descriptor.matcher().getClass(), confidence));
+		matches.add(new Match(descriptor.type(), descriptor.matcher().orElseThrow().getClass(), confidence));
 	}
 
-	void selected(final Class<?> gearType) {
-		Objects.requireNonNull(gearType, "gearType");
-		selectedMatch = matches.stream().filter(match -> gearType.equals(match.gearType())).findFirst().orElseThrow(
-				() -> new IllegalArgumentException("Selected Gear type has no recorded match: " + gearType));
-		final List<Class<?>> tied = matches.stream().filter(
-				match -> match.confidence() == selectedMatch.confidence() && match.confidence() != Confidence.NONE)
-				.map(Match::gearType).toList();
-		if (tied.size() > 1) {
-			issues.add(new Issue(Phase.MATCHING, IssueKind.AMBIGUOUS_GEAR_MATCH, "Equal best confidence "
-					+ selectedMatch.confidence() + " for Gear types: " + tied.stream().map(Class::getName).toList()));
-		}
+	void selected(final Class<?> gearType, final SelectionKind kind) {
+		selection = new Selection(gearType, kind);
+	}
+
+	void ambiguousGearMatch(final Confidence confidence, final List<GearSpecialist> tied) {
+		final List<String> types = tied.stream().map(specialist -> specialist.gearDefinition().type().getName())
+				.sorted().toList();
+		issues.add(new Issue(Phase.MATCHING, IssueKind.AMBIGUOUS_GEAR_MATCH,
+				"Equal best confidence " + confidence + " for Gear types not ordered by inheritance: " + types));
 	}
 
 	void ambiguousFact(final Phase phase, final String explanation) {
@@ -70,7 +70,6 @@ final class ResolutionTraceRecorder {
 
 	ResolutionTrace trace() {
 		return new ResolutionTrace(artifact, Objects.requireNonNull(detection, "detection"), matches,
-				Objects.requireNonNull(selectedMatch, "selectedMatch"), Objects.requireNonNull(resolved, "resolved"),
-				issues);
+				Objects.requireNonNull(selection, "selection"), Objects.requireNonNull(resolved, "resolved"), issues);
 	}
 }

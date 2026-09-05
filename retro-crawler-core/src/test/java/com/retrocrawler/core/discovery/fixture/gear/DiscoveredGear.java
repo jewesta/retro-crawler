@@ -4,12 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroGear;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.discovery.fixture.InitializationProbe;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.util.RetroAttribute;
 
-@RetroGear(AnyGearMatcher.class)
+@RetroAnyGear
 public class DiscoveredGear {
 
 	static {

@@ -1,5 +1,6 @@
 package com.retrocrawler.core.gear;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import com.retrocrawler.core.gear.injector.GearSpecialist;
 import com.retrocrawler.core.gear.matcher.GearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
 import com.retrocrawler.core.gear.trace.ResolutionTrace.Phase;
+import com.retrocrawler.core.gear.trace.ResolutionTrace.SelectionKind;
 import com.retrocrawler.core.util.RetroAttribute;
 import com.retrocrawler.core.util.Sonar;
 
@@ -27,7 +29,9 @@ import com.retrocrawler.core.util.Sonar;
  */
 public class GearResolver {
 
-	private final Map<Class<?>, GearSpecialist> gearSpecialists;
+	private final List<GearSpecialist> gearSpecialists;
+
+	private final GearSpecialist anyGear;
 
 	private final Map<String, FactFinder> factFinders;
 
@@ -38,9 +42,11 @@ public class GearResolver {
 	private final List<FilterDefinition<?>> filters;
 
 	// package-private: only factories construct this
-	GearResolver(final Map<Class<?>, GearSpecialist> specialists, final Map<String, FactFinder> factFinders,
-			final Map<Class<?>, Set<String>> contextualFactKeys, final List<FilterDefinition<?>> filters) {
-		this.gearSpecialists = Objects.requireNonNull(specialists, "specialists");
+	GearResolver(final List<GearSpecialist> specialists, final GearSpecialist anyGear,
+			final Map<String, FactFinder> factFinders, final Map<Class<?>, Set<String>> contextualFactKeys,
+			final List<FilterDefinition<?>> filters) {
+		this.gearSpecialists = List.copyOf(Objects.requireNonNull(specialists, "specialists"));
+		this.anyGear = anyGear;
 		this.factFinders = Objects.requireNonNull(factFinders, "factFinders");
 		this.contextualFactKeys = Objects.requireNonNull(contextualFactKeys, "contextualFactKeys");
 		this.filters = List.copyOf(Objects.requireNonNull(filters, "filters"));
@@ -53,6 +59,9 @@ public class GearResolver {
 	}
 
 	private record BestAnonymousMatch(String key, Confidence confidence, boolean contextual, boolean ambiguous) {
+	}
+
+	private record GearSelection(GearSpecialist specialist, SelectionKind kind) {
 	}
 
 	private void handleKnownKeyClue(final RetroAttributes resolved, final Clue clue, final ParseContext parseContext) {
@@ -247,9 +256,9 @@ public class GearResolver {
 		 * represent their gear type. The "winner" (highest confidence) will
 		 * later be built.
 		 */
-		GearSpecialist best = null;
+		final List<GearSpecialist> best = new ArrayList<>();
 		Confidence bestConfidence = Confidence.NONE;
-		for (final GearSpecialist specialist : gearSpecialists.values()) {
+		for (final GearSpecialist specialist : gearSpecialists) {
 			final Class<?> gearType = specialist.gearDefinition().type();
 			final GearContext context = new GearContext(gearType, source, artifact, detectionAttributes);
 			final Confidence confidence = specialist.matches(context);
@@ -263,40 +272,64 @@ public class GearResolver {
 				continue;
 			}
 
-			/*
-			 * Should more than one specialist have the same best confidence,
-			 * the first still wins rather than stopping the pipeline. The trace
-			 * retains every match and explicitly records that ambiguity.
-			 */
-			if (best == null || confidence.isHigherThan(bestConfidence)) {
-				best = specialist;
+			if (best.isEmpty() || confidence.isHigherThan(bestConfidence)) {
+				best.clear();
+				best.add(specialist);
 				bestConfidence = confidence;
+			} else if (confidence == bestConfidence) {
+				best.add(specialist);
 			}
 		}
 
-		if (best == null) {
-			// No expert was confident
+		final Optional<GearSelection> selected = select(best, bestConfidence, trace);
+		if (selected.isEmpty()) {
 			return Optional.empty();
 		}
 
-		final Class<?> bestType = best.gearDefinition().type();
-		trace.selected(bestType);
+		final GearSelection selection = selected.orElseThrow();
+		final GearSpecialist specialist = selection.specialist();
+		final Class<?> bestType = specialist.gearDefinition().type();
+		trace.selected(bestType, selection.kind());
 		final Set<String> selectedContextualKeys = contextualFactKeys.getOrDefault(bestType, Set.of());
 		final RetroAttributes attributes = resolveAttributes(clues, parseContext, selectedContextualKeys, trace,
 				Phase.RESOLUTION);
 		trace.attributes(Phase.RESOLUTION, attributes);
 		final GearContext context = new GearContext(bestType, source, artifact, attributes);
 		/*
-		 * The gear specialist is asked to build a gear. Since it was confident
-		 * it could do that we expect it to return a non-null value. Building
-		 * might still throw, though. For example in case of problems with type
-		 * matching / annotations / missing no-arg constructor etc. -- but that
-		 * would be a fundamental problem with the gear declaration the user
-		 * would have to fix.
+		 * The selected specialist is asked to build a gear. Building might
+		 * still throw. For example in case of problems with type matching /
+		 * annotations / missing no-arg constructor etc. -- but that would be a
+		 * fundamental problem with the gear declaration the user would have to
+		 * fix.
 		 */
-		final Object newGear = best.create(context);
-		final Optional<Object> retroId = retroId(best.gearDefinition(), attributes);
-		return Optional.of(new GearResolution(best.gearDefinition().gearType(), newGear, retroId, trace.trace()));
+		final Object newGear = specialist.create(context);
+		final Optional<Object> retroId = retroId(specialist.gearDefinition(), attributes);
+		return Optional.of(new GearResolution(specialist.gearDefinition().gearType(), newGear, retroId, trace.trace()));
+	}
+
+	private Optional<GearSelection> select(final List<GearSpecialist> best, final Confidence bestConfidence,
+			final ResolutionTraceRecorder trace) {
+		if (best.isEmpty()) {
+			return fallbackSelection(SelectionKind.FALLBACK_NO_MATCH);
+		}
+		if (best.size() == 1) {
+			return Optional.of(new GearSelection(best.getFirst(), SelectionKind.MATCH));
+		}
+
+		final List<GearSpecialist> mostSpecific = best.stream()
+				.filter(candidate -> best.stream().allMatch(
+						other -> other.gearDefinition().type().isAssignableFrom(candidate.gearDefinition().type())))
+				.toList();
+		if (mostSpecific.size() == 1) {
+			return Optional.of(new GearSelection(mostSpecific.getFirst(), SelectionKind.MOST_SPECIFIC_MATCH));
+		}
+
+		trace.ambiguousGearMatch(bestConfidence, best);
+		return fallbackSelection(SelectionKind.FALLBACK_AMBIGUOUS_MATCH);
+	}
+
+	private Optional<GearSelection> fallbackSelection(final SelectionKind kind) {
+		return anyGear == null ? Optional.empty() : Optional.of(new GearSelection(anyGear, kind));
 	}
 
 	private RetroAttributes resolveAttributes(final Clues clues, final ParseContext parseContext,

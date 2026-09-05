@@ -10,15 +10,14 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.Configuration;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.annotation.RetroFact;
-import com.retrocrawler.core.annotation.RetroGear;
 import com.retrocrawler.core.annotation.RetroSource;
 import com.retrocrawler.core.archive.ARI;
 import com.retrocrawler.core.archive.ArchiveId;
 import com.retrocrawler.core.archive.clues.Artifact;
 import com.retrocrawler.core.archive.clues.Clue;
 import com.retrocrawler.core.archive.clues.Clues;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
 import com.retrocrawler.core.gear.parser.ParseContext;
 
 class RetroSourceTest {
@@ -86,7 +85,7 @@ class RetroSourceTest {
 		assertTrue(failure.getMessage().contains(RetroFact.class.getSimpleName()));
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class SourceGear {
 
 		@RetroSource
@@ -96,14 +95,14 @@ class RetroSourceTest {
 		private String name;
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class GearWithoutSource {
 
 		@RetroFact
 		private String name;
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class WrongSourceTypeGear {
 
 		@RetroSource
@@ -119,7 +118,7 @@ class RetroSourceTest {
 		private ARI inheritedSource;
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class DuplicateSourceGear extends SourceGearBase {
 
 		@RetroSource
@@ -129,7 +128,7 @@ class RetroSourceTest {
 		private String name;
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class SourceFactGear {
 
 		@RetroSource
@@ -137,7 +136,7 @@ class RetroSourceTest {
 		private ARI source;
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class StaticSourceGear {
 
 		@RetroSource

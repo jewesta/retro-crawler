@@ -10,27 +10,26 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.annotation.RetroAnyAttribute;
-import com.retrocrawler.core.annotation.RetroGear;
-import com.retrocrawler.core.gear.matcher.AnyGearMatcher;
+import com.retrocrawler.core.annotation.RetroAnyGear;
 import com.retrocrawler.core.util.RetroAttribute;
 
 class GearResolverFactoryFallbackTest {
 
 	@Test
-	void rejectsMoreThanOneGearTypeUsingAnyGearMatcher() {
+	void rejectsMoreThanOneRetroAnyGearType() {
 		final IllegalArgumentException failure = assertThrows(IllegalArgumentException.class,
 				() -> new GearResolverFactory().reflectOn(Set.of(FirstFallback.class, SecondFallback.class)));
 
-		assertTrue(failure.getMessage().contains(AnyGearMatcher.class.getSimpleName()));
+		assertTrue(failure.getMessage().contains(RetroAnyGear.class.getSimpleName()));
 		assertTrue(failure.getMessage().contains(FirstFallback.class.getName()));
 		assertTrue(failure.getMessage().contains(SecondFallback.class.getName()));
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class FirstFallback extends BaseGear {
 	}
 
-	@RetroGear(AnyGearMatcher.class)
+	@RetroAnyGear
 	public static final class SecondFallback extends BaseGear {
 	}
 
