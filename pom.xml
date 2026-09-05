@@ -27,17 +27,31 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<classgraph.version>4.8.184</classgraph.version>
+		<indriya.version>2.2.4</indriya.version>
 		<jackson.version>2.21.4</jackson.version>
 		<junit.version>6.0.3</junit.version>
 		<slf4j.version>2.0.18</slf4j.version>
 		<spring-ai.version>2.0.1</spring-ai.version>
 		<spring-boot.version>4.1.0</spring-boot.version>
+		<unit-api.version>2.2</unit-api.version>
 	</properties>
 
 	<!-- This does NOT add dependencies. It just unifies dependency versions
 	across all modules. For that reason setting a <scope> does not make sense. -->
 	<dependencyManagement>
 		<dependencies>
+			<!-- Units of Measurement API -->
+			<dependency>
+				<groupId>javax.measure</groupId>
+				<artifactId>unit-api</artifactId>
+				<version>${unit-api.version}</version>
+			</dependency>
+			<!-- Units of Measurement reference implementation -->
+			<dependency>
+				<groupId>tech.units</groupId>
+				<artifactId>indriya</artifactId>
+				<version>${indriya.version}</version>
+			</dependency>
 			<!-- Testing -->
 			<dependency>
 				<groupId>org.junit</groupId>

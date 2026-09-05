@@ -62,6 +62,19 @@ values whose meaning remains ambiguous.
     shapes, but its constrained production-week structure is the more specific
     anonymous-clue interpretation. Explicitly keyed version clues are
     unaffected.
+13. Build quantitative model values on the Units of Measurement API (JSR 385),
+    with Indriya as its implementation, instead of growing a parallel
+    RetroCrawler `Number`-plus-unit hierarchy. Keep both dependencies in the
+    optional shared-model module so the core framework remains independent.
+14. Use standard quantity types where their meaning fits and dedicated custom
+    `Quantity` subtypes for stable non-SI properties. Do not erase all integral
+    counts to one generic dimensionless quantity type: parallel bus width,
+    serial lane count, and package terminal count are different properties even
+    though their units share the physical dimension of a count.
+15. Establish and verify the quantity foundation before adding processor clock,
+    expansion-bus width, or package Facts. Existing measurement values remain
+    unchanged in this step; migrating them is a separate compatibility decision,
+    not a prerequisite for new quantities.
 
 ## Progress
 
@@ -102,6 +115,14 @@ values whose meaning remains ambiguous.
   a family title that contradicts the package-marking manufacturer. It also
   covers an Intel FPO beginning with `V`, which overlaps the broad version
   syntax.
+- Added the JSR 385 API and Indriya reference implementation to the optional
+  shared-model module as the foundation for quantitative Facts.
+- Documented the shared-model quantity boundary and proved standard frequency
+  conversion plus distinct custom count quantity types without introducing the
+  processor clock, expansion-bus width, or package models yet.
+- Verified the foundation with the focused core/model reactor (302 core and 67
+  model tests), confirmed the measurement dependencies are absent from core,
+  and reran the complete nine-module `mvn clean install` reactor successfully.
 - A live audit resolves all 135 normalized processor roots as processors
   without a genuine matcher tie: 134 use 16 fine-grained identities, while one
   unfamiliar AMD title remains at `AmdProcessor` rather than acquiring an
