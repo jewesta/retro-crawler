@@ -31,11 +31,11 @@ values whose meaning remains ambiguous.
    maps only the exact `9-Nadel` tag present in the collection. An exhaustive
    enum switch lists the types for which no tag is known yet without declaring
    possible future vocabulary forbidden.
-6. Model `Processor` as an abstract Gear type with `AmdProcessor` and
-   `IntelProcessor` specializations. The marking format establishes those two
-   manufacturers. Do not add K6-2, Pentium, or other family classes until a
-   clue independently establishes the family; neither the artifact title nor
-   its archive ancestors are type evidence.
+6. Model processor identity as a concrete Gear hierarchy. `Processor` matches
+   any processor marking, `AmdProcessor` and `IntelProcessor` match the marking
+   subtype, and family types combine that marking with the existing `title`
+   Fact. Equal `EXACT` matches along one inheritance chain deliberately resolve
+   to the most-specific Gear type under Issue 12's selection rule.
 7. Represent the observed package value as one typed `ProcessorMarking` Fact.
    Its AMD and Intel value subtypes preserve the one-clue/one-Fact rule while
    exposing the objectively identifiable components of that one marking.
@@ -52,6 +52,16 @@ values whose meaning remains ambiguous.
     production markings with hyphens, and leave supported Intel FPO markings
     otherwise unchanged. Do not change genuine serial numbers or shapes that
     are not yet understood.
+11. Keep processor-family knowledge in Gear matchers rather than synthesize a
+    `ProcessorType` or other meta-Fact. A family matcher requires both a
+    manufacturer-specific package marking and family language already present
+    in the title. Archive ancestry remains irrelevant, and an unfamiliar title
+    retains the most-specific identity the available evidence actually proves.
+12. Rate the public model's broad `v`-plus-digit version syntax as `STRONG`
+    rather than `EXACT`. A valid Intel FPO beginning with `V` satisfies both
+    shapes, but its constrained production-week structure is the more specific
+    anonymous-clue interpretation. Explicitly keyed version clues are
+    unaffected.
 
 ## Progress
 
@@ -62,6 +72,15 @@ values whose meaning remains ambiguous.
 - Added the portable processor-marking value hierarchy and canonical parser.
 - Added the collection `Processor`, `AmdProcessor`, and `IntelProcessor` Gear
   hierarchy with marking-based matchers.
+- Made `Processor`, `AmdProcessor`, and `IntelProcessor` matched Gear types and
+  added the processor identities currently supported by collection evidence:
+  AMD 8086, 80286, 80386, 80486, 5x86, K5, K6, K6-2, and K6-III; Intel 80286,
+  80386, 80486, Pentium, Pentium MMX, Pentium 4, Core, and math coprocessors.
+- Grouped the complete processor Gear hierarchy in the collection's dedicated
+  `gear.cpu` package.
+- Added title-and-marking family matchers. A title never establishes processor
+  identity by itself, while Issue 12 resolves the intentional matches for the
+  general, manufacturer, family, and subfamily types through inheritance.
 - Renamed 135 high-confidence collection folders: 76 AMD and 59 Intel. Of
   these, 39 are processor artifacts nested beneath mainboards. Each rename is
   recorded in the archive journal and in a private recovery manifest.
@@ -78,6 +97,15 @@ values whose meaning remains ambiguous.
 - Focused processor parser and collection-model tests cover AMD production
   markings, Intel FPO/partial-ATPO markings, manufacturer-specific Gear
   resolution, and a processor nested below a mainboard.
+- A focused hierarchy test covers every supported processor family, generic
+  manufacturer fallback, the K6 and Pentium sub-hierarchies, and rejection of
+  a family title that contradicts the package-marking manufacturer. It also
+  covers an Intel FPO beginning with `V`, which overlaps the broad version
+  syntax.
+- A live audit resolves all 135 normalized processor roots as processors
+  without a genuine matcher tie: 134 use 16 fine-grained identities, while one
+  unfamiliar AMD title remains at `AmdProcessor` rather than acquiring an
+  invented family.
 - Post-migration verification found all 135 targets, no remaining source
   folders, no malformed normalized values, and the exact 135 journal entries.
 

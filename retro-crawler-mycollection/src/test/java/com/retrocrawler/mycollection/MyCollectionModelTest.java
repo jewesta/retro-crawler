@@ -86,16 +86,16 @@ import com.retrocrawler.mycollection.catalog.DocumentId;
 import com.retrocrawler.mycollection.catalog.FloppyImageId;
 import com.retrocrawler.mycollection.catalog.MyRetroId;
 import com.retrocrawler.mycollection.catalog.Tested;
-import com.retrocrawler.mycollection.gear.AmdProcessor;
 import com.retrocrawler.mycollection.gear.Diskette;
 import com.retrocrawler.mycollection.gear.GraphicsCard;
-import com.retrocrawler.mycollection.gear.IntelProcessor;
 import com.retrocrawler.mycollection.gear.MemoryModule;
 import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.gear.PowerSupply;
 import com.retrocrawler.mycollection.gear.Printer;
+import com.retrocrawler.mycollection.gear.cpu.AmdProcessor;
+import com.retrocrawler.mycollection.gear.cpu.IntelProcessor;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
 import de.creativecouple.validation.isbn.ISBN;

@@ -212,6 +212,9 @@ adapters should likewise remain outside `retro-crawler-core`.
 ## Change Discipline
 
 - Preserve unrelated user changes in the working tree.
+- Do not create Git commits unless the user explicitly requests a commit.
+  Completing an implementation or preparing a branch does not by itself
+  authorize committing.
 - Keep public API naming consistent with the domain vocabulary above.
 - Use component-style accessors for immutable framework state and
   configuration, with `is...` or `has...` reserved for predicates. Do not add
