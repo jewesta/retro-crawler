@@ -75,6 +75,26 @@ values whose meaning remains ambiguous.
     expansion-bus width, or package Facts. Existing measurement values remain
     unchanged in this step; migrating them is a separate compatibility decision,
     not a prerequisite for new quantities.
+16. Apply that foundation to the existing quantitative values before introducing
+    more of them. Concrete value classes inherit a shared positive-quantity base
+    and implement `Quantity<Q>` while delegating calculation and conversion to
+    Indriya. Keep the concrete classes as Fact types: replacing their declared
+    fields with erased `Quantity<Q>` types would collapse distinct Facts during
+    reflective model discovery.
+17. Use the standard JSR quantity kinds for physical length (including screen
+    size), power, and time. Keep data capacity and track density as self-typed
+    custom quantity kinds because the standard API provides no suitable types.
+    A concrete value class, rather than a fabricated physical dimension, keeps
+    a role-specific Fact such as screen size distinct from anonymous length.
+18. Model data-capacity units with binary IEC scaling while retaining the
+    collection's established `KB`, `MB`, `GB`, and `TB` parsing and display.
+    Model track density as reciprocal length. Let role-specific measurement
+    values expose explicit bridges to their more general physical value where
+    that relationship is useful.
+19. Leave identifiers, revisions, calendar fields, and aggregate member counts
+    as structural numbers rather than quantities. `CapacitySet` remains a
+    composite value whose per-member and total capacities use the quantity
+    model; its member count is not itself a measurement Fact.
 
 ## Progress
 
@@ -120,6 +140,18 @@ values whose meaning remains ambiguous.
 - Documented the shared-model quantity boundary and proved standard frequency
   conversion plus distinct custom count quantity types without introducing the
   processor clock, expansion-bus width, or package models yet.
+- Added the shared `PositiveQuantity<Q>` value base and canonical measurement
+  units, then migrated length, screen size, power, memory access time, data
+  capacity, and track density without adding any new processor, bus, or package
+  Facts.
+- Preserved the existing archive parsers, display forms, compatibility accessors,
+  concrete Fact types, and collection resolution behavior while moving unit
+  conversion and quantity arithmetic to Indriya.
+- Reverified the migrated model with 302 core tests, 67 shared-model tests, 56
+  collection-adapter tests, a formatting assertion over all 20 changed Java
+  sources, and the complete clean nine-module packaged reactor. The dependency
+  audit confirms that JSR 385 and Indriya remain confined to the optional model
+  module.
 - Verified the foundation with the focused core/model reactor (302 core and 67
   model tests), confirmed the measurement dependencies are absent from core,
   and reran the complete nine-module `mvn clean install` reactor successfully.

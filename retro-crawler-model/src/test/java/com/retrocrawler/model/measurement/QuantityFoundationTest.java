@@ -8,18 +8,16 @@ import static tech.units.indriya.unit.Units.HERTZ;
 import java.math.BigDecimal;
 
 import javax.measure.Quantity;
-import javax.measure.Unit;
 import javax.measure.quantity.Frequency;
+import javax.measure.quantity.Time;
 
 import org.junit.jupiter.api.Test;
 
+import com.retrocrawler.model.hardware.MemoryAccessTime;
+
 import tech.units.indriya.quantity.Quantities;
-import tech.units.indriya.unit.BaseUnit;
 
 class QuantityFoundationTest {
-
-	private static final Unit<TerminalCount> TERMINAL = new BaseUnit<>("terminal");
-	private static final Unit<LaneCount> LANE = new BaseUnit<>("lane");
 
 	@Test
 	void representsAndConvertsAStandardQuantityWithoutLosingDecimalPrecision() {
@@ -29,18 +27,24 @@ class QuantityFoundationTest {
 	}
 
 	@Test
-	void keepsSemanticallyDifferentCustomCountsInDifferentQuantityTypes() {
-		final Quantity<TerminalCount> terminals = Quantities.getQuantity(68, TERMINAL);
-		final Quantity<LaneCount> lanes = Quantities.getQuantity(68, LANE);
+	void modelsExistingMeasurementsAsTypedQuantities() {
+		final Quantity<javax.measure.quantity.Length> length = new Length(2.5, MeasurementUnits.INCH);
+		final Quantity<javax.measure.quantity.Length> screenSize = new ScreenSize(19);
+		final Quantity<javax.measure.quantity.Power> power = new Power(300);
+		final Quantity<Time> memoryAccessTime = new MemoryAccessTime(70);
+		final Quantity<DataCapacity> capacity = new DataCapacity(512, MeasurementUnits.MEBIBYTE);
+		final Quantity<TrackDensity> trackDensity = new TrackDensity(96);
 
-		assertEquals(68, terminals.getValue().intValue());
-		assertEquals(68, lanes.getValue().intValue());
-		assertNotEquals(TERMINAL, LANE);
-	}
-
-	private interface TerminalCount extends Quantity<TerminalCount> {
-	}
-
-	private interface LaneCount extends Quantity<LaneCount> {
+		assertEquals(new BigDecimal("63.5"),
+				new BigDecimal(length.to(MeasurementUnits.MILLIMETRE).getValue().toString()).stripTrailingZeros());
+		assertEquals(19, screenSize.getValue().intValue());
+		assertEquals(300, power.getValue().intValue());
+		assertEquals(70, memoryAccessTime.getValue().intValue());
+		assertEquals(512, capacity.getValue().intValue());
+		assertEquals(96, trackDensity.getValue().intValue());
+		assertNotEquals(capacity.getUnit(), trackDensity.getUnit());
+		final Quantity<javax.measure.quantity.Length> lengthInMetres = new Length(2.5, MeasurementUnits.METRE);
+		final Number sumInMetres = lengthInMetres.add(new Length(0.5, MeasurementUnits.METRE)).getValue();
+		assertEquals(new BigDecimal("3"), new BigDecimal(sumInMetres.toString()).stripTrailingZeros());
 	}
 }

@@ -1,61 +1,45 @@
 package com.retrocrawler.model.measurement;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.Objects;
 
-/** A positive one-dimensional physical measurement. */
-public record Length(BigDecimal amount, Unit unit) {
+import javax.measure.Unit;
 
-	public Length {
-		Objects.requireNonNull(amount, "amount");
-		Objects.requireNonNull(unit, "unit");
-		if (amount.signum() <= 0) {
-			throw new IllegalArgumentException("Length must be positive: " + amount);
-		}
-		amount = amount.stripTrailingZeros();
+/** A positive one-dimensional physical measurement. */
+public final class Length extends PositiveQuantity<javax.measure.quantity.Length> {
+
+	private static final long serialVersionUID = 1L;
+
+	public Length(final Number amount, final Unit<javax.measure.quantity.Length> unit) {
+		super(amount, unit);
 	}
 
 	public BigDecimal inMillimeters() {
-		return amount.multiply(unit.millimetersPerUnit()).stripTrailingZeros();
-	}
-
-	public BigDecimal amountIn(final Unit targetUnit) {
-		Objects.requireNonNull(targetUnit, "targetUnit");
-		return inMillimeters().divide(targetUnit.millimetersPerUnit(), MathContext.DECIMAL128).stripTrailingZeros();
+		return amountIn(MeasurementUnits.MILLIMETRE);
 	}
 
 	public boolean sameLengthAs(final Length other) {
-		Objects.requireNonNull(other, "other");
-		return inMillimeters().compareTo(other.inMillimeters()) == 0;
+		return isEquivalentTo(Objects.requireNonNull(other, "other"));
 	}
 
 	@Override
 	public String toString() {
-		return amount.toPlainString() + unit.symbol();
+		return amount().toPlainString() + symbol(unit());
 	}
 
-	public enum Unit {
-
-		MILLIMETER("mm", "1"),
-		CENTIMETER("cm", "10"),
-		METER("m", "1000"),
-		INCH("\"", "25.4");
-
-		private final String symbol;
-		private final BigDecimal millimetersPerUnit;
-
-		Unit(final String symbol, final String millimetersPerUnit) {
-			this.symbol = symbol;
-			this.millimetersPerUnit = new BigDecimal(millimetersPerUnit);
+	private static String symbol(final Unit<javax.measure.quantity.Length> unit) {
+		if (MeasurementUnits.MILLIMETRE.equals(unit)) {
+			return "mm";
 		}
-
-		public String symbol() {
-			return symbol;
+		if (MeasurementUnits.CENTIMETRE.equals(unit)) {
+			return "cm";
 		}
-
-		BigDecimal millimetersPerUnit() {
-			return millimetersPerUnit;
+		if (MeasurementUnits.METRE.equals(unit)) {
+			return "m";
 		}
+		if (MeasurementUnits.INCH.equals(unit)) {
+			return "\"";
+		}
+		return " " + unit;
 	}
 }

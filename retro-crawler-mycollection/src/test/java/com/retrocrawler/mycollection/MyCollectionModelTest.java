@@ -1,5 +1,7 @@
 package com.retrocrawler.mycollection;
 
+import static com.retrocrawler.model.measurement.MeasurementUnits.INCH;
+import static com.retrocrawler.model.measurement.MeasurementUnits.MEBIBYTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -69,7 +71,6 @@ import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.CapacitySet;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Length;
-import com.retrocrawler.model.measurement.Length.Unit;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.TrackDensity;
 import com.retrocrawler.model.packaging.PackagingOrigin;
@@ -162,9 +163,9 @@ class MyCollectionModelTest {
 		final MyGear gear = gear(crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear(),
 				"Memory set [32MB] [Set 2 x 16MB] [TRW 10510]");
 
-		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32), DataCapacity.Unit.MB);
+		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32), MEBIBYTE);
 		final CapacitySet expectedSet = new CapacitySet(2,
-				new DataCapacity(java.math.BigDecimal.valueOf(16), DataCapacity.Unit.MB));
+				new DataCapacity(java.math.BigDecimal.valueOf(16), MEBIBYTE));
 		assertEquals(Optional.of(expectedCapacity), gear.getCapacity());
 		assertEquals(Optional.of(expectedSet), gear.getCapacitySet());
 		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
@@ -278,8 +279,8 @@ class MyCollectionModelTest {
 		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
 		final MyGear floppy = gear(gear, "Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
 		assertInstanceOf(MysteryGear.class, floppy);
-		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), Unit.INCH)), floppy.getLength());
-		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), DataCapacity.Unit.MB)), floppy.getCapacity());
+		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), INCH)), floppy.getLength());
+		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), MEBIBYTE)), floppy.getCapacity());
 		assertEquals(Set.of(Year.of(1989)), floppy.getYears());
 		assertEquals(Optional.of(new Version("v5.0")), floppy.getVersion());
 		assertEquals(Set.of(new SegaGameGearCartridgeCode("2449")), floppy.getSegaGameGearCartridgeCodes());
@@ -287,10 +288,10 @@ class MyCollectionModelTest {
 
 		final MyGear smallMeasured = gear(gear, "Small measured object [2,5″]");
 		assertInstanceOf(MysteryGear.class, smallMeasured);
-		assertEquals(Optional.of(new Length(new BigDecimal("2.5"), Unit.INCH)), smallMeasured.getLength());
+		assertEquals(Optional.of(new Length(new BigDecimal("2.5"), INCH)), smallMeasured.getLength());
 
 		final MyGear measured = gear(gear, "Measured object [19″]");
-		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), Unit.INCH)), measured.getLength());
+		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), INCH)), measured.getLength());
 		assertEquals(Optional.empty(), measured.getScreenSize());
 
 		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß, pink]");

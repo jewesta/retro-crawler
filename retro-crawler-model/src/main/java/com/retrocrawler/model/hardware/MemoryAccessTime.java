@@ -1,15 +1,30 @@
 package com.retrocrawler.model.hardware;
 
-public record MemoryAccessTime(int nanoseconds) {
+import javax.measure.Unit;
+import javax.measure.quantity.Time;
 
-	public MemoryAccessTime {
-		if (nanoseconds <= 0) {
-			throw new IllegalArgumentException("Memory access time must be positive: " + nanoseconds);
-		}
+import com.retrocrawler.model.measurement.MeasurementUnits;
+import com.retrocrawler.model.measurement.PositiveQuantity;
+
+/** A positive memory access duration. */
+public final class MemoryAccessTime extends PositiveQuantity<Time> {
+
+	private static final long serialVersionUID = 1L;
+
+	public MemoryAccessTime(final int nanoseconds) {
+		this(nanoseconds, MeasurementUnits.NANOSECOND);
+	}
+
+	public MemoryAccessTime(final Number amount, final Unit<Time> unit) {
+		super(amount, unit);
+	}
+
+	public int nanoseconds() {
+		return amountIn(MeasurementUnits.NANOSECOND).intValueExact();
 	}
 
 	@Override
 	public String toString() {
-		return nanoseconds + "ns";
+		return amount().toPlainString() + (MeasurementUnits.NANOSECOND.equals(unit()) ? "ns" : " " + unit());
 	}
 }

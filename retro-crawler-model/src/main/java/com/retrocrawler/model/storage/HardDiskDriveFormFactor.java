@@ -3,7 +3,7 @@ package com.retrocrawler.model.storage;
 import java.math.BigDecimal;
 
 import com.retrocrawler.model.measurement.Length;
-import com.retrocrawler.model.measurement.Length.Unit;
+import com.retrocrawler.model.measurement.MeasurementUnits;
 
 /** Nominal platter diameter used to classify hard-disk drives. */
 public enum HardDiskDriveFormFactor {
@@ -24,7 +24,7 @@ public enum HardDiskDriveFormFactor {
 	}
 
 	public Length nominalSize() {
-		return new Length(nominalInches, Unit.INCH);
+		return new Length(nominalInches, MeasurementUnits.INCH);
 	}
 
 	@Override

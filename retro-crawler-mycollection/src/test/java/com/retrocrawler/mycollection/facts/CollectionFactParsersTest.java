@@ -1,5 +1,10 @@
 package com.retrocrawler.mycollection.facts;
 
+import static com.retrocrawler.model.measurement.MeasurementUnits.CENTIMETRE;
+import static com.retrocrawler.model.measurement.MeasurementUnits.GIBIBYTE;
+import static com.retrocrawler.model.measurement.MeasurementUnits.INCH;
+import static com.retrocrawler.model.measurement.MeasurementUnits.KIBIBYTE;
+import static com.retrocrawler.model.measurement.MeasurementUnits.MEBIBYTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,7 +34,6 @@ import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.DataCapacityParser;
 import com.retrocrawler.model.measurement.Length;
-import com.retrocrawler.model.measurement.Length.Unit;
 import com.retrocrawler.model.packaging.PackagingOrigin;
 import com.retrocrawler.model.packaging.SealState;
 import com.retrocrawler.model.temporal.DateMarking;
@@ -67,11 +71,11 @@ class CollectionFactParsersTest {
 	void parsesCapacitiesWithDecimalCommaAndCanonicalUnits() {
 		final DataCapacityParser parser = new DataCapacityParser();
 
-		assertEquals(new DataCapacity(new BigDecimal("1.125"), DataCapacity.Unit.MB),
+		assertEquals(new DataCapacity(new BigDecimal("1.125"), MEBIBYTE),
 				parser.parse("1,125MB", CONTEXT).value().orElseThrow());
-		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
+		assertEquals(new DataCapacity(BigDecimal.valueOf(32), KIBIBYTE),
 				parser.parse("32kb", CONTEXT).value().orElseThrow());
-		assertEquals(new DataCapacity(BigDecimal.valueOf(32), DataCapacity.Unit.KB),
+		assertEquals(new DataCapacity(BigDecimal.valueOf(32), KIBIBYTE),
 				parser.parse("32KB", CONTEXT).value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("3,5", CONTEXT).confidence());
 		assertEquals(Confidence.NONE, parser.parse("3,3V", CONTEXT).confidence());
@@ -79,9 +83,8 @@ class CollectionFactParsersTest {
 
 	@Test
 	void comparesEquivalentCapacitiesAcrossUnits() {
-		final DataCapacity oneGigabyte = new DataCapacity(BigDecimal.ONE, DataCapacity.Unit.GB);
-		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512), DataCapacity.Unit.MB)
-				.multiply(2);
+		final DataCapacity oneGigabyte = new DataCapacity(BigDecimal.ONE, GIBIBYTE);
+		final DataCapacity twoTimes512Megabytes = new DataCapacity(BigDecimal.valueOf(512), MEBIBYTE).multiply(2);
 
 		assertTrue(oneGigabyte.sameSizeAs(twoTimes512Megabytes));
 	}
@@ -191,9 +194,8 @@ class CollectionFactParsersTest {
 	void adaptsTheLegacyInchGlyphWithoutChangingTheSharedLengthMeaning() {
 		final CollectionLengthParser parser = new CollectionLengthParser();
 
-		assertEquals(new Length(new BigDecimal("2.5"), Unit.INCH),
-				parser.parse("2,5\uF020", CONTEXT).value().orElseThrow());
-		assertEquals(new Length(BigDecimal.valueOf(50), Unit.CENTIMETER),
+		assertEquals(new Length(new BigDecimal("2.5"), INCH), parser.parse("2,5\uF020", CONTEXT).value().orElseThrow());
+		assertEquals(new Length(BigDecimal.valueOf(50), CENTIMETRE),
 				parser.parse("50cm", CONTEXT).value().orElseThrow());
 	}
 

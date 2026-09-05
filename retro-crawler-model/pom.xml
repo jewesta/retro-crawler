@@ -33,5 +33,10 @@
 			<groupId>tech.units</groupId>
 			<artifactId>indriya</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.apiguardian</groupId>
+			<artifactId>apiguardian-api</artifactId>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 </project>

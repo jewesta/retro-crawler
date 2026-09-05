@@ -1,6 +1,8 @@
 package com.retrocrawler.model.measurement;
 
 import static com.retrocrawler.model.ParserTestContext.CONTEXT;
+import static com.retrocrawler.model.measurement.MeasurementUnits.KIBIBYTE;
+import static com.retrocrawler.model.measurement.MeasurementUnits.MEBIBYTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -9,18 +11,17 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.gear.Confidence;
-import com.retrocrawler.model.measurement.DataCapacity.Unit;
 
 class CapacitySetTest {
 
 	@Test
 	void parsesCountAndCapacityInEitherOrder() {
 		final CapacitySetParser parser = new CapacitySetParser();
-		final CapacitySet expected = new CapacitySet(4, new DataCapacity(BigDecimal.valueOf(32), Unit.KB));
+		final CapacitySet expected = new CapacitySet(4, new DataCapacity(BigDecimal.valueOf(32), KIBIBYTE));
 
 		assertEquals(expected, parser.parse("4 x 32kb", CONTEXT).value().orElseThrow());
 		assertEquals(expected, parser.parse("32kb x 4", CONTEXT).value().orElseThrow());
-		assertEquals(new DataCapacity(BigDecimal.valueOf(128), Unit.KB), expected.totalCapacity());
+		assertEquals(new DataCapacity(BigDecimal.valueOf(128), KIBIBYTE), expected.totalCapacity());
 		assertEquals("4 x 32KB", expected.toString());
 	}
 
@@ -34,6 +35,6 @@ class CapacitySetTest {
 			assertEquals(Confidence.NONE, parser.parse(invalid, CONTEXT).confidence(), invalid);
 		}
 		assertThrows(IllegalArgumentException.class,
-				() -> new CapacitySet(1, new DataCapacity(BigDecimal.ONE, Unit.MB)));
+				() -> new CapacitySet(1, new DataCapacity(BigDecimal.ONE, MEBIBYTE)));
 	}
 }

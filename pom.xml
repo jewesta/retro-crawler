@@ -26,6 +26,7 @@
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<apiguardian.version>1.1.2</apiguardian.version>
 		<classgraph.version>4.8.184</classgraph.version>
 		<indriya.version>2.2.4</indriya.version>
 		<jackson.version>2.21.4</jackson.version>
@@ -40,6 +41,12 @@
 	across all modules. For that reason setting a <scope> does not make sense. -->
 	<dependencyManagement>
 		<dependencies>
+			<!-- API lifecycle annotations used by Indriya's public API -->
+			<dependency>
+				<groupId>org.apiguardian</groupId>
+				<artifactId>apiguardian-api</artifactId>
+				<version>${apiguardian.version}</version>
+			</dependency>
 			<!-- Units of Measurement API -->
 			<dependency>
 				<groupId>javax.measure</groupId>

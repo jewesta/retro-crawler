@@ -3,7 +3,7 @@ package com.retrocrawler.model.storage;
 import java.math.BigDecimal;
 
 import com.retrocrawler.model.measurement.Length;
-import com.retrocrawler.model.measurement.Length.Unit;
+import com.retrocrawler.model.measurement.MeasurementUnits;
 
 /** Nominal physical width used to name a floppy-disk format. */
 public enum FloppyDiskFormFactor {
@@ -24,7 +24,7 @@ public enum FloppyDiskFormFactor {
 	}
 
 	public Length nominalSize() {
-		return new Length(nominalInches, Unit.INCH);
+		return new Length(nominalInches, MeasurementUnits.INCH);
 	}
 
 	@Override
