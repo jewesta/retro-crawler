@@ -1,20 +1,28 @@
 package com.retrocrawler.model.measurement;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
-public record Power(BigDecimal watts) {
+import javax.measure.Unit;
 
-	public Power {
-		Objects.requireNonNull(watts, "watts");
-		if (watts.signum() <= 0) {
-			throw new IllegalArgumentException("Power must be positive: " + watts);
-		}
-		watts = watts.stripTrailingZeros();
+/** A positive physical power measurement. */
+public final class Power extends PositiveQuantity<javax.measure.quantity.Power> {
+
+	private static final long serialVersionUID = 1L;
+
+	public Power(final Number watts) {
+		this(watts, MeasurementUnits.WATT);
+	}
+
+	public Power(final Number amount, final Unit<javax.measure.quantity.Power> unit) {
+		super(amount, unit);
+	}
+
+	public BigDecimal watts() {
+		return amountIn(MeasurementUnits.WATT);
 	}
 
 	@Override
 	public String toString() {
-		return watts.toPlainString() + "W";
+		return amount().toPlainString() + (MeasurementUnits.WATT.equals(unit()) ? "W" : " " + unit());
 	}
 }

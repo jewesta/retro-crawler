@@ -4,6 +4,8 @@ import static com.retrocrawler.model.ParserTestContext.CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.math.BigDecimal;
+
 import org.junit.jupiter.api.Test;
 
 import com.retrocrawler.core.gear.Confidence;
@@ -16,6 +18,8 @@ class TrackDensityTest {
 
 		assertEquals(new TrackDensity(48), parser.parse("48TPI", CONTEXT).value().orElseThrow());
 		assertEquals(new TrackDensity(96), parser.parse("96 tpi", CONTEXT).value().orElseThrow());
+		assertEquals(new BigDecimal("2.54"),
+				new TrackDensity(100, MeasurementUnits.TRACK_PER_METRE).amountIn(MeasurementUnits.TRACK_PER_INCH));
 		assertEquals(Confidence.NONE, parser.parse("96", CONTEXT).confidence());
 	}
 

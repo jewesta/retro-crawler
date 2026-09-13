@@ -15,6 +15,7 @@ class VersionTest {
 		final VersionParser parser = new VersionParser();
 
 		assertEquals(new Version("v5.0"), parser.parse("v5.0", CONTEXT).value().orElseThrow());
+		assertEquals(Confidence.STRONG, parser.parse("v5.0", CONTEXT).confidence());
 		assertEquals(new Version("v6.02 beta 1"), parser.parse("V6.02 beta 1", CONTEXT).value().orElseThrow());
 		assertEquals(Confidence.NONE, parser.parse("5.0", CONTEXT).confidence());
 		assertEquals(Confidence.NONE, parser.parse("version 5", CONTEXT).confidence());

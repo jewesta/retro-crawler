@@ -3,53 +3,64 @@ package com.retrocrawler.model.measurement;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public record DataCapacity(BigDecimal amount, Unit unit) {
+import javax.measure.Unit;
 
-	public DataCapacity {
-		Objects.requireNonNull(amount, "amount");
-		Objects.requireNonNull(unit, "unit");
-		if (amount.signum() <= 0) {
-			throw new IllegalArgumentException("Data capacity must be positive: " + amount);
-		}
-		amount = amount.stripTrailingZeros();
+/**
+ * A positive data capacity. Established KB/MB/GB/TB archive text retains its
+ * historical binary scaling and display, while the units themselves use IEC
+ * binary prefixes.
+ */
+public final class DataCapacity extends PositiveQuantity<DataCapacity> {
+
+	private static final long serialVersionUID = 1L;
+
+	public DataCapacity(final Number amount, final Unit<DataCapacity> unit) {
+		super(amount, unit);
 	}
 
 	public DataCapacity multiply(final int factor) {
 		if (factor <= 0) {
 			throw new IllegalArgumentException("Capacity factor must be positive: " + factor);
 		}
-		return new DataCapacity(amount.multiply(BigDecimal.valueOf(factor)), unit);
+		return new DataCapacity(amount().multiply(BigDecimal.valueOf(factor)), unit());
 	}
 
 	public boolean sameSizeAs(final DataCapacity other) {
-		Objects.requireNonNull(other, "other");
-		return inKilobytes().compareTo(other.inKilobytes()) == 0;
+		return isEquivalentTo(Objects.requireNonNull(other, "other"));
 	}
 
+	public BigDecimal inKibibytes() {
+		return amountIn(MeasurementUnits.KIBIBYTE);
+	}
+
+	/**
+	 * Returns the value in the historically labelled binary KB archive unit.
+	 */
 	public BigDecimal inKilobytes() {
-		return amount.multiply(unit.kilobytes());
+		return inKibibytes();
 	}
 
 	@Override
 	public String toString() {
-		return amount.toPlainString() + unit;
+		return amount().toPlainString() + symbol(unit());
 	}
 
-	public enum Unit {
-
-		KB(BigDecimal.ONE),
-		MB(BigDecimal.valueOf(1_024)),
-		GB(BigDecimal.valueOf(1_024L * 1_024)),
-		TB(BigDecimal.valueOf(1_024L * 1_024 * 1_024));
-
-		private final BigDecimal kilobytes;
-
-		Unit(final BigDecimal kilobytes) {
-			this.kilobytes = kilobytes;
+	private static String symbol(final Unit<DataCapacity> unit) {
+		if (MeasurementUnits.BYTE.equals(unit)) {
+			return "B";
 		}
-
-		BigDecimal kilobytes() {
-			return kilobytes;
+		if (MeasurementUnits.KIBIBYTE.equals(unit)) {
+			return "KB";
 		}
+		if (MeasurementUnits.MEBIBYTE.equals(unit)) {
+			return "MB";
+		}
+		if (MeasurementUnits.GIBIBYTE.equals(unit)) {
+			return "GB";
+		}
+		if (MeasurementUnits.TEBIBYTE.equals(unit)) {
+			return "TB";
+		}
+		return " " + unit;
 	}
 }

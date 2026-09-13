@@ -12,7 +12,13 @@ public final class VersionParser implements FactParser<Version> {
 			return noMatch();
 		}
 		try {
-			return RatedFact.exact(new Version(rawValue));
+			/*
+			 * The deliberately broad v-plus-digit syntax is characteristic but
+			 * not unambiguous. Manufacturer markings and other strict
+			 * identifiers can begin the same way and should win anonymous-clue
+			 * classification at EXACT.
+			 */
+			return RatedFact.strong(new Version(rawValue));
 		} catch (final IllegalArgumentException e) {
 			return noMatch();
 		}

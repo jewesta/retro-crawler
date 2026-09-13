@@ -33,7 +33,13 @@ public final class DataCapacityParser implements FactParser<DataCapacity> {
 
 		try {
 			final BigDecimal amount = new BigDecimal(matcher.group(1).replace(',', '.'));
-			final DataCapacity.Unit unit = DataCapacity.Unit.valueOf(matcher.group(2).toUpperCase(Locale.ROOT));
+			final javax.measure.Unit<DataCapacity> unit = switch (matcher.group(2).toUpperCase(Locale.ROOT)) {
+			case "KB" -> MeasurementUnits.KIBIBYTE;
+			case "MB" -> MeasurementUnits.MEBIBYTE;
+			case "GB" -> MeasurementUnits.GIBIBYTE;
+			case "TB" -> MeasurementUnits.TEBIBYTE;
+			default -> throw new IllegalArgumentException("Unknown data capacity unit: " + matcher.group(2));
+			};
 			return Optional.of(new DataCapacity(amount, unit));
 		} catch (final IllegalArgumentException e) {
 			return Optional.empty();

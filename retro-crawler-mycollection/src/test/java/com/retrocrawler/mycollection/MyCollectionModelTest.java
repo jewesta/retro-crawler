@@ -1,5 +1,7 @@
 package com.retrocrawler.mycollection;
 
+import static com.retrocrawler.model.measurement.MeasurementUnits.INCH;
+import static com.retrocrawler.model.measurement.MeasurementUnits.MEBIBYTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -44,13 +46,16 @@ import com.retrocrawler.model.commerce.Money;
 import com.retrocrawler.model.condition.DamageKind;
 import com.retrocrawler.model.condition.FunctionalCondition;
 import com.retrocrawler.model.condition.ItemCondition;
+import com.retrocrawler.model.hardware.AmdProcessorMarking;
 import com.retrocrawler.model.hardware.ChipDesignation;
 import com.retrocrawler.model.hardware.ComputerFormFactor;
 import com.retrocrawler.model.hardware.ExpansionBus;
+import com.retrocrawler.model.hardware.IntelProcessorMarking;
 import com.retrocrawler.model.hardware.MemoryAccessTime;
 import com.retrocrawler.model.hardware.MemoryFeature;
 import com.retrocrawler.model.hardware.MemoryFormFactor;
 import com.retrocrawler.model.hardware.MemoryStandard;
+import com.retrocrawler.model.hardware.PrinterType;
 import com.retrocrawler.model.hardware.VideoConnector;
 import com.retrocrawler.model.identifier.MacAddress;
 import com.retrocrawler.model.identifier.NintendoGameBoyCartridgeCode;
@@ -66,7 +71,6 @@ import com.retrocrawler.model.locale.RegionCode;
 import com.retrocrawler.model.measurement.CapacitySet;
 import com.retrocrawler.model.measurement.DataCapacity;
 import com.retrocrawler.model.measurement.Length;
-import com.retrocrawler.model.measurement.Length.Unit;
 import com.retrocrawler.model.measurement.Power;
 import com.retrocrawler.model.measurement.TrackDensity;
 import com.retrocrawler.model.packaging.PackagingOrigin;
@@ -90,6 +94,9 @@ import com.retrocrawler.mycollection.gear.Motherboard;
 import com.retrocrawler.mycollection.gear.MyGear;
 import com.retrocrawler.mycollection.gear.MysteryGear;
 import com.retrocrawler.mycollection.gear.PowerSupply;
+import com.retrocrawler.mycollection.gear.Printer;
+import com.retrocrawler.mycollection.gear.cpu.AmdProcessor;
+import com.retrocrawler.mycollection.gear.cpu.IntelProcessor;
 import com.retrocrawler.mycollection.references.TheRetroWebReferences;
 
 import de.creativecouple.validation.isbn.ISBN;
@@ -156,9 +163,9 @@ class MyCollectionModelTest {
 		final MyGear gear = gear(crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear(),
 				"Memory set [32MB] [Set 2 x 16MB] [TRW 10510]");
 
-		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32), DataCapacity.Unit.MB);
+		final DataCapacity expectedCapacity = new DataCapacity(java.math.BigDecimal.valueOf(32), MEBIBYTE);
 		final CapacitySet expectedSet = new CapacitySet(2,
-				new DataCapacity(java.math.BigDecimal.valueOf(16), DataCapacity.Unit.MB));
+				new DataCapacity(java.math.BigDecimal.valueOf(16), MEBIBYTE));
 		assertEquals(Optional.of(expectedCapacity), gear.getCapacity());
 		assertEquals(Optional.of(expectedSet), gear.getCapacitySet());
 		assertTrue(expectedSet.totalCapacity().sameSizeAs(expectedCapacity));
@@ -221,6 +228,36 @@ class MyCollectionModelTest {
 	}
 
 	@Test
+	void recognizesPrintersFromTheirOwnTypeEvidence() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("First printer [9-Nadel] [200027]"));
+		Files.createDirectories(archiveRoot.resolve("Printer ribbons [200028]"));
+
+		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
+
+		final Printer printer = assertInstanceOf(Printer.class, gear(gear, "First printer [9-Nadel] [200027]"));
+		assertEquals(PrinterType.DOT_MATRIX_9_PIN, printer.printerType());
+		assertInstanceOf(MysteryGear.class, gear(gear, "Printer ribbons [200028]"));
+	}
+
+	@Test
+	void recognizesAmdAndIntelProcessorsFromProductionMarkingsRegardlessOfLocation() throws IOException {
+		Files.createDirectories(archiveRoot.resolve("Loose AMD processor [A-985211PM] [200041]"));
+		final Path board = archiveRoot.resolve("Example board [ATX] [ISA, PCI] [TRW 10510] [200042]");
+		Files.createDirectories(board.resolve("Installed Intel processor [L5170697-0141] [200043]"));
+
+		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
+
+		final AmdProcessor amd = assertInstanceOf(AmdProcessor.class,
+				gear(gear, "Loose AMD processor [A-985211PM] [200041]"));
+		assertEquals(new AmdProcessorMarking("A", "9852", "11PM"), amd.processorMarking());
+
+		final IntelProcessor intel = assertInstanceOf(IntelProcessor.class,
+				gear(gear, "Installed Intel processor [L5170697-0141] [200043]"));
+		assertEquals(new IntelProcessorMarking("L5170697", Optional.of("0141")), intel.processorMarking());
+		assertInstanceOf(Motherboard.class, gear(gear, "Example board [ATX] [ISA, PCI] [TRW 10510] [200042]"));
+	}
+
+	@Test
 	void treatsDocumentIdsAsReusableReferencesRatherThanGearIdentity() throws IOException {
 		Files.createDirectories(archiveRoot.resolve("First scanned manual [101534] [200030]"));
 		Files.createDirectories(archiveRoot.resolve("Second scanned manual [101534] [200031]"));
@@ -242,8 +279,8 @@ class MyCollectionModelTest {
 		final List<MyGear> gear = crawler().crawl(new Journal(), ReindexScope.all()).query(MyGear.class).pull().gear();
 		final MyGear floppy = gear(gear, "Floppy release [3,5\"] [1,44MB] [1989] [v5.0] [gg 2449] [101534]");
 		assertInstanceOf(MysteryGear.class, floppy);
-		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), Unit.INCH)), floppy.getLength());
-		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), DataCapacity.Unit.MB)), floppy.getCapacity());
+		assertEquals(Optional.of(new Length(new BigDecimal("3.5"), INCH)), floppy.getLength());
+		assertEquals(Optional.of(new DataCapacity(new BigDecimal("1.44"), MEBIBYTE)), floppy.getCapacity());
 		assertEquals(Set.of(Year.of(1989)), floppy.getYears());
 		assertEquals(Optional.of(new Version("v5.0")), floppy.getVersion());
 		assertEquals(Set.of(new SegaGameGearCartridgeCode("2449")), floppy.getSegaGameGearCartridgeCodes());
@@ -251,10 +288,10 @@ class MyCollectionModelTest {
 
 		final MyGear smallMeasured = gear(gear, "Small measured object [2,5″]");
 		assertInstanceOf(MysteryGear.class, smallMeasured);
-		assertEquals(Optional.of(new Length(new BigDecimal("2.5"), Unit.INCH)), smallMeasured.getLength());
+		assertEquals(Optional.of(new Length(new BigDecimal("2.5"), INCH)), smallMeasured.getLength());
 
 		final MyGear measured = gear(gear, "Measured object [19″]");
-		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), Unit.INCH)), measured.getLength());
+		assertEquals(Optional.of(new Length(BigDecimal.valueOf(19), INCH)), measured.getLength());
 		assertEquals(Optional.empty(), measured.getScreenSize());
 
 		final MyGear colored = gear(gear, "Colored object [schwarz] [weiß, pink]");
